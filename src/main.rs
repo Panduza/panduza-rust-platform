@@ -57,6 +57,12 @@ impl Platform {
         }
     }
 
+    // async fn test(&mut self) {
+    //     println!("pok");
+    // }
+    // async fn test(&self) {
+    //     println!("pok");
+    // }
 
     pub async fn run(&mut self) {
         println!("Hello, world!");
@@ -67,6 +73,7 @@ impl Platform {
         self.tasks_group.spawn(Platform::sleepy_task(3));
 
 
+        // let fut = self.test();
 
         // loop {} ???
         tokio::select! {
