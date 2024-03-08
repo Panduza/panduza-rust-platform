@@ -24,7 +24,8 @@ use std::cell::RefCell;
 #[derive(Debug)]
 struct Platform
 {
-    tasks_group: JoinSet<()>
+    tasks_group: JoinSet<()>,
+    tasks_group_: RefCell<JoinSet<()>>
 }
 
 
@@ -32,7 +33,8 @@ impl Platform {
 
     fn new() -> Platform {
         return Platform {
-            tasks_group: JoinSet::new()
+            tasks_group: JoinSet::new(),
+            tasks_group_: RefCell::<JoinSet<()>>::new(JoinSet::new())
         }
     }
 
@@ -81,8 +83,10 @@ impl Platform {
         // let fut = ;
         self.tasks_group.spawn(Platform::sleepy_task(1));
         self.tasks_group.spawn(Platform::sleepy_task(2));
-        self.tasks_group.spawn(Platform::sleepy_task(3));
 
+        self.tasks_group_.borrow_mut().spawn(Platform::sleepy_task(3));
+
+        // let tttttt = self.tasks_group_.clone();
 
         // let ppp = self.tasks_group.clone();
 
@@ -95,6 +99,10 @@ impl Platform {
 
 
         self.tasks_group.spawn(async move {
+
+
+            // tttttt.borrow_mut().spawn(Platform::sleepy_task(3));
+
             for i in 0..10 {
                 println!("{}", *newww.borrow());
                 client.publish("hello/rumqtt", QoS::AtLeastOnce, false, vec![i; i as usize]).await.unwrap();
@@ -128,9 +136,18 @@ impl Platform {
 
 
 
+mod device_factory;
+
+
+
 
 #[tokio::main]
 async fn main() {
+
+    
+    
+    let dv = device_factory::DeviceFactory::new();
+
 
 
     let subscriber = tracing_subscriber::fmt()
@@ -154,6 +171,8 @@ async fn main() {
 
     
     // console_subscriber::init();
+
+
 
 
 
