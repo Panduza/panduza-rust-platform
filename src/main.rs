@@ -9,10 +9,12 @@ use tokio::time::{sleep, Duration};
 use tokio::task::JoinSet;
 
 
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::fmt;
 
 
 
-
+#[derive(Debug)]
 struct Platform
 {
     tasks_group: JoinSet<u8>
@@ -27,45 +29,39 @@ impl Platform {
         }
     }
 
-
+    #[tracing::instrument(level = "info")]
     async fn sleepy_task(i:u8) -> u8 {
-        loop {
+        
+        for number in 0..=10 {
             sleep(Duration::from_millis(1000)).await;
-            println!("{i} have elapsed");
-            sleep(Duration::from_millis(1000)).await;
-            println!("{i} have elapsed");
-            // sleep(Duration::from_millis(1000)).await;
-            // println!("{i} have elapsed");
-            // sleep(Duration::from_millis(1000)).await;
-            // println!("{i} have elapsed");
-            // sleep(Duration::from_millis(1000)).await;
-            // println!("{i} have elapsed");
-            // sleep(Duration::from_millis(1000)).await;
-            // println!("{i} have elapsed");
-            // sleep(Duration::from_millis(1000)).await;
-            // println!("{i} have elapsed");
-            // sleep(Duration::from_millis(1000)).await;
-            // println!("{i} have elapsed");
-            return i;
+            tracing::warn!("{i} have elapsed {number}");
         }
+        return i;
     }
 
-    
+    #[tracing::instrument]
     async fn task_waiter( &mut self) {
+
         while let Some(result) = self.tasks_group.join_next().await {
             println!("Task result: {}", result.unwrap());
         }
     }
 
-    // async fn test(&mut self) {
-    //     println!("pok");
-    // }
+    #[tracing::instrument]
+    async fn test(&mut self) {
+        println!("pok");
+    }
     // async fn test(&self) {
     //     println!("pok");
     // }
 
+    #[tracing::instrument]
     pub async fn run(&mut self) {
         println!("Hello, world!");
+
+        // Create a channel with a capacity of 10 messages
+        // let (tx, rx): (Sender<(i32, usize)>, Receiver<(i32, usize)>) = channel();
+
 
         // let fut = ;
         self.tasks_group.spawn(Platform::sleepy_task(1));
@@ -73,7 +69,6 @@ impl Platform {
         self.tasks_group.spawn(Platform::sleepy_task(3));
 
 
-        // let fut = self.test();
 
         // loop {} ???
         tokio::select! {
@@ -96,6 +91,29 @@ impl Platform {
 
 #[tokio::main]
 async fn main() {
+
+
+    let subscriber = tracing_subscriber::fmt()
+    // Use a more compact, abbreviated log format
+    .compact()
+    // Display source code file paths
+    .with_file(true)
+    // Display source code line numbers
+    .with_line_number(true)
+    // Display the thread ID an event was recorded on
+    .with_thread_ids(true)
+    // Don't display the event's target (module path)
+    .with_target(false)
+    // .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+    .with_span_events(FmtSpan::FULL)
+    // Build the subscriber
+    .finish();
+
+    // use that subscriber to process traces emitted after this point
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+
+    // console_subscriber::init();
+
 
     let mut platform = Platform::new();
 
