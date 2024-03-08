@@ -24,3 +24,5 @@ console-subscriber = "0.2.0"
 
 
 
+rumqttc = "0.24.0"
+

@@ -13,11 +13,17 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::fmt;
 
 
+use rumqttc::{MqttOptions, AsyncClient, QoS};
+use tokio::{task, time};
+
+
+use std::error::Error;
+
 
 #[derive(Debug)]
 struct Platform
 {
-    tasks_group: JoinSet<u8>
+    tasks_group: JoinSet<()>
 }
 
 
@@ -30,20 +36,19 @@ impl Platform {
     }
 
     #[tracing::instrument(level = "info")]
-    async fn sleepy_task(i:u8) -> u8 {
+    async fn sleepy_task(i:u8) {
         
         for number in 0..=10 {
             sleep(Duration::from_millis(1000)).await;
             tracing::warn!("{i} have elapsed {number}");
         }
-        return i;
     }
 
     #[tracing::instrument]
     async fn task_waiter( &mut self) {
 
         while let Some(result) = self.tasks_group.join_next().await {
-            println!("Task result: {}", result.unwrap());
+            println!("End task ");
         }
     }
 
@@ -59,6 +64,7 @@ impl Platform {
     pub async fn run(&mut self) {
         println!("Hello, world!");
 
+
         // Create a channel with a capacity of 10 messages
         // let (tx, rx): (Sender<(i32, usize)>, Receiver<(i32, usize)>) = channel();
 
@@ -67,6 +73,27 @@ impl Platform {
         self.tasks_group.spawn(Platform::sleepy_task(1));
         self.tasks_group.spawn(Platform::sleepy_task(2));
         self.tasks_group.spawn(Platform::sleepy_task(3));
+
+        
+
+        let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
+        mqttoptions.set_keep_alive(Duration::from_secs(5));
+
+        let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
+        client.subscribe("hello/rumqtt", QoS::AtMostOnce).await.unwrap();
+
+        self.tasks_group.spawn(async move {
+            for i in 0..10 {
+                client.publish("hello/rumqtt", QoS::AtLeastOnce, false, vec![i; i as usize]).await.unwrap();
+                time::sleep(Duration::from_millis(100)).await;
+            }
+        });
+
+        self.tasks_group.spawn(async move {
+            while let Ok(notification) = eventloop.poll().await {
+                println!("Received = {:?}", notification);
+            }
+        });
 
 
 
@@ -112,7 +139,14 @@ async fn main() {
     // use that subscriber to process traces emitted after this point
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
+    
     // console_subscriber::init();
+
+
+
+
+
+
 
 
     let mut platform = Platform::new();
