@@ -18,6 +18,7 @@ use tokio::{task, time};
 
 
 use std::error::Error;
+use std::cell::RefCell;
 
 
 #[derive(Debug)]
@@ -69,12 +70,22 @@ impl Platform {
         // let (tx, rx): (Sender<(i32, usize)>, Receiver<(i32, usize)>) = channel();
 
 
+        let ff = RefCell::<u32>::new(5);
+        
+        *ff.borrow_mut() = 9;
+        println!("{}", *ff.borrow());
+
+
+        let newww = ff.clone();
+
         // let fut = ;
         self.tasks_group.spawn(Platform::sleepy_task(1));
         self.tasks_group.spawn(Platform::sleepy_task(2));
         self.tasks_group.spawn(Platform::sleepy_task(3));
 
-        
+
+        // let ppp = self.tasks_group.clone();
+
 
         let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
         mqttoptions.set_keep_alive(Duration::from_secs(5));
@@ -82,8 +93,10 @@ impl Platform {
         let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
         client.subscribe("hello/rumqtt", QoS::AtMostOnce).await.unwrap();
 
+
         self.tasks_group.spawn(async move {
             for i in 0..10 {
+                println!("{}", *newww.borrow());
                 client.publish("hello/rumqtt", QoS::AtLeastOnce, false, vec![i; i as usize]).await.unwrap();
                 time::sleep(Duration::from_millis(100)).await;
             }
