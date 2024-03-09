@@ -136,7 +136,7 @@ impl Platform {
 
 
 
-mod device_factory;
+mod device;
 
 
 
@@ -146,7 +146,9 @@ async fn main() {
 
     
     
-    let dv = device_factory::DeviceFactory::new();
+    let dv = device::Factory::new();
+
+    // dv.get_producer(ref).create_device()
 
 
 
