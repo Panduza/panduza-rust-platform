@@ -146,10 +146,17 @@ async fn main() {
 
     
     
-    let dv = device::Factory::new();
+    let mut dv = device::Factory::new();
 
-    // dv.get_producer(ref).create_device()
+    dv.add_producer("ddd".to_string(), Box::new(device::CustommmProducer{}) );
 
+    // dv.get_producer("ddd".to_string()).create_device();
+
+    let ddddd = "ddd".to_string();
+    let bbbb = dv.create_device( &ddddd ).unwrap();
+    
+
+    println!("{}", bbbb.get_name());
 
 
     let subscriber = tracing_subscriber::fmt()

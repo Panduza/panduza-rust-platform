@@ -15,7 +15,7 @@ pub trait Device {
 
 
 pub trait Producer {
-    fn create_device(&self, device_ref: &str) -> Result<Box<dyn Device>, String>;
+    fn create_device(&self) -> Result<Box<dyn Device>, String>;
 }
 
 struct CustommmDevice{
@@ -29,13 +29,13 @@ impl Device for CustommmDevice {
 
 }
 
-struct CustommmProducer{
+pub struct CustommmProducer{
 
 }
 
 impl Producer for CustommmProducer {
 
-    fn create_device(&self, device_ref: &str) -> Result<Box<dyn Device>, String> {
+    fn create_device(&self) -> Result<Box<dyn Device>, String> {
         return Ok(Box::new(CustommmDevice{}));
     }
 
@@ -58,9 +58,19 @@ impl Factory {
         self.producers.insert(device_ref, producer);
     }
 
-    // pub fn get_producer(self, device_ref: String) -> Box<dyn Producer> {
-    //     return self.producers.get(device_ref);
+
+    // pub fn get_producer(self, device_ref: String) -> Result<Box<dyn Producer>, String>  {
     // }
+
+
+    pub fn create_device(&self, device_ref: &String) -> Result<Box<dyn Device>, String> {
+
+        // return Ok(
+            return 
+            self.producers.get(device_ref).unwrap().create_device();
+        // )
+
+    }
 
 }
 
