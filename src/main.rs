@@ -8,9 +8,6 @@ use tokio::time::{sleep, Duration};
 
 
 
-use tracing_subscriber::fmt::format::FmtSpan;
-use tracing_subscriber::fmt;
-
 
 use rumqttc::{MqttOptions, AsyncClient, QoS};
 use tokio::{task, time};
@@ -22,16 +19,16 @@ use std::cell::RefCell;
 
 
 
-
+mod log;
 mod device;
-
-
 mod platform;
 
 
 #[tokio::main]
 async fn main() {
 
+
+    log::Init("fmt");
     
     
     // let mut dv = device::Factory::new();
@@ -45,29 +42,6 @@ async fn main() {
     
 
     // println!("{}", bbbb.get_name());
-
-
-    // let subscriber = tracing_subscriber::fmt()
-    // // Use a more compact, abbreviated log format
-    // .compact()
-    // // Display source code file paths
-    // .with_file(true)
-    // // Display source code line numbers
-    // .with_line_number(true)
-    // // Display the thread ID an event was recorded on
-    // .with_thread_ids(true)
-    // // Don't display the event's target (module path)
-    // .with_target(false)
-    // // .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-    // .with_span_events(FmtSpan::FULL)
-    // // Build the subscriber
-    // .finish();
-
-    // // use that subscriber to process traces emitted after this point
-    // tracing::subscriber::set_global_default(subscriber).unwrap();
-
-    
-    // // console_subscriber::init();
 
 
 

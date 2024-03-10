@@ -12,7 +12,7 @@ pub struct Runner
 impl Runner {
 
 
-
+    
     pub fn new() -> Runner {
         return Runner {
             tasks: JoinSet::new()
@@ -46,7 +46,9 @@ impl Runner {
 
     // #[tracing::instrument]
     pub async fn work(&mut self) {
-        println!("Hello, world!");
+
+        tracing::info!("Platform");
+
 
     }
 
