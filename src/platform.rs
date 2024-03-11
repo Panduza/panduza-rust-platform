@@ -1,21 +1,59 @@
-
+use tokio::signal;
 use tokio::task::JoinSet;
+use crate::device;
 
-
+// use tokio::sync::mpsc;
+use tokio::time::{sleep, Duration};
+use rumqttc::{MqttOptions, AsyncClient, QoS};
 
 pub struct Runner
 {
-    tasks: JoinSet<()>
-}
+    tasks: JoinSet<()>,
+    device_factory: device::Factory
 
+    // clients  HashMap<String, Box<dyn Producer>>
+    // devices  HashMap<String, Box<dyn Producer>>
+
+}
 
 impl Runner {
 
-
-    
+    /// Create a new instance of the Runner
     pub fn new() -> Runner {
         return Runner {
-            tasks: JoinSet::new()
+            tasks: JoinSet::new(),
+            device_factory: device::Factory::new()
+        }
+    }
+
+    /// Main platform run loop
+    pub async fn work(&mut self) {
+
+        tracing::info!("Platform");
+
+
+        // let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
+        // mqttoptions.set_keep_alive(Duration::from_secs(5));
+
+        // let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
+
+
+
+        // Wait for either a signal or all tasks to complete
+        tokio::select! {
+            _ = signal::ctrl_c() => {
+                tracing::warn!("end by user ctrl-c");
+            },
+            _ = self.end_of_all_tasks() => {
+                tracing::warn!("end by all tasks completed");
+            }
+        }
+    }
+
+    /// Wait for all tasks to complete
+    async fn end_of_all_tasks( &mut self) {
+        while let Some(result) = self.tasks.join_next().await {
+            println!("End task ");
         }
     }
 
@@ -28,29 +66,7 @@ impl Runner {
     //     }
     // }
 
-    // #[tracing::instrument]
-    // async fn task_waiter( &mut self) {
 
-    //     while let Some(result) = self.tasks.join_next().await {
-    //         println!("End task ");
-    //     }
-    // }
-
-    // #[tracing::instrument]
-    // async fn test(&mut self) {
-    //     println!("pok");
-    // }
-    // // async fn test(&self) {
-    // //     println!("pok");
-    // // }
-
-    // #[tracing::instrument]
-    pub async fn work(&mut self) {
-
-        tracing::info!("Platform");
-
-
-    }
 
 
     //     // Create a channel with a capacity of 10 messages
@@ -76,10 +92,7 @@ impl Runner {
     //     // let ppp = self.tasks.clone();
 
 
-    //     let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
-    //     mqttoptions.set_keep_alive(Duration::from_secs(5));
 
-    //     let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
     //     client.subscribe("hello/rumqtt", QoS::AtMostOnce).await.unwrap();
 
 
@@ -102,20 +115,5 @@ impl Runner {
     //     });
 
 
-
-    //     // loop {} ???
-    //     tokio::select! {
-    //         _ = signal::ctrl_c() => {
-    //             println!("end by user ctl-c");
-                
-    //         },
-    //         // _ = shutdown_recv.recv() => {},
-    //         _ = self.task_waiter() => {
-    //             println!("end of all");
-            
-    //         }
-    //     }
-    
-    // }
 }
 

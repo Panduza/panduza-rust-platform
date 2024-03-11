@@ -1,20 +1,6 @@
-use std::ops::Deref;
-use std::rc::Rc;
-
-use tokio::signal;
-use tokio::sync::mpsc;
-
-use tokio::time::{sleep, Duration};
 
 
 
-
-use rumqttc::{MqttOptions, AsyncClient, QoS};
-use tokio::{task, time};
-
-
-use std::error::Error;
-use std::cell::RefCell;
 
 
 
@@ -28,7 +14,7 @@ mod platform;
 async fn main() {
 
 
-    log::Init("fmt");
+    // log::Init("fmt");
     
     
     // let mut dv = device::Factory::new();
