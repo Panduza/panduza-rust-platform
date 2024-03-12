@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::builtin_devices;
 
 // pub struct Device {
 
@@ -8,36 +9,13 @@ use std::collections::HashMap;
 
 pub trait Device {
     fn get_name(&self) -> &str;
+
+
 }
-
-
 
 
 pub trait Producer {
     fn create_device(&self) -> Result<Box<dyn Device>, String>;
-}
-
-struct CustommmDevice{
-
-}
-
-impl Device for CustommmDevice {
-    fn get_name(&self) -> &str {
-        return "aaa";
-    }
-
-}
-
-pub struct CustommmProducer{
-
-}
-
-impl Producer for CustommmProducer {
-
-    fn create_device(&self) -> Result<Box<dyn Device>, String> {
-        return Ok(Box::new(CustommmDevice{}));
-    }
-
 }
 
 pub struct Factory {
@@ -47,14 +25,23 @@ pub struct Factory {
 
 impl Factory {
 
-    pub fn new() -> Factory {   
-        return Factory {
+    pub fn new() -> Factory {
+        let mut obj = Factory {
             producers: HashMap::new()
-        }
+        };
+
+        // Load builtin device producers
+        builtin_devices::import_plugin_producers(&mut obj);
+
+        return obj;
     }
 
-    pub fn add_producer(&mut self, device_ref: String, producer: Box<dyn Producer>) {
-        self.producers.insert(device_ref, producer);
+    pub fn add_producer(&mut self, device_ref: &str, producer: Box<dyn Producer>) {
+        // Info log
+        tracing::info!("Add producer to factory: {}", device_ref);
+
+        // Append the producer
+        self.producers.insert(device_ref.to_string(), producer);
     }
 
 
@@ -62,7 +49,7 @@ impl Factory {
     // }
 
 
-    pub fn create_device(&self, device_ref: &String) -> Result<Box<dyn Device>, String> {
+    pub fn create_device(&self, device_ref: &str) -> Result<Box<dyn Device>, String> {
 
         // return Ok(
             return 
@@ -70,6 +57,88 @@ impl Factory {
         // )
 
     }
+
+}
+
+
+
+// ------------------------------------------------------------------------------------------------
+
+pub struct Manager {
+    
+    // Device factory
+    factory: Factory,
+
+    // Lits of device instances
+    instances: HashMap<String, Box<dyn Device>>,
+    
+}
+
+impl Manager {
+
+    pub fn new() -> Manager {
+        return Manager {
+            factory: Factory::new(),
+            instances: HashMap::new()
+        }
+    }
+
+    // pub fn add_producer(&mut self, device_ref: &str, producer: Box<dyn Producer>) {
+    //     self.factory.add_producer(device_ref, producer);
+    // }
+
+    pub fn create_device(&mut self, device_name: &str, device_ref: &str) {
+        let device = self.factory.create_device(device_ref);
+        self.instances.insert(device_name.to_string(), device.unwrap());
+    }
+
+    // pub fn get_device(&self, device_ref: &String) -> Option<&Box<dyn Device>> {
+    //     return self.instances.iter().find(|&x| x.get_name() == device_ref);
+    // }
+
+    // pub fn get_devices(&self) -> &LinkedList<Box<dyn Device>> {
+    //     return &self.instances;
+    // }
+
+    // pub fn get_factory(&self) -> &Factory {
+    //     return &self.factory;
+    // }
+
+    // pub fn get_factory_mut(&mut self) -> &mut Factory {
+    //     return &mut self.factory;
+    // }
+
+    // pub fn work(&mut self) {
+    //     // Info log
+    //     tracing::info!("Device Manager Starting...");
+
+    //     // Create a device
+    //     let device = self.create_device(&"panduza.server".to_string()).unwrap();
+
+    //     // Info log
+    //     tracing::info!("Device created: {}", device.get_name());
+
+    //     // Get the device
+    //     let device = self.get_device(&"panduza.server".to_string()).unwrap();
+
+    //     // Info log
+    //     tracing::info!("Device found: {}", device.get_name());
+
+    //     // Get the factory
+    //     let factory = self.get_factory();
+
+    //     // Info log
+    //     tracing::info!("Factory found: {:?}", factory);
+
+    //     // Get the factory
+    //     let factory = self.get_factory_mut();
+
+    //     // Info log
+    //     tracing::info!("Factory found: {:?}", factory);
+
+    //     // Info log
+    //     tracing::info!("Device Manager Stopping...");
+    // }
 
 }
 

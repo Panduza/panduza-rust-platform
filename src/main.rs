@@ -2,6 +2,7 @@ mod log;
 mod device;
 mod platform;
 mod connection;
+mod builtin_devices;
 
 #[tokio::main]
 async fn main() {

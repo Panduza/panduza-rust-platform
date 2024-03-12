@@ -38,6 +38,16 @@ impl Runner {
 
         self.connection_manager.add_connection(&mut self.task_pool,"default".to_string(), "localhost".to_string(), 1883);
 
+
+
+
+        
+        // create connections
+        // then devices
+        // then attach devices to connections
+        
+
+
         
         // I need to store client into a hashmap then I need to share clients with others tasks
         
