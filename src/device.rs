@@ -3,21 +3,25 @@ use std::collections::HashMap;
 use crate::builtin_devices;
 
 
-pub struct DeviceObj {
-    // connection ?
+pub struct Device {
+    // list of connections
+
+    // list of interfaces
 }
 
 
-pub trait Device {
+pub trait DeviceCallbacks {
     fn get_name(&self) -> &str;
 
+    
+    // hunt
     fn mount_interfaces(&self, task_pool: &mut tokio::task::JoinSet<()>);
-    fn unmount_interfaces(&self);
+    
 }
 
 
 pub trait Producer {
-    fn create_device(&self) -> Result<Box<dyn Device>, String>;
+    fn create_device(&self) -> Result<Box<dyn DeviceCallbacks>, String>;
 }
 
 pub struct Factory {
@@ -51,7 +55,7 @@ impl Factory {
     // }
 
 
-    pub fn create_device(&self, device_ref: &str) -> Result<Box<dyn Device>, String> {
+    pub fn create_device(&self, device_ref: &str) -> Result<Box<dyn DeviceCallbacks>, String> {
 
         // return Ok(
             return 
@@ -72,7 +76,7 @@ pub struct Manager {
     factory: Factory,
 
     // Lits of device instances
-    instances: HashMap<String, Box<dyn Device>>,
+    instances: HashMap<String, Box<dyn DeviceCallbacks>>,
     
 }
 

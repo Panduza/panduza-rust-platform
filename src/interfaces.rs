@@ -1,7 +1,7 @@
 
 
 
-enum States {
+enum State {
     NotConnected,
     Initializing,
     Running,
@@ -22,42 +22,42 @@ trait StateCallbacks {
 }
 
 
-struct Interface {
+pub struct Interface {
     state: State,
-    callbacks: StateCallbacks
+    // callbacks: StateCallbacks
 }
 
 
 impl Interface {
 
     pub fn new() -> Interface {
-        Interface {}
+        Interface {
+            state: State::NotConnected
+        }
     }
 
-    /// Function to start the work in a task
-    /// 
-    pub async fn start(&mut self, task_pool: &mut tokio::task::JoinSet<()>) {
-        let abort = task_pool.spawn(self.work());
-    }
+
 
     ///
-    pub async fn work(&mut self) {
+    pub async fn poll(&mut self) {
 
         loop {
             
             tracing::info!("Starting interface");
 
             match self.state {
-                States::NotConnected => {
+                State::NotConnected => {
                     // wait for connection
+                    tracing::info!("Waiting for connection");
+
                 },
-                States::Initializing => {
+                State::Initializing => {
                     // wait for init
                 },
-                States::Running => {
+                State::Running => {
                     // wait for error
                 },
-                States::Error => {
+                State::Error => {
                     // wait for connection
                 }
             }

@@ -1,4 +1,4 @@
-use crate::device::Device;
+use crate::device::DeviceCallbacks;
 use crate::device::Producer;
 
 
@@ -10,7 +10,7 @@ struct ServerDevice{
 
 }
 
-impl Device for ServerDevice {
+impl DeviceCallbacks for ServerDevice {
     fn get_name(&self) -> &str {
         return "aaa";
     }
@@ -20,10 +20,6 @@ impl Device for ServerDevice {
         println!("mounting interfaces");
     }
 
-    fn unmount_interfaces(&self)
-    {
-
-    }
 }
 
 
@@ -33,7 +29,7 @@ pub struct DeviceProducer {
 
 impl Producer for DeviceProducer {
 
-    fn create_device(&self) -> Result<Box<dyn Device>, String> {
+    fn create_device(&self) -> Result<Box<dyn DeviceCallbacks>, String> {
         return Ok(Box::new(ServerDevice{}));
     }
 
