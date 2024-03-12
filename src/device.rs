@@ -2,15 +2,17 @@ use std::collections::HashMap;
 
 use crate::builtin_devices;
 
-// pub struct Device {
 
-// }
+pub struct DeviceObj {
+    // connection ?
+}
 
 
 pub trait Device {
     fn get_name(&self) -> &str;
 
-
+    fn mount_interfaces(&self, task_pool: &mut tokio::task::JoinSet<()>);
+    fn unmount_interfaces(&self);
 }
 
 
@@ -89,7 +91,18 @@ impl Manager {
 
     pub fn create_device(&mut self, device_name: &str, device_ref: &str) {
         let device = self.factory.create_device(device_ref);
+
         self.instances.insert(device_name.to_string(), device.unwrap());
+    }
+
+
+
+
+    pub fn mount_devices(&mut self, task_pool: &mut tokio::task::JoinSet<()>)
+    {
+        for(_, device) in &self.instances {
+            device.mount_interfaces(task_pool);
+        }
     }
 
     // pub fn get_device(&self, device_ref: &String) -> Option<&Box<dyn Device>> {

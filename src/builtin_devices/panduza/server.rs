@@ -15,6 +15,15 @@ impl Device for ServerDevice {
         return "aaa";
     }
 
+    fn mount_interfaces(&self, task_pool: &mut tokio::task::JoinSet<()>)
+    {
+        println!("mounting interfaces");
+    }
+
+    fn unmount_interfaces(&self)
+    {
+
+    }
 }
 
 
