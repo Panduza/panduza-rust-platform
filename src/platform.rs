@@ -1,6 +1,7 @@
 use tokio::signal;
 use tokio::task::JoinSet;
-use crate::device;
+use crate::device::Factory as DeviceFactory;
+use crate::connection::Manager as ConnectionManager;
 
 // use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
@@ -8,10 +9,10 @@ use rumqttc::{MqttOptions, AsyncClient, QoS};
 
 pub struct Runner
 {
-    tasks: JoinSet<()>,
-    device_factory: device::Factory
-
-    // clients  HashMap<String, Box<dyn Producer>>
+    task_pool: JoinSet<()>,
+    device_factory: DeviceFactory,
+    connection_manager: ConnectionManager
+    
     // devices  HashMap<String, Box<dyn Producer>>
 
 }
@@ -21,39 +22,62 @@ impl Runner {
     /// Create a new instance of the Runner
     pub fn new() -> Runner {
         return Runner {
-            tasks: JoinSet::new(),
-            device_factory: device::Factory::new()
+            task_pool: JoinSet::new(),
+            device_factory: DeviceFactory::new(),
+            connection_manager: ConnectionManager::new()
         }
     }
 
     /// Main platform run loop
     pub async fn work(&mut self) {
 
-        tracing::info!("Platform");
+        // Info log
+        tracing::info!("Platform Starting...");
 
+
+
+        self.connection_manager.add_connection(&mut self.task_pool,"default".to_string(), "localhost".to_string(), 1883);
+
+        
+        // I need to store client into a hashmap then I need to share clients with others tasks
+        
 
         // let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
-        // mqttoptions.set_keep_alive(Duration::from_secs(5));
-
-        // let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
 
 
+        // client.publish("hello/rumqtt", QoS::AtLeastOnce, false, "pok").await.unwrap();
+
+        // self.tasks.spawn(async move {
+            
+        //     loop {
+        //         while let Ok(notification) = eventloop.poll().await {
+        //             println!("Received = {:?}", notification);
+        //         }
+        //         tracing::warn!("Broker disconnected, trying to reconnect");
+        //     }
+
+        // });
+
+
+
+        // Info log
+        tracing::info!("Platform Started");
 
         // Wait for either a signal or all tasks to complete
         tokio::select! {
             _ = signal::ctrl_c() => {
-                tracing::warn!("end by user ctrl-c");
+                tracing::warn!("End by user ctrl-c");
             },
             _ = self.end_of_all_tasks() => {
-                tracing::warn!("end by all tasks completed");
+                tracing::warn!("End by all tasks completed");
             }
         }
     }
 
     /// Wait for all tasks to complete
     async fn end_of_all_tasks( &mut self) {
-        while let Some(result) = self.tasks.join_next().await {
-            println!("End task ");
+        while let Some(result) = self.task_pool.join_next().await {
+            tracing::info!("End task with result {:?}", result);
         }
     }
 
@@ -103,16 +127,12 @@ impl Runner {
 
     //         for i in 0..10 {
     //             println!("{}", *newww.borrow());
-    //             client.publish("hello/rumqtt", QoS::AtLeastOnce, false, vec![i; i as usize]).await.unwrap();
+    //             
     //             time::sleep(Duration::from_millis(100)).await;
     //         }
     //     });
 
-    //     self.tasks.spawn(async move {
-    //         while let Ok(notification) = eventloop.poll().await {
-    //             println!("Received = {:?}", notification);
-    //         }
-    //     });
+
 
 
 }

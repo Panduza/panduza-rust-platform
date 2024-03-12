@@ -5,8 +5,8 @@
 
 ```bash
 # Enable fmt tracing
-cargo run --feautres trac-fmt
+cargo run --features trac-fmt
 
 # Enable tokio console tracing
-RUSTFLAGS="--cfg tokio_unstable" cargo run --feautres trac-console
+RUSTFLAGS="--cfg tokio_unstable" cargo run --features trac-console
 ```
