@@ -13,8 +13,9 @@ mod platform;
 #[tokio::main]
 async fn main() {
 
+    // Init tracing subscribers
+    log::init();
 
-    // log::Init("fmt");
     
     
     // let mut dv = device::Factory::new();
