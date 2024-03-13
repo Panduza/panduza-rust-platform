@@ -1,5 +1,12 @@
+use async_trait::async_trait;
 
-
+enum Event {
+    NoEvent,
+    ConnectionUp,
+    ConnectionDown,
+    InitializationOk,
+    InitializationFailed,
+}
 
 enum State {
     NotConnected,
@@ -17,52 +24,62 @@ enum State {
     // fail
     // conn down
 // error
-trait StateCallbacks {
 
+
+#[async_trait]
+trait StateImplementations {
+
+    async fn connecting(&self) -> Event;
+        // state == function that return an event
 }
 
 
-pub struct Interface {
+
+
+/// Interface finite state machine
+/// 
+pub struct Fsm {
     state: State,
-    // callbacks: StateCallbacks
+    states_implementations: Box<dyn StateImplementations>
 }
 
 
-impl Interface {
+impl Fsm {
 
-    pub fn new() -> Interface {
-        Interface {
-            state: State::NotConnected
+    pub fn new(states_implementations: Box<dyn StateImplementations>) -> Fsm {
+        Fsm {
+            state: State::NotConnected,
+            states_implementations: states_implementations
         }
     }
 
+}
 
+//     ///
+//     pub async fn poll(&mut self) {
 
-    ///
-    pub async fn poll(&mut self) {
-
-        loop {
+//         loop {
             
-            tracing::info!("Starting interface");
+//             tracing::info!("Starting interface");
 
-            match self.state {
-                State::NotConnected => {
-                    // wait for connection
-                    tracing::info!("Waiting for connection");
+//             match self.state {
+//                 State::NotConnected => {
+//                     // wait for connection
+//                     tracing::info!("Waiting for connection");
 
-                },
-                State::Initializing => {
-                    // wait for init
-                },
-                State::Running => {
-                    // wait for error
-                },
-                State::Error => {
-                    // wait for connection
-                }
-            }
-        }
-    }
+//                 },
+//                 State::Initializing => {
+//                     // wait for init
+//                 },
+//                 State::Running => {
+//                     // wait for error
+//                 },
+//                 State::Error => {
+//                     // wait for connection
+//                 }
+//             }
+//         }
+//     }
 
-}
+// }
 

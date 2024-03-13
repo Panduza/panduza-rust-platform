@@ -2,7 +2,6 @@ use tokio::signal;
 use tokio::task::JoinSet;
 use crate::device::Manager as DeviceManager;
 use crate::connection::Manager as ConnectionManager;
-use crate::interfaces::Interface;
 
 // use tokio::sync::mpsc;
 use tokio::time::{sleep, Duration};
@@ -51,14 +50,14 @@ impl Runner {
         // mount interfaces
 
 
-        let mut aaa = Interface::new();
+        //let mut aaa = Interface::new();
         // aaa.start(&mut self.task_pool).await;
 
 
-        self.task_pool.spawn(async move {
-                aaa.poll().await
-            }
-        );
+        // self.task_pool.spawn(async move {
+        //         aaa.poll().await
+        //     }
+        // );
 
         
         // create connections
