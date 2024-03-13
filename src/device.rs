@@ -1,27 +1,50 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, LinkedList};
 
+
+use crate::interfaces::Fsm as InterfaceFsm;
 use crate::builtin_devices;
 
-
-pub struct Device {
-    // list of connections
-
-    // list of interfaces
-}
+use serde_json::{Value};
 
 
 pub trait DeviceCallbacks {
-    fn get_name(&self) -> &str;
 
-    
-    // hunt
-    fn mount_interfaces(&self, task_pool: &mut tokio::task::JoinSet<()>);
+    fn hunt(&self) -> LinkedList<Value>;
+    // list de device definition
+    //   ref / name / settings
+    fn create_interfaces(&self) -> LinkedList<InterfaceFsm>;
     
 }
 
+pub struct Device {
+    
+    interfaces: LinkedList<InterfaceFsm>
+}
+
+impl Device {
+
+    /// Create a new instance of the Device
+    pub fn new() -> Device {
+        return Device {
+            interfaces: LinkedList::new()
+        }
+    }
+}
+
+
+
+// pub trait DeviceCallbacks {
+//     fn get_name(&self) -> &str;
+
+    
+//     // hunt
+//     fn mount_interfaces(&self, task_pool: &mut tokio::task::JoinSet<()>);
+    
+// }
+
 
 pub trait Producer {
-    fn create_device(&self) -> Result<Box<dyn DeviceCallbacks>, String>;
+    // fn create_device(&self) -> Result<Box<dyn DeviceCallbacks>, String>;
 }
 
 pub struct Factory {
@@ -55,14 +78,14 @@ impl Factory {
     // }
 
 
-    pub fn create_device(&self, device_ref: &str) -> Result<Box<dyn DeviceCallbacks>, String> {
+    // pub fn create_device(&self, device_ref: &str) -> Result<Box<dyn DeviceCallbacks>, String> {
 
-        // return Ok(
-            return 
-            self.producers.get(device_ref).unwrap().create_device();
-        // )
+    //     // return Ok(
+    //         // return 
+    //         // self.producers.get(device_ref).unwrap().create_device();
+    //     // )
 
-    }
+    // }
 
 }
 
@@ -94,9 +117,9 @@ impl Manager {
     // }
 
     pub fn create_device(&mut self, device_name: &str, device_ref: &str) {
-        let device = self.factory.create_device(device_ref);
+        // let device = self.factory.create_device(device_ref);
 
-        self.instances.insert(device_name.to_string(), device.unwrap());
+        // self.instances.insert(device_name.to_string(), device.unwrap());
     }
 
 
@@ -104,9 +127,9 @@ impl Manager {
 
     pub fn mount_devices(&mut self, task_pool: &mut tokio::task::JoinSet<()>)
     {
-        for(_, device) in &self.instances {
-            device.mount_interfaces(task_pool);
-        }
+        // for(_, device) in &self.instances {
+        //     device.mount_interfaces(task_pool);
+        // }
     }
 
     // pub fn get_device(&self, device_ref: &String) -> Option<&Box<dyn Device>> {

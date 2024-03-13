@@ -13,8 +13,11 @@ tokio = { version = "1", features = ["full", "tracing"] }
 # MQTT async client
 rumqttc = "0.24.0"
 
-# 
+# Async trait support
 async-trait = "0.1.77"
+
+# Json serialization & deserialization
+serde_json = "1.0"
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.

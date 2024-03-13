@@ -655,6 +655,7 @@ dependencies = [
  "async-trait",
  "console-subscriber",
  "rumqttc",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

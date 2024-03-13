@@ -10,9 +10,7 @@ enum Event {
 
 enum State {
     Connecting,
-    Mounting,
     Running,
-    Unmounting,
     Error
 }
 
@@ -30,7 +28,17 @@ enum State {
 #[async_trait]
 trait StateImplementations {
 
-    async fn connecting(&self) -> Result<Event, String>;
+    /// Poll events
+    async fn poll_events(&self) -> Vec<Event>;
+
+    async fn enter_connecting(&self);
+    async fn state_connecting(&self);
+    async fn leave_connecting(&self);
+
+    async fn enter_running(&self);
+    async fn state_running(&self);
+    async fn leave_running(&self);
+
         // state == function that return an event
 }
 
@@ -47,6 +55,8 @@ pub struct Fsm {
 
 impl Fsm {
 
+    ///
+    /// 
     pub fn new(states_implementations: Box<dyn StateImplementations>) -> Fsm {
         Fsm {
             state: State::Connecting,
@@ -58,33 +68,29 @@ impl Fsm {
     /// 
     pub async fn run_once(&mut self) {
 
+
+
         match self.state {
             State::Connecting => {
-                match self.states_implementations.connecting().await {
-                    Ok(event) => {
-                        match event {
-                            Event::ConnectionUp => {
-                                // self.state = State::Initializing;
-                            },
-                            _ => {
-                                // do nothing
-                            }
-                        }
-                    },
-                    Err(e) => {
-                        // do nothing
-                    }
-                }
+                // match self.states_implementations.state_connecting().await {
+                //     Ok(event) => {
+                //         match event {
+                //             Event::ConnectionUp => {
+                //                 self.state = State::Mounting;
+                //             },
+                //             _ => {
+                //                 // do nothing
+                //             }
+                //         }
+                //     },
+                //     Err(e) => {
+                //         // do nothing
+                //     }
+                // }
             },
-            // State::Initializing => {
-            //     // wait for init
-            // },
-            // State::Running => {
-            //     // wait for error
-            // },
-            // State::Error => {
-            //     // wait for connection
-            // }
+            State::Running => {
+                // wait for error
+            },
             _ => {
                 // do nothing
             }
