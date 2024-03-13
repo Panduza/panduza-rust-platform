@@ -9,9 +9,10 @@ enum Event {
 }
 
 enum State {
-    NotConnected,
-    Initializing,
+    Connecting,
+    Mounting,
     Running,
+    Unmounting,
     Error
 }
 
@@ -29,7 +30,7 @@ enum State {
 #[async_trait]
 trait StateImplementations {
 
-    async fn connecting(&self) -> Event;
+    async fn connecting(&self) -> Result<Event, String>;
         // state == function that return an event
 }
 
@@ -48,38 +49,51 @@ impl Fsm {
 
     pub fn new(states_implementations: Box<dyn StateImplementations>) -> Fsm {
         Fsm {
-            state: State::NotConnected,
+            state: State::Connecting,
             states_implementations: states_implementations
         }
     }
 
+    ///
+    /// 
+    pub async fn run_once(&mut self) {
+
+        match self.state {
+            State::Connecting => {
+                match self.states_implementations.connecting().await {
+                    Ok(event) => {
+                        match event {
+                            Event::ConnectionUp => {
+                                // self.state = State::Initializing;
+                            },
+                            _ => {
+                                // do nothing
+                            }
+                        }
+                    },
+                    Err(e) => {
+                        // do nothing
+                    }
+                }
+            },
+            // State::Initializing => {
+            //     // wait for init
+            // },
+            // State::Running => {
+            //     // wait for error
+            // },
+            // State::Error => {
+            //     // wait for connection
+            // }
+            _ => {
+                // do nothing
+            }
+        }
+
+    }
+
 }
 
-//     ///
-//     pub async fn poll(&mut self) {
 
-//         loop {
-            
-//             tracing::info!("Starting interface");
 
-//             match self.state {
-//                 State::NotConnected => {
-//                     // wait for connection
-//                     tracing::info!("Waiting for connection");
-
-//                 },
-//                 State::Initializing => {
-//                     // wait for init
-//                 },
-//                 State::Running => {
-//                     // wait for error
-//                 },
-//                 State::Error => {
-//                     // wait for connection
-//                 }
-//             }
-//         }
-//     }
-
-// }
 
