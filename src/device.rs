@@ -7,25 +7,28 @@ use crate::builtin_devices;
 use serde_json::{Value};
 
 
-pub trait DeviceCallbacks {
+pub trait DeviceActions {
 
     fn hunt(&self) -> LinkedList<Value>;
     // list de device definition
     //   ref / name / settings
     fn create_interfaces(&self) -> LinkedList<InterfaceFsm>;
-    
+
 }
 
 pub struct Device {
-    
+
+    actions: Box<dyn DeviceActions>,
+
     interfaces: LinkedList<InterfaceFsm>
 }
 
 impl Device {
 
     /// Create a new instance of the Device
-    pub fn new() -> Device {
+    pub fn new(actions: Box<dyn DeviceActions>) -> Device {
         return Device {
+            actions: actions,
             interfaces: LinkedList::new()
         }
     }
@@ -44,7 +47,7 @@ impl Device {
 
 
 pub trait Producer {
-    // fn create_device(&self) -> Result<Box<dyn DeviceCallbacks>, String>;
+    fn create_device(&self) -> Result<Device, String>;
 }
 
 pub struct Factory {
@@ -78,14 +81,9 @@ impl Factory {
     // }
 
 
-    // pub fn create_device(&self, device_ref: &str) -> Result<Box<dyn DeviceCallbacks>, String> {
-
-    //     // return Ok(
-    //         // return 
-    //         // self.producers.get(device_ref).unwrap().create_device();
-    //     // )
-
-    // }
+    pub fn create_device(&self, device_ref: &str) -> Result<Device, String> {
+        return self.producers.get(device_ref).unwrap().create_device();
+    }
 
 }
 
@@ -99,8 +97,8 @@ pub struct Manager {
     factory: Factory,
 
     // Lits of device instances
-    instances: HashMap<String, Box<dyn DeviceCallbacks>>,
-    
+    instances: HashMap<String, Device>,
+
 }
 
 impl Manager {
@@ -117,9 +115,10 @@ impl Manager {
     // }
 
     pub fn create_device(&mut self, device_name: &str, device_ref: &str) {
-        // let device = self.factory.create_device(device_ref);
 
-        // self.instances.insert(device_name.to_string(), device.unwrap());
+        let device = self.factory.create_device(device_ref);
+
+        self.instances.insert(device_name.to_string(), device.unwrap());
     }
 
 
@@ -128,7 +127,8 @@ impl Manager {
     pub fn mount_devices(&mut self, task_pool: &mut tokio::task::JoinSet<()>)
     {
         // for(_, device) in &self.instances {
-        //     device.mount_interfaces(task_pool);
+        //     dev
+        //     // device.mount_interfaces(task_pool);
         // }
     }
 
