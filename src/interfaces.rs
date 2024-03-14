@@ -1,6 +1,5 @@
 use async_trait::async_trait;
-
-enum Event {
+pub enum Event {
     NoEvent,
     ConnectionUp,
     ConnectionDown,
@@ -26,7 +25,7 @@ enum State {
 
 
 #[async_trait]
-trait StateImplementations {
+pub trait StateImplementations : Send {
 
     /// Poll events
     async fn poll_events(&self) -> Vec<Event>;
@@ -68,10 +67,9 @@ impl Fsm {
     /// 
     pub async fn run_once(&mut self) {
 
-
-
         match self.state {
             State::Connecting => {
+                self.states_implementations.enter_connecting().await;
                 // match self.states_implementations.state_connecting().await {
                 //     Ok(event) => {
                 //         match event {

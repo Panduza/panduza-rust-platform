@@ -1,10 +1,12 @@
 use std::collections::{HashMap, LinkedList};
 
+use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::interfaces::Fsm as InterfaceFsm;
+use crate::interfaces::{self, Fsm as InterfaceFsm};
 use crate::builtin_devices;
 
 use serde_json::{Value};
+use tokio::task::JoinSet;
 
 
 pub trait DeviceActions {
@@ -18,6 +20,8 @@ pub trait DeviceActions {
 
 pub struct Device {
 
+    task_pool: JoinSet<()>,
+
     actions: Box<dyn DeviceActions>,
 
     interfaces: LinkedList<InterfaceFsm>
@@ -28,10 +32,26 @@ impl Device {
     /// Create a new instance of the Device
     pub fn new(actions: Box<dyn DeviceActions>) -> Device {
         return Device {
+            task_pool: JoinSet::new(),
             actions: actions,
             interfaces: LinkedList::new()
         }
     }
+
+    pub fn mount_interfaces(&mut self) {
+        self.interfaces = self.actions.create_interfaces();
+
+        while let Some(mut data) = self.interfaces.pop_front() {
+            self.task_pool.spawn(async move {
+                loop {
+                    data.run_once().await;
+                    yield_now().await;
+                }
+            });
+        }
+
+    }
+
 }
 
 
@@ -124,12 +144,11 @@ impl Manager {
 
 
 
-    pub fn mount_devices(&mut self, task_pool: &mut tokio::task::JoinSet<()>)
+    pub fn mount_devices(&mut self)
     {
-        // for(_, device) in &self.instances {
-        //     dev
-        //     // device.mount_interfaces(task_pool);
-        // }
+        for(_, device) in self.instances.iter_mut() {
+            device.mount_interfaces();
+        }
     }
 
     // pub fn get_device(&self, device_ref: &String) -> Option<&Box<dyn Device>> {

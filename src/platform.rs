@@ -43,7 +43,7 @@ impl Runner {
 
 
 
-        self.devices.mount_devices(&mut self.task_pool);
+        self.devices.mount_devices();
         
 
         // attach device and connection
