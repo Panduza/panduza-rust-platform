@@ -19,8 +19,11 @@ async-trait = "0.1.77"
 # Json serialization & deserialization
 serde_json = "1.0.114"
 
-# 
+# Regex management
 regex = "1.10.3"
+
+# Bytes array management
+bytes = "1.5.0"
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.

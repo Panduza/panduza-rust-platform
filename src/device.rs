@@ -2,7 +2,7 @@ use std::collections::{HashMap, LinkedList};
 
 use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::interfaces::{self, Fsm as InterfaceFsm};
+use crate::{connection, interfaces::{self, Fsm as InterfaceFsm}};
 use crate::builtin_devices;
 
 use serde_json::{Value};
@@ -24,7 +24,11 @@ pub struct Device {
 
     actions: Box<dyn DeviceActions>,
 
-    interfaces: LinkedList<InterfaceFsm>
+    interfaces: LinkedList<InterfaceFsm>,
+
+    // list of connections
+    // connections: HashMap<String, connection::Runner>
+    // connections: list of String (names of connections)
 }
 
 impl Device {
@@ -39,13 +43,15 @@ impl Device {
     }
 
 
-    pub fn attach_connection(&mut self, connection: &str) {
-        // self.connections.insert(connection_ref.to_string(), connection);
-    }
+    // pub fn attach_connection(&mut self, connection: &connection::Runner) {
+    //     // self.connections.insert(connection_ref.to_string(), connection);
+    // }
 
 
     pub fn mount_interfaces(&mut self) {
         self.interfaces = self.actions.create_interfaces();
+
+        
 
         while let Some(mut data) = self.interfaces.pop_front() {
             self.task_pool.spawn(async move {
@@ -56,6 +62,13 @@ impl Device {
             });
         }
 
+    }
+
+    pub fn attach_connection(&mut self, connection: &mut connection::Runner) {
+
+        let llll = connection.gen_linkkkk();
+
+        // self.connections.insert(connection_ref.to_string(), connection);
     }
 
 }
@@ -155,6 +168,11 @@ impl Manager {
         for(_, device) in self.instances.iter_mut() {
             device.mount_interfaces();
         }
+    }
+
+
+    pub fn get_device(&mut self, device_ref: &String) -> Option<&mut Device> {
+        return self.instances.get_mut(device_ref);
     }
 
     // pub fn get_device(&self, device_ref: &String) -> Option<&Box<dyn Device>> {

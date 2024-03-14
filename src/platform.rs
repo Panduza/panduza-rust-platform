@@ -35,12 +35,23 @@ impl Runner {
         tracing::info!("Platform Starting...");
 
 
+        // stop
+        // read config
+        // create devices
+        // create connections
+        // create benches
+        // create interfaces on connections (associations)
+        // start
 
-        self.connections.add_connection(&mut self.task_pool,"default".to_string(), "localhost".to_string(), 1883);
+
+
+        self.connections.create_connection(&mut self.task_pool,"default".to_string(), "localhost".to_string(), 1883);
 
 
         self.devices.create_device("server", "panduza.server");
 
+
+        self.attach_device_to_connection("server", "default");
 
 
         self.devices.mount_devices();
@@ -89,6 +100,22 @@ impl Runner {
     }
 
     
+
+    /// Attach a device to a connection
+    /// 
+    fn attach_device_to_connection(&mut self, device: &str, connection: &str) {
+
+        // get device
+        self.devices.get_device(&device.to_string()).unwrap().
+            attach_connection(self.connections.get_connection(connection).unwrap());
+
+
+        // get connection
+        // attach device to connection
+        
+        // self.devices.attach_connection(device, connection);
+
+    }
 
 
 
