@@ -17,7 +17,10 @@ rumqttc = "0.24.0"
 async-trait = "0.1.77"
 
 # Json serialization & deserialization
-serde_json = "1.0"
+serde_json = "1.0.114"
+
+# 
+regex = "1.10.3"
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.

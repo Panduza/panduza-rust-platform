@@ -38,6 +38,12 @@ impl Device {
         }
     }
 
+
+    pub fn attach_connection(&mut self, connection: &str) {
+        // self.connections.insert(connection_ref.to_string(), connection);
+    }
+
+
     pub fn mount_interfaces(&mut self) {
         self.interfaces = self.actions.create_interfaces();
 

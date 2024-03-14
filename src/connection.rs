@@ -1,10 +1,12 @@
 
 // use tokio::sync::mpsc;
-use tokio::time::{sleep, Duration};
+use tokio::{sync::mpsc, time::{sleep, Duration}};
 use rumqttc::{MqttOptions, AsyncClient, QoS};
 
 use std::collections::HashMap;
 use tokio::task::AbortHandle;
+
+use regex::Regex;
 
 
 /// Object to manage multiple one connection
@@ -22,11 +24,69 @@ impl Runner {
 
         let (mut client, mut eventloop) = AsyncClient::new(options.clone(), 10);
 
+
+        // 
+        // broadcast: multi-producer, multi-consumer. Many values can be sent. Each receiver sees every value.
+
+
+
+        // ConnectionLink
+        // one channel
+        // N filters
+        // fn subscribe
+
+
+        let (tx, mut rx) = mpsc::channel::<String>(32);
+
+        let text = "Hello, world! Rust is awesome.";
+        let pattern = r"Rust";
+    
+        let regex = Regex::new(pattern).unwrap();
+        if regex.is_match(text) {
+            println!("Found a match for pattern '{}'", pattern);
+        } else {
+            println!("No match found for pattern '{}'", pattern);
+        }
+
+
         let abort = task_pool.spawn(async move {
-            
+
+            client.subscribe("pza", QoS::AtMostOnce).await.unwrap();
+
             loop {
                 while let Ok(notification) = eventloop.poll().await {
                     println!("Received = {:?}", notification);
+                    match notification {
+                        rumqttc::Event::Incoming(incoming) => {
+                            println!("I = {:?}", incoming);
+
+                            match incoming {
+                                rumqttc::Incoming::Publish(publish) => {
+                                    println!("P = {:?}", publish);
+                                    println!("  pkid    = {:?}", publish.pkid);
+                                    println!("  retain  = {:?}", publish.retain);
+                                    println!("  topic   = {:?}", publish.topic);
+                                    println!("  payload = {:?}", publish.payload);
+                                    println!("  qos     = {:?}", publish.qos);
+                                    println!("  dup     = {:?}", publish.dup);
+                                    
+                                }
+                                _ => {
+                                    println!("? = {:?}", incoming);
+                                }
+                            }
+
+                            // println!("I = {:?}", incoming.read().unwrap());
+                            
+
+                        }
+                        rumqttc::Event::Outgoing(outgoing) => {
+                            // println!("O = {:?}", outgoing);
+
+                            
+                        }
+                    }
+                    // println!("pp = {:?}", notification);
                 }
                 tracing::warn!("Broker disconnected, trying to reconnect");
 
