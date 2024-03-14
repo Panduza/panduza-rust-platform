@@ -12,6 +12,9 @@ use std::collections::LinkedList;
 
 use bytes::{Buf, Bytes};
 
+use tokio::sync::Mutex;
+use std::sync::Arc;
+
 
 #[derive(Clone, PartialEq, Eq)]
 struct InputMessage {
@@ -22,12 +25,6 @@ struct InputMessage {
 
 
 
-#[derive(Clone)]
-struct RxConnectionHandle
-{
-    tx: mpsc::Sender<InputMessage>, // provides the tx to the connection
-    filters: LinkedList<Regex>,
-}
 
 
 struct LinkFilterEntry {
@@ -47,7 +44,6 @@ struct RxLink {
     tx: mpsc::Sender<InputMessage>, // provides the tx to the connection
  
 
-    topic_subscriber_rx: mpsc::Receiver<String>, // provides the tx to the connection
  
     // create new rx conn handle(filter, topic)
         // subscribe to topic
@@ -58,6 +54,7 @@ struct RxLink {
     filters: LinkedList<LinkFilterEntry>, // regex + slot id ?
 
 }
+
 
 
 
@@ -91,23 +88,50 @@ impl toto {
 
 
 
+struct LinkInterfaceHandle
+{
+    rx: mpsc::Receiver<InputMessage>, // rx for the interface (it owns the Link)
+    topic_subscriber_tx: mpsc::Sender<String>, // provides the tx to the connection
+}
+
+struct LinkConnectionHandle
+{
+    tx: mpsc::Sender<InputMessage>, // provides the tx to the connection
+    filters: LinkedList<Regex>,
+    topic_subscriber_rx: mpsc::Receiver<String>, // provides the tx to the connection
+ 
+}
+
 /// Object to manage multiple one connection
-pub struct Runner {
+pub struct Connection {
     mqtt_options: MqttOptions,
     task_abort: AbortHandle,
 
 
-    client: AsyncClient
+    client: AsyncClient,
 
     // List de RxLink
 
+    //
+    links: Arc<Mutex<LinkedList<LinkConnectionHandle>>>
 
 }
+pub type MutexedConnection = Arc<Mutex<Connection>>;
 
-impl Runner {
+/// Object to manage multiple named connections
+///
+pub struct Manager {
+    connections: HashMap<String, MutexedConnection>
+}
 
 
-    pub fn new(task_pool: &mut tokio::task::JoinSet<()>, host: String, port: u16) -> Runner {
+
+
+
+impl Connection {
+
+
+    pub fn new(task_pool: &mut tokio::task::JoinSet<()>, host: String, port: u16) -> Connection {
         let mut options = MqttOptions::new("TEST_1", host, port);
         options.set_keep_alive(Duration::from_secs(5));
 
@@ -184,10 +208,11 @@ impl Runner {
 
         });
 
-        return Runner {
+        return Connection {
             mqtt_options: options,
             task_abort: abort,
-            client: client
+            client: client,
+            links: Arc::new(Mutex::new(LinkedList::new()))
         }
     }
 
@@ -217,10 +242,8 @@ impl Runner {
 }
 
 
-/// Object to manage multiple named connections
-pub struct Manager {
-    connections: HashMap<String, Runner>
-}
+
+
 
 
 impl Manager {
@@ -233,12 +256,14 @@ impl Manager {
 
 
     pub fn create_connection(&mut self, task_pool: &mut tokio::task::JoinSet<()>, name: String, host: String, port: u16) {
-        self.connections.insert(name, Runner::new(task_pool, host, port));
+        self.connections.insert(name, 
+            Arc::new(Mutex::new(Connection::new(task_pool, host, port)))
+            );
     }
     
 
-    pub fn get_connection(&mut self, name: &str) -> Option<&mut Runner> {
-        return self.connections.get_mut(name);
+    pub fn get_connection(&mut self, name: &str) -> MutexedConnection {
+        return self.connections.get(name).unwrap().clone();
     }
 
 }

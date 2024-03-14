@@ -5,6 +5,8 @@ use tokio::{task::yield_now, time::{sleep, Duration}};
 use crate::{connection, interfaces::{self, Fsm as InterfaceFsm}};
 use crate::builtin_devices;
 
+use crate::connection::MutexedConnection;
+
 use serde_json::{Value};
 use tokio::task::JoinSet;
 
@@ -26,8 +28,10 @@ pub struct Device {
 
     interfaces: LinkedList<InterfaceFsm>,
 
+    connections: HashMap<String, MutexedConnection>
+
     // list of connections
-    // connections: HashMap<String, connection::Runner>
+    // connections: 
     // connections: list of String (names of connections)
 }
 
@@ -38,14 +42,12 @@ impl Device {
         return Device {
             task_pool: JoinSet::new(),
             actions: actions,
-            interfaces: LinkedList::new()
+            interfaces: LinkedList::new(),
+            connections: HashMap::new()
         }
     }
 
 
-    // pub fn attach_connection(&mut self, connection: &connection::Runner) {
-    //     // self.connections.insert(connection_ref.to_string(), connection);
-    // }
 
 
     pub fn mount_interfaces(&mut self) {
@@ -64,9 +66,9 @@ impl Device {
 
     }
 
-    pub fn attach_connection(&mut self, connection: &mut connection::Runner) {
+    pub fn attach_connection(&mut self, connection: MutexedConnection) {
 
-        let llll = connection.gen_linkkkk();
+        // let llll = connection.gen_linkkkk();
 
         // self.connections.insert(connection_ref.to_string(), connection);
     }

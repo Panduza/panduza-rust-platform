@@ -106,8 +106,8 @@ impl Runner {
     fn attach_device_to_connection(&mut self, device: &str, connection: &str) {
 
         // get device
-        self.devices.get_device(&device.to_string()).unwrap().
-            attach_connection(self.connections.get_connection(connection).unwrap());
+        // self.devices.get_device(&device.to_string()).unwrap().
+        //     attach_connection(self.connections.get_connection(connection).unwrap());
 
 
         // get connection
