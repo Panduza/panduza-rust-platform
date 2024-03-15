@@ -28,11 +28,8 @@ pub struct Device {
 
     interfaces: LinkedList<InterfaceFsm>,
 
-    connections: HashMap<String, MutexedConnection>
+    connections: LinkedList<MutexedConnection>
 
-    // list of connections
-    // connections: 
-    // connections: list of String (names of connections)
 }
 
 impl Device {
@@ -43,19 +40,27 @@ impl Device {
             task_pool: JoinSet::new(),
             actions: actions,
             interfaces: LinkedList::new(),
-            connections: HashMap::new()
+            connections: LinkedList::new()
         }
     }
 
 
 
 
-    pub fn mount_interfaces(&mut self) {
+    pub async fn mount_interfaces(&mut self) {
         self.interfaces = self.actions.create_interfaces();
 
-        
-
+    
         while let Some(mut data) = self.interfaces.pop_front() {
+
+            for connection in self.connections.iter_mut() {
+
+                let iiii = (*connection).lock().unwrap().gen_linkkkk().await;
+                data.add_link(iiii);
+
+            }
+            // data attach connection
+
             self.task_pool.spawn(async move {
                 loop {
                     data.run_once().await;
@@ -63,14 +68,10 @@ impl Device {
                 }
             });
         }
-
     }
 
     pub fn attach_connection(&mut self, connection: MutexedConnection) {
-
-        // let llll = connection.gen_linkkkk();
-
-        // self.connections.insert(connection_ref.to_string(), connection);
+        self.connections.push_back(connection);
     }
 
 }
@@ -165,10 +166,10 @@ impl Manager {
 
 
 
-    pub fn mount_devices(&mut self)
+    pub async fn mount_devices(&mut self)
     {
         for(_, device) in self.instances.iter_mut() {
-            device.mount_interfaces();
+            device.mount_interfaces().await;
         }
     }
 

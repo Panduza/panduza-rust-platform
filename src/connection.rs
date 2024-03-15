@@ -14,6 +14,7 @@ use bytes::{Buf, Bytes};
 
 use tokio::sync::Mutex;
 use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 
 
 #[derive(Clone, PartialEq, Eq)]
@@ -59,37 +60,13 @@ struct RxLink {
 
 
 
-///
-/// (owned by the interface)
-/// allow to publish data
-/// subscribe
-/// 
-pub struct toto {
-    asyncClient: AsyncClient,
-
-    
-    topic_subscriber_tx: mpsc::Sender<String>, 
- 
-    // RxInterfaceHandle
-    rx: mpsc::Receiver<InputMessage>, // rx for the interface (it owns the Link)
-}
-
-impl toto {
-
-    fn new(client: &mut AsyncClient, tx_sub: mpsc::Sender<String>, rx_chan: mpsc::Receiver<InputMessage>) -> toto {
-        return toto {
-            asyncClient: client.clone(),
-            topic_subscriber_tx: tx_sub,
-            rx: rx_chan
-        }
-    }
-
-}
 
 
 
-struct LinkInterfaceHandle
+
+pub struct LinkInterfaceHandle
 {
+    asyncClient: AsyncClient,
     rx: mpsc::Receiver<InputMessage>, // rx for the interface (it owns the Link)
     topic_subscriber_tx: mpsc::Sender<String>, // provides the tx to the connection
 }
@@ -114,9 +91,10 @@ pub struct Connection {
 
     //
     links: Arc<Mutex<LinkedList<LinkConnectionHandle>>>
-
 }
-pub type MutexedConnection = Arc<Mutex<Connection>>;
+
+// pub type MutexedConnection = Arc<Mutex<Connection>>;
+pub type MutexedConnection = Arc<StdMutex<Connection>>;
 
 /// Object to manage multiple named connections
 ///
@@ -125,6 +103,27 @@ pub struct Manager {
 }
 
 
+impl LinkInterfaceHandle {
+
+    fn new(client: &mut AsyncClient, tx_sub: mpsc::Sender<String>, rx_chan: mpsc::Receiver<InputMessage>) -> LinkInterfaceHandle {
+        return LinkInterfaceHandle {
+            asyncClient: client.clone(),
+            topic_subscriber_tx: tx_sub,
+            rx: rx_chan
+        }
+    }
+
+}
+
+impl LinkConnectionHandle {
+    fn new(tx: mpsc::Sender<InputMessage>, rx: mpsc::Receiver<String>) -> LinkConnectionHandle {
+        return LinkConnectionHandle {
+            tx: tx,
+            filters: LinkedList::new(),
+            topic_subscriber_rx: rx
+        }
+    }
+}
 
 
 
@@ -226,16 +225,24 @@ impl Connection {
             // let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
 
 
-    pub fn gen_linkkkk(&mut self) -> toto {
+    pub async fn gen_linkkkk(&mut self) -> LinkInterfaceHandle {
 
 
         let (tx, mut rx) = mpsc::channel::<InputMessage>(32);
 
         let (tx_sub, mut rx_sub) = mpsc::channel::<String>(32);
 
-        let liikn = toto::new(&mut self.client, tx_sub, rx);
 
+        self.links.lock().await.push_back(
+            LinkConnectionHandle::new(tx, rx_sub)
+        );
         
+        // .unwrap().push_back(
+        //     LinkConnectionHandle::new(tx, rx_sub)
+        // );
+
+        let liikn = LinkInterfaceHandle::new(&mut self.client, tx_sub, rx);
+
         return liikn;
     }
 
@@ -257,10 +264,10 @@ impl Manager {
 
     pub fn create_connection(&mut self, task_pool: &mut tokio::task::JoinSet<()>, name: String, host: String, port: u16) {
         self.connections.insert(name, 
-            Arc::new(Mutex::new(Connection::new(task_pool, host, port)))
+            Arc::new(StdMutex::new( Connection::new(task_pool, host, port)))
             );
     }
-    
+
 
     pub fn get_connection(&mut self, name: &str) -> MutexedConnection {
         return self.connections.get(name).unwrap().clone();

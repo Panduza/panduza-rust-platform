@@ -1,3 +1,7 @@
+use std::collections::LinkedList;
+
+use crate::connection::LinkInterfaceHandle;
+
 use async_trait::async_trait;
 pub enum Event {
     NoEvent,
@@ -48,7 +52,10 @@ pub trait StateImplementations : Send {
 /// 
 pub struct Fsm {
     state: State,
-    states_implementations: Box<dyn StateImplementations>
+    states_implementations: Box<dyn StateImplementations>,
+
+    // links interface handles
+    links: LinkedList<LinkInterfaceHandle>
 }
 
 
@@ -59,8 +66,13 @@ impl Fsm {
     pub fn new(states_implementations: Box<dyn StateImplementations>) -> Fsm {
         Fsm {
             state: State::Connecting,
-            states_implementations: states_implementations
+            states_implementations: states_implementations,
+            links: LinkedList::new()
         }
+    }
+
+    pub fn add_link(&mut self, link: LinkInterfaceHandle) {
+        self.links.push_back(link);
     }
 
     ///

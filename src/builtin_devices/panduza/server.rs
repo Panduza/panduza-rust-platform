@@ -8,8 +8,7 @@ use crate::device::{ Device, DeviceActions, Producer };
 
 use async_trait::async_trait;
 
-
-
+use tokio::{sync::mpsc, time::{sleep, Duration}};
 
 
 struct TestInterface {
@@ -25,7 +24,9 @@ impl StateImplementations for TestInterface {
         }
     
         async fn enter_connecting(&self) {
-            // println!("enter_connecting");
+            println!("enter_connecting");
+
+            sleep(Duration::from_secs(1)).await;
         }
     
         async fn state_connecting(&self) {

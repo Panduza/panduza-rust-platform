@@ -54,7 +54,7 @@ impl Runner {
         self.attach_device_to_connection("server", "default");
 
 
-        self.devices.mount_devices();
+        self.devices.mount_devices().await;
         
 
         // attach device and connection
@@ -106,8 +106,8 @@ impl Runner {
     fn attach_device_to_connection(&mut self, device: &str, connection: &str) {
 
         // get device
-        // self.devices.get_device(&device.to_string()).unwrap().
-        //     attach_connection(self.connections.get_connection(connection).unwrap());
+        self.devices.get_device(&device.to_string()).unwrap().
+            attach_connection(self.connections.get_connection(connection));
 
 
         // get connection
