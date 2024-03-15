@@ -55,8 +55,8 @@ impl Device {
 
             for connection in self.connections.iter_mut() {
 
-                let iiii = (*connection).lock().unwrap().gen_linkkkk().await;
-                data.add_link(iiii);
+                // let iiii = (*connection).lock().unwrap().gen_linkkkk().await;
+                // data.add_link(iiii);
 
             }
             // data attach connection

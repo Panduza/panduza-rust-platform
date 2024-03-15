@@ -2,6 +2,7 @@
 // use tokio::sync::mpsc;
 use tokio::{sync::mpsc, time::{sleep, Duration}};
 use rumqttc::{MqttOptions, AsyncClient, QoS};
+use tracing::Event;
 
 use std::{collections::HashMap};
 use tokio::task::AbortHandle;
@@ -78,28 +79,10 @@ struct LinkConnectionHandle
     pub topic_subscriber_rx: mpsc::Receiver<String>, // provides the tx to the connection
 }
 
-/// Object to manage multiple one connection
-pub struct Connection {
-    mqtt_options: MqttOptions,
-    task_abort: AbortHandle,
+pub type MutexedConnection = Arc<Mutex<Connection>>;
 
 
-    client: AsyncClient,
 
-    // List de RxLink
-
-    //
-    links: Arc<Mutex<LinkedList<LinkConnectionHandle>>>
-}
-
-// pub type MutexedConnection = Arc<Mutex<Connection>>;
-pub type MutexedConnection = Arc<StdMutex<Connection>>;
-
-/// Object to manage multiple named connections
-///
-pub struct Manager {
-    connections: HashMap<String, MutexedConnection>
-}
 
 
 impl LinkInterfaceHandle {
@@ -124,14 +107,34 @@ impl LinkConnectionHandle {
     }
 }
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Connection object
+///
+pub struct Connection {
+    /// Mqtt options
+    mqtt_options: MqttOptions,
+
+    /// Mqtt client
+    client: Option<AsyncClient>,
+
+    /// Event loop
+    eventloop: Option<rumqttc::EventLoop>,
+
+    // //
+    // links: Arc<Mutex<LinkedList<LinkConnectionHandle>>>
+}
 
 
 impl Connection {
 
 
-    pub fn new(task_pool: &mut tokio::task::JoinSet<()>, host: String, port: u16) -> Connection {
-        let mut options = MqttOptions::new("TEST_1", host, port);
-        options.set_keep_alive(Duration::from_secs(5));
+    pub fn new<S: Into<String>, T: Into<String>>(id: S, host: T, port: u16) -> Connection {
+/*
 
         let (mut client, mut eventloop) = AsyncClient::new(options.clone(), 10);
 
@@ -229,72 +232,143 @@ impl Connection {
             }
 
         });
+ */
 
+        // Set default options
+        let mut mqtt_options = MqttOptions::new(id, host, port);
+        mqtt_options.set_keep_alive(Duration::from_secs(5));
+
+        // Create Object
         return Connection {
-            mqtt_options: options,
-            task_abort: abort,
-            client: client,
-            links: links_obj
+            mqtt_options: mqtt_options,
+            client: Option::None,
+            eventloop: Option::None
         }
     }
 
 
+    pub async fn connect(&mut self) {
+        let (mut client, mut eventloop) = AsyncClient::new(self.mqtt_options.clone(), 10);
+
+        // let ev = Box::new();
+        self.eventloop = Some(eventloop);
+        
+    }
+
+    pub async fn run(&mut self) {
+
+        while let Ok(notification) = self.eventloop.as_mut().unwrap().poll().await {
+            println!("Received = {:?}", notification);
+        }
+
+
+    }
+
     // start
 
-    pub fn stop(&self) {
-        self.task_abort.abort();
-    }
+    // pub fn stop(&self) {
+    //     self.task_abort.abort();
+    // }
 
             // let (mut client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
 
 
-    pub async fn gen_linkkkk(&mut self) -> LinkInterfaceHandle {
+    // pub async fn gen_linkkkk(&mut self) -> LinkInterfaceHandle {
 
 
-        let (tx, mut rx) = mpsc::channel::<InputMessage>(32);
+    //     let (tx, mut rx) = mpsc::channel::<InputMessage>(32);
 
-        let (tx_sub, mut rx_sub) = mpsc::channel::<String>(32);
+    //     let (tx_sub, mut rx_sub) = mpsc::channel::<String>(32);
 
 
-        self.links.lock().await.push_back(
-            LinkConnectionHandle::new(tx, rx_sub)
-        );
+        // self.links.lock().await.push_back(
+        //     LinkConnectionHandle::new(tx, rx_sub)
+        // );
         
         // .unwrap().push_back(
         //     LinkConnectionHandle::new(tx, rx_sub)
         // );
 
-        let liikn = LinkInterfaceHandle::new(&mut self.client, tx_sub, rx);
+        // let liikn = LinkInterfaceHandle::new(&mut self.client, tx_sub, rx);
 
-        return liikn;
-    }
+        // return liikn;
+    // }
 
 }
 
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
+/// Object to manage and run multiple named connections
+///
+pub struct Manager {
+    /// Platform name
+    platform_name: String,
 
+    /// Task pool
+    task_pool: tokio::task::JoinSet<()>,
 
+    /// Map of managed connections
+    connections: HashMap<String, MutexedConnection>
+}
 
 impl Manager {
 
-    pub fn new() -> Manager {
+    /// Create a new manager
+    ///
+    pub fn new(platform_name: &str) -> Manager {
         return Manager {
+            platform_name: platform_name.to_string(),
+            task_pool: tokio::task::JoinSet::new(),
             connections: HashMap::new()
         }
     }
 
+    /// Create a new inactive connection
+    ///
+    pub async fn create_connection<S: Into<String>, T: Into<String>>(&mut self, name: S, host: T, port: u16) {
+        // Get name with the correct type
+        let name_string = name.into();
 
-    pub fn create_connection(&mut self, task_pool: &mut tokio::task::JoinSet<()>, name: String, host: String, port: u16) {
-        self.connections.insert(name, 
-            Arc::new(StdMutex::new( Connection::new(task_pool, host, port)))
-            );
+        // Create connection ID
+        let id = format!("{}::{}", self.platform_name, name_string);
+
+        // Info log
+        tracing::info!("Create connection '{:?}'", id);
+
+        // Create connection Object
+        self.connections.insert(name_string,
+            Arc::new(Mutex::new(
+                Connection::new(id, host, port))
+            )
+        );
+    }
+
+    /// Start a connection
+    ///
+    /// name: name of the connection to start
+    /// task_pool: main JoinSet to attach the running connection to a task
+    ///
+    pub async fn start_connection(&mut self, name: &str, task_pool: &mut tokio::task::JoinSet<()>) {
+        let conn = self.connections.get(name).unwrap().clone();
+        task_pool.spawn(async move {
+            conn.lock().await.connect().await;
+            loop {
+                conn.lock().await.run().await;
+            }
+        });
     }
 
 
     pub fn get_connection(&mut self, name: &str) -> MutexedConnection {
         return self.connections.get(name).unwrap().clone();
     }
+
+
 
 }
 

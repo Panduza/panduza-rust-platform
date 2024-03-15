@@ -7,7 +7,7 @@ use crate::connection::Manager as ConnectionManager;
 use tokio::time::{sleep, Duration};
 use rumqttc::{MqttOptions, AsyncClient, QoS};
 
-pub struct Runner
+pub struct Platform
 {
     task_pool: JoinSet<()>,
     devices: DeviceManager,
@@ -17,14 +17,14 @@ pub struct Runner
 
 }
 
-impl Runner {
+impl Platform {
 
-    /// Create a new instance of the Runner
-    pub fn new() -> Runner {
-        return Runner {
+    /// Create a new instance of the Platform
+    pub fn new(name: &str) -> Platform {
+        return Platform {
             task_pool: JoinSet::new(),
             devices: DeviceManager::new(),
-            connections: ConnectionManager::new()
+            connections: ConnectionManager::new(name)
         }
     }
 
@@ -45,8 +45,9 @@ impl Runner {
 
 
 
-        self.connections.create_connection(&mut self.task_pool,"default".to_string(), "localhost".to_string(), 1883);
+        self.connections.create_connection("default", "localhost", 1883).await;
 
+        self.connections.start_connection("default", &mut self.task_pool).await;
 
         self.devices.create_device("server", "panduza.server");
 
@@ -77,6 +78,9 @@ impl Runner {
         
 
 
+
+        // self.task_pool.spawn(self.connections.join_all_connections());
+        
 
         // Info log
         tracing::info!("Platform Started");

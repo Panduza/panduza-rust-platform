@@ -5,6 +5,7 @@ mod connection;
 mod builtin_devices;
 mod interfaces;
 
+use crate::platform::Platform;
 
 #[tokio::main]
 async fn main() {
@@ -13,9 +14,10 @@ async fn main() {
     log::init();
 
     // Create platform runner
-    let mut platform_runner = platform::Runner::new();
+    let mut platform_runner = Platform::new("test-platform");
 
     // Run platform
     platform_runner.work().await;
+
 }
 
