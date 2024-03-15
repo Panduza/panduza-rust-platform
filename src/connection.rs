@@ -98,6 +98,12 @@ impl LinkConnectionHandle {
             topic_subscriber_rx: rx
         }
     }
+
+    async fn recv(&mut self) -> Result<(&mut LinkConnectionHandle, String), String> {
+        let data = self.topic_subscriber_rx.recv().await;
+        return Ok((self, data.unwrap()));
+    }
+
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -248,7 +254,7 @@ impl Connection {
 
         let mut futures = FuturesUnordered::new();
         for link in self.links.iter_mut() {
-            futures.push(link.topic_subscriber_rx.recv());
+            futures.push(link.recv());
         }
 
         // If no interface linked... the connection is pointless
@@ -266,9 +272,14 @@ impl Connection {
                     // }
                 // }
             },
+
+
+            // just create a separate aobject to handle the links in a task
             data = futures.next() => {
                 println!("pok");
-                println!("{}", data.unwrap().unwrap());
+                let dd = data.unwrap().unwrap();
+                println!("{}", dd.0.filters.len());
+                println!("{}", dd.1);
             },
 
         }
@@ -395,9 +406,20 @@ impl Manager {
         // Start connection process in a task
         task_pool.spawn(async move {
             loop {
+                println!("from 1");
                 conn.lock().await.run().await;
             }
         });
+
+
+        // let conn2 = self.connections.get(name).unwrap().clone();
+        // // Start connection process in a task
+        // task_pool.spawn(async move {
+        //     loop {
+        //         println!("from 2");
+        //         conn2.lock().await.run().await;
+        //     }
+        // });
     }
 
 
@@ -405,15 +427,5 @@ impl Manager {
         return self.connections.get(name).unwrap().clone();
     }
 
-
-
 }
 
-
-
-
-// MqttPublisher
-    // publish with pza helpers
-
-// MqttSubscriber
-    // subscribe and callback filters
