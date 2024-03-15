@@ -55,8 +55,8 @@ impl Device {
 
             for connection in self.connections.iter_mut() {
 
-                // let iiii = (*connection).lock().unwrap().gen_linkkkk().await;
-                // data.add_link(iiii);
+                let iiii = (*connection).lock().await.create_link().await;
+                data.add_link(iiii.unwrap());
 
             }
             // data attach connection
@@ -156,7 +156,7 @@ impl Manager {
     //     self.factory.add_producer(device_ref, producer);
     // }
 
-    pub fn create_device(&mut self, device_name: &str, device_ref: &str) {
+    pub async fn create_device(&mut self, device_name: &str, device_ref: &str) {
 
         let device = self.factory.create_device(device_ref);
 

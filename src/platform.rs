@@ -47,16 +47,17 @@ impl Platform {
 
         self.connections.create_connection("default", "localhost", 1883).await;
 
+
+        self.devices.create_device("server", "panduza.server").await;
+
         self.connections.start_connection("default", &mut self.task_pool).await;
-
-        self.devices.create_device("server", "panduza.server");
-
 
         self.attach_device_to_connection("server", "default");
 
 
+
         self.devices.mount_devices().await;
-        
+
 
         // attach device and connection
         // mount interfaces
