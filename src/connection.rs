@@ -18,7 +18,7 @@ use std::sync::Mutex as StdMutex;
 
 
 #[derive(Clone, PartialEq, Eq)]
-struct InputMessage {
+pub struct InputMessage {
     // slot id ?
     topic: String,
     pub payload: Bytes
@@ -68,15 +68,14 @@ pub struct LinkInterfaceHandle
 {
     asyncClient: AsyncClient,
     rx: mpsc::Receiver<InputMessage>, // rx for the interface (it owns the Link)
-    topic_subscriber_tx: mpsc::Sender<String>, // provides the tx to the connection
+    pub topic_subscriber_tx: mpsc::Sender<String>, // provides the tx to the connection
 }
 
 struct LinkConnectionHandle
 {
     tx: mpsc::Sender<InputMessage>, // provides the tx to the connection
     filters: LinkedList<Regex>,
-    topic_subscriber_rx: mpsc::Receiver<String>, // provides the tx to the connection
- 
+    pub topic_subscriber_rx: mpsc::Receiver<String>, // provides the tx to the connection
 }
 
 /// Object to manage multiple one connection
@@ -162,11 +161,35 @@ impl Connection {
         }
 
 
+
+        let links_obj = Arc::new(Mutex::new(LinkedList::<LinkConnectionHandle>::new()));
+        let links_move = links_obj.clone();
+
+
+        task_pool.spawn(async move {
+            loop {
+                println!("checking links");
+                for link in links_move.lock().await.iter_mut() {
+                    // let mut link = link.lock().unwrap();
+
+                    let data = link.topic_subscriber_rx.recv().await;
+                    println!("{}", data.unwrap());
+                    // link.tx.send("hello".to_string()).await;
+                }
+        }});
+
+
         let abort = task_pool.spawn(async move {
 
             // client.subscribe("pza", QoS::AtMostOnce).await.unwrap();
 
             loop {
+
+
+                // tokio::select! {
+                //     _ = signal::ctrl_c() => {
+
+                    
                 while let Ok(notification) = eventloop.poll().await {
                     println!("Received = {:?}", notification);
                     match notification {
@@ -211,7 +234,7 @@ impl Connection {
             mqtt_options: options,
             task_abort: abort,
             client: client,
-            links: Arc::new(Mutex::new(LinkedList::new()))
+            links: links_obj
         }
     }
 

@@ -10,6 +10,7 @@ use async_trait::async_trait;
 
 use tokio::{sync::mpsc, time::{sleep, Duration}};
 
+use crate::connection::LinkInterfaceHandle;
 
 struct TestInterface {
 
@@ -23,8 +24,14 @@ impl StateImplementations for TestInterface {
             return vec![Event::NoEvent];
         }
     
-        async fn enter_connecting(&self) {
-            println!("enter_connecting");
+        async fn enter_connecting(&self, _links: &LinkedList<LinkInterfaceHandle>) {
+            println!("enter_connecting {:?}", _links.len());
+
+            for link in _links.iter() {
+                link.topic_subscriber_tx.send("hello!!!!!!!!!!!!!!!!!!!!".to_string()).await.unwrap();
+            }
+
+            // .unwrap().send("hello".to_string()).await;
 
             sleep(Duration::from_secs(1)).await;
         }

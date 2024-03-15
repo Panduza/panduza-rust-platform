@@ -34,7 +34,7 @@ pub trait StateImplementations : Send {
     /// Poll events
     async fn poll_events(&self) -> Vec<Event>;
 
-    async fn enter_connecting(&self);
+    async fn enter_connecting(&self, links: &LinkedList<LinkInterfaceHandle>);
     async fn state_connecting(&self);
     async fn leave_connecting(&self);
 
@@ -57,6 +57,10 @@ pub struct Fsm {
     // links interface handles
     links: LinkedList<LinkInterfaceHandle>
 }
+
+// struct SubInter {
+//     fsm: Fsm
+// }
 
 
 impl Fsm {
@@ -81,7 +85,7 @@ impl Fsm {
 
         match self.state {
             State::Connecting => {
-                self.states_implementations.enter_connecting().await;
+                self.states_implementations.enter_connecting(&self.links).await;
                 // match self.states_implementations.state_connecting().await {
                 //     Ok(event) => {
                 //         match event {
