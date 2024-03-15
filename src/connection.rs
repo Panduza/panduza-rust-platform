@@ -248,17 +248,21 @@ impl Connection {
 
 
     pub async fn connect(&mut self) {
-        let (mut client, mut eventloop) = AsyncClient::new(self.mqtt_options.clone(), 10);
+        let (client, eventloop) = AsyncClient::new(self.mqtt_options.clone(), 10);
 
-        // let ev = Box::new();
+        self.client = Some(client);
         self.eventloop = Some(eventloop);
-        
+
     }
+
+
 
     pub async fn run(&mut self) {
 
         while let Ok(notification) = self.eventloop.as_mut().unwrap().poll().await {
             println!("Received = {:?}", notification);
+
+            
         }
 
 
@@ -309,9 +313,6 @@ pub struct Manager {
     /// Platform name
     platform_name: String,
 
-    /// Task pool
-    task_pool: tokio::task::JoinSet<()>,
-
     /// Map of managed connections
     connections: HashMap<String, MutexedConnection>
 }
@@ -323,7 +324,6 @@ impl Manager {
     pub fn new(platform_name: &str) -> Manager {
         return Manager {
             platform_name: platform_name.to_string(),
-            task_pool: tokio::task::JoinSet::new(),
             connections: HashMap::new()
         }
     }
