@@ -1,73 +1,75 @@
+use tokio::sync::mpsc;
+use rumqttc::MqttOptions;
+use rumqttc::AsyncClient;
 
-// use tokio::sync::mpsc;
-use tokio::{sync::mpsc, time::{sleep, Duration}};
-use rumqttc::{MqttOptions, AsyncClient, QoS};
-use tracing::Event;
 
-use std::{collections::HashMap};
-use tokio::task::AbortHandle;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Mutex;
+use std::collections::LinkedList;
+
 
 use regex::Regex;
 
-use std::collections::LinkedList;
-
-use bytes::{Buf, Bytes};
-
-use tokio::sync::Mutex;
-use std::sync::Arc;
-use futures::stream::{FuturesUnordered, StreamExt};
+use bytes::Bytes;
 
 
+use crate::subscription::Id as SubscriptionId;
+use crate::subscription::Request as SubscriptionRequest;
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Allow a connection to filter messages for an interface.
+/// The Id helps the interface to know which message is for which callback.
+///
+pub struct SubscriptionFilter {
+    id: SubscriptionId,
+    filter: Regex
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct InputMessage {
-    // slot id ?
+pub struct SubscriptionMessage {
+    sub_id: SubscriptionId,
     topic: String,
     pub payload: Bytes
 }
 
 
 
-
-
-struct LinkFilterEntry {
-    slot_id: u32,
-    filter: Regex
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
+/// Link handle for the interface
+/// 
 pub struct LinkInterfaceHandle
 {
-    asyncClient: AsyncClient,
-    rx: mpsc::Receiver<InputMessage>, // rx for the interface (it owns the Link)
-    pub topic_subscriber_tx: mpsc::Sender<String>, // provides the tx to the connection
-}
+    /// Mqtt client
+    client: AsyncClient,
 
+    /// Channel to receive messages from the connection
+    rx: mpsc::Receiver<SubscriptionMessage>
+}
 
 impl LinkInterfaceHandle {
 
-    fn new(client: &mut AsyncClient, tx_sub: mpsc::Sender<String>, rx_chan: mpsc::Receiver<InputMessage>) -> LinkInterfaceHandle {
+    fn new(client: AsyncClient, rx: mpsc::Receiver<SubscriptionMessage>) -> LinkInterfaceHandle {
         return LinkInterfaceHandle {
-            asyncClient: client.clone(),
-            topic_subscriber_tx: tx_sub,
-            rx: rx_chan
+            client: client.clone(),
+            rx: rx
         }
     }
 
@@ -80,31 +82,73 @@ impl LinkInterfaceHandle {
 // ------------------------------------------------------------------------------------------------
 
 /// Link handle for the connection
-/// 
+///
 struct LinkConnectionHandle
 {
-    tx: mpsc::Sender<InputMessage>, // provides the tx to the connection
-    filters: LinkedList<Regex>,
+    /// Channel to send messages to the interface
+    tx: mpsc::Sender<SubscriptionMessage>,
 
-    topic_subscriber_rx: mpsc::Receiver<String>, // provides the tx to the connection
+    /// List of filters
+    filters: LinkedList<SubscriptionFilter>,
 }
 
-
 impl LinkConnectionHandle {
-    fn new(tx: mpsc::Sender<InputMessage>, rx: mpsc::Receiver<String>) -> LinkConnectionHandle {
+    fn new(tx: mpsc::Sender<SubscriptionMessage>) -> LinkConnectionHandle {
         return LinkConnectionHandle {
             tx: tx,
             filters: LinkedList::new(),
-            topic_subscriber_rx: rx
         }
     }
 
-    async fn recv(&mut self) -> Result<(&mut LinkConnectionHandle, String), String> {
-        let data = self.topic_subscriber_rx.recv().await;
-        return Ok((self, data.unwrap()));
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Link connection manager
+/// 
+struct LinkConnectionManager {
+    /// Mqtt client
+    client: AsyncClient,
+
+    /// List of links
+    links: LinkedList<LinkConnectionHandle>
+}
+pub type SafeLinkConnectionManager = Arc<Mutex<LinkConnectionManager>>;
+
+impl LinkConnectionManager {
+    fn new(client: AsyncClient) -> LinkConnectionManager {
+        return LinkConnectionManager {
+            client: client,
+            links: LinkedList::new()
+        }
+    }
+
+    /// Create a new link
+    ///
+    pub async fn request_link(&mut self, requests: Vec<SubscriptionRequest>) -> Result<LinkInterfaceHandle, String> {
+
+        // Create the channel
+        let (tx, mut rx) =
+            mpsc::channel::<SubscriptionMessage>(32);
+
+
+        // 
+        self.links.push_back(
+            LinkConnectionHandle::new(tx)
+        );
+
+        
+        return Ok(LinkInterfaceHandle::new(self.client.clone(), rx));
     }
 
 }
+
+
+
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -115,25 +159,22 @@ impl LinkConnectionHandle {
 /// Connection object
 ///
 pub struct Connection {
-    /// Mqtt options
-    mqtt_options: MqttOptions,
-
     /// Mqtt client
-    client: Option<AsyncClient>,
+    client: AsyncClient,
 
     /// Event loop
-    eventloop: Option<rumqttc::EventLoop>,
+    eventloop: Arc<Mutex<rumqttc::EventLoop>>,
 
     /// Links
-    links: LinkedList<LinkConnectionHandle>
+    link_manager: SafeLinkConnectionManager
 }
-pub type MutexedConnection = Arc<Mutex<Connection>>;
-
+pub type SafeConnection = Arc<Mutex<Connection>>;
 
 impl Connection {
 
-
-    pub fn new<S: Into<String>, T: Into<String>>(id: S, host: T, port: u16) -> Connection {
+    /// Create a new connection
+    /// 
+    pub fn new(mqtt_options: MqttOptions) -> Connection {
 /*
 
 
@@ -211,58 +252,66 @@ impl Connection {
                     }
                     // println!("pp = {:?}", notification);
                 }
-                tracing::warn!("Broker disconnected, trying to reconnect");
 
             }
 
         });
  */
 
-        // Set default options
-        let mut mqtt_options = MqttOptions::new(id, host, port);
-        mqtt_options.set_keep_alive(Duration::from_secs(5));
+        // Create the client and event loop
+        let (client, eventloop) = 
+            AsyncClient::new(mqtt_options.clone(), 10);
 
-        // Create Object
+        // Create Connection Object
         return Connection {
-            mqtt_options: mqtt_options,
-            client: Option::None,
-            eventloop: Option::None,
-            links: LinkedList::new()
+            client: client.clone(),
+            eventloop: Arc::new(Mutex::new(eventloop)),
+            link_manager: Arc::new(Mutex::new(
+                LinkConnectionManager::new(client.clone())
+            ))
         }
+
     }
 
-
     /// Start the connection
-    /// 
-    pub async fn connect(&mut self) {
-        let (client, eventloop) = AsyncClient::new(self.mqtt_options.clone(), 10);
+    ///
+    pub async fn start(&mut self, task_pool: &mut tokio::task::JoinSet<()>) {
 
-        self.client = Some(client);
-        self.eventloop = Some(eventloop);
+        //
+        let ev: Arc<Mutex<rumqttc::EventLoop>> = self.eventloop.clone();
+        let lm: Arc<Mutex<LinkConnectionManager>> = self.link_manager.clone();
+
+        // Start connection process in a task
+        task_pool.spawn(async move {
+            Connection::run(ev, lm).await;
+        });
 
     }
 
     /// Run the connection
-    /// 
-    pub async fn run(&mut self) {
+    ///
+    async fn run(ev: Arc<Mutex<rumqttc::EventLoop>>, lm: Arc<Mutex<LinkConnectionManager>>) {
 
-
-        if self.links.len() == 0 {
-            println!("No links !!");
-            return;
+        loop {
+            while let Ok(notification) = ev.lock().await.poll().await {
+                println!("Received = {:?}", notification);
+            }
+            tracing::warn!("Broker disconnected, trying to reconnect");
         }
 
-        let mut futures = FuturesUnordered::new();
-        for link in self.links.iter_mut() {
-            futures.push(link.recv());
-        }
+
+
+        // let mut futures = FuturesUnordered::new();
+        // for link in self.links.iter_mut() {
+        //     futures.push(link.recv());
+        // }
 
         // If no interface linked... the connection is pointless
 
-        tokio::select! {
+        // tokio::select! {
             
-            notification = self.eventloop.as_mut().unwrap().poll() => {
-                println!("EVEEEN !!!!!!!!!!!!!!");
+        //     notification = self.eventloop.as_mut().unwrap().poll() => {
+        //         println!("EVEEEN !!!!!!!!!!!!!!");
                 // match notification {
                     // rumqttc::Event::Incoming(incoming) => {
                     //     println!("Received = {:?}", notification);
@@ -271,18 +320,18 @@ impl Connection {
                     //     println!("Received = {:?}", notification);
                     // }
                 // }
-            },
+            // },
 
 
-            // just create a separate aobject to handle the links in a task
-            data = futures.next() => {
-                println!("pok");
-                let dd = data.unwrap().unwrap();
-                println!("{}", dd.0.filters.len());
-                println!("{}", dd.1);
-            },
+            // // just create a separate aobject to handle the links in a task
+            // data = futures.next() => {
+            //     println!("pok");
+            //     let dd = data.unwrap().unwrap();
+            //     println!("{}", dd.0.filters.len());
+            //     println!("{}", dd.1);
+            // },
 
-        }
+        // }
         // println!("{}", data.unwrap());
         // link.tx.send("hello".to_string()).await;
 
@@ -306,38 +355,34 @@ impl Connection {
 
     }
 
-    /// Create a new link
-    /// 
-    pub async fn create_link(&mut self) -> Result<LinkInterfaceHandle, String> {
 
 
-        let (tx, mut rx) = mpsc::channel::<InputMessage>(32);
+    // /// Create a new link
+    // /// 
+    // pub async fn create_link(&mut self) -> Result<LinkInterfaceHandle, String> {
 
-        let (tx_sub, mut rx_sub) = mpsc::channel::<String>(32);
 
 
-        self.links.push_back(
-            LinkConnectionHandle::new(tx, rx_sub)
-        );
+
     
 
-        match self.client.as_mut() {
-            // The division was valid
-            Some(client) => {
-                let liikn = LinkInterfaceHandle::new(self.client.as_mut().unwrap(), tx_sub, rx);
-                return Ok(liikn);
-            }
-            // The division was invalid
-            None    => {
-                println!("client not here !!!!");
-                return Err("client not here !!!!".to_string());
-            }
-        }
+    //     match self.client.as_mut() {
+    //         // The division was valid
+    //         Some(client) => {
+    //             let liikn = LinkInterfaceHandle::new(self.client.as_mut().unwrap(), tx_sub, rx);
+    //             return Ok(liikn);
+    //         }
+    //         // The division was invalid
+    //         None    => {
+    //             println!("client not here !!!!");
+    //             return Err("client not here !!!!".to_string());
+    //         }
+    //     }
 
         
 
         
-    }
+    // }
 
 }
 
@@ -355,7 +400,7 @@ pub struct Manager {
     platform_name: String,
 
     /// Map of managed connections
-    connections: HashMap<String, MutexedConnection>
+    connections: HashMap<String, SafeConnection>
 }
 
 impl Manager {
@@ -381,10 +426,14 @@ impl Manager {
         // Info log
         tracing::info!("Create connection '{:?}'", id);
 
+        // Set default options
+        let mut mqtt_options = MqttOptions::new(id, host, port);
+        mqtt_options.set_keep_alive(Duration::from_secs(5));
+
         // Create connection Object
         self.connections.insert(name_string,
             Arc::new(Mutex::new(
-                Connection::new(id, host, port))
+                Connection::new(mqtt_options))
             )
         );
     }
@@ -398,32 +447,13 @@ impl Manager {
         // Get the connection clone for the task
         let conn = self.connections.get(name).unwrap().clone();
 
-        // Create the connection before starting it in a task
-        // Else it can cause sync error when attaching this connection to an interface
-        // Because link creation need the connection to be done
-        conn.lock().await.connect().await;
-
-        // Start connection process in a task
-        task_pool.spawn(async move {
-            loop {
-                println!("from 1");
-                conn.lock().await.run().await;
-            }
-        });
-
-
-        // let conn2 = self.connections.get(name).unwrap().clone();
-        // // Start connection process in a task
-        // task_pool.spawn(async move {
-        //     loop {
-        //         println!("from 2");
-        //         conn2.lock().await.run().await;
-        //     }
-        // });
+        // Start the connection
+        conn.lock().await.start(task_pool).await;
     }
 
-
-    pub fn get_connection(&mut self, name: &str) -> MutexedConnection {
+    /// Get a connection
+    /// 
+    pub fn get_connection(&mut self, name: &str) -> SafeConnection {
         return self.connections.get(name).unwrap().clone();
     }
 

@@ -1,5 +1,6 @@
 use std::collections::LinkedList;
 
+use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
 
 use async_trait::async_trait;
@@ -30,6 +31,10 @@ enum State {
 
 #[async_trait]
 pub trait StateImplementations : Send {
+
+
+
+    async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest>;
 
     /// Poll events
     async fn poll_events(&self) -> Vec<Event>;

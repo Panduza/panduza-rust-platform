@@ -1,9 +1,10 @@
 mod log;
 mod device;
 mod platform;
-mod connection;
-mod builtin_devices;
 mod interfaces;
+mod connection;
+mod subscription;
+mod builtin_devices;
 
 use crate::platform::Platform;
 
@@ -18,6 +19,4 @@ async fn main() {
 
     // Run platform
     platform_runner.work().await;
-
 }
-

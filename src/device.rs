@@ -2,10 +2,10 @@ use std::collections::{HashMap, LinkedList};
 
 use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::{connection, interfaces::{self, Fsm as InterfaceFsm}};
+use crate::interfaces::Fsm as InterfaceFsm;
 use crate::builtin_devices;
 
-use crate::connection::MutexedConnection;
+use crate::connection::SafeConnection;
 
 use serde_json::{Value};
 use tokio::task::JoinSet;
@@ -28,7 +28,7 @@ pub struct Device {
 
     interfaces: LinkedList<InterfaceFsm>,
 
-    connections: LinkedList<MutexedConnection>
+    connections: LinkedList<SafeConnection>
 
 }
 
@@ -48,29 +48,28 @@ impl Device {
 
 
     pub async fn mount_interfaces(&mut self) {
-        self.interfaces = self.actions.create_interfaces();
+        // self.interfaces = self.actions.create_interfaces();
 
-    
-        while let Some(mut data) = self.interfaces.pop_front() {
+        // while let Some(mut data) = self.interfaces.pop_front() {
 
-            for connection in self.connections.iter_mut() {
+        //     for connection in self.connections.iter_mut() {
 
-                let iiii = (*connection).lock().await.create_link().await;
-                data.add_link(iiii.unwrap());
+        //         // let iiii = (*connection).lock().await.create_link().await;
+        //         // data.add_link(iiii.unwrap());
 
-            }
-            // data attach connection
+        //     }
+        //     // data attach connection
 
-            self.task_pool.spawn(async move {
-                loop {
-                    data.run_once().await;
-                    yield_now().await;
-                }
-            });
-        }
+        //     self.task_pool.spawn(async move {
+        //         loop {
+        //             data.run_once().await;
+        //             yield_now().await;
+        //         }
+        //     });
+        // }
     }
 
-    pub fn attach_connection(&mut self, connection: MutexedConnection) {
+    pub fn attach_connection(&mut self, connection: SafeConnection) {
         self.connections.push_back(connection);
     }
 
