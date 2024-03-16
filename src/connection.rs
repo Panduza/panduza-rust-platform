@@ -10,27 +10,15 @@ use tokio::sync::Mutex;
 use std::collections::LinkedList;
 
 
-use regex::Regex;
 
 use bytes::Bytes;
 
 
 use crate::subscription::Id as SubscriptionId;
+use crate::subscription::Filter as SubscriptionFilter;
 use crate::subscription::Request as SubscriptionRequest;
 
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
 
-/// Allow a connection to filter messages for an interface.
-/// The Id helps the interface to know which message is for which callback.
-///
-pub struct SubscriptionFilter {
-    id: SubscriptionId,
-    filter: Regex
-}
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -93,10 +81,10 @@ struct LinkConnectionHandle
 }
 
 impl LinkConnectionHandle {
-    fn new(tx: mpsc::Sender<SubscriptionMessage>) -> LinkConnectionHandle {
+    fn new(tx: mpsc::Sender<SubscriptionMessage>, filters: LinkedList<SubscriptionFilter>) -> LinkConnectionHandle {
         return LinkConnectionHandle {
             tx: tx,
-            filters: LinkedList::new(),
+            filters: filters,
         }
     }
 
@@ -136,9 +124,22 @@ impl LinkConnectionManager {
             mpsc::channel::<SubscriptionMessage>(32);
 
 
+        let mut filters = LinkedList::new();
+
+        for request in requests {
+
+            self.client.subscribe(request.get_topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
+
+            let filter = SubscriptionFilter::new(request);
+
+            filters.push_back(filter);
+
+        }
+
+
         // 
         self.links.push_back(
-            LinkConnectionHandle::new(tx)
+            LinkConnectionHandle::new(tx, filters)
         );
 
         

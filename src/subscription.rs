@@ -1,3 +1,4 @@
+use regex::Regex;
 
 /// Subscription ID
 ///
@@ -26,4 +27,39 @@ impl Request {
         }
     }
 
+    pub fn get_topic(&self) -> &String {
+        return &self.topic;
+    }
+
 }
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Allow a connection to filter messages for an interface.
+/// The Id helps the interface to know which message is for which callback.
+///
+pub struct Filter {
+    id: Id,
+    filter: Regex
+}
+
+impl Filter {
+
+    /// Create a new subscription filter
+    pub fn new(request: Request) -> Filter {
+
+        let filter = Regex::new(request.topic.as_str()).unwrap();
+
+        return Filter {
+            id: request.id,
+            filter: filter
+        }
+    }
+
+}
+
+
