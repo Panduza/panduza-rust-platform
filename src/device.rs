@@ -2,7 +2,7 @@ use std::collections::{HashMap, LinkedList};
 
 use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::interfaces::Fsm as InterfaceFsm;
+use crate::interfaces::SafeInterface;
 use crate::builtin_devices;
 
 use crate::connection::SafeConnection;
@@ -16,7 +16,7 @@ pub trait DeviceActions {
     fn hunt(&self) -> LinkedList<Value>;
     // list de device definition
     //   ref / name / settings
-    fn create_interfaces(&self) -> LinkedList<InterfaceFsm>;
+    fn create_interfaces(&self) -> LinkedList<SafeInterface>;
 
 }
 
@@ -26,7 +26,7 @@ pub struct Device {
 
     actions: Box<dyn DeviceActions>,
 
-    interfaces: LinkedList<InterfaceFsm>,
+    interfaces: LinkedList<SafeInterface>,
 
     connections: LinkedList<SafeConnection>
 
@@ -48,25 +48,19 @@ impl Device {
 
 
     pub async fn mount_interfaces(&mut self) {
-        // self.interfaces = self.actions.create_interfaces();
+        self.interfaces = self.actions.create_interfaces();
 
-        // while let Some(mut data) = self.interfaces.pop_front() {
+        for interface in self.interfaces.iter_mut() {
+            let itf = interface.clone();
 
-        //     for connection in self.connections.iter_mut() {
+            self.task_pool.spawn(async move {
+                loop {
+                    itf.lock().await.run_once().await;
+                }
+            });
+        }
 
-        //         // let iiii = (*connection).lock().await.create_link().await;
-        //         // data.add_link(iiii.unwrap());
 
-        //     }
-        //     // data attach connection
-
-        //     self.task_pool.spawn(async move {
-        //         loop {
-        //             data.run_once().await;
-        //             yield_now().await;
-        //         }
-        //     });
-        // }
     }
 
     pub fn attach_connection(&mut self, connection: SafeConnection) {

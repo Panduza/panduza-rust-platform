@@ -1,4 +1,6 @@
 use std::collections::LinkedList;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
@@ -63,10 +65,7 @@ pub struct Fsm {
     links: LinkedList<LinkInterfaceHandle>
 }
 
-// struct SubInter {
-//     fsm: Fsm
-// }
-
+pub type SafeInterface = Arc<Mutex<Fsm>>;
 
 impl Fsm {
 
@@ -79,6 +78,12 @@ impl Fsm {
             links: LinkedList::new()
         }
     }
+
+    ///
+    async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
+        return self.states_implementations.get_subscription_requests().await;
+    }
+
 
     pub fn add_link(&mut self, link: LinkInterfaceHandle) {
         self.links.push_back(link);

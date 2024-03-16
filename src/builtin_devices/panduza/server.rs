@@ -1,8 +1,10 @@
 use serde_json::{Value};
+use tokio::sync::Mutex;
 use std::collections::LinkedList;
+use std::sync::Arc;
 
 
-use crate::interfaces::{Event, StateImplementations};
+use crate::interfaces::{Event, SafeInterface, StateImplementations};
 use crate::interfaces::Fsm as InterfaceFsm;
 use crate::device::{ Device, DeviceActions, Producer };
 
@@ -81,10 +83,12 @@ impl DeviceActions for ServerDeviceActions {
         return LinkedList::new();
     }
 
-    fn create_interfaces(&self) -> LinkedList<InterfaceFsm> {
+    fn create_interfaces(&self) -> LinkedList<SafeInterface> {
         let mut list = LinkedList::new();
         list.push_back(
-            InterfaceFsm::new(Box::new(TestInterface{}))
+            Arc::new(Mutex::new(
+                InterfaceFsm::new(Box::new(TestInterface{}))
+            ))
         );
 
         return list;
