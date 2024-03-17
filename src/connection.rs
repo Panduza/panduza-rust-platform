@@ -11,27 +11,13 @@ use std::collections::LinkedList;
 
 
 
-use bytes::Bytes;
 
 
-use crate::subscription::Id as SubscriptionId;
+
 use crate::subscription::Filter as SubscriptionFilter;
 use crate::subscription::Request as SubscriptionRequest;
+use crate::subscription::Message as SubscriptionMessage;
 
-
-
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Clone, PartialEq, Eq)]
-pub struct SubscriptionMessage {
-    sub_id: SubscriptionId,
-    topic: String,
-    pub payload: Bytes
-}
 
 
 
@@ -301,22 +287,8 @@ impl Connection {
                 println!("Received = {:?}", notification);
                 match notification {
                     rumqttc::Event::Incoming(incoming) => {
-                        // println!("Received = {:?}", notification);
-                        match incoming {
-                            rumqttc::Incoming::Publish(publish) => {
-                                println!("P = {:?}", publish);
-                                println!("  pkid    = {:?}", publish.pkid);
-                                println!("  retain  = {:?}", publish.retain);
-                                println!("  topic   = {:?}", publish.topic);
-                                println!("  payload = {:?}", publish.payload);
-                                println!("  qos     = {:?}", publish.qos);
-                                println!("  dup     = {:?}", publish.dup);
-                                
-                            }
-                            _ => {
-                                println!("? = {:?}", incoming);
-                            }
-                        }
+                        Connection::process_incoming_packet(ev.clone(), lm.clone(), &incoming);
+                        
 
                     },
                     _ => {
@@ -376,6 +348,42 @@ impl Connection {
 
     }
 
+    /// Process incoming packets
+    /// 
+    async fn process_incoming_packet(ev: Arc<Mutex<rumqttc::EventLoop>>, lm: Arc<Mutex<LinkConnectionManager>>, packet: &rumqttc::Packet) {
+    
+
+        // println!("Received = {:?}", notification);
+        match packet {
+            rumqttc::Incoming::Publish(publish) => {
+                println!("P = {:?}", publish);
+                println!("  pkid    = {:?}", publish.pkid);
+                println!("  retain  = {:?}", publish.retain);
+                println!("  topic   = {:?}", publish.topic);
+                println!("  payload = {:?}", publish.payload);
+                println!("  qos     = {:?}", publish.qos);
+                println!("  dup     = {:?}", publish.dup);
+
+                
+                for link in lm.lock().await.links.iter_mut() {
+                    for filter in link.filters.iter() {
+                        if filter.match_topic(&publish.topic) {
+                            let message = SubscriptionMessage {
+                                sub_id: filter.get_id(),
+                                topic: publish.topic.clone(),
+                                payload: publish.payload.clone()
+                            };
+                            link.tx.send(message).await;
+                        }
+                    }
+                }
+
+            }
+            _ => {
+                println!("? = {:?}", packet);
+            }
+        }
+    }
 
     /// Get the link manager, to share it with the devices
     /// 

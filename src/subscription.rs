@@ -1,4 +1,7 @@
+use bytes::Bytes;
 use regex::Regex;
+
+use rumqttc::mqttbytes::v4::Publish as PublishPacket;
 
 /// Subscription ID
 ///
@@ -60,6 +63,57 @@ impl Filter {
         }
     }
 
+    /// Check if the topic match the filter
+    ///
+    pub fn match_topic(&self, topic: &str) -> bool {
+        return self.filter.is_match(topic);
+    }
+
 }
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Subscription ID
+/// 
+#[derive(Clone, PartialEq, Eq)]
+pub struct Message {
+    id: Id,
+    topic: String,
+    payload: Bytes
+}
+
+impl Message {
+
+    /// Create a new message
+    pub fn new(id: Id, topic: &str, payload: Bytes) -> Message {
+        return Message {
+            id: id,
+            topic: topic.to_string(),
+            payload: payload
+        }
+    }
+
+    pub fn from_filter_and_publish_packet(filter: &Filter, packet: &PublishPacket) -> Message {
+        return Message {
+            id: filter.id,
+            topic: packet.get_topic(),
+            payload: packet.get_payload()
+        }
+    }
+
+    /// Get the topic
+    pub fn get_topic(&self) -> &String {
+        return &self.topic;
+    }
+
+    /// Get the payload
+    pub fn get_payload(&self) -> &Bytes {
+        return &self.payload;
+    }
+
+}
 
