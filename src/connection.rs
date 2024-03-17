@@ -299,6 +299,30 @@ impl Connection {
         loop {
             while let Ok(notification) = ev.lock().await.poll().await {
                 println!("Received = {:?}", notification);
+                match notification {
+                    rumqttc::Event::Incoming(incoming) => {
+                        // println!("Received = {:?}", notification);
+                        match incoming {
+                            rumqttc::Incoming::Publish(publish) => {
+                                println!("P = {:?}", publish);
+                                println!("  pkid    = {:?}", publish.pkid);
+                                println!("  retain  = {:?}", publish.retain);
+                                println!("  topic   = {:?}", publish.topic);
+                                println!("  payload = {:?}", publish.payload);
+                                println!("  qos     = {:?}", publish.qos);
+                                println!("  dup     = {:?}", publish.dup);
+                                
+                            }
+                            _ => {
+                                println!("? = {:?}", incoming);
+                            }
+                        }
+
+                    },
+                    _ => {
+                        println!("Received = {:?}", notification);
+                    }
+                }
             }
             tracing::warn!("Broker disconnected, trying to reconnect");
         }
@@ -316,14 +340,7 @@ impl Connection {
             
         //     notification = self.eventloop.as_mut().unwrap().poll() => {
         //         println!("EVEEEN !!!!!!!!!!!!!!");
-                // match notification {
-                    // rumqttc::Event::Incoming(incoming) => {
-                    //     println!("Received = {:?}", notification);
-                    // },
-                    // _ => {
-                    //     println!("Received = {:?}", notification);
-                    // }
-                // }
+                
             // },
 
 
