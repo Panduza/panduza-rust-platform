@@ -80,7 +80,7 @@ impl Fsm {
     }
 
     ///
-    async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
+    pub async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
         return self.states_implementations.get_subscription_requests().await;
     }
 

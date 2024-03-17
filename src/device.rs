@@ -2,7 +2,7 @@ use std::collections::{HashMap, LinkedList};
 
 use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::interfaces::SafeInterface;
+use crate::{connection::{self, SafeLinkConnectionManager}, interfaces::SafeInterface};
 use crate::builtin_devices;
 
 use crate::connection::SafeConnection;
@@ -28,7 +28,7 @@ pub struct Device {
 
     interfaces: LinkedList<SafeInterface>,
 
-    connections: LinkedList<SafeConnection>
+    connections: LinkedList<SafeLinkConnectionManager>
 
 }
 
@@ -53,6 +53,17 @@ impl Device {
         for interface in self.interfaces.iter_mut() {
             let itf = interface.clone();
 
+            for connection in self.connections.iter_mut() {
+                let mut interface_lock = interface.lock().await;
+
+
+                let requests = interface_lock.get_subscription_requests().await;
+
+                let x: connection::LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+
+                interface_lock.add_link(x);
+            }
+
             self.task_pool.spawn(async move {
                 loop {
                     itf.lock().await.run_once().await;
@@ -63,8 +74,9 @@ impl Device {
 
     }
 
-    pub fn attach_connection(&mut self, connection: SafeConnection) {
-        self.connections.push_back(connection);
+
+    pub async fn attach_connection(&mut self, connection: SafeConnection) {
+        self.connections.push_back(connection.lock().await.clone_link_manager());
     }
 
 }

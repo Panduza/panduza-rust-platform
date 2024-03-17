@@ -52,7 +52,7 @@ impl Platform {
 
         self.connections.start_connection("default", &mut self.task_pool).await;
 
-        self.attach_device_to_connection("server", "default");
+        self.attach_device_to_connection("server", "default").await;
 
 
 
@@ -85,6 +85,9 @@ impl Platform {
 
         // Info log
         tracing::info!("Platform Started");
+        
+        // tracing::trace!("Trace Mode On");
+        // tracing::debug!("Trace Mode On");
 
         // Wait for either a signal or all tasks to complete
         tokio::select! {
@@ -108,11 +111,13 @@ impl Platform {
 
     /// Attach a device to a connection
     /// 
-    fn attach_device_to_connection(&mut self, device: &str, connection: &str) {
+    async fn attach_device_to_connection(&mut self, device: &str, connection: &str) {
 
         // get device
-        self.devices.get_device(&device.to_string()).unwrap().
-            attach_connection(self.connections.get_connection(connection));
+        let devvv = self.devices.get_device(&device.to_string()).unwrap();
+            
+            
+        devvv.attach_connection(self.connections.get_connection(connection)).await;
 
 
         // get connection

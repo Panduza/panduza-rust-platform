@@ -98,7 +98,7 @@ impl LinkConnectionHandle {
 
 /// Link connection manager
 /// 
-struct LinkConnectionManager {
+pub struct LinkConnectionManager {
     /// Mqtt client
     client: AsyncClient,
 
@@ -118,6 +118,9 @@ impl LinkConnectionManager {
     /// Create a new link
     ///
     pub async fn request_link(&mut self, requests: Vec<SubscriptionRequest>) -> Result<LinkInterfaceHandle, String> {
+
+        // Debug
+        tracing::trace!("Request link with {} subscriptions", requests.len());
 
         // Create the channel
         let (tx, mut rx) =
@@ -356,6 +359,12 @@ impl Connection {
 
     }
 
+
+    /// Get the link manager, to share it with the devices
+    /// 
+    pub fn clone_link_manager(&self) -> SafeLinkConnectionManager {
+        return self.link_manager.clone();
+    }
 
 
     // /// Create a new link
