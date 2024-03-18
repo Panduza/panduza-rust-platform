@@ -1,3 +1,4 @@
+use rumqttc::tokio_rustls::rustls::internal::msgs;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use std::collections::LinkedList;
@@ -36,6 +37,16 @@ impl HandlerImplementations for TestInterfaceListener {
 
     async fn process(&self, msg: &subscription::Message) {
         println!("process {:?}", msg);
+
+        match msg {
+            subscription::Message::ConnectionStatus (status) => {
+                println!("ConnectionStatus {:?}", status);
+            },
+            subscription::Message::Mqtt(msg) => {
+                
+            }
+        }
+
     }
 
 }

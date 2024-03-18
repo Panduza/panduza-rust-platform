@@ -17,6 +17,8 @@ pub enum Event {
     InitializationFailed,
 }
 
+
+#[derive(Clone)]
 enum State {
     Connecting,
     Running,
@@ -33,6 +35,28 @@ enum State {
     // conn down
 // error
 
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Shared data for an interface
+/// 
+pub struct Data {
+
+    state: State,
+}
+type SafeData = Arc<Mutex<Data>>;
+
+impl Data {
+    pub fn new() -> Data {
+        return Data {
+            state: State::Connecting,
+        }
+    }
+}
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -67,8 +91,12 @@ pub trait StateImplementations : Send {
 /// Interface finite state machine
 ///
 pub struct Fsm {
-    state: State,
-    states_implementations: Box<dyn StateImplementations>,
+
+    /// Shared state data
+    data: SafeData,
+
+    /// State Implementations
+    impls: Box<dyn StateImplementations>,
 
 }
 
@@ -76,10 +104,10 @@ impl Fsm {
 
     ///
     /// 
-    pub fn new(states_implementations: Box<dyn StateImplementations>) -> Fsm {
+    pub fn new(impls: Box<dyn StateImplementations>) -> Fsm {
         Fsm {
-            state: State::Connecting,
-            states_implementations: states_implementations,
+            data: Arc::new(Mutex::new(Data::new())),
+            impls: impls,
         }
     }
 
@@ -94,18 +122,19 @@ impl Fsm {
         //     let msg = link.rx.try_recv();
         //     match msg {
         //         Ok(msg) => {
-        //             self.states_implementations.process(&msg).await;
+        //             self.impls.process(&msg).await;
         //         },
         //         Err(e) => {
         //             // tracing::warn!("Error: {:?}", e);
         //         }
         //     }
         // }
-
-        match self.state {
+        
+        let state = self.data.lock().await.state.clone();
+        match state {
             State::Connecting => {
-                self.states_implementations.enter_connecting().await;
-                // match self.states_implementations.state_connecting().await {
+                self.impls.enter_connecting().await;
+                // match self.impls.state_connecting().await {
                 //     Ok(event) => {
                 //         match event {
                 //             Event::ConnectionUp => {
@@ -159,6 +188,11 @@ pub trait HandlerImplementations : Send {
 /// Message handler
 /// 
 struct Listener {
+    
+    /// Shared state data
+    data: SafeData,
+
+    /// 
     impls: Box<dyn HandlerImplementations>,
     
     // links interface handles
@@ -169,7 +203,8 @@ impl Listener {
     
     fn new(impls: Box<dyn HandlerImplementations>) -> Listener {
         return Listener {
-            impls,
+            data: Arc::new(Mutex::new(Data::new())),
+            impls: impls,
             links: LinkedList::new()
         }
     }
@@ -185,7 +220,6 @@ impl Listener {
     pub fn add_link(&mut self, link: LinkInterfaceHandle) {
         self.links.push_back(link);
     }
-    
     
     ///
     ///
@@ -210,6 +244,7 @@ impl Listener {
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
+
 
 pub struct Interface {
     fsm: Arc<Mutex<Fsm>>,
