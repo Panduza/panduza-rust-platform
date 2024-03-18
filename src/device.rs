@@ -2,8 +2,9 @@ use std::collections::{HashMap, LinkedList};
 
 use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::{connection::{self, SafeLinkConnectionManager}, interfaces::SafeInterface};
+use crate::{connection::{self, SafeLinkConnectionManager}};
 use crate::builtin_devices;
+use crate::interface::SafeInterface;
 
 use crate::connection::SafeConnection;
 
@@ -47,7 +48,7 @@ impl Device {
 
 
 
-    pub async fn mount_interfaces(&mut self) {
+    pub async fn mount_interfaces(&mut self, task_pool: &mut JoinSet<()>) {
         self.interfaces = self.actions.create_interfaces();
 
         for interface in self.interfaces.iter_mut() {
@@ -61,14 +62,10 @@ impl Device {
 
                 let x: connection::LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
 
-                interface_lock.add_link(x);
+                interface_lock.add_link(x).await;
             }
 
-            self.task_pool.spawn(async move {
-                loop {
-                    itf.lock().await.run_once().await;
-                }
-            });
+            itf.lock().await.start(&mut self.task_pool).await;
         }
 
 
@@ -171,10 +168,10 @@ impl Manager {
 
 
 
-    pub async fn mount_devices(&mut self)
+    pub async fn mount_devices(&mut self, task_pool: &mut JoinSet<()>)
     {
         for(_, device) in self.instances.iter_mut() {
-            device.mount_interfaces().await;
+            device.mount_interfaces(task_pool).await;
         }
     }
 

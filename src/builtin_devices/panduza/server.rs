@@ -4,8 +4,8 @@ use std::collections::LinkedList;
 use std::sync::Arc;
 
 
-use crate::interfaces::{Event, SafeInterface, StateImplementations};
-use crate::interfaces::Fsm as InterfaceFsm;
+use crate::interface::{Event, SafeInterface, StateImplementations, HandlerImplementations};
+use crate::interface::Interface;
 use crate::device::{ Device, DeviceActions, Producer };
 
 use async_trait::async_trait;
@@ -15,15 +15,18 @@ use tokio::{sync::mpsc, time::{sleep, Duration}};
 use crate::connection::LinkInterfaceHandle;
 
 use crate::subscription::Request as SubscriptionRequest;
+use crate::subscription;
 
-struct TestInterface {
+
+
+// 
+
+struct TestInterfaceListener {
 
 }
 
-
 #[async_trait]
-impl StateImplementations for TestInterface {
-
+impl HandlerImplementations for TestInterfaceListener {
 
     async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
         return vec![
@@ -31,13 +34,29 @@ impl StateImplementations for TestInterface {
         ];
     }
 
+    async fn process(&self, msg: &subscription::Message) {
+        println!("process {:?}", msg);
+    }
+
+}
+
+
+struct TestInterfaceStates {
+
+}
+
+#[async_trait]
+impl StateImplementations for TestInterfaceStates {
+
+
+
 
     async fn poll_events(&self) -> Vec<Event> {
         return vec![Event::NoEvent];
     }
 
-    async fn enter_connecting(&self, _links: &LinkedList<LinkInterfaceHandle>) {
-        println!("enter_connecting {:?}", _links.len());
+    async fn enter_connecting(&self) {
+        println!("enter_connecting ");
 
         // for link in _links.iter() {
         //     link.topic_subscriber_tx.send("hello!!!!!!!!!!!!!!!!!!!!".to_string()).await.unwrap();
@@ -87,7 +106,9 @@ impl DeviceActions for ServerDeviceActions {
         let mut list = LinkedList::new();
         list.push_back(
             Arc::new(Mutex::new(
-                InterfaceFsm::new(Box::new(TestInterface{}))
+                Interface::new(Box::new(TestInterfaceStates{}),
+                    Box::new(TestInterfaceListener{})      
+            )
             ))
         );
 

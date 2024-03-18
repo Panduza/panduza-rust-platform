@@ -56,7 +56,7 @@ impl Platform {
 
 
 
-        self.devices.mount_devices().await;
+        self.devices.mount_devices(&mut self.task_pool).await;
 
 
         // attach device and connection

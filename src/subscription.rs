@@ -79,7 +79,7 @@ impl Filter {
 
 /// Subscription ID
 /// 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Message {
     id: Id,
     topic: String,
@@ -88,20 +88,13 @@ pub struct Message {
 
 impl Message {
 
-    /// Create a new message
-    pub fn new(id: Id, topic: &str, payload: Bytes) -> Message {
-        return Message {
-            id: id,
-            topic: topic.to_string(),
-            payload: payload
-        }
-    }
-
+    /// Create a new message from a filter and a publish packet
+    /// Usefull to create a message direclty injectable inside fifo for the interfaces
     pub fn from_filter_and_publish_packet(filter: &Filter, packet: &PublishPacket) -> Message {
         return Message {
             id: filter.id,
-            topic: packet.get_topic(),
-            payload: packet.get_payload()
+            topic: packet.topic.clone(),
+            payload: packet.payload.clone()
         }
     }
 

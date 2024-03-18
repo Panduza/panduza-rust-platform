@@ -1,7 +1,7 @@
 mod log;
 mod device;
 mod platform;
-mod interfaces;
+mod interface;
 mod connection;
 mod subscription;
 mod builtin_devices;
