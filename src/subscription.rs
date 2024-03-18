@@ -80,33 +80,77 @@ impl Filter {
 /// Subscription ID
 /// 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Message {
+pub struct MqttMessage {
     id: Id,
     topic: String,
     payload: Bytes
 }
 
-impl Message {
+impl MqttMessage {
 
     /// Create a new message from a filter and a publish packet
     /// Usefull to create a message direclty injectable inside fifo for the interfaces
-    pub fn from_filter_and_publish_packet(filter: &Filter, packet: &PublishPacket) -> Message {
-        return Message {
+    pub fn from_filter_and_publish_packet(filter: &Filter, packet: &PublishPacket) -> MqttMessage {
+        return MqttMessage {
             id: filter.id,
             topic: packet.topic.clone(),
             payload: packet.payload.clone()
         }
     }
 
-    /// Get the topic
-    pub fn get_topic(&self) -> &String {
-        return &self.topic;
-    }
+}
 
-    /// Get the payload
-    pub fn get_payload(&self) -> &Bytes {
-        return &self.payload;
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Subscription ID
+/// 
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ConnectionStatusMessage {
+
+    /// Connection status (True if connected, False if disconnected)
+    connected: bool,
+
+}
+
+impl ConnectionStatusMessage {
+
+    /// Create a new connection status message
+    pub fn new(connected: bool) -> ConnectionStatusMessage {
+        return ConnectionStatusMessage {
+            connected: connected
+        }
     }
 
 }
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum Message {
+    Mqtt(MqttMessage),
+    ConnectionStatus(ConnectionStatusMessage)
+}
+
+
+impl Message {
+
+    /// Create a new message from a filter and a publish packet
+    /// Usefull to create a message direclty injectable inside fifo for the interfaces
+    pub fn from_filter_and_publish_packet(filter: &Filter, packet: &PublishPacket) -> Message {
+        return Message::Mqtt(MqttMessage::from_filter_and_publish_packet(filter, packet));
+    }
+
+    /// Create a new connection status message
+    pub fn new_connection_status(connected: bool) -> Message {
+        return Message::ConnectionStatus(ConnectionStatusMessage::new(connected));
+    }
+    
+}

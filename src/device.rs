@@ -1,14 +1,15 @@
 use std::collections::{HashMap, LinkedList};
 
-use tokio::{task::yield_now, time::{sleep, Duration}};
+// use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::{connection::{self, SafeLinkConnectionManager}};
+use crate::connection::SafeLinkConnectionManager;
 use crate::builtin_devices;
 use crate::interface::SafeInterface;
 
 use crate::connection::SafeConnection;
+use crate::connection::LinkInterfaceHandle;
 
-use serde_json::{Value};
+use serde_json::Value;
 use tokio::task::JoinSet;
 
 
@@ -60,7 +61,7 @@ impl Device {
 
                 let requests = interface_lock.get_subscription_requests().await;
 
-                let x: connection::LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+                let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
 
                 interface_lock.add_link(x).await;
             }

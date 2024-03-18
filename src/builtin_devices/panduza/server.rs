@@ -1,4 +1,4 @@
-use serde_json::{Value};
+use serde_json::Value;
 use tokio::sync::Mutex;
 use std::collections::LinkedList;
 use std::sync::Arc;
@@ -10,9 +10,9 @@ use crate::device::{ Device, DeviceActions, Producer };
 
 use async_trait::async_trait;
 
-use tokio::{sync::mpsc, time::{sleep, Duration}};
+use tokio::time::{sleep, Duration};
 
-use crate::connection::LinkInterfaceHandle;
+// use crate::connection::LinkInterfaceHandle;
 
 use crate::subscription::Request as SubscriptionRequest;
 use crate::subscription;

@@ -3,10 +3,6 @@ use tokio::task::JoinSet;
 use crate::device::Manager as DeviceManager;
 use crate::connection::Manager as ConnectionManager;
 
-// use tokio::sync::mpsc;
-use tokio::time::{sleep, Duration};
-use rumqttc::{MqttOptions, AsyncClient, QoS};
-
 pub struct Platform
 {
     task_pool: JoinSet<()>,

@@ -13,10 +13,10 @@ use std::collections::LinkedList;
 
 
 
-
+use crate::subscription;
 use crate::subscription::Filter as SubscriptionFilter;
 use crate::subscription::Request as SubscriptionRequest;
-use crate::subscription::Message as SubscriptionMessage;
+
 
 
 
@@ -35,12 +35,12 @@ pub struct LinkInterfaceHandle
     client: AsyncClient,
 
     /// Channel to receive messages from the connection
-    pub rx: mpsc::Receiver<SubscriptionMessage>
+    pub rx: mpsc::Receiver<subscription::Message>
 }
 
 impl LinkInterfaceHandle {
 
-    fn new(client: AsyncClient, rx: mpsc::Receiver<SubscriptionMessage>) -> LinkInterfaceHandle {
+    fn new(client: AsyncClient, rx: mpsc::Receiver<subscription::Message>) -> LinkInterfaceHandle {
         return LinkInterfaceHandle {
             client: client.clone(),
             rx: rx
@@ -60,14 +60,14 @@ impl LinkInterfaceHandle {
 struct LinkConnectionHandle
 {
     /// Channel to send messages to the interface
-    tx: mpsc::Sender<SubscriptionMessage>,
+    tx: mpsc::Sender<subscription::Message>,
 
     /// List of filters
     filters: LinkedList<SubscriptionFilter>,
 }
 
 impl LinkConnectionHandle {
-    fn new(tx: mpsc::Sender<SubscriptionMessage>, filters: LinkedList<SubscriptionFilter>) -> LinkConnectionHandle {
+    fn new(tx: mpsc::Sender<subscription::Message>, filters: LinkedList<SubscriptionFilter>) -> LinkConnectionHandle {
         return LinkConnectionHandle {
             tx: tx,
             filters: filters,
@@ -112,7 +112,7 @@ impl LinkConnectionManager {
 
         // Create the channel
         let (tx, rx) =
-            mpsc::channel::<SubscriptionMessage>(64);
+            mpsc::channel::<subscription::Message>(64);
 
 
         let mut filters = LinkedList::new();
@@ -135,6 +135,21 @@ impl LinkConnectionManager {
 
         
         return Ok(LinkInterfaceHandle::new(self.client.clone(), rx));
+    }
+
+    /// Send to all interfaces
+    /// 
+    pub async fn send_to_all(&mut self, message: subscription::Message) {
+        for link in self.links.iter_mut() {
+            let r = link.tx.send(message.clone()).await;
+            if r.is_err() {
+                println!("Error sending message to interface {}",
+                    r.err().unwrap());
+            }
+            else {
+                println!("Message sent to interface");
+            }
+        }
     }
 
 }
@@ -209,14 +224,17 @@ impl Connection {
                     rumqttc::Event::Incoming(incoming) => {
                         Connection::process_incoming_packet(lm.clone(), &incoming).await;
                         
-
-                    },
+                    }
                     _ => {
                         println!("Received = {:?}", notification);
                     }
                 }
             }
             tracing::warn!("Broker disconnected, trying to reconnect");
+
+            let message = 
+                                subscription::Message::new_connection_status(false);
+            // let r = link.tx.send(message).await;
         }
 
     }
@@ -226,6 +244,13 @@ impl Connection {
     async fn process_incoming_packet(lm: Arc<Mutex<LinkConnectionManager>>, packet: &rumqttc::Packet) {
     
         match packet {
+            rumqttc::Incoming::ConnAck(ack) => {
+
+                lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
+                // let message = subscription::Message::new_connection_status(true);
+
+                println!("!!!!!!! !Received = {:?}", ack);
+            },
             rumqttc::Incoming::Publish(publish) => {
                 // For each link with interfaces, check if the topic matches a filter
                 // then send the message to the interface
@@ -233,7 +258,7 @@ impl Connection {
                     for filter in link.filters.iter() {
                         if filter.match_topic(&publish.topic) {
                             let message = 
-                                SubscriptionMessage::from_filter_and_publish_packet(filter, publish);
+                                subscription::Message::from_filter_and_publish_packet(filter, publish);
                             let r = link.tx.send(message).await;
                             if r.is_err() {
                                 println!("Error sending message to interface {}",
