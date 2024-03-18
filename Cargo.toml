@@ -28,6 +28,9 @@ regex = "1.10.3"
 # Bytes array management
 bytes = "1.5.0"
 
+# Bitflags
+bitflags = "1.2.1"
+
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.
 # This level is configured separately for release and debug builds.

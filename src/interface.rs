@@ -7,6 +7,19 @@ use crate::connection::LinkInterfaceHandle;
 
 use crate::subscription::Message as SubscriptionMessage;
 
+use bitflags::bitflags;
+
+
+bitflags! {
+    pub struct Flags: u32 {
+        const NO_EVENT                  = 0b00000000;
+        const CONNECTION_UP             = 0b00000001;
+        const CONNECTION_DOWN           = 0b00000010;
+        const STATE_SUCCESS             = 0b00000100;
+        const ERROR                     = 0b10000000;
+    }
+}
+
 
 use async_trait::async_trait;
 pub enum Event {
