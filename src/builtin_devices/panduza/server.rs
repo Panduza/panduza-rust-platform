@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use crate::interface::{Event, SafeInterface, StateImplementations, HandlerImplementations};
 use crate::interface::Interface;
+use crate::interface;
 use crate::device::{ Device, DeviceActions, Producer };
 
 use async_trait::async_trait;
@@ -35,12 +36,18 @@ impl HandlerImplementations for TestInterfaceListener {
         ];
     }
 
-    async fn process(&self, msg: &subscription::Message) {
+    async fn process(&self, data: &interface::SafeData, msg: &subscription::Message) {
         println!("process {:?}", msg);
 
         match msg {
             subscription::Message::ConnectionStatus (status) => {
                 println!("ConnectionStatus {:?}", status);
+                if status.connected {
+                    data.lock().await.add_event(Event::ConnectionUp);
+                }
+                else {
+                    data.lock().await.add_event(Event::ConnectionDown);
+                }
             },
             subscription::Message::Mqtt(msg) => {
                 

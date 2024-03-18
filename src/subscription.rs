@@ -112,7 +112,7 @@ impl MqttMessage {
 pub struct ConnectionStatusMessage {
 
     /// Connection status (True if connected, False if disconnected)
-    connected: bool,
+    pub connected: bool,
 
 }
 

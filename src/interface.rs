@@ -46,15 +46,22 @@ enum State {
 /// 
 pub struct Data {
 
-    state: State,
+    pub state: State,
+
+    pub events: Vec<Event>
 }
-type SafeData = Arc<Mutex<Data>>;
+pub type SafeData = Arc<Mutex<Data>>;
 
 impl Data {
     pub fn new() -> Data {
         return Data {
             state: State::Connecting,
+            events: Vec::new()
         }
+    }
+
+    pub fn add_event(&mut self, event: Event) {
+        self.events.push(event);
     }
 }
 
@@ -134,21 +141,9 @@ impl Fsm {
         match state {
             State::Connecting => {
                 self.impls.enter_connecting().await;
-                // match self.impls.state_connecting().await {
-                //     Ok(event) => {
-                //         match event {
-                //             Event::ConnectionUp => {
-                //                 self.state = State::Mounting;
-                //             },
-                //             _ => {
-                //                 // do nothing
-                //             }
-                //         }
-                //     },
-                //     Err(e) => {
-                //         // do nothing
-                //     }
-                // }
+                
+                // self.data.lock().await.events;
+                self.data.lock().await.state = State::Running;
             },
             State::Running => {
                 // wait for error
@@ -175,7 +170,7 @@ pub trait HandlerImplementations : Send {
 
     async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest>;
 
-    async fn process(&self, msg: &SubscriptionMessage);
+    async fn process(&self, data: &SafeData, msg: &SubscriptionMessage);
 
 }
 
@@ -228,7 +223,7 @@ impl Listener {
             let msg = link.rx.recv().await;
             match msg {
                 Some(msg) => {
-                    self.impls.process(&msg).await;
+                    self.impls.process(&self.data, &msg).await;
                 },
                 None => {
                     // do nothing
