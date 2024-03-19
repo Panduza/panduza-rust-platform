@@ -43,12 +43,10 @@ impl HandlerImplementations for TestInterfaceListener {
             subscription::Message::ConnectionStatus (status) => {
                 println!("ConnectionStatus {:?}", status);
                 if status.connected {
-                    data.lock().await.events.insert(
-                        interface::Events::CONNECTION_UP);
+                    data.lock().await.events.set_connection_up();
                 }
                 else {
-                    data.lock().await.events.insert(
-                        interface::Events::CONNECTION_DOWN);
+                    data.lock().await.events.set_connection_down();
                 }
             },
             subscription::Message::Mqtt(msg) => {

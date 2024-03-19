@@ -23,6 +23,21 @@ bitflags! {
 }
 
 
+impl Events {
+    pub fn set_connection_up(&mut self) {
+        self.insert(Events::CONNECTION_UP);
+    }
+    pub fn set_connection_down(&mut self) {
+        self.insert(Events::CONNECTION_DOWN);
+    }
+    pub fn set_state_success(&mut self) {
+        self.insert(Events::STATE_SUCCESS);
+    }
+    pub fn set_state_error(&mut self) {
+        self.insert(Events::STATE_SUCCESS);
+    }
+}
+
 
 use async_trait::async_trait;
 pub enum Event {
@@ -37,6 +52,7 @@ pub enum Event {
 #[derive(Clone, Debug)]
 enum State {
     Connecting,
+    Initializating,
     Running,
     Error
 }
@@ -85,6 +101,10 @@ impl Data {
 
     fn events(&self) -> &Events {
         return &self.events;
+    }
+
+    fn clear_events(&mut self) {
+        self.events = Events::NO_EVENT;
     }
     
     /// Move to a new state
@@ -149,23 +169,11 @@ impl Fsm {
     ///
     ///
     pub async fn run_once(&mut self) {
-
-
-        // for link in self.links.iter_mut() {
-            
-        //     let msg = link.rx.try_recv();
-        //     match msg {
-        //         Ok(msg) => {
-        //             self.impls.process(&msg).await;
-        //         },
-        //         Err(e) => {
-        //             // tracing::warn!("Error: {:?}", e);
-        //         }
-        //     }
-        // }
         
         // Get state but do not keep the lock
         let state = self.data.lock().await.current_state().clone();
+
+        // Perform state task
         match state {
             State::Connecting => {
                 // Execute state
@@ -176,19 +184,36 @@ impl Fsm {
 
                 // If connection up, go to running state
                 if evs.contains(Events::CONNECTION_UP) && !evs.contains(Events::ERROR) {
+                    self.data.lock().await.move_to_state(State::Initializating);
+                }
+            },
+            State::Initializating => {
+                // Execute state
+                self.impls.initializating().await;
+
+                // Manage transitions
+                let evs = self.data.lock().await.events().clone();
+
+                // If initialization ok, go to running state
+                if evs.contains(Events::STATE_SUCCESS) && !evs.contains(Events::ERROR) {
                     self.data.lock().await.move_to_state(State::Running);
                 }
-                // else {
-                //     tracing::debug!("{:?}", evs);
-                // }
+                // If error, go to error state
+                else if evs.contains(Events::ERROR) {
+                    self.data.lock().await.move_to_state(State::Error);
+                }
             },
             State::Running => {
                 // wait for error
             },
-            _ => {
-                // do nothing
+            State::Error => {
+                // Execute state
+                self.impls.error().await;
             }
         }
+
+        // Clear events for next run
+        self.data.lock().await.clear_events();
 
     }
 
