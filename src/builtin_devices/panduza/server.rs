@@ -5,7 +5,7 @@ use std::collections::LinkedList;
 use std::sync::Arc;
 
 
-use crate::interface::{Event, SafeInterface, StateImplementations, HandlerImplementations};
+use crate::interface::{ SafeInterface, StateImplementations, HandlerImplementations};
 use crate::interface::Interface;
 use crate::interface;
 use crate::device::{ Device, DeviceActions, Producer };
@@ -65,13 +65,6 @@ struct TestInterfaceStates {
 
 #[async_trait]
 impl StateImplementations for TestInterfaceStates {
-
-
-
-
-    async fn poll_events(&self) -> Vec<Event> {
-        return vec![Event::NoEvent];
-    }
 
 
     async fn connecting(&self)

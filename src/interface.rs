@@ -9,6 +9,7 @@ use crate::subscription::Message as SubscriptionMessage;
 
 use bitflags::bitflags;
 
+use async_trait::async_trait;
 
 bitflags! {
     
@@ -39,14 +40,6 @@ impl Events {
 }
 
 
-use async_trait::async_trait;
-pub enum Event {
-    NoEvent,
-    ConnectionUp,
-    ConnectionDown,
-    InitializationOk,
-    InitializationFailed,
-}
 
 
 #[derive(Clone, Debug)]
@@ -78,16 +71,32 @@ enum State {
 /// 
 pub struct Data {
 
+        
+    name: String,
+
+    topic_base: String,
+    topic_cmds: String,
+    topic_atts: String,
+
     /// Current state
     state: State,
 
-    pub events: Events
+    pub events: Events,
+
 }
 pub type SafeData = Arc<Mutex<Data>>;
 
 impl Data {
+
+    // bench
+    // device
+    // name
     pub fn new() -> Data {
         return Data {
+            name: String::new(),
+            topic_base: String::new(),
+            topic_cmds: String::new(),
+            topic_atts: String::new(),        
             state: State::Connecting,
             events: Events::NO_EVENT
         }
@@ -97,7 +106,6 @@ impl Data {
     fn current_state(&self) -> &State {
         return &self.state;
     }
-
 
     fn events(&self) -> &Events {
         return &self.events;
@@ -114,6 +122,10 @@ impl Data {
     }
 
 
+
+
+
+
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -124,10 +136,6 @@ impl Data {
 
 #[async_trait]
 pub trait StateImplementations : Send {
-
-
-    /// Poll events
-    async fn poll_events(&self) -> Vec<Event>;
 
     async fn connecting(&self);
     async fn initializating(&self);
