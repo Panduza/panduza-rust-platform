@@ -43,10 +43,12 @@ impl HandlerImplementations for TestInterfaceListener {
             subscription::Message::ConnectionStatus (status) => {
                 println!("ConnectionStatus {:?}", status);
                 if status.connected {
-                    data.lock().await.add_event(Event::ConnectionUp);
+                    data.lock().await.events.insert(
+                        interface::Events::CONNECTION_UP);
                 }
                 else {
-                    data.lock().await.add_event(Event::ConnectionDown);
+                    data.lock().await.events.insert(
+                        interface::Events::CONNECTION_DOWN);
                 }
             },
             subscription::Message::Mqtt(msg) => {
@@ -73,36 +75,22 @@ impl StateImplementations for TestInterfaceStates {
         return vec![Event::NoEvent];
     }
 
-    async fn enter_connecting(&self) {
-        println!("enter_connecting ");
 
-        // for link in _links.iter() {
-        //     link.topic_subscriber_tx.send("hello!!!!!!!!!!!!!!!!!!!!".to_string()).await.unwrap();
-        // }
-
-        // .unwrap().send("hello".to_string()).await;
-
-        sleep(Duration::from_secs(1)).await;
+    async fn connecting(&self)
+    {
+        println!("connecting");
     }
-
-    async fn state_connecting(&self) {
-        println!("state_connecting");
+    async fn initializating(&self)
+    {
+        println!("initializating");
     }
-
-    async fn leave_connecting(&self) {
-        println!("leave_connecting");
+    async fn running(&self)
+    {
+        println!("running");
     }
-
-    async fn enter_running(&self) {
-        println!("enter_running");
-    }
-
-    async fn state_running(&self) {
-        println!("state_running");
-    }
-
-    async fn leave_running(&self) {
-        println!("leave_running");
+    async fn error(&self)
+    {
+        println!("error");
     }
 
 }

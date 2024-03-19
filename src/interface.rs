@@ -11,7 +11,9 @@ use bitflags::bitflags;
 
 
 bitflags! {
-    pub struct Flags: u32 {
+    
+    #[derive(Copy, Clone, Debug)]
+    pub struct Events: u32 {
         const NO_EVENT                  = 0b00000000;
         const CONNECTION_UP             = 0b00000001;
         const CONNECTION_DOWN           = 0b00000010;
@@ -19,6 +21,7 @@ bitflags! {
         const ERROR                     = 0b10000000;
     }
 }
+
 
 
 use async_trait::async_trait;
@@ -31,7 +34,7 @@ pub enum Event {
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum State {
     Connecting,
     Running,
@@ -59,9 +62,10 @@ enum State {
 /// 
 pub struct Data {
 
-    pub state: State,
+    /// Current state
+    state: State,
 
-    pub events: Vec<Event>
+    pub events: Events
 }
 pub type SafeData = Arc<Mutex<Data>>;
 
@@ -69,13 +73,27 @@ impl Data {
     pub fn new() -> Data {
         return Data {
             state: State::Connecting,
-            events: Vec::new()
+            events: Events::NO_EVENT
         }
     }
 
-    pub fn add_event(&mut self, event: Event) {
-        self.events.push(event);
+
+    fn current_state(&self) -> &State {
+        return &self.state;
     }
+
+
+    fn events(&self) -> &Events {
+        return &self.events;
+    }
+    
+    /// Move to a new state
+    fn move_to_state(&mut self, state: State) {
+        self.state = state;
+        tracing::debug!("Move to state {:?}", self.state);
+    }
+
+
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -91,15 +109,11 @@ pub trait StateImplementations : Send {
     /// Poll events
     async fn poll_events(&self) -> Vec<Event>;
 
-    async fn enter_connecting(&self);
-    async fn state_connecting(&self);
-    async fn leave_connecting(&self);
+    async fn connecting(&self);
+    async fn initializating(&self);
+    async fn running(&self);
+    async fn error(&self);
 
-    async fn enter_running(&self);
-    async fn state_running(&self);
-    async fn leave_running(&self);
-
-        // state == function that return an event
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -124,9 +138,9 @@ impl Fsm {
 
     ///
     /// 
-    pub fn new(impls: Box<dyn StateImplementations>) -> Fsm {
+    pub fn new(data: SafeData, impls: Box<dyn StateImplementations>) -> Fsm {
         Fsm {
-            data: Arc::new(Mutex::new(Data::new())),
+            data: data,
             impls: impls,
         }
     }
@@ -150,13 +164,23 @@ impl Fsm {
         //     }
         // }
         
-        let state = self.data.lock().await.state.clone();
+        // Get state but do not keep the lock
+        let state = self.data.lock().await.current_state().clone();
         match state {
             State::Connecting => {
-                self.impls.enter_connecting().await;
+                // Execute state
+                self.impls.connecting().await;
                 
-                // self.data.lock().await.events;
-                self.data.lock().await.state = State::Running;
+                // Manage transitions
+                let evs = self.data.lock().await.events().clone();
+
+                // If connection up, go to running state
+                if evs.contains(Events::CONNECTION_UP) && !evs.contains(Events::ERROR) {
+                    self.data.lock().await.move_to_state(State::Running);
+                }
+                // else {
+                //     tracing::debug!("{:?}", evs);
+                // }
             },
             State::Running => {
                 // wait for error
@@ -209,9 +233,9 @@ struct Listener {
 
 impl Listener {
     
-    fn new(impls: Box<dyn HandlerImplementations>) -> Listener {
+    fn new(data: SafeData, impls: Box<dyn HandlerImplementations>) -> Listener {
         return Listener {
-            data: Arc::new(Mutex::new(Data::new())),
+            data: data,
             impls: impls,
             links: LinkedList::new()
         }
@@ -263,16 +287,17 @@ pub type SafeInterface = Arc<Mutex<Interface>>;
 
 impl Interface {
     
-    ///
+    /// Create a new instance of the Interface
     /// 
     pub fn new(state_impls: Box<dyn StateImplementations>, listener_impls: Box<dyn HandlerImplementations>) -> Interface {
+        let data = Arc::new(Mutex::new(Data::new()));
         return Interface {
-            fsm: Arc::new(Mutex::new(Fsm::new(state_impls))),
-            listener: Arc::new(Mutex::new(Listener::new(listener_impls)))
+            fsm: Arc::new(Mutex::new(Fsm::new(data.clone(), state_impls))),
+            listener: Arc::new(Mutex::new(Listener::new(data.clone(), listener_impls)))
         }
     }
 
-    ///
+    /// Start the interface, run it into tasks
     /// 
     pub async fn start(&mut self, task_pool: &mut tokio::task::JoinSet<()>) {
         

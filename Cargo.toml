@@ -29,7 +29,7 @@ regex = "1.10.3"
 bytes = "1.5.0"
 
 # Bitflags
-bitflags = "1.2.1"
+bitflags = "2.5.0"
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.
