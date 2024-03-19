@@ -1,6 +1,7 @@
+use tracing::field::Visit;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-use tracing_core::{Subscriber, Event};
+use tracing_core::{Event, Field, Subscriber};
 use tracing_subscriber::fmt::{
     format::{self, FormatEvent, FormatFields},
     FmtContext,
@@ -9,7 +10,28 @@ use tracing_subscriber::fmt::{
 };
 use tracing_subscriber::registry::LookupSpan;
 
-use std::fmt;
+use std::{collections::HashMap, fmt};
+
+
+
+#[derive(Debug)]
+struct MyVisitor {
+    values: HashMap<String, String>,
+}
+
+impl MyVisitor {
+    fn new() -> Self {
+        MyVisitor {
+            values: HashMap::new(),
+        }
+    }
+}
+
+impl Visit for MyVisitor {
+    fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+        self.values.insert(field.name().to_string(), format!("{:?}", value));
+    }
+}
 
 struct MyFormatter;
 
@@ -24,9 +46,27 @@ where
         mut writer: format::Writer<'_>,
         event: &Event<'_>,
     ) -> fmt::Result {
-        // // Format values from the event's's metadata:
-        // let metadata = event.metadata();
+        // Format values from the event's metadata:
+        let metadata = event.metadata();
         // write!(&mut writer, "{} {}: ", metadata.level(), metadata.target())?;
+
+        // if let Some(span_ref) = ctx.lookup_current() {
+        //     if let Some(builder) = span_ref.extensions().get::<SpanBuilder>() {
+        //         if let Some(trace_id) = builder.trace_id {
+        //             serializer.serialize_entry("trace_id", &trace_id.to_hex())?;
+        //         }
+        //     }
+        // }
+
+        
+
+        let mut visitor = MyVisitor::new();
+        event.record(&mut visitor);
+
+        println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!! {:?}", visitor);
+
+        // .format_fields(writer.by_ref(),  ppp)?;
+
 
         // // Format all the spans in the event's span context.
         // if let Some(scope) = ctx.event_scope() {
@@ -51,34 +91,11 @@ where
         //     }
         // }
 
-        // // Write fields on the event
-        // ctx.field_format().format_fields(writer.by_ref(), event)?;
+        // Write fields on the event
+        ctx.field_format().format_fields(writer.by_ref(), event)?;
 
 
-        println!("POOKKK {}", event.metadata().fields() );
-        println!("POOKKK {}", event.metadata().level() );
-
-
-        println!("POOKKK {:?}", event.metadata().fields().field("test") );
-        println!("POOKKK {:?}", event.metadata() );
-
-        // display field content of the event
-        // Display field content of the event
-    
-        for field in event.metadata().fields().iter() {
-            println!("Field: {:?}", field);
-            
-        }
-    
-
-        // let e = event.metadata().fields().field("test");
-        // if e.is_some() {
-        //     let iii: tracing_core::callsite::Identifier = e.unwrap().callsite();
-        //     // display iii information
-        //     println!("POOKKK {:?}", iii );
-
-        // }
-
+        
         writeln!(writer)
     }
 }
