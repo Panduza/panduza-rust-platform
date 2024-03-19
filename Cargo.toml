@@ -49,6 +49,9 @@ tracing = { version = "0.1", features = [
     "release_max_level_trace"
 ]}
 
+# 
+tracing-core = { version = "0.1.32" }
+
 # Fmt subscriber
 tracing-subscriber = "0.3"
 

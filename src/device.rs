@@ -78,6 +78,7 @@ impl Device {
         for interface in self.interfaces.iter_mut() {
             let itf = interface.clone();
 
+
             itf.lock().await.set_dev_name( dev_name.clone() ).await;
             itf.lock().await.set_bench_name( bench_name.clone() ).await;
 

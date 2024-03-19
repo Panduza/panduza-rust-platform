@@ -405,10 +405,13 @@ impl Interface {
 
     /// Create a new instance of the Interface
     /// 
-    pub fn new(state_impls: Box<dyn StateImplementations>, listener_impls: Box<dyn HandlerImplementations>) -> Interface {
+    pub fn new(
+        name: &str,
+        state_impls: Box<dyn StateImplementations>, listener_impls: Box<dyn HandlerImplementations>) -> Interface {
 
 
         let mut d = Data::new();
+        d.set_name(name.to_string());
         d.set_info(listener_impls.get_info());
 
         let data = Arc::new(Mutex::new(d));

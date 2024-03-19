@@ -130,8 +130,10 @@ impl DeviceActions for ServerDeviceActions {
         let mut list = LinkedList::new();
         list.push_back(
             Arc::new(Mutex::new(
-                Interface::new(Box::new(TestInterfaceStates{}),
-                    Box::new(TestInterfaceListener{})      
+                Interface::new(
+                    "platform",
+                    Box::new(TestInterfaceStates{}),
+                    Box::new(TestInterfaceListener{})
             )
             ))
         );

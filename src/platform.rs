@@ -29,7 +29,7 @@ impl Platform {
     pub async fn work(&mut self) {
 
         // Info log
-        tracing::info!("Platform Starting...");
+        tracing::info!(test=2, "Platform Starting...");
 
 
         // stop
