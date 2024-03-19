@@ -9,6 +9,7 @@ use crate::interface::SafeInterface;
 use crate::connection::SafeConnection;
 use crate::connection::LinkInterfaceHandle;
 
+use serde_json::value;
 use serde_json::Value;
 use tokio::task::JoinSet;
 
@@ -24,8 +25,11 @@ pub trait DeviceActions {
 
 pub struct Device {
 
-    task_pool: JoinSet<()>,
+    /// Device name
+    name: String,
 
+    task_pool: JoinSet<()>,
+    
     actions: Box<dyn DeviceActions>,
 
     interfaces: LinkedList<SafeInterface>,
@@ -39,6 +43,7 @@ impl Device {
     /// Create a new instance of the Device
     pub fn new(actions: Box<dyn DeviceActions>) -> Device {
         return Device {
+            name: String::from("changeme"),
             task_pool: JoinSet::new(),
             actions: actions,
             interfaces: LinkedList::new(),
@@ -47,6 +52,12 @@ impl Device {
     }
 
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+    pub fn get_name(&self) -> &String {
+        return &self.name;
+    }
 
 
     pub async fn mount_interfaces(&mut self, task_pool: &mut JoinSet<()>) {
@@ -126,8 +137,45 @@ impl Factory {
     // }
 
 
-    pub fn create_device(&self, device_ref: &str) -> Result<Device, String> {
-        return self.producers.get(device_ref).unwrap().create_device();
+    /// Create a new device instance
+    /// 
+    pub fn create_device(&self, device_def: &Value) -> Result<Device, (String)> {
+
+        // Try to get the name
+        let mut name = String::from("changeme");
+        if let Some(value) = device_def.get("name") {
+            name = value.as_str().unwrap().to_string();
+        }
+
+        // Try to get ref
+        let ref_option = device_def.get("ref");
+        match ref_option {
+            None => {
+                tracing::error!("Device definition does not have a 'ref'");
+                // return Err(());
+                
+                return Err("".to_string());
+            },
+            Some(ref_value) => {
+
+
+                let producer = self.producers.get(ref_value.as_str().unwrap());
+                match producer {
+                    None => {
+                        tracing::error!("Producer not found: {}", ref_value);
+        
+                        return Err("".to_string());
+                        
+                    },
+                    Some(producer) => {
+                        return producer.create_device();
+                    }
+                }
+
+            }
+        }
+
+
     }
 
 }
@@ -159,13 +207,29 @@ impl Manager {
     //     self.factory.add_producer(device_ref, producer);
     // }
 
-    pub async fn create_device(&mut self, device_name: &str, device_ref: &str) {
+    // pub async fn create_device(&mut self, device_name: &str, device_ref: &str) {
 
-        let device = self.factory.create_device(device_ref);
+    //     let device = self.factory.create_device(device_ref);
 
-        self.instances.insert(device_name.to_string(), device.unwrap());
+    //     self.instances.insert(device_name.to_string(), device.unwrap());
+    // }
+
+
+    /// Create a new device instance
+    /// 
+    pub async fn create_device(&mut self, device_def: &Value) -> Result<(), ()> {
+
+        // Debug log
+        tracing::debug!("Create device: {:?}", device_def);
+
+        let dev = self.factory.create_device(device_def).unwrap();
+
+        self.instances.insert(dev.get_name().clone(), dev);
+
+
+        return  Ok(());
+
     }
-
 
 
 

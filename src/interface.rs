@@ -18,7 +18,7 @@ bitflags! {
         const NO_EVENT                  = 0b00000000;
         const CONNECTION_UP             = 0b00000001;
         const CONNECTION_DOWN           = 0b00000010;
-        const STATE_SUCCESS             = 0b00000100;
+        const INIT_DONE                 = 0b00000100;
         const ERROR                     = 0b10000000;
     }
 }
@@ -31,11 +31,11 @@ impl Events {
     pub fn set_connection_down(&mut self) {
         self.insert(Events::CONNECTION_DOWN);
     }
-    pub fn set_state_success(&mut self) {
-        self.insert(Events::STATE_SUCCESS);
+    pub fn set_init_done(&mut self) {
+        self.insert(Events::INIT_DONE);
     }
     pub fn set_state_error(&mut self) {
-        self.insert(Events::STATE_SUCCESS);
+        self.insert(Events::ERROR);
     }
 }
 
@@ -71,7 +71,8 @@ enum State {
 /// 
 pub struct Data {
 
-        
+    bench_name: String,
+    device_name: String,
     name: String,
 
     topic_base: String,
@@ -84,15 +85,14 @@ pub struct Data {
     pub events: Events,
 
 }
-pub type SafeData = Arc<Mutex<Data>>;
+pub type SharedData = Arc<Mutex<Data>>;
 
 impl Data {
 
-    // bench
-    // device
-    // name
     pub fn new() -> Data {
         return Data {
+            bench_name: String::new(),
+            device_name: String::new(),
             name: String::new(),
             topic_base: String::new(),
             topic_cmds: String::new(),
@@ -121,7 +121,9 @@ impl Data {
         tracing::debug!("Move to state {:?}", self.state);
     }
 
-
+    fn update_topics(&mut self) {
+        self.topic_base = format!("");
+    }
 
 
 
@@ -137,10 +139,10 @@ impl Data {
 #[async_trait]
 pub trait StateImplementations : Send {
 
-    async fn connecting(&self);
-    async fn initializating(&self);
-    async fn running(&self);
-    async fn error(&self);
+    async fn connecting(&self, data: &SharedData);
+    async fn initializating(&self, data: &SharedData);
+    async fn running(&self, data: &SharedData);
+    async fn error(&self, data: &SharedData);
 
 }
 
@@ -155,7 +157,7 @@ pub trait StateImplementations : Send {
 pub struct Fsm {
 
     /// Shared state data
-    data: SafeData,
+    data: SharedData,
 
     /// State Implementations
     impls: Box<dyn StateImplementations>,
@@ -166,13 +168,12 @@ impl Fsm {
 
     ///
     /// 
-    pub fn new(data: SafeData, impls: Box<dyn StateImplementations>) -> Fsm {
+    pub fn new(data: SharedData, impls: Box<dyn StateImplementations>) -> Fsm {
         Fsm {
             data: data,
             impls: impls,
         }
     }
-
 
     ///
     ///
@@ -185,7 +186,7 @@ impl Fsm {
         match state {
             State::Connecting => {
                 // Execute state
-                self.impls.connecting().await;
+                self.impls.connecting(&self.data).await;
                 
                 // Manage transitions
                 let evs = self.data.lock().await.events().clone();
@@ -197,13 +198,13 @@ impl Fsm {
             },
             State::Initializating => {
                 // Execute state
-                self.impls.initializating().await;
+                self.impls.initializating(&self.data).await;
 
                 // Manage transitions
                 let evs = self.data.lock().await.events().clone();
 
                 // If initialization ok, go to running state
-                if evs.contains(Events::STATE_SUCCESS) && !evs.contains(Events::ERROR) {
+                if evs.contains(Events::INIT_DONE) && !evs.contains(Events::ERROR) {
                     self.data.lock().await.move_to_state(State::Running);
                 }
                 // If error, go to error state
@@ -212,11 +213,24 @@ impl Fsm {
                 }
             },
             State::Running => {
-                // wait for error
+                // Execute state
+                self.impls.running(&self.data).await;
+
+                // Manage transitions
+                let evs = self.data.lock().await.events().clone();
+
+                // If error, go to error state
+                if evs.contains(Events::ERROR) {
+                    self.data.lock().await.move_to_state(State::Error);
+                }
+                // // If connection down, go to connecting state
+                // else if evs.contains(Events::CONNECTION_DOWN) {
+                //     self.data.lock().await.move_to_state(State::Connecting);
+                // }
             },
             State::Error => {
                 // Execute state
-                self.impls.error().await;
+                self.impls.error(&self.data).await;
             }
         }
 
@@ -240,7 +254,7 @@ pub trait HandlerImplementations : Send {
 
     async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest>;
 
-    async fn process(&self, data: &SafeData, msg: &SubscriptionMessage);
+    async fn process(&self, data: &SharedData, msg: &SubscriptionMessage);
 
 }
 
@@ -255,7 +269,7 @@ pub trait HandlerImplementations : Send {
 struct Listener {
     
     /// Shared state data
-    data: SafeData,
+    data: SharedData,
 
     /// 
     impls: Box<dyn HandlerImplementations>,
@@ -266,7 +280,7 @@ struct Listener {
 
 impl Listener {
     
-    fn new(data: SafeData, impls: Box<dyn HandlerImplementations>) -> Listener {
+    fn new(data: SharedData, impls: Box<dyn HandlerImplementations>) -> Listener {
         return Listener {
             data: data,
             impls: impls,

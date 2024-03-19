@@ -1,3 +1,4 @@
+use serde_json::json;
 use tokio::signal;
 use tokio::task::JoinSet;
 use crate::device::Manager as DeviceManager;
@@ -44,47 +45,23 @@ impl Platform {
         self.connections.create_connection("default", "localhost", 1883).await;
 
 
-        self.devices.create_device("server", "panduza.server").await;
+        self.devices.create_device( &json!({ 
+                "name": "host",
+                "ref": "panduza.server" 
+            })).await.unwrap();
 
         self.connections.start_connection("default", &mut self.task_pool).await;
 
-        self.attach_device_to_connection("server", "default").await;
+        self.attach_device_to_connection("host", "default").await;
 
 
 
         self.devices.mount_devices(&mut self.task_pool).await;
-
-
-        // attach device and connection
-        // mount interfaces
-
-
-        //let mut aaa = Interface::new();
-        // aaa.start(&mut self.task_pool).await;
-
-
-        // self.task_pool.spawn(async move {
-        //         aaa.poll().await
-        //     }
-        // );
-
-        
-        // create connections
-        // then devices
-        // then attach devices to connections
-        
-
-
-
-        // self.task_pool.spawn(self.connections.join_all_connections());
-        
+ 
 
         // Info log
         tracing::info!("Platform Started");
         
-        // tracing::trace!("Trace Mode On");
-        // tracing::debug!("Trace Mode On");
-
         // Wait for either a signal or all tasks to complete
         tokio::select! {
             _ = signal::ctrl_c() => {
@@ -111,8 +88,7 @@ impl Platform {
 
         // get device
         let devvv = self.devices.get_device(&device.to_string()).unwrap();
-            
-            
+
         devvv.attach_connection(self.connections.get_connection(connection)).await;
 
 

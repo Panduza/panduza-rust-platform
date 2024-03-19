@@ -36,7 +36,7 @@ impl HandlerImplementations for TestInterfaceListener {
         ];
     }
 
-    async fn process(&self, data: &interface::SafeData, msg: &subscription::Message) {
+    async fn process(&self, data: &interface::SharedData, msg: &subscription::Message) {
         println!("process {:?}", msg);
 
         match msg {
@@ -51,6 +51,8 @@ impl HandlerImplementations for TestInterfaceListener {
             },
             subscription::Message::Mqtt(msg) => {
                 
+
+                println!("Mqtt {:?}", msg);
             }
         }
 
@@ -67,19 +69,23 @@ struct TestInterfaceStates {
 impl StateImplementations for TestInterfaceStates {
 
 
-    async fn connecting(&self)
+    async fn connecting(&self, data: &interface::SharedData)
     {
         println!("connecting");
     }
-    async fn initializating(&self)
+    async fn initializating(&self, data: &interface::SharedData)
     {
         println!("initializating");
+        
+        data.lock().await.events.set_init_done();
     }
-    async fn running(&self)
+    async fn running(&self, data: &interface::SharedData)
     {
         println!("running");
+
+        sleep(Duration::from_secs(1)).await;
     }
-    async fn error(&self)
+    async fn error(&self, data: &interface::SharedData)
     {
         println!("error");
     }

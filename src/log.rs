@@ -10,15 +10,15 @@ fn init_fmt_subscriber()
     // .pretty()
     .with_max_level(tracing::Level::TRACE)
     // Display source code file paths
-    .with_file(true)
+    // .with_file(true)
     // Display source code line numbers
-    .with_line_number(true)
+    // .with_line_number(true)
     // Display the thread ID an event was recorded on
     // .with_thread_ids(true)
     // Don't display the event's target (module path)
     // .with_target(false)
     // .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-    .with_span_events(FmtSpan::FULL)
+    // .with_span_events(FmtSpan::FULL)
     // Build the subscriber
     .finish();
 
