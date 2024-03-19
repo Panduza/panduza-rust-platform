@@ -13,6 +13,7 @@ use tracing_subscriber::registry::LookupSpan;
 use std::{collections::HashMap, fmt};
 
 
+use colored::Colorize;
 
 #[derive(Debug)]
 struct MyVisitor {
@@ -65,6 +66,8 @@ where
 
         println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!! {:?}", visitor);
 
+
+
         // .format_fields(writer.by_ref(),  ppp)?;
 
 
@@ -96,7 +99,7 @@ where
 
 
         
-        writeln!(writer)
+        writeln!(writer, "{}", event.metadata().target().yellow())
     }
 }
 
