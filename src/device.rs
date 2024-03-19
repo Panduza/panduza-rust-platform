@@ -27,6 +27,7 @@ pub struct Device {
 
     /// Device name
     name: String,
+    bench_name: String,
 
     task_pool: JoinSet<()>,
     
@@ -44,6 +45,7 @@ impl Device {
     pub fn new(actions: Box<dyn DeviceActions>) -> Device {
         return Device {
             name: String::from("changeme"),
+            bench_name: String::from("changeme"),
             task_pool: JoinSet::new(),
             actions: actions,
             interfaces: LinkedList::new(),
@@ -59,12 +61,23 @@ impl Device {
         return &self.name;
     }
 
+    pub fn set_bench_name(&mut self, bench_name: String) {
+        self.bench_name = bench_name;
+    }
+    pub fn get_bench_name(&self) -> &String {
+        return &self.bench_name;
+    }
 
     pub async fn mount_interfaces(&mut self, task_pool: &mut JoinSet<()>) {
         self.interfaces = self.actions.create_interfaces();
 
+
+        let bench_name = self.get_bench_name().clone();
+
         for interface in self.interfaces.iter_mut() {
             let itf = interface.clone();
+
+            itf.lock().await.set_bench_name( bench_name.clone() ).await;
 
             for connection in self.connections.iter_mut() {
                 let mut interface_lock = interface.lock().await;
@@ -158,17 +171,16 @@ impl Factory {
             },
             Some(ref_value) => {
 
-
                 let producer = self.producers.get(ref_value.as_str().unwrap());
                 match producer {
                     None => {
                         tracing::error!("Producer not found: {}", ref_value);
-        
                         return Err("".to_string());
-                        
                     },
                     Some(producer) => {
-                        return producer.create_device();
+                        let mut dev = producer.create_device().unwrap();
+                        dev.set_name(name);
+                        return Ok(dev);
                     }
                 }
 

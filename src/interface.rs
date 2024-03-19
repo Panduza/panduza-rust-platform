@@ -71,9 +71,9 @@ enum State {
 /// 
 pub struct Data {
 
-    bench_name: String,
-    device_name: String,
     name: String,
+    dev_name: String,
+    bench_name: String,
 
     topic_base: String,
     topic_cmds: String,
@@ -91,9 +91,9 @@ impl Data {
 
     pub fn new() -> Data {
         return Data {
-            bench_name: String::new(),
-            device_name: String::new(),
             name: String::new(),
+            dev_name: String::new(),
+            bench_name: String::new(),
             topic_base: String::new(),
             topic_cmds: String::new(),
             topic_atts: String::new(),        
@@ -102,6 +102,30 @@ impl Data {
         }
     }
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+        self.update_topics();
+    }
+    pub fn get_name(&self) -> &String {
+        return &self.name;
+    }
+
+    
+    pub fn set_dev_name(&mut self, dev_name: String) {
+        self.dev_name = dev_name;
+        self.update_topics();
+    }
+    pub fn get_dev_name(&self) -> &String {
+        return &self.dev_name;
+    }
+
+    pub fn set_bench_name(&mut self, bench_name: String) {
+        self.bench_name = bench_name;
+        self.update_topics();
+    }
+    pub fn get_bench_name(&self) -> &String {
+        return &self.bench_name;
+    }
 
     fn current_state(&self) -> &State {
         return &self.state;
@@ -326,6 +350,10 @@ impl Listener {
 
 
 pub struct Interface {
+        
+    /// Shared state data
+    data: SharedData,
+
     fsm: Arc<Mutex<Fsm>>,
     listener: Arc<Mutex<Listener>>,
 }
@@ -333,12 +361,13 @@ pub type SafeInterface = Arc<Mutex<Interface>>;
 
 
 impl Interface {
-    
+
     /// Create a new instance of the Interface
     /// 
     pub fn new(state_impls: Box<dyn StateImplementations>, listener_impls: Box<dyn HandlerImplementations>) -> Interface {
         let data = Arc::new(Mutex::new(Data::new()));
         return Interface {
+            data: data.clone(),
             fsm: Arc::new(Mutex::new(Fsm::new(data.clone(), state_impls))),
             listener: Arc::new(Mutex::new(Listener::new(data.clone(), listener_impls)))
         }
@@ -377,6 +406,20 @@ impl Interface {
         let mut listener = self.listener.lock().await;
         listener.add_link(link);
     }
+
+
+    pub async fn set_name(&mut self, name: String) {
+        self.data.lock().await.set_name(name);
+    }
+
+    pub async fn set_dev_name(&mut self, dev_name: String) {
+        self.data.lock().await.set_dev_name(dev_name);
+    }
+
+    pub async fn set_bench_name(&mut self, bench_name: String) {
+        self.data.lock().await.set_bench_name(bench_name);
+    }
+
 
 
 }
