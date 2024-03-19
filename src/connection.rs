@@ -25,7 +25,7 @@ use crate::subscription::Request as SubscriptionRequest;
 pub struct LinkInterfaceHandle
 {
     /// Mqtt client
-    client: AsyncClient,
+    pub client: AsyncClient,
 
     /// Channel to receive messages from the connection
     pub rx: mpsc::Receiver<subscription::Message>
@@ -38,6 +38,10 @@ impl LinkInterfaceHandle {
             client: client.clone(),
             rx: rx
         }
+    }
+
+    pub fn get_client(&self) -> AsyncClient {
+        return self.client.clone();
     }
 
 }

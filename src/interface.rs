@@ -1,5 +1,7 @@
 use std::collections::LinkedList;
 use std::sync::Arc;
+use rumqttc::AsyncClient;
+use serde_json::Value;
 use tokio::sync::Mutex;
 
 use crate::subscription::Request as SubscriptionRequest;
@@ -78,11 +80,17 @@ pub struct Data {
     topic_base: String,
     topic_cmds: String,
     topic_atts: String,
+    topic_info: String,
 
     /// Current state
     state: State,
 
     pub events: Events,
+
+
+    info: Value,
+
+    clients: LinkedList<AsyncClient>
 
 }
 pub type SharedData = Arc<Mutex<Data>>;
@@ -96,10 +104,18 @@ impl Data {
             bench_name: String::new(),
             topic_base: String::new(),
             topic_cmds: String::new(),
-            topic_atts: String::new(),        
+            topic_atts: String::new(),
+            topic_info: String::new(),        
             state: State::Connecting,
-            events: Events::NO_EVENT
+            events: Events::NO_EVENT,
+            info: Value::Null,
+            clients: LinkedList::new()
         }
+    }
+
+
+    pub fn set_info(&mut self, info: Value) {
+        self.info = info;
     }
 
     pub fn set_name(&mut self, name: String) {
@@ -145,12 +161,33 @@ impl Data {
         tracing::debug!("Move to state {:?}", self.state);
     }
 
+    /// Update topics
     fn update_topics(&mut self) {
-        self.topic_base = format!("");
+        println!("???? Updating topics for interface: {} - {} - {}", self.bench_name, self.dev_name, self.name);
+        self.topic_base = format!("pza/{}/{}/{}", self.bench_name, self.dev_name, self.name);
+        self.topic_cmds = format!("{}/cmds", self.topic_base);
+        self.topic_atts = format!("{}/atts", self.topic_base);
+        self.topic_info = format!("{}/info", self.topic_atts);
     }
 
 
+    pub fn add_client(&mut self, client: AsyncClient) {
+        self.clients.push_back(client);
+    }
 
+    /// Get the base topic
+    pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
+        println!("Publishing to topic: {}", topic);
+        for client in self.clients.iter() {
+            println!("  +");
+            client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+        }
+    }
+
+    /// 
+    pub async fn publish_info(&self) {
+        self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;
+    }
 
 }
 
@@ -276,6 +313,9 @@ impl Fsm {
 #[async_trait]
 pub trait HandlerImplementations : Send {
 
+
+    fn get_info(&self) -> Value;
+
     async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest>;
 
     async fn process(&self, data: &SharedData, msg: &SubscriptionMessage);
@@ -305,6 +345,7 @@ struct Listener {
 impl Listener {
     
     fn new(data: SharedData, impls: Box<dyn HandlerImplementations>) -> Listener {
+
         return Listener {
             data: data,
             impls: impls,
@@ -365,7 +406,12 @@ impl Interface {
     /// Create a new instance of the Interface
     /// 
     pub fn new(state_impls: Box<dyn StateImplementations>, listener_impls: Box<dyn HandlerImplementations>) -> Interface {
-        let data = Arc::new(Mutex::new(Data::new()));
+
+
+        let mut d = Data::new();
+        d.set_info(listener_impls.get_info());
+
+        let data = Arc::new(Mutex::new(d));
         return Interface {
             data: data.clone(),
             fsm: Arc::new(Mutex::new(Fsm::new(data.clone(), state_impls))),
@@ -404,7 +450,12 @@ impl Interface {
     /// 
     pub async fn add_link(&mut self, link: LinkInterfaceHandle) {
         let mut listener = self.listener.lock().await;
+
+        self.data.lock().await.add_client(link.client.clone());
+
         listener.add_link(link);
+
+
     }
 
 

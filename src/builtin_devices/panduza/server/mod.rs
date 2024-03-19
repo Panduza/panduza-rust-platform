@@ -1,5 +1,6 @@
 use rumqttc::tokio_rustls::rustls::internal::msgs;
 use serde_json::Value;
+use serde_json::json;
 use tokio::sync::Mutex;
 use std::collections::LinkedList;
 use std::sync::Arc;
@@ -30,6 +31,16 @@ struct TestInterfaceListener {
 #[async_trait]
 impl HandlerImplementations for TestInterfaceListener {
 
+
+    fn get_info(&self) -> Value {
+        return json!({
+            "info": {
+                "type": "platform",
+                "version": "0.0"
+            }
+        })
+    }
+
     async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
         return vec![
             SubscriptionRequest::new( 0, "pza" )
@@ -51,8 +62,16 @@ impl HandlerImplementations for TestInterfaceListener {
             },
             subscription::Message::Mqtt(msg) => {
                 
+                match msg.get_id() {
+                    0 => {
+                        data.lock().await.publish_info().await;
+                        println!("Ackk !!! {:?}", msg);
+                    },
+                    _ => {
+                        println!("Mqtt {:?}", msg);
+                    }
+                }
 
-                println!("Mqtt {:?}", msg);
             }
         }
 
@@ -72,12 +91,14 @@ impl StateImplementations for TestInterfaceStates {
     async fn connecting(&self, data: &interface::SharedData)
     {
         println!("connecting");
+        sleep(Duration::from_secs(1)).await;
     }
     async fn initializating(&self, data: &interface::SharedData)
     {
         println!("initializating");
         
         data.lock().await.events.set_init_done();
+        sleep(Duration::from_secs(1)).await;
     }
     async fn running(&self, data: &interface::SharedData)
     {

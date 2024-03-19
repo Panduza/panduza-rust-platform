@@ -72,11 +72,13 @@ impl Device {
         self.interfaces = self.actions.create_interfaces();
 
 
+        let dev_name = self.get_name().clone();
         let bench_name = self.get_bench_name().clone();
 
         for interface in self.interfaces.iter_mut() {
             let itf = interface.clone();
 
+            itf.lock().await.set_dev_name( dev_name.clone() ).await;
             itf.lock().await.set_bench_name( bench_name.clone() ).await;
 
             for connection in self.connections.iter_mut() {
