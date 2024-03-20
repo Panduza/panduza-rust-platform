@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use dirs;
 use serde_json::json;
@@ -9,26 +8,8 @@ use tokio::task::JoinSet;
 use crate::device;
 use crate::connection;
 
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-
-/// Services provided by the platform to all the sub objects
-pub struct Services {
-
-}
-type AmServices = Arc<Mutex<Services>>;
-
-impl Services {
-    /// Create a new instance of the Services
-    pub fn new() -> AmServices {
-        return Arc::new(Mutex::new(Services {
-
-        }));
-    }
-}
+mod services;
+use services::{Services, AmServices};
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -130,9 +111,12 @@ impl Platform {
     /// 
     async fn services_task(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
         loop {
-            // Do something
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        
+            if services.lock().await.has_pending_requests() {
+                // Do something
+            }
+            else {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;    
+            }
         }
     }
     
