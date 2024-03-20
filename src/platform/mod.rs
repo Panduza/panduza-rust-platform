@@ -101,6 +101,7 @@ impl Platform {
     }
 
     /// Wait for all tasks to complete
+    /// 
     async fn end_of_all_tasks( &mut self) {
         while let Some(result) = self.task_pool.join_next().await {
             tracing::info!("End task with result {:?}", result);
@@ -110,13 +111,17 @@ impl Platform {
     /// Services task
     /// 
     async fn services_task(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
+        let requests_change_notifier = services.lock().await.get_requests_change_notifier().await;
         loop {
-            if services.lock().await.has_pending_requests() {
-                // Do something
-            }
-            else {
-                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;    
-            }
+            // Wait for an event
+            requests_change_notifier.notified().await;
+            
+            // if services.lock().await.has_pending_requests() {
+            //     // Do something
+            // }
+            // else {
+            //     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;    
+            // }
         }
     }
     
