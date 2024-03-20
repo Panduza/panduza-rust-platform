@@ -4,24 +4,40 @@ use std::collections::{HashMap, LinkedList};
 
 use crate::connection::SafeLinkConnectionManager;
 use crate::builtin_devices;
-use crate::interface::SafeInterface;
+use crate::interface::AmInterface;
 
 use crate::connection::SafeConnection;
 use crate::connection::LinkInterfaceHandle;
 
-use serde_json::value;
-use serde_json::Value;
+use serde_json;
 use tokio::task::JoinSet;
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 pub trait DeviceActions {
 
-    fn hunt(&self) -> LinkedList<Value>;
-    // list de device definition
-    //   ref / name / settings
-    fn create_interfaces(&self) -> LinkedList<SafeInterface>;
+    // fn hunt(&self) -> LinkedList<serde_json::Value>;
+
+    /// Create a new instance of the Device
+    /// 
+    fn create_interfaces<A: Into<String>, B: Into<String>>
+        (&self,
+            dev_name: A,
+            bench_name: B,
+            settings: &serde_json::Value
+        ) -> Vec<AmInterface>;
 
 }
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 pub struct Device {
 
@@ -33,7 +49,7 @@ pub struct Device {
     
     actions: Box<dyn DeviceActions>,
 
-    interfaces: LinkedList<SafeInterface>,
+    interfaces: LinkedList<AmInterface>,
 
     connections: LinkedList<SafeLinkConnectionManager>
 
@@ -69,11 +85,13 @@ impl Device {
     }
 
     pub async fn mount_interfaces(&mut self, task_pool: &mut JoinSet<()>) {
-        self.interfaces = self.actions.create_interfaces();
 
-
+        
         let dev_name = self.get_name().clone();
         let bench_name = self.get_bench_name().clone();
+
+        self.interfaces = self.actions.create_interfaces(dev_name.clone(), bench_name.clone(), &serde_json::Value::Null);
+
 
         for interface in self.interfaces.iter_mut() {
             let itf = interface.clone();
@@ -86,7 +104,7 @@ impl Device {
                 let mut interface_lock = interface.lock().await;
 
 
-                let requests = interface_lock.get_subscription_requests().await;
+                let requests = interface_lock.subscription_requests().await;
 
                 let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
 
@@ -155,7 +173,7 @@ impl Factory {
 
     /// Create a new device instance
     /// 
-    pub fn create_device(&self, device_def: &Value) -> Result<Device, (String)> {
+    pub fn create_device(&self, device_def: &serde_json::Value) -> Result<Device, String> {
 
         // Try to get the name
         let mut name = String::from("changeme");
@@ -232,7 +250,7 @@ impl Manager {
 
     /// Create a new device instance
     /// 
-    pub async fn create_device(&mut self, device_def: &Value) -> Result<(), ()> {
+    pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<(), ()> {
 
         // Debug log
         tracing::debug!("Create device: {:?}", device_def);

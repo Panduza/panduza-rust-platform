@@ -1,6 +1,6 @@
 use crate::device::Factory as DeviceFactory;
 
-mod server;
+// mod server;
 
 
 
@@ -8,7 +8,7 @@ pub fn import_plugin_producers(factory: &mut DeviceFactory)
 {
 
 
-    factory.add_producer("panduza.server", Box::new(server::DeviceProducer{}));
+    // factory.add_producer("panduza.server", Box::new(server::DeviceProducer{}));
 
 }
 

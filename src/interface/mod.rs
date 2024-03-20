@@ -1,41 +1,35 @@
-use std::collections::LinkedList;
+
 use std::sync::Arc;
-use rumqttc::AsyncClient;
 use serde_json::Value;
 use tokio::sync::Mutex;
 
 use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
 
-use crate::subscription::Message as SubscriptionMessage;
 
 
 use async_trait::async_trait;
 
 
-mod fsm;
-mod core;
-mod listener;
+pub mod fsm;
+pub mod core;
+pub mod listener;
 
-
-use crate::interface::core::Core;
-
-
+use crate::interface::fsm::Fsm;
+use crate::interface::core::{ AmCore, Core };
+use crate::interface::listener::Listener;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
-
 
 #[async_trait]
 pub trait IdentityProvider : Send {
     fn get_info(&self) -> Value;
 }
 
-
-
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -43,36 +37,44 @@ pub trait IdentityProvider : Send {
 // ------------------------------------------------------------------------------------------------
 
 
+/// 
 pub struct Interface {
         
-    /// Shared state data
-    data: SharedData,
+    /// Core Object
+    core: AmCore,
 
+    /// FSM
     fsm: Arc<Mutex<Fsm>>,
+
+    /// Listener
     listener: Arc<Mutex<Listener>>,
 }
-pub type SafeInterface = Arc<Mutex<Interface>>;
+pub type AmInterface = Arc<Mutex<Interface>>;
 
 
 impl Interface {
 
     /// Create a new instance of the Interface
     /// 
-    pub fn new(
-        name: &str,
-        state_impls: Box<dyn StateImplementations>, listener_impls: Box<dyn HandlerImplementations>) -> Interface {
+    pub fn new<A: Into<String>, B: Into<String>, C: Into<String>>(
+        name: A, dev_name: B, bench_name: C,
+        idn: Box<dyn IdentityProvider>,
+        states: Box<dyn fsm::States>,
+        subscriber: Box<dyn listener::Subscriber>) -> AmInterface {
 
 
-        let mut d = Data::new();
-        d.set_name(name.to_string());
-        d.set_info(listener_impls.get_info());
+        let mut core = Arc::new(Mutex::new(Core::new(name, dev_name, bench_name)));
+        
+        // d.set_info(subscriber.get_info());
 
-        let data = Arc::new(Mutex::new(d));
-        return Interface {
-            data: data.clone(),
-            fsm: Arc::new(Mutex::new(Fsm::new(data.clone(), state_impls))),
-            listener: Arc::new(Mutex::new(Listener::new(data.clone(), listener_impls)))
-        }
+
+        return Arc::new(Mutex::new(
+            Interface {
+                core: core.clone(),
+                fsm: Arc::new(Mutex::new(Fsm::new(core.clone(), states))),
+                listener: Arc::new(Mutex::new(Listener::new(core.clone(), subscriber)))
+            }
+        ));
     }
 
     /// Start the interface, run it into tasks
@@ -98,8 +100,8 @@ impl Interface {
 
     ///
     /// 
-    pub async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
-        return self.listener.lock().await.get_subscription_requests().await;
+    pub async fn subscription_requests(&self) -> Vec<SubscriptionRequest> {
+        return self.listener.lock().await.subscription_requests().await;
     }
 
     ///

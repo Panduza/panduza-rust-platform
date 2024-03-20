@@ -1,13 +1,22 @@
+use async_trait::async_trait;
+use crate::subscription;
+use crate::interface::core::AmCore;
+use crate::connection::LinkInterfaceHandle;
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 #[async_trait]
-pub trait MessageProcessor : Send {
+pub trait Subscriber : Send {
 
+    /// Get the subscription requests
+    async fn subscription_requests(&self) -> Vec<subscription::Request>;
 
-
-    async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest>;
-
-    async fn process(&self, data: &SharedData, msg: &SubscriptionMessage);
+    /// Process a message
+    async fn process(&self, core: &AmCore, msg: &subscription::Message);
 
 }
 
@@ -19,33 +28,37 @@ pub trait MessageProcessor : Send {
 
 /// Message handler
 /// 
-struct Listener {
-    
-    /// Shared state data
-    data: SharedData,
+pub struct Listener {
+    /// Shared state core
+    core: AmCore,
 
     /// 
-    impls: Box<dyn HandlerImplementations>,
+    subscriber: Box<dyn Subscriber>,
     
-    // links interface handles
-    links: LinkedList<LinkInterfaceHandle>
+    /// Default link
+    default_link: Option<LinkInterfaceHandle>,
+
+    /// Operational link
+    operational_link: Option<LinkInterfaceHandle>,
 }
 
 impl Listener {
     
-    fn new(data: SharedData, impls: Box<dyn HandlerImplementations>) -> Listener {
-
+    /// Create a new instance of the Listener
+    /// 
+    pub fn new(core: AmCore, subscriber: Box<dyn Subscriber>) -> Listener {
         return Listener {
-            data: data,
-            impls: impls,
-            links: LinkedList::new()
+            core: core,
+            subscriber: subscriber,
+            default_link: None,
+            operational_link: None,
         }
     }
 
     ///
     ///
-    pub async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
-        return self.impls.get_subscription_requests().await;
+    pub async fn subscription_requests(&self) -> Vec<subscription::Request> {
+        return self.impls.subscription_requests().await;
     }
 
     ///
@@ -61,7 +74,7 @@ impl Listener {
             let msg = link.rx.recv().await;
             match msg {
                 Some(msg) => {
-                    self.impls.process(&self.data, &msg).await;
+                    self.impls.process(&self.core, &msg).await;
                 },
                 None => {
                     // do nothing

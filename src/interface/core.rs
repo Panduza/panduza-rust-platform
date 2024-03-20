@@ -1,3 +1,4 @@
+use rumqttc::AsyncClient;
 use serde_json;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -5,16 +6,37 @@ use tokio::sync::Mutex;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+enum ClientUsagePolicy {
+    UseBoth,
+    UseOperationalOnly,
+    UseDefaultOnly,
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
 /// Shared data and behaviour across an interface objects
 /// 
 pub struct Core {
 
+    // -- IDENTITY --
     /// Name of the interface
     name: String,
     /// Name of the device
     dev_name: String,
     /// Name of the bench
     bench_name: String,
+    /// Interface Indentity Info
+    info: serde_json::Value,
 
     // Topics
     topic_base: String,
@@ -22,25 +44,32 @@ pub struct Core {
     topic_atts: String,
     topic_info: String,
 
+    // -- FSM --
     /// Current state
     fsm_state: State,
+    /// Events
     fsm_events: Events,
 
-    /// Interface Indentity Info
-    info: serde_json::Value,
+    // -- CLIENTS --
+    
+    // use both
+    // operational only
 
-    // clients: LinkedList<AsyncClient>
-
+    default_client: Option<AsyncClient>,
+    operational_client: Option<AsyncClient>,
 }
-type AmCore = Arc<Mutex<Core>>;
+pub type AmCore = Arc<Mutex<Core>>;
 
 impl Core {
 
-    pub fn new() -> Core {
-        return Core {
-            name: String::new(),
-            dev_name: String::new(),
-            bench_name: String::new(),
+    /// Create a new instance of the Core
+    /// 
+    pub fn new<A: Into<String>, B: Into<String>, C: Into<String>>
+        (name: A, dev_name: B, bench_name: C) -> Core {
+        let mut obj = Core {
+            name: name.into(),
+            dev_name: dev_name.into(),
+            bench_name: bench_name.into(),
             topic_base: String::new(),
             topic_cmds: String::new(),
             topic_atts: String::new(),
@@ -48,12 +77,14 @@ impl Core {
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
             info: serde_json::Value::Null,
-            clients: LinkedList::new()
-        }
+            default_client: None,
+            operational_client: None,
+        };
+        return obj;
     }
 
 
-    pub fn set_info(&mut self, info: Value) {
+    pub fn set_info(&mut self, info: serde_json::Value) {
         self.info = info;
     }
 
@@ -91,7 +122,7 @@ impl Core {
     }
 
     fn clear_events(&mut self) {
-        self.events = Events::NO_EVENT;
+        self.fsm_events = Events::NO_EVENT;
     }
     
     /// Move to a new state
@@ -100,9 +131,8 @@ impl Core {
         tracing::debug!("Move to state {:?}", self.state);
     }
 
-    /// Update topics
+    /// Update topics after a name change
     fn update_topics(&mut self) {
-        println!("???? Updating topics for interface: {} - {} - {}", self.bench_name, self.dev_name, self.name);
         self.topic_base = format!("pza/{}/{}/{}", self.bench_name, self.dev_name, self.name);
         self.topic_cmds = format!("{}/cmds", self.topic_base);
         self.topic_atts = format!("{}/atts", self.topic_base);

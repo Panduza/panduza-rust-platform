@@ -1,14 +1,8 @@
-use rumqttc::tokio_rustls::rustls::internal::msgs;
-use serde_json::Value;
-use serde_json::json;
-use tokio::sync::Mutex;
-use std::collections::LinkedList;
-use std::sync::Arc;
 
 
-use crate::interface::{ SafeInterface, StateImplementations, HandlerImplementations};
-use crate::interface::Interface;
 use crate::interface;
+use crate::interface::core::AmCore;
+use crate::interface::AmInterface;
 use crate::device::{ Device, DeviceActions, Producer };
 
 use async_trait::async_trait;
@@ -17,37 +11,36 @@ use tokio::time::{sleep, Duration};
 
 // use crate::connection::LinkInterfaceHandle;
 
-use crate::subscription::Request as SubscriptionRequest;
 use crate::subscription;
 
 
-
-// 
-
-struct TestInterfaceListener {
-
-}
+struct TestInterfaceListener;
 
 #[async_trait]
-impl HandlerImplementations for TestInterfaceListener {
+impl interface::listener::Subscriber for TestInterfaceListener {
 
 
-    fn get_info(&self) -> Value {
-        return json!({
-            "info": {
-                "type": "platform",
-                "version": "0.0"
-            }
-        })
-    }
+    // fn get_info(&self) -> Value {
+    //     return json!({
+    //         "info": {
+    //             "type": "platform",
+    //             "version": "0.0"
+    //         }
+    //     })
+    // }
 
-    async fn get_subscription_requests(&self) -> Vec<SubscriptionRequest> {
+
+    /// List of subscription requests
+    /// 
+    async fn subscription_requests(&self) -> Vec<subscription::Request> {
         return vec![
-            SubscriptionRequest::new( 0, "pza" )
+            subscription::Request::new( 0, "pza" )
         ];
     }
 
-    async fn process(&self, data: &interface::SharedData, msg: &subscription::Message) {
+    /// Process a message
+    /// 
+    async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
         println!("process {:?}", msg);
 
         match msg {
@@ -85,28 +78,28 @@ struct TestInterfaceStates {
 }
 
 #[async_trait]
-impl StateImplementations for TestInterfaceStates {
+impl interface::fsm::States for TestInterfaceStates {
 
 
-    async fn connecting(&self, data: &interface::SharedData)
+    async fn connecting(&self, data: &AmCore)
     {
         println!("connecting");
         sleep(Duration::from_secs(1)).await;
     }
-    async fn initializating(&self, data: &interface::SharedData)
+    async fn initializating(&self, data: &AmCore)
     {
         println!("initializating");
         
         data.lock().await.events.set_init_done();
         sleep(Duration::from_secs(1)).await;
     }
-    async fn running(&self, data: &interface::SharedData)
+    async fn running(&self, data: &AmCore)
     {
         println!("running");
 
         sleep(Duration::from_secs(1)).await;
     }
-    async fn error(&self, data: &interface::SharedData)
+    async fn error(&self, data: &AmCore)
     {
         println!("error");
     }
@@ -122,21 +115,22 @@ struct ServerDeviceActions {
 
 impl DeviceActions for ServerDeviceActions {
 
-    fn hunt(&self) -> LinkedList<Value> {
-        return LinkedList::new();
-    }
+    // fn hunt(&self) -> LinkedList<Value> {
+    //     return LinkedList::new();
+    // }
 
-    fn create_interfaces(&self) -> LinkedList<SafeInterface> {
-        let mut list = LinkedList::new();
-        list.push_back(
-            Arc::new(Mutex::new(
-                Interface::new(
-                    "platform",
-                    Box::new(TestInterfaceStates{}),
-                    Box::new(TestInterfaceListener{})
-            )
-            ))
-        );
+    fn create_interfaces<A: Into<String>, B: Into<String>>
+        (&self, dev_name: A, bench_name: B, settings: &serde_json::Value) -> Vec<AmInterface> {
+        let mut list = Vec::new();
+        // list.push_back(
+        //     Arc::new(Mutex::new(
+        //         Interface::new(
+        //             "platform",
+        //             Box::new(TestInterfaceStates{}),
+        //             Box::new(TestInterfaceListener{})
+        //     )
+        //     ))
+        // );
 
         return list;
     }

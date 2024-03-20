@@ -1,8 +1,6 @@
 use async_trait::async_trait;
 use bitflags::bitflags;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use crate::interface::core::Core;
+use crate::interface::core::AmCore;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -61,10 +59,10 @@ impl Events {
 #[async_trait]
 pub trait States : Send {
 
-    async fn connecting(&self, core: &Arc<Mutex<Core>>);
-    async fn initializating(&self, core: &Arc<Mutex<Core>>);
-    async fn running(&self, core: &Arc<Mutex<Core>>);
-    async fn error(&self, core: &Arc<Mutex<Core>>);
+    async fn connecting(&self, core: &AmCore);
+    async fn initializating(&self, core: &AmCore);
+    async fn running(&self, core: &AmCore);
+    async fn error(&self, core: &AmCore);
 
 }
 
@@ -74,27 +72,24 @@ pub trait States : Send {
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-
 /// Interface finite state machine
 ///
 pub struct Fsm {
-
     /// Shared state data
-    data: SharedData,
+    core: AmCore,
 
     /// State Implementations
-    impls: Box<dyn StateImplementations>,
-
+    states: Box<dyn States>,
 }
 
 impl Fsm {
 
     ///
     /// 
-    pub fn new(data: SharedData, impls: Box<dyn StateImplementations>) -> Fsm {
+    pub fn new(core: AmCore, states: Box<dyn States>) -> Fsm {
         Fsm {
-            data: data,
-            impls: impls,
+            core: core,
+            states: states,
         }
     }
 
@@ -109,7 +104,7 @@ impl Fsm {
         match state {
             State::Connecting => {
                 // Execute state
-                self.impls.connecting(&self.data).await;
+                self.states.connecting(&self.data).await;
                 
                 // Manage transitions
                 let evs = self.data.lock().await.events().clone();
@@ -121,7 +116,7 @@ impl Fsm {
             },
             State::Initializating => {
                 // Execute state
-                self.impls.initializating(&self.data).await;
+                self.states.initializating(&self.data).await;
 
                 // Manage transitions
                 let evs = self.data.lock().await.events().clone();
@@ -137,7 +132,7 @@ impl Fsm {
             },
             State::Running => {
                 // Execute state
-                self.impls.running(&self.data).await;
+                self.states.running(&self.data).await;
 
                 // Manage transitions
                 let evs = self.data.lock().await.events().clone();
@@ -153,7 +148,7 @@ impl Fsm {
             },
             State::Error => {
                 // Execute state
-                self.impls.error(&self.data).await;
+                self.states.error(&self.data).await;
             }
         }
 
