@@ -97,6 +97,14 @@ impl Platform {
         // self.devices.mount_devices(&mut self.task_pool).await;
  
 
+        // Start service task
+        let s = self.services.clone();
+        let d = self.devices.clone();
+        let c = self.connections.clone();
+        self.task_pool.spawn(async move {
+            Platform::services_task(s, d, c).await;
+        });
+
         // Info log
         tracing::info!("Platform Started !");
         
@@ -118,8 +126,16 @@ impl Platform {
         }
     }
 
+    /// Services task
+    /// 
+    async fn services_task(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
+        loop {
+            // Do something
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        
+        }
+    }
     
-
     /// Attach a device to a connection
     /// 
     async fn attach_device_to_connection(&mut self, device: &str, connection: &str) {

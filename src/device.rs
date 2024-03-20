@@ -21,7 +21,7 @@ use tokio::sync::Mutex;
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-pub trait DeviceActions {
+pub trait DeviceActions : Send {
 
     // fn hunt(&self) -> LinkedList<serde_json::Value>;
 
@@ -128,17 +128,7 @@ impl Device {
 
 
 
-// pub trait DeviceCallbacks {
-//     fn get_name(&self) -> &str;
-
-    
-//     // hunt
-//     fn mount_interfaces(&self, task_pool: &mut tokio::task::JoinSet<()>);
-    
-// }
-
-
-pub trait Producer {
+pub trait Producer : Send {
     fn create_device(&self) -> Result<Device, String>;
 }
 
