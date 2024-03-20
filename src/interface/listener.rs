@@ -58,29 +58,29 @@ impl Listener {
     ///
     ///
     pub async fn subscription_requests(&self) -> Vec<subscription::Request> {
-        return self.impls.subscription_requests().await;
+        return self.subscriber.subscription_requests().await;
     }
 
     ///
     /// 
     pub fn add_link(&mut self, link: LinkInterfaceHandle) {
-        self.links.push_back(link);
+        // self.links.push_back(link);
     }
     
     ///
     ///
     pub async fn run_once(&mut self) {
-        for link in self.links.iter_mut() {
-            let msg = link.rx.recv().await;
-            match msg {
-                Some(msg) => {
-                    self.impls.process(&self.core, &msg).await;
-                },
-                None => {
-                    // do nothing
-                }
-            }
-        }
+        // for link in self.links.iter_mut() {
+        //     let msg = link.rx.recv().await;
+        //     match msg {
+        //         Some(msg) => {
+        //             self.subscriber.process(&self.core, &msg).await;
+        //         },
+        //         None => {
+        //             // do nothing
+        //         }
+        //     }
+        // }
     }
 
 }

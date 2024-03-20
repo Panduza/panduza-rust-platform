@@ -23,11 +23,10 @@ pub trait DeviceActions {
     // fn hunt(&self) -> LinkedList<serde_json::Value>;
 
     /// Create a new instance of the Device
-    /// 
-    fn create_interfaces<A: Into<String>, B: Into<String>>
+    fn create_interfaces
         (&self,
-            dev_name: A,
-            bench_name: B,
+            dev_name: &str,
+            bench_name: &str,
             settings: &serde_json::Value
         ) -> Vec<AmInterface>;
 
@@ -87,32 +86,32 @@ impl Device {
     pub async fn mount_interfaces(&mut self, task_pool: &mut JoinSet<()>) {
 
         
-        let dev_name = self.get_name().clone();
-        let bench_name = self.get_bench_name().clone();
+        // let dev_name = self.get_name().clone();
+        // let bench_name = self.get_bench_name().clone();
 
-        self.interfaces = self.actions.create_interfaces(dev_name.clone(), bench_name.clone(), &serde_json::Value::Null);
-
-
-        for interface in self.interfaces.iter_mut() {
-            let itf = interface.clone();
+        // self.interfaces = self.actions.create_interfaces(dev_name.clone(), bench_name.clone(), &serde_json::Value::Null);
 
 
-            itf.lock().await.set_dev_name( dev_name.clone() ).await;
-            itf.lock().await.set_bench_name( bench_name.clone() ).await;
-
-            for connection in self.connections.iter_mut() {
-                let mut interface_lock = interface.lock().await;
+        // for interface in self.interfaces.iter_mut() {
+        //     let itf = interface.clone();
 
 
-                let requests = interface_lock.subscription_requests().await;
+        //     itf.lock().await.set_dev_name( dev_name.clone() ).await;
+        //     itf.lock().await.set_bench_name( bench_name.clone() ).await;
 
-                let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+        //     for connection in self.connections.iter_mut() {
+        //         let mut interface_lock = interface.lock().await;
 
-                interface_lock.add_link(x).await;
-            }
 
-            itf.lock().await.start(&mut self.task_pool).await;
-        }
+        //         let requests = interface_lock.subscription_requests().await;
+
+        //         let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+
+        //         interface_lock.add_link(x).await;
+        //     }
+
+        //     itf.lock().await.start(&mut self.task_pool).await;
+        // }
 
 
     }

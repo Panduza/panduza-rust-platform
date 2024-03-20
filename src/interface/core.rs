@@ -113,22 +113,22 @@ impl Core {
         return &self.bench_name;
     }
 
-    fn current_state(&self) -> &State {
-        return &self.state;
+    pub fn current_state(&self) -> &State {
+        return &self.fsm_state;
     }
 
-    fn events(&self) -> &Events {
-        return &self.events;
+    pub fn events(&mut self) -> &mut Events {
+        return &mut self.fsm_events;
     }
 
-    fn clear_events(&mut self) {
+    pub fn clear_events(&mut self) {
         self.fsm_events = Events::NO_EVENT;
     }
     
     /// Move to a new state
-    fn move_to_state(&mut self, state: State) {
-        self.state = state;
-        tracing::debug!("Move to state {:?}", self.state);
+    pub fn move_to_state(&mut self, state: State) {
+        self.fsm_state = state;
+        tracing::debug!("Move to state {:?}", self.fsm_state);
     }
 
     /// Update topics after a name change
@@ -141,16 +141,16 @@ impl Core {
 
 
     pub fn add_client(&mut self, client: AsyncClient) {
-        self.clients.push_back(client);
+        // self.clients.push_back(client);
     }
 
     /// Get the base topic
     pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
         println!("Publishing to topic: {}", topic);
-        for client in self.clients.iter() {
-            println!("  +");
-            client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-        }
+        // for client in self.clients.iter() {
+        //     println!("  +");
+        //     client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+        // }
     }
 
     /// 

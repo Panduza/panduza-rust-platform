@@ -47,10 +47,10 @@ impl interface::listener::Subscriber for TestInterfaceListener {
             subscription::Message::ConnectionStatus (status) => {
                 println!("ConnectionStatus {:?}", status);
                 if status.connected {
-                    data.lock().await.events.set_connection_up();
+                    data.lock().await.events().set_connection_up();
                 }
                 else {
-                    data.lock().await.events.set_connection_down();
+                    data.lock().await.events().set_connection_down();
                 }
             },
             subscription::Message::Mqtt(msg) => {
@@ -80,26 +80,29 @@ struct TestInterfaceStates {
 #[async_trait]
 impl interface::fsm::States for TestInterfaceStates {
 
-
-    async fn connecting(&self, data: &AmCore)
+    async fn connecting(&self, core: &AmCore)
     {
         println!("connecting");
         sleep(Duration::from_secs(1)).await;
     }
-    async fn initializating(&self, data: &AmCore)
+
+    async fn initializating(&self, core: &AmCore)
     {
         println!("initializating");
         
-        data.lock().await.events.set_init_done();
+        let mut p = core.lock().await;
+        p.events().set_init_done();
         sleep(Duration::from_secs(1)).await;
     }
-    async fn running(&self, data: &AmCore)
+
+    async fn running(&self, core: &AmCore)
     {
         println!("running");
 
         sleep(Duration::from_secs(1)).await;
     }
-    async fn error(&self, data: &AmCore)
+
+    async fn error(&self, core: &AmCore)
     {
         println!("error");
     }
@@ -119,8 +122,9 @@ impl DeviceActions for ServerDeviceActions {
     //     return LinkedList::new();
     // }
 
-    fn create_interfaces<A: Into<String>, B: Into<String>>
-        (&self, dev_name: A, bench_name: B, settings: &serde_json::Value) -> Vec<AmInterface> {
+    /// Create the interfaces
+    fn create_interfaces(&self, dev_name: &str, bench_name: &str, settings: &serde_json::Value)
+        -> Vec<AmInterface> {
         let mut list = Vec::new();
         // list.push_back(
         //     Arc::new(Mutex::new(

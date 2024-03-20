@@ -98,62 +98,62 @@ impl Fsm {
     pub async fn run_once(&mut self) {
         
         // Get state but do not keep the lock
-        let state = self.data.lock().await.current_state().clone();
+        let state = self.core.lock().await.current_state().clone();
 
         // Perform state task
         match state {
             State::Connecting => {
                 // Execute state
-                self.states.connecting(&self.data).await;
+                self.states.connecting(&self.core).await;
                 
                 // Manage transitions
-                let evs = self.data.lock().await.events().clone();
+                let evs = self.core.lock().await.events().clone();
 
                 // If connection up, go to running state
                 if evs.contains(Events::CONNECTION_UP) && !evs.contains(Events::ERROR) {
-                    self.data.lock().await.move_to_state(State::Initializating);
+                    self.core.lock().await.move_to_state(State::Initializating);
                 }
             },
             State::Initializating => {
                 // Execute state
-                self.states.initializating(&self.data).await;
+                self.states.initializating(&self.core).await;
 
                 // Manage transitions
-                let evs = self.data.lock().await.events().clone();
+                let evs = self.core.lock().await.events().clone();
 
                 // If initialization ok, go to running state
                 if evs.contains(Events::INIT_DONE) && !evs.contains(Events::ERROR) {
-                    self.data.lock().await.move_to_state(State::Running);
+                    self.core.lock().await.move_to_state(State::Running);
                 }
                 // If error, go to error state
                 else if evs.contains(Events::ERROR) {
-                    self.data.lock().await.move_to_state(State::Error);
+                    self.core.lock().await.move_to_state(State::Error);
                 }
             },
             State::Running => {
                 // Execute state
-                self.states.running(&self.data).await;
+                self.states.running(&self.core).await;
 
                 // Manage transitions
-                let evs = self.data.lock().await.events().clone();
+                let evs = self.core.lock().await.events().clone();
 
                 // If error, go to error state
                 if evs.contains(Events::ERROR) {
-                    self.data.lock().await.move_to_state(State::Error);
+                    self.core.lock().await.move_to_state(State::Error);
                 }
                 // // If connection down, go to connecting state
                 // else if evs.contains(Events::CONNECTION_DOWN) {
-                //     self.data.lock().await.move_to_state(State::Connecting);
+                //     self.core.lock().await.move_to_state(State::Connecting);
                 // }
             },
             State::Error => {
                 // Execute state
-                self.states.error(&self.data).await;
+                self.states.error(&self.core).await;
             }
         }
 
         // Clear events for next run
-        self.data.lock().await.clear_events();
+        self.core.lock().await.clear_events();
 
     }
 
