@@ -298,16 +298,17 @@ pub struct Manager {
     /// Map of managed connections
     connections: HashMap<String, SafeConnection>
 }
+pub type AmManager = Arc<Mutex<Manager>>;
 
 impl Manager {
 
     /// Create a new manager
     ///
-    pub fn new(platform_name: &str) -> Manager {
-        return Manager {
+    pub fn new(platform_name: &str) -> AmManager {
+        return Arc::new(Mutex::new(Manager {
             platform_name: platform_name.to_string(),
             connections: HashMap::new()
-        }
+        }));
     }
 
     /// Create a new inactive connection

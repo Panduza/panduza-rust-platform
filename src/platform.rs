@@ -1,17 +1,56 @@
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use dirs;
 use serde_json::json;
 use tokio::signal;
+use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use crate::device::Manager as DeviceManager;
-use crate::connection::Manager as ConnectionManager;
+use crate::device;
+use crate::connection;
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Services provided by the platform to all the sub objects
+pub struct Services {
+
+}
+type AmServices = Arc<Mutex<Services>>;
+
+impl Services {
+    /// Create a new instance of the Services
+    pub fn new() -> AmServices {
+        return Arc::new(Mutex::new(Services {
+
+        }));
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+/// Platform main object
+/// 
 pub struct Platform
 {
+    /// Task pool to manage all tasks
     task_pool: JoinSet<()>,
-    devices: DeviceManager,
-    connections: ConnectionManager
-    
-    // devices  HashMap<String, Box<dyn Producer>>
 
+    /// Services
+    services: AmServices,
+
+    /// Device manager
+    devices: device::AmManager,
+
+    /// Connection manager
+    connections: connection::AmManager
 }
 
 impl Platform {
@@ -20,47 +59,46 @@ impl Platform {
     pub fn new(name: &str) -> Platform {
         return Platform {
             task_pool: JoinSet::new(),
-            devices: DeviceManager::new(),
-            connections: ConnectionManager::new(name)
+            services: Services::new(),
+            devices: device::Manager::new(),
+            connections: connection::Manager::new(name)
         }
     }
 
     /// Main platform run loop
     pub async fn work(&mut self) {
-
         // Info log
-        tracing::info!(test=2, aaaaa="dddd", "Platform Starting...");
+        tracing::info!("Booting Platform...");
+
+        // tracing::debug!("{:?}", dirs::home_dir().unwrap());
+        // panduza
+
+        let p = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
+        println!("{:?}", p);
 
 
-        // stop
-        // read config
-        // create devices
-        // create connections
-        // create benches
-        // create interfaces on connections (associations)
-        // start
+        // Parse tree file
+        // unload all
+        // load tree
+
+        // self.connections.create_connection("default", "localhost", 1883).await;
+
+        // self.devices.create_device( &json!({ 
+        //     "name": "host",
+        //     "ref": "panduza.server" 
+        //     })).await.unwrap();
+
+        // self.connections.start_connection("default", &mut self.task_pool).await;
+
+        // self.attach_device_to_connection("host", "default").await;
 
 
 
-        self.connections.create_connection("default", "localhost", 1883).await;
-
-
-        self.devices.create_device( &json!({ 
-                "name": "host",
-                "ref": "panduza.server" 
-            })).await.unwrap();
-
-        self.connections.start_connection("default", &mut self.task_pool).await;
-
-        self.attach_device_to_connection("host", "default").await;
-
-
-
-        self.devices.mount_devices(&mut self.task_pool).await;
+        // self.devices.mount_devices(&mut self.task_pool).await;
  
 
         // Info log
-        tracing::info!("Platform Started");
+        tracing::info!("Platform Started !");
         
         // Wait for either a signal or all tasks to complete
         tokio::select! {
@@ -86,10 +124,10 @@ impl Platform {
     /// 
     async fn attach_device_to_connection(&mut self, device: &str, connection: &str) {
 
-        // get device
-        let devvv = self.devices.get_device(&device.to_string()).unwrap();
+        // // get device
+        // let devvv = self.devices.get_device(&device.to_string()).unwrap();
 
-        devvv.attach_connection(self.connections.get_connection(connection)).await;
+        // devvv.attach_connection(self.connections.get_connection(connection)).await;
 
 
         // get connection

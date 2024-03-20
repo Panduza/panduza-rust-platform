@@ -10,6 +10,9 @@ edition = "2021"
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
 
+# 
+dirs = "3.0.2"
+
 # MQTT async client
 rumqttc = "0.24.0"
 

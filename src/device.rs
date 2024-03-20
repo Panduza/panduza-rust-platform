@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use std::collections::{HashMap, LinkedList};
 
 // use tokio::{task::yield_now, time::{sleep, Duration}};
@@ -11,6 +13,7 @@ use crate::connection::LinkInterfaceHandle;
 
 use serde_json;
 use tokio::task::JoinSet;
+use tokio::sync::Mutex;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -225,14 +228,15 @@ pub struct Manager {
     instances: HashMap<String, Device>,
 
 }
+pub type AmManager = Arc<Mutex<Manager>>;
 
 impl Manager {
 
-    pub fn new() -> Manager {
-        return Manager {
+    pub fn new() -> AmManager {
+        return Arc::new(Mutex::new(Manager {
             factory: Factory::new(),
             instances: HashMap::new()
-        }
+        }));
     }
 
     // pub fn add_producer(&mut self, device_ref: &str, producer: Box<dyn Producer>) {
