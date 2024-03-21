@@ -15,7 +15,7 @@ use serde_json;
 use tokio::task::JoinSet;
 use tokio::sync::Mutex;
 
-use crate::platform;
+use crate::platform::{self, TaskPoolLoader};
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -219,15 +219,18 @@ pub struct Manager {
     // Lits of device instances
     instances: HashMap<String, Device>,
 
+    task_loader: TaskPoolLoader
+
 }
 pub type AmManager = Arc<Mutex<Manager>>;
 
 impl Manager {
 
-    pub fn new() -> AmManager {
+    pub fn new(task_loader: TaskPoolLoader) -> AmManager {
         return Arc::new(Mutex::new(Manager {
             factory: Factory::new(),
-            instances: HashMap::new()
+            instances: HashMap::new(),
+            task_loader: task_loader
         }));
     }
 

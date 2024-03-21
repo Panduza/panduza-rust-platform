@@ -5,6 +5,8 @@ use bitflags::bitflags;
 use tokio::sync::Notify;
 use std::cmp::PartialEq;
 
+use super::TaskPoolLoader;
+
 bitflags! {
     #[derive(Copy, Clone, Debug)]
     pub struct Requests: u32 {
@@ -38,14 +40,16 @@ pub struct Services {
     tree_content: serde_json::Value,
 
     /// Panic cause, try to keep ip empty :)
-    panic_cause: String
+    panic_cause: String,
+
+    task_loader: TaskPoolLoader
 }
 pub type AmServices = Arc<Mutex<Services>>;
 
 impl Services {
 
     /// Create a new instance of the Services
-    pub fn new() -> AmServices {
+    pub fn new(task_loader: TaskPoolLoader) -> AmServices {
         // create the requests_change_notifier and start a first notification
         let notify = Arc::new(Notify::new());
         notify.notify_one();
@@ -55,7 +59,8 @@ impl Services {
             requests: Requests::BOOTING,
             requests_change_notifier: notify,
             tree_content: serde_json::Value::Null,
-            panic_cause: String::new()
+            panic_cause: String::new(),
+            task_loader: task_loader
         }));
     }
 

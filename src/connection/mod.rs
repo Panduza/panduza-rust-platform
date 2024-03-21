@@ -10,6 +10,7 @@ use tokio::sync::Mutex;
 use std::collections::LinkedList;
 
 
+use crate::platform::TaskPoolLoader;
 use crate::subscription;
 use crate::subscription::Filter as SubscriptionFilter;
 use crate::subscription::Request as SubscriptionRequest;
@@ -296,7 +297,9 @@ pub struct Manager {
     platform_name: String,
 
     /// Map of managed connections
-    connections: HashMap<String, SafeConnection>
+    connections: HashMap<String, SafeConnection>,
+
+    task_loader: TaskPoolLoader
 }
 pub type AmManager = Arc<Mutex<Manager>>;
 
@@ -304,10 +307,11 @@ impl Manager {
 
     /// Create a new manager
     ///
-    pub fn new(platform_name: &str) -> AmManager {
+    pub fn new(    task_loader: TaskPoolLoader, platform_name: &str) -> AmManager {
         return Arc::new(Mutex::new(Manager {
             platform_name: platform_name.to_string(),
-            connections: HashMap::new()
+            connections: HashMap::new(),
+            task_loader: task_loader
         }));
     }
 

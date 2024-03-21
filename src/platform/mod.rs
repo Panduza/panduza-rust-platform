@@ -32,6 +32,7 @@ macro_rules! platform_error {
 }
 
 
+#[derive(Clone)]
 pub struct TaskPoolLoader {
 
     task_pool_tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>
@@ -95,16 +96,18 @@ impl Platform {
     pub fn new(name: &str) -> Platform {
 
         // Create the channel
-        let (tx, mut rx) =
+        let (tx, rx) =
             tokio::sync::mpsc::channel::<BoxFuture<'static, ()>>(5);
         
+        let tl = TaskPoolLoader::new(tx);
+
         return Platform {
             task_pool: JoinSet::new(),
             task_pool_rx: Arc::new(Mutex::new(rx)),
-            task_loader: TaskPoolLoader::new(tx),
-            services: Services::new(),
-            devices: device::Manager::new(),
-            connections: connection::Manager::new(name)
+            task_loader: tl.clone(),
+            services: Services::new(tl.clone()),
+            devices: device::Manager::new(tl.clone()),
+            connections: connection::Manager::new(tl.clone(), name)
         }
     }
 
@@ -114,50 +117,29 @@ impl Platform {
         // Info log
         tracing::info!("Platform Version ...");
 
-
-
-
         // Start service task
         let s = self.services.clone();
         let d = self.devices.clone();
         let c = self.connections.clone();
 
-
-        // let a: Pin<Box<dyn Future<Output = ()> + Send>> = async move {
-        //     Platform::services_task(s, d, c).await;
-        // }.boxed();
-        // tx.send(a).await;
-
-
-        // let pppp = rx.recv().await.unwrap();
-
-        // tracing::warn!("pok");
-
         self.task_loader.load(async move {
-            Platform::services_task(s, d, c).await;
-        }.boxed()
-    
-    ).unwrap();
-        
-
-        // Wait for either a signal or all tasks to complete
-        // let mut task_pool_rx = self.task_pool_rx.clone();
-
-        // task = self.task_pool_rx.try_next() => {
-            //     // tracing::warn!("Task received");
-            // },
-
-            
-        // let f1 = tokio::spawn(self.end_of_all_tasks());
-
+                Platform::services_task(s, d, c).await;
+            }.boxed()
+        ).unwrap();
         
 
         let p = self.task_pool_rx.clone();
         let mut task_pool_rx = p.lock().await;
 
-        if let task = task_pool_rx.recv().await {
-            tracing::warn!("new task !!!");
-            self.task_pool.spawn(task.unwrap());
+        let task_option = task_pool_rx.recv().await;
+        match task_option {
+            Some(task) => {
+                tracing::warn!("new task !!!");
+                self.task_pool.spawn(task);
+            },
+            None => {
+                tracing::warn!("???!!!!!");
+            }
         }
 
         tokio::select! {
@@ -177,8 +159,6 @@ impl Platform {
     /// Wait for all tasks to complete
     /// 
     async fn end_of_all_tasks( &mut self) {
-        
-
         while let Some(result) = self.task_pool.join_next().await {
             tracing::info!("End task with result {:?}", result);
         }
@@ -260,10 +240,7 @@ impl Platform {
         
         c.create_connection("default", "localhost", 1883).await;
 
-
         let mut d = devices.lock().await;
-        
-        
         
         match d.create_device( &json!({
             "name": "host",
