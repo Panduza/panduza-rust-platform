@@ -200,8 +200,8 @@ impl Platform {
     }
 
     /// Load the tree file from system into service data
-    /// 
-    async fn load_tree_file(services: AmServices) {
+    ///
+    async fn load_tree_file(services: AmServices) -> Result<(), error::Error> {
 
         // Get the tree file path
         let tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
@@ -217,26 +217,58 @@ impl Platform {
             }
         }
 
-        // Read the file content
+        // Try to read the file content
         let file_content = tokio::fs::read_to_string(&tree_file_path).await;
-        if let Ok(content) = file_content {
-            // Parse the JSON content
-            let json_content = serde_json::from_str::<serde_json::Value>(&content);
-            if let Ok(json) = json_content {
+        match file_content {
+            Ok(content) => {
+                Platform::load_tree_string(services.clone(), &content).await?;
+                return Ok(());
+            },
+            Err(e) => {
+                return platform_error!(
+                    format!("Failed to read {:?} file content: {}", tree_file_path, e), None)
+            }
+        }
+
+        // if let Ok(content) = file_content {
+        //     // Parse the JSON content
+        //     let json_content = serde_json::from_str::<serde_json::Value>(&content);
+        //     if let Ok(json) = json_content {
                 
+        //         tracing::info!("JSON content: {:?}", json);
+
+        //         services.lock().await.set_tree_content(json);
+
+        //     } else {
+        //         tracing::error!("Failed to parse JSON content");
+        //     }
+        // } else {
+        //     tracing::error!("Failed to read file content");
+        // }
+
+    }
+
+    
+    /// Load the tree file from system into service data
+    ///
+    async fn load_tree_string(services: AmServices, content: &String) -> Result<(), error::Error> {
+
+        let json_content = serde_json::from_str::<serde_json::Value>(&content);
+        match json_content {
+            Ok(json) => {
                 tracing::info!("JSON content: {:?}", json);
 
                 services.lock().await.set_tree_content(json);
 
-            } else {
-                tracing::error!("Failed to parse JSON content");
+                return Ok(());
+            },
+            Err(e) => {
+                return platform_error!(
+                    format!("Failed to parse JSON content: {}", e), None)
             }
-        } else {
-            tracing::error!("Failed to read file content");
         }
-
-
     }
+
 
     /// Reload tree inside platform configuration
     /// 
