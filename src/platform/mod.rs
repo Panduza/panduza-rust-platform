@@ -34,13 +34,13 @@ macro_rules! platform_error {
 
 pub struct TaskPoolLoader {
 
-    task_pool_tx: mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>
+    task_pool_tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>
 
 }
 
 impl TaskPoolLoader {
 
-    pub fn new(tx: mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>) -> TaskPoolLoader {
+    pub fn new(tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>) -> TaskPoolLoader {
         return TaskPoolLoader {
             task_pool_tx: tx
         }
@@ -74,7 +74,9 @@ pub struct Platform
     /// Task pool to manage all tasks
     task_pool: JoinSet<()>,
 
-    task_pool_rx: mpsc::Receiver<Pin<Box<dyn Future<Output = ()> + Send>>>,
+    task_pool_rx: Arc<Mutex< tokio::sync::mpsc::Receiver<Pin<Box<dyn Future<Output = ()> + Send>>> >>,
+
+    task_loader: TaskPoolLoader,
 
     /// Services
     services: AmServices,
@@ -94,10 +96,12 @@ impl Platform {
 
         // Create the channel
         let (tx, mut rx) =
-            mpsc::channel::<BoxFuture<'static, ()>>(5);
+            tokio::sync::mpsc::channel::<BoxFuture<'static, ()>>(5);
         
         return Platform {
             task_pool: JoinSet::new(),
+            task_pool_rx: Arc::new(Mutex::new(rx)),
+            task_loader: TaskPoolLoader::new(tx),
             services: Services::new(),
             devices: device::Manager::new(),
             connections: connection::Manager::new(name)
@@ -127,14 +131,42 @@ impl Platform {
 
         // let pppp = rx.recv().await.unwrap();
 
-        tracing::warn!("pok");
+        // tracing::warn!("pok");
 
-        self.task_pool.spawn(pppp);
+        self.task_loader.load(async move {
+            Platform::services_task(s, d, c).await;
+        }.boxed()
+    
+    ).unwrap();
+        
 
         // Wait for either a signal or all tasks to complete
+        // let mut task_pool_rx = self.task_pool_rx.clone();
+
+        // task = self.task_pool_rx.try_next() => {
+            //     // tracing::warn!("Task received");
+            // },
+
+            
+        // let f1 = tokio::spawn(self.end_of_all_tasks());
+
+        
+
+        let p = self.task_pool_rx.clone();
+        let mut task_pool_rx = p.lock().await;
+
+        if let task = task_pool_rx.recv().await {
+            tracing::warn!("new task !!!");
+            self.task_pool.spawn(task.unwrap());
+        }
+
         tokio::select! {
             _ = signal::ctrl_c() => {
                 tracing::warn!("End by user ctrl-c");
+            },
+            task = task_pool_rx.recv() => {
+                tracing::warn!("new task !!!");
+                self.task_pool.spawn(task.unwrap());
             },
             _ = self.end_of_all_tasks() => {
                 tracing::warn!("End by all tasks completed");
@@ -145,6 +177,8 @@ impl Platform {
     /// Wait for all tasks to complete
     /// 
     async fn end_of_all_tasks( &mut self) {
+        
+
         while let Some(result) = self.task_pool.join_next().await {
             tracing::info!("End task with result {:?}", result);
         }
