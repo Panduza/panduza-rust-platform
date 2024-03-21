@@ -1,3 +1,4 @@
+use futures::FutureExt;
 use tokio::sync::mpsc;
 use rumqttc::MqttOptions;
 use rumqttc::AsyncClient;
@@ -198,16 +199,16 @@ impl Connection {
 
     /// Start the connection
     ///
-    pub async fn start(&mut self, task_pool: &mut tokio::task::JoinSet<()>) {
+    pub async fn start(&mut self, task_loader: &mut TaskPoolLoader) {
 
         //
         let ev: Arc<Mutex<rumqttc::EventLoop>> = self.eventloop.clone();
         let lm: Arc<Mutex<LinkConnectionManager>> = self.link_manager.clone();
 
         // Start connection process in a task
-        task_pool.spawn(async move {
+        task_loader.load(async move {
             Connection::run(ev, lm).await;
-        });
+        }.boxed()).unwrap();
 
     }
 
@@ -345,12 +346,12 @@ impl Manager {
     /// name: name of the connection to start
     /// task_pool: main JoinSet to attach the running connection to a task
     ///
-    pub async fn start_connection(&mut self, name: &str, task_pool: &mut tokio::task::JoinSet<()>) {
+    pub async fn start_connection<A: Into<String>>(&mut self, name: A) {
         // Get the connection clone for the task
-        let conn = self.connections.get(name).unwrap().clone();
+        let conn = self.connections.get(&name.into()).unwrap().clone();
 
         // Start the connection
-        conn.lock().await.start(task_pool).await;
+        conn.lock().await.start(&mut self.task_loader).await;
     }
 
     /// Get a connection

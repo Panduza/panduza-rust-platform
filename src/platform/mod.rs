@@ -142,18 +142,24 @@ impl Platform {
             }
         }
 
-        tokio::select! {
-            _ = signal::ctrl_c() => {
-                tracing::warn!("End by user ctrl-c");
-            },
-            task = task_pool_rx.recv() => {
-                tracing::warn!("new task !!!");
-                self.task_pool.spawn(task.unwrap());
-            },
-            _ = self.end_of_all_tasks() => {
-                tracing::warn!("End by all tasks completed");
-            }
+
+        loop {
+            tokio::select! {
+                _ = signal::ctrl_c() => {
+                    tracing::warn!("End by user ctrl-c");
+                    break;
+                },
+                task = task_pool_rx.recv() => {
+                    tracing::warn!("new task !!!");
+                    self.task_pool.spawn(task.unwrap());
+                },
+                _ = self.end_of_all_tasks() => {
+                    tracing::warn!("End by all tasks completed");
+                    break;
+                }
+            }            
         }
+
     }
 
     /// Wait for all tasks to complete
@@ -241,7 +247,6 @@ impl Platform {
         c.create_connection("default", "localhost", 1883).await;
 
         let mut d = devices.lock().await;
-        
         match d.create_device( &json!({
             "name": "host",
             "ref": "panduza.server" 
@@ -254,31 +259,16 @@ impl Platform {
             }
         }
 
-        // c.start_connection("default", &mut self.task_pool).await;
-
-        // self.attach_device_to_connection("host", "default").await;
-
-        // self.devices.mount_devices(&mut self.task_pool).await;
-
-    }
-
-    /// Attach a device to a connection
-    /// 
-    async fn attach_device_to_connection(&mut self, device: &str, connection: &str) {
-
-        // // get device
-        // let devvv = self.devices.get_device(&device.to_string()).unwrap();
-
-        // devvv.attach_connection(self.connections.get_connection(connection)).await;
+        // attach
+        let devvv = d.get_device("host".to_string()).unwrap();
+        devvv.attach_connection(c.get_connection(&"default".to_string())).await;
 
 
-        // get connection
-        // attach device to connection
-        
-        // self.devices.attach_connection(device, connection);
+        c.start_connection("default").await;
+
+        d.mount_devices().await;
 
     }
-
 
 
 

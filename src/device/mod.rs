@@ -30,8 +30,8 @@ pub trait DeviceActions : Send {
     /// Create a new instance of the Device
     fn create_interfaces
         (&self,
-            dev_name: &str,
-            bench_name: &str,
+            dev_name: String,
+            bench_name: String,
             settings: &serde_json::Value
         ) -> Vec<AmInterface>;
 
@@ -53,7 +53,7 @@ pub struct Device {
     
     actions: Box<dyn DeviceActions>,
 
-    interfaces: LinkedList<AmInterface>,
+    interfaces: Vec<AmInterface>,
 
     connections: LinkedList<SafeLinkConnectionManager>
 
@@ -68,7 +68,7 @@ impl Device {
             bench_name: String::from("changeme"),
             task_pool: JoinSet::new(),
             actions: actions,
-            interfaces: LinkedList::new(),
+            interfaces: Vec::new(),
             connections: LinkedList::new()
         }
     }
@@ -88,13 +88,13 @@ impl Device {
         return &self.bench_name;
     }
 
-    pub async fn mount_interfaces(&mut self, task_pool: &mut JoinSet<()>) {
+    pub async fn mount_interfaces(&mut self, task_loader: &mut TaskPoolLoader) {
 
         
-        // let dev_name = self.get_name().clone();
-        // let bench_name = self.get_bench_name().clone();
+        let dev_name = self.get_name().clone();
+        let bench_name = self.get_bench_name().clone();
 
-        // self.interfaces = self.actions.create_interfaces(dev_name.clone(), bench_name.clone(), &serde_json::Value::Null);
+        self.interfaces = self.actions.create_interfaces(dev_name, bench_name, &serde_json::Value::Null);
 
 
         // for interface in self.interfaces.iter_mut() {
@@ -275,16 +275,16 @@ impl Manager {
 
 
 
-    pub async fn mount_devices(&mut self, task_pool: &mut JoinSet<()>)
+    pub async fn mount_devices(&mut self)
     {
         for(_, device) in self.instances.iter_mut() {
-            device.mount_interfaces(task_pool).await;
+            device.mount_interfaces(&mut self.task_loader).await;
         }
     }
 
 
-    pub fn get_device(&mut self, device_ref: &String) -> Option<&mut Device> {
-        return self.instances.get_mut(device_ref);
+    pub fn get_device(&mut self, device_ref: String) -> Option<&mut Device> {
+        return self.instances.get_mut(&device_ref);
     }
 
     // pub fn get_device(&self, device_ref: &String) -> Option<&Box<dyn Device>> {

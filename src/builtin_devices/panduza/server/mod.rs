@@ -1,6 +1,6 @@
 
 
-use crate::interface;
+use crate::interface::{self, Interface};
 use crate::interface::core::AmCore;
 use crate::interface::AmInterface;
 use crate::device::{ Device, DeviceActions, Producer };
@@ -111,6 +111,23 @@ impl interface::fsm::States for TestInterfaceStates {
 
 
 
+struct TestIdentityProvider {
+
+}
+
+impl interface::IdentityProvider for TestIdentityProvider {
+
+    fn get_info(&self) -> serde_json::Value {
+        return serde_json::json!({
+            "info": {
+                "type": "platform",
+                "version": "0.0"
+            }
+        });
+    }
+
+}
+
 
 struct ServerDeviceActions {
 
@@ -123,18 +140,17 @@ impl DeviceActions for ServerDeviceActions {
     // }
 
     /// Create the interfaces
-    fn create_interfaces(&self, dev_name: &str, bench_name: &str, settings: &serde_json::Value)
+    fn create_interfaces(&self, dev_name: String, bench_name: String, settings: &serde_json::Value)
         -> Vec<AmInterface> {
         let mut list = Vec::new();
-        // list.push_back(
-        //     Arc::new(Mutex::new(
-        //         Interface::new(
-        //             "platform",
-        //             Box::new(TestInterfaceStates{}),
-        //             Box::new(TestInterfaceListener{})
-        //     )
-        //     ))
-        // );
+        list.push(
+            Interface::new(
+                "platform", dev_name, bench_name,
+                Box::new(TestIdentityProvider{}),
+                Box::new(TestInterfaceStates{}),
+                Box::new(TestInterfaceListener{})
+            )
+        );
 
         return list;
     }
