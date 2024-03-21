@@ -167,7 +167,7 @@ impl Factory {
 
     /// Create a new device instance
     /// 
-    pub fn create_device(&self, device_def: &serde_json::Value) -> Result<Device, String> {
+    pub fn create_device(&self, device_def: &serde_json::Value) -> Result<Device, platform::Error> {
 
         // Try to get the name
         let mut name = String::from("changeme");
@@ -179,18 +179,18 @@ impl Factory {
         let ref_option = device_def.get("ref");
         match ref_option {
             None => {
-                tracing::error!("Device definition does not have a 'ref'");
+                // tracing::error!("Device definition does not have a 'ref'");
                 // return Err(());
                 
-                return Err("".to_string());
+                return platform_error!("Device definition does not have a 'ref'", None);
             },
             Some(ref_value) => {
 
                 let producer = self.producers.get(ref_value.as_str().unwrap());
                 match producer {
                     None => {
-                        tracing::error!("Producer not found: {}", ref_value);
-                        return Err("".to_string());
+                        // tracing::error!("Producer not found: {}", ref_value);
+                        return platform_error!("Producer not found", None);
                     },
                     Some(producer) => {
                         let mut dev = producer.create_device().unwrap();
@@ -253,7 +253,7 @@ impl Manager {
         let dev = self.factory.create_device(device_def);
         match dev {
             Err(e) => {
-                return platform_error!("Device not created", None);
+                return platform_error!("Device not created", Some(Box::new(e)));
             },
             Ok(dev) => {
                 // Info log

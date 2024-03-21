@@ -1,7 +1,13 @@
 use std::env;
 use std::path::PathBuf;
+use std::pin::Pin;
+use std::sync::Arc;
 
 use dirs;
+use futures::channel::mpsc;
+use futures::future::BoxFuture;
+use futures::Future;
+use futures::FutureExt;
 use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
@@ -14,6 +20,7 @@ mod services;
 
 use services::{Services, AmServices};
 
+use crate::platform_error;
 
 pub type Error = error::Error;
 
@@ -25,6 +32,34 @@ macro_rules! platform_error {
 }
 
 
+pub struct TaskPoolLoader {
+
+    task_pool_tx: mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>
+
+}
+
+impl TaskPoolLoader {
+
+    pub fn new(tx: mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>) -> TaskPoolLoader {
+        return TaskPoolLoader {
+            task_pool_tx: tx
+        }
+    }
+
+    pub fn load(&mut self, future: Pin<Box<dyn Future<Output = ()> + Send>>) -> Result<(), error::Error>{
+        let r = self.task_pool_tx.try_send(future);
+        match r {
+            Ok(_) => {
+                return Ok(());
+            },
+            Err(e) => {
+                return platform_error!("Failed to send task to task pool", None);
+            }
+        }
+    }
+
+}
+
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -35,8 +70,11 @@ macro_rules! platform_error {
 /// 
 pub struct Platform
 {
+
     /// Task pool to manage all tasks
     task_pool: JoinSet<()>,
+
+    task_pool_rx: mpsc::Receiver<Pin<Box<dyn Future<Output = ()> + Send>>>,
 
     /// Services
     services: AmServices,
@@ -53,6 +91,11 @@ impl Platform {
     /// Create a new instance of the Platform
     /// 
     pub fn new(name: &str) -> Platform {
+
+        // Create the channel
+        let (tx, mut rx) =
+            mpsc::channel::<BoxFuture<'static, ()>>(5);
+        
         return Platform {
             task_pool: JoinSet::new(),
             services: Services::new(),
@@ -65,22 +108,29 @@ impl Platform {
     /// 
     pub async fn work(&mut self) {
         // Info log
-        tracing::info!("Booting Platform...");
+        tracing::info!("Platform Version ...");
 
 
- 
+
 
         // Start service task
         let s = self.services.clone();
         let d = self.devices.clone();
         let c = self.connections.clone();
-        self.task_pool.spawn(async move {
-            Platform::services_task(s, d, c).await;
-        });
 
-        // Info log
-        tracing::info!("Platform Started !");
-        
+
+        // let a: Pin<Box<dyn Future<Output = ()> + Send>> = async move {
+        //     Platform::services_task(s, d, c).await;
+        // }.boxed();
+        // tx.send(a).await;
+
+
+        // let pppp = rx.recv().await.unwrap();
+
+        tracing::warn!("pok");
+
+        self.task_pool.spawn(pppp);
+
         // Wait for either a signal or all tasks to complete
         tokio::select! {
             _ = signal::ctrl_c() => {
@@ -193,7 +243,7 @@ impl Platform {
             }
         }
 
-        // self.connections.start_connection("default", &mut self.task_pool).await;
+        // c.start_connection("default", &mut self.task_pool).await;
 
         // self.attach_device_to_connection("host", "default").await;
 
