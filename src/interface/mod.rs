@@ -1,8 +1,10 @@
 
 use std::sync::Arc;
+use futures::FutureExt;
 use serde_json::Value;
 use tokio::sync::Mutex;
 
+use crate::platform::TaskPoolLoader;
 use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
 
@@ -79,22 +81,22 @@ impl Interface {
 
     /// Start the interface, run it into tasks
     /// 
-    pub async fn start(&mut self, task_pool: &mut tokio::task::JoinSet<()>) {
+    pub async fn start(&mut self, task_loader: &mut TaskPoolLoader) {
         
         let fsm = self.fsm.clone();
         let listener = self.listener.clone();
 
-        task_pool.spawn(async move {
+        task_loader.load(async move {
             loop {
                 fsm.lock().await.run_once().await;
             }
-        });
+        }.boxed()).unwrap();
 
-        task_pool.spawn(async move {
+        task_loader.load(async move {
             loop {
                 listener.lock().await.run_once().await;
             }
-        });
+        }.boxed()).unwrap();
 
     }
 

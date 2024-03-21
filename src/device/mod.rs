@@ -97,12 +97,9 @@ impl Device {
         self.interfaces = self.actions.create_interfaces(dev_name, bench_name, &serde_json::Value::Null);
 
 
-        // for interface in self.interfaces.iter_mut() {
-        //     let itf = interface.clone();
+        for interface in self.interfaces.iter_mut() {
+            let itf = interface.clone();
 
-
-        //     itf.lock().await.set_dev_name( dev_name.clone() ).await;
-        //     itf.lock().await.set_bench_name( bench_name.clone() ).await;
 
         //     for connection in self.connections.iter_mut() {
         //         let mut interface_lock = interface.lock().await;
@@ -115,8 +112,8 @@ impl Device {
         //         interface_lock.add_link(x).await;
         //     }
 
-        //     itf.lock().await.start(&mut self.task_pool).await;
-        // }
+            itf.lock().await.start(task_loader).await;
+        }
 
 
     }
