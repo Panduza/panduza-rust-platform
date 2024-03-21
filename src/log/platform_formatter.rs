@@ -9,6 +9,38 @@ use tracing_subscriber::registry::LookupSpan;
 
 use crate::log::hash_visitor::HashVisitor;
 
+
+
+fn color_words_in_quotes(input: &str) -> String {
+    let mut in_quotes = false;
+    let mut result = String::new();
+    let mut word = String::new();
+
+    for c in input.chars() {
+        match c {
+            '"' => {
+                word.push(c);
+                in_quotes = !in_quotes;
+                if !in_quotes {
+                    result.push_str(&word.yellow().to_string());
+                    word.clear();
+                }
+            }
+            _ => {
+                if in_quotes {
+                    word.push(c);
+                } else {
+                    result.push(c);
+                }
+            }
+        }
+    }
+
+    result
+}
+
+
+
 /// A custom event formatter that formats events in a platform-specific way.
 /// 
 pub struct PlatformFormatter;
@@ -43,8 +75,7 @@ where
         
         // Write the event's message.
         let message = visitor.entries().get("message").unwrap();
-        write!(&mut writer, "{}", message)?;
-
+        write!(&mut writer, "{}", color_words_in_quotes(message))?;
 
 
         // .format_fields(writer.by_ref(),  ppp)?;
@@ -77,7 +108,6 @@ where
         // ctx.field_format().format_fields(writer.by_ref(), event)?;
         
         // writeln!(writer, "{}", event.metadata().target().yellow())
-
 
         writeln!(writer)
     }

@@ -5,7 +5,7 @@ use std::collections::{HashMap, LinkedList};
 // use tokio::{task::yield_now, time::{sleep, Duration}};
 
 use crate::connection::SafeLinkConnectionManager;
-use crate::builtin_devices;
+use crate::{builtin_devices, platform_error};
 use crate::interface::AmInterface;
 
 use crate::connection::SafeConnection;
@@ -14,6 +14,8 @@ use crate::connection::LinkInterfaceHandle;
 use serde_json;
 use tokio::task::JoinSet;
 use tokio::sync::Mutex;
+
+use crate::platform;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -243,14 +245,25 @@ impl Manager {
 
     /// Create a new device instance
     /// 
-    pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<(), ()> {
+    pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<(), platform::Error> {
 
         // Debug log
         tracing::debug!("Create device: {:?}", device_def);
 
-        let dev = self.factory.create_device(device_def).unwrap();
+        let dev = self.factory.create_device(device_def);
+        match dev {
+            Err(e) => {
+                return platform_error!("Device not created", None);
+            },
+            Ok(dev) => {
+                // Info log
+                tracing::info!("Device created: {}", dev.get_name());
 
-        self.instances.insert(dev.get_name().clone(), dev);
+                self.instances.insert(dev.get_name().clone(), dev);
+
+            }
+        }
+
 
 
         return  Ok(());

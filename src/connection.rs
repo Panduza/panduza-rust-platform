@@ -321,7 +321,8 @@ impl Manager {
         let id = format!("{}::{}", self.platform_name, name_string);
 
         // Info log
-        tracing::info!("Create connection '{:?}'", id);
+        tracing::info!("Create connection {:?}", id);
+
 
         // Set default options
         let mut mqtt_options = MqttOptions::new(id, host, port);
