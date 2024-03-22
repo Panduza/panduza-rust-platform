@@ -1,4 +1,8 @@
+use std::sync::Arc;
+use futures::future::select_all;
 use async_trait::async_trait;
+use futures::FutureExt;
+use tokio::task::JoinSet;
 use crate::device::ConnectionUsagePolicy;
 use crate::subscription;
 use crate::interface::core::AmCore;
@@ -82,6 +86,18 @@ impl Listener {
     ///
     pub async fn run_once(&mut self) {
 
+
+        // let tasks = JoinSet::new();
+
+
+        let (result, _index, remaining_futures) = select_all(
+            vec![
+                self.default_link.as_mut().unwrap().rx.recv().boxed(),
+                self.operational_link.as_mut().unwrap().rx.recv().boxed()
+            ]
+        ).await;
+   
+        println!("result {:?}", result);
 
         // for link in self.links.iter_mut() {
         //     let msg = link.rx.recv().await;
