@@ -16,10 +16,10 @@ use tokio::task::JoinSet;
 use tokio::sync::Mutex;
 
 use crate::platform::{self, TaskPoolLoader};
+use crate::platform::PlatformError;
 
 /// Defines the policy for using the 2 connections (default & operational)
 ///
-/// 
 #[derive(Clone)]
 pub enum ConnectionUsagePolicy {
     /// the device must use both connections if possible
@@ -217,7 +217,7 @@ impl Factory {
 
     /// Create a new device instance
     /// 
-    pub fn create_device(&self, device_def: &serde_json::Value) -> Result<Device, platform::Error> {
+    pub fn create_device(&self, device_def: &serde_json::Value) -> Result<Device, platform::PlatformError> {
 
         // Try to get the name
         let mut name = String::from("changeme");
@@ -298,7 +298,7 @@ impl Manager {
 
     /// Create a new device instance
     /// 
-    pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<(), platform::Error> {
+    pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<(), platform::PlatformError> {
 
         // Debug log
         tracing::debug!("Create device: {:?}", device_def);

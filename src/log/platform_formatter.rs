@@ -61,17 +61,14 @@ where
         event.record(&mut visitor);
 
         // Format values from the event's metadata:
-        // let metadata = event.metadata();
-        // write!(&mut writer, "{} {}: ", metadata.level(), metadata.target())?;
+        let metadata = event.metadata();
 
-        // if let Some(span_ref) = ctx.lookup_current() {
-        //     if let Some(builder) = span_ref.extensions().get::<SpanBuilder>() {
-        //         if let Some(trace_id) = builder.trace_id {
-        //             serializer.serialize_entry("trace_id", &trace_id.to_hex())?;
-        //         }
-        //     }
-        // }
-
+        
+        if metadata.level() == &tracing_core::Level::ERROR {
+            write!(&mut writer, "{}: ", "ERROR".red())?;
+        } else if metadata.level() == &tracing_core::Level::WARN {
+            write!(&mut writer, "{}: ", "WARN".yellow())?;
+        }
         
         // Write the event's message.
         let message = visitor.entries().get("message").unwrap();

@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 use std::collections::LinkedList;
 
 
+use crate::platform::PlatformTaskResult;
 use crate::platform::TaskPoolLoader;
 use crate::subscription;
 use crate::subscription::Filter as SubscriptionFilter;
@@ -207,14 +208,14 @@ impl Connection {
 
         // Start connection process in a task
         task_loader.load(async move {
-            Connection::run(ev, lm).await;
+            Connection::run(ev, lm).await
         }.boxed()).unwrap();
 
     }
 
     /// Run the connection
     ///
-    async fn run(ev: Arc<Mutex<rumqttc::EventLoop>>, lm: Arc<Mutex<LinkConnectionManager>>) {
+    async fn run(ev: Arc<Mutex<rumqttc::EventLoop>>, lm: Arc<Mutex<LinkConnectionManager>>) -> PlatformTaskResult {
 
         loop {
             while let Ok(notification) = ev.lock().await.poll().await {

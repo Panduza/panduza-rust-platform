@@ -1,15 +1,15 @@
 use std::fmt;
 
 #[derive(Debug)]
-pub struct Error {
+pub struct PlatformError {
     pub file: &'static str,
     pub line: u32,
     pub message: String,
-    pub parent: Option<Box<Error>>
+    pub parent: Option<Box<PlatformError>>
 }
 
-impl Error {
-    pub fn new(file: &'static str, line: u32, message: String, parent: Option<Box<Error>>) -> Self {
+impl PlatformError {
+    pub fn new(file: &'static str, line: u32, message: String, parent: Option<Box<PlatformError>>) -> Self {
         Self { file, line, message, parent }
     }
 
@@ -21,7 +21,7 @@ impl Error {
     }
 }
 
-impl fmt::Display for Error {
+impl fmt::Display for PlatformError {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f)?;
@@ -30,6 +30,6 @@ impl fmt::Display for Error {
 
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for PlatformError {}
 
 

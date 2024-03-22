@@ -3,9 +3,11 @@ use std::sync::Arc;
 use futures::FutureExt;
 use serde_json::Value;
 use tokio::sync::Mutex;
+use tracing_subscriber::fmt::format::Format;
 
 use crate::device::ConnectionUsagePolicy;
-use crate::platform::TaskPoolLoader;
+use crate::platform::{self, PlatformError, TaskPoolLoader};
+use crate::platform_error;
 use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
 
@@ -92,9 +94,17 @@ impl Interface {
             }
         }.boxed()).unwrap();
 
+
+        // Listen Task
+        let interface_name = self.core.lock().await.get_name().clone() ;
         task_loader.load(async move {
             loop {
-                listener.lock().await.run_once().await;
+                if let Err(e) = listener.lock().await.run_once().await {
+                    return platform_error!(
+                        format!("Interface {:?} Listen Task Error", interface_name)
+                        , Some(Box::new(e))
+                    );
+                }
             }
         }.boxed()).unwrap();
 

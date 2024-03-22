@@ -22,32 +22,42 @@ use services::{Services, AmServices};
 
 use crate::platform_error;
 
-pub type Error = error::Error;
+/// Platform error type
+///
+pub type PlatformError = error::PlatformError;
+
+/// Platform result type
+///
+pub type PlatformTaskResult = Result<(), PlatformError>;
+
+
 
 #[macro_export]
 macro_rules! platform_error {
     ($msg:expr, $parent:expr) => {
-        Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string(), $parent))
+        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), $parent))
     };
 }
+
+
 
 
 #[derive(Clone)]
 pub struct TaskPoolLoader {
 
-    task_pool_tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>
+    task_pool_tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>>
 
 }
 
 impl TaskPoolLoader {
 
-    pub fn new(tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = ()> + Send>>>) -> TaskPoolLoader {
+    pub fn new(tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>>) -> TaskPoolLoader {
         return TaskPoolLoader {
             task_pool_tx: tx
         }
     }
 
-    pub fn load(&mut self, future: Pin<Box<dyn Future<Output = ()> + Send>>) -> Result<(), error::Error>{
+    pub fn load(&mut self, future: Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>) -> Result<(), error::PlatformError>{
         let r = self.task_pool_tx.try_send(future);
         match r {
             Ok(_) => {
@@ -71,13 +81,14 @@ impl TaskPoolLoader {
 /// 
 pub struct Platform
 {
-
     /// Task pool to manage all tasks
-    task_pool: JoinSet<()>,
+    task_pool: JoinSet<PlatformTaskResult>,
 
-    task_pool_rx: Arc<Mutex< tokio::sync::mpsc::Receiver<Pin<Box<dyn Future<Output = ()> + Send>>> >>,
-
+    /// Task loader
     task_loader: TaskPoolLoader,
+
+    /// Task pool receiver
+    task_pool_rx: Arc<Mutex< tokio::sync::mpsc::Receiver<Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>> >>,
 
     /// Services
     services: AmServices,
@@ -97,14 +108,14 @@ impl Platform {
 
         // Create the channel
         let (tx, rx) =
-            tokio::sync::mpsc::channel::<BoxFuture<'static, ()>>(5);
+            tokio::sync::mpsc::channel::<BoxFuture<'static, PlatformTaskResult>>(5);
         
         let tl = TaskPoolLoader::new(tx);
 
         return Platform {
             task_pool: JoinSet::new(),
-            task_pool_rx: Arc::new(Mutex::new(rx)),
             task_loader: tl.clone(),
+            task_pool_rx: Arc::new(Mutex::new(rx)),
             services: Services::new(tl.clone()),
             devices: device::Manager::new(tl.clone()),
             connections: connection::Manager::new(tl.clone(), name)
@@ -123,10 +134,10 @@ impl Platform {
         let c = self.connections.clone();
 
         self.task_loader.load(async move {
-                Platform::services_task(s, d, c).await;
+                Platform::services_task(s, d, c).await
             }.boxed()
         ).unwrap();
-        
+
 
         let p = self.task_pool_rx.clone();
         let mut task_pool_rx = p.lock().await;
@@ -165,14 +176,31 @@ impl Platform {
     /// Wait for all tasks to complete
     /// 
     async fn end_of_all_tasks( &mut self) {
-        while let Some(result) = self.task_pool.join_next().await {
-            tracing::info!("End task with result {:?}", result);
+        while let Some(join_result) = self.task_pool.join_next().await {
+            
+            match join_result {
+
+                Ok(task_result) => {
+                    match task_result {
+                        Ok(_) => {
+                            tracing::warn!("Task completed");
+                        },
+                        Err(e) => {
+                            tracing::error!("Task failed: {}", e);
+                        }
+                    }
+                },
+                Err(e) => {
+                    tracing::error!("Join failed: {}", e);
+                }
+            }
+
         }
     }
 
     /// Services task
     /// 
-    async fn services_task(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
+    async fn services_task(services: AmServices, devices: device::AmManager, connections: connection::AmManager) -> PlatformTaskResult {
         let requests_change_notifier = services.lock().await.get_requests_change_notifier();
         loop {
             // Wait for an event
@@ -220,7 +248,7 @@ impl Platform {
 
     /// Load the tree file from system into service data
     ///
-    async fn load_tree_file(services: AmServices) -> Result<(), error::Error> {
+    async fn load_tree_file(services: AmServices) -> Result<(), error::PlatformError> {
 
         // Get the tree file path
         let tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
@@ -251,7 +279,7 @@ impl Platform {
 
     /// Load a tree string into service data
     ///
-    async fn load_tree_string(services: AmServices, content: &String) -> Result<(), error::Error> {
+    async fn load_tree_string(services: AmServices, content: &String) -> Result<(), error::PlatformError> {
         // Parse the JSON content
         let json_content = serde_json::from_str::<serde_json::Value>(&content);
         match json_content {
