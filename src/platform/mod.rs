@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use dirs;
-use futures::channel::mpsc;
+
 use futures::future::BoxFuture;
 use futures::Future;
 use futures::FutureExt;
@@ -182,11 +182,30 @@ impl Platform {
             {
                 if services.lock().await.has_pending_requests() {
 
+                    // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        tracing::info!("Booting requested");
+                        // log
+                        tracing::info!("Booting...");
 
-                        Platform::load_tree_file(services.clone()).await;
+                        // Load the tree file
+                        let r = Platform::load_tree_file(services.clone()).await;
+                        match r {
+                            Ok(_) => {
+                                tracing::info!("Tree loaded");
+                            },
+                            Err(e) => {
+                                tracing::error!("Failed to load tree: {}", e);
+                            }
+                        }
+
+                        // Sart minimal connection and devices
+                        Platform::boot_minimal_services(services.clone(), devices.clone(), connections.clone()).await;
+
+                        // log
+                        tracing::info!("Boot Success!");
                     }
+                    
+                    // --- RELOAD ---
                     if services.lock().await.reload_tree_requested() {
                         tracing::info!("Reload");
 
@@ -221,42 +240,23 @@ impl Platform {
         let file_content = tokio::fs::read_to_string(&tree_file_path).await;
         match file_content {
             Ok(content) => {
-                Platform::load_tree_string(services.clone(), &content).await?;
-                return Ok(());
+                return Platform::load_tree_string(services.clone(), &content).await;
             },
             Err(e) => {
                 return platform_error!(
                     format!("Failed to read {:?} file content: {}", tree_file_path, e), None)
             }
         }
-
-        // if let Ok(content) = file_content {
-        //     // Parse the JSON content
-        //     let json_content = serde_json::from_str::<serde_json::Value>(&content);
-        //     if let Ok(json) = json_content {
-                
-        //         tracing::info!("JSON content: {:?}", json);
-
-        //         services.lock().await.set_tree_content(json);
-
-        //     } else {
-        //         tracing::error!("Failed to parse JSON content");
-        //     }
-        // } else {
-        //     tracing::error!("Failed to read file content");
-        // }
-
     }
 
-    
-    /// Load the tree file from system into service data
+    /// Load a tree string into service data
     ///
     async fn load_tree_string(services: AmServices, content: &String) -> Result<(), error::Error> {
-
+        // Parse the JSON content
         let json_content = serde_json::from_str::<serde_json::Value>(&content);
         match json_content {
             Ok(json) => {
-                tracing::info!("JSON content: {:?}", json);
+                tracing::info!("JSON content: {:?}", serde_json::to_string_pretty(&json));
 
                 services.lock().await.set_tree_content(json);
 
@@ -269,19 +269,24 @@ impl Platform {
         }
     }
 
+    /// Boot default connection and platform device
+    ///
+    async fn boot_minimal_services(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
 
-    /// Reload tree inside platform configuration
-    /// 
-    async fn reload_tree(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
-    
+        // Lock managers to create connection and device
+        let mut d = devices.lock().await;
         let mut c = connections.lock().await;
-        
+
+        // Server hostname
+        let hostname = hostname::get().unwrap().to_string_lossy().to_string();
+
+        // Create default connection
         c.create_connection("default", "localhost", 1883).await;
 
-        let mut d = devices.lock().await;
+        // Create server device
         match d.create_device( &json!({
-            "name": "host",
-            "ref": "panduza.server" 
+                "name": hostname,
+                "ref": "panduza.server"
             })).await {
             Ok(_) => {
                 tracing::info!("Device created");
@@ -292,13 +297,21 @@ impl Platform {
         }
 
         // attach
-        let devvv = d.get_device("host".to_string()).unwrap();
-        devvv.attach_connection(c.get_connection(&"default".to_string())).await;
+        let server_device = d.get_device(hostname).unwrap();
+        let default_connection = c.get_connection(&"default".to_string());
+        server_device.attach_connection(default_connection).await;
 
-
+        // Start connection
         c.start_connection("default").await;
 
+        // Mount devices
         d.mount_devices().await;
+    }
+
+    /// Reload tree inside platform configuration
+    /// 
+    async fn reload_tree(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
+
 
     }
 

@@ -49,7 +49,6 @@ pub struct Device {
     name: String,
     bench_name: String,
 
-    task_pool: JoinSet<()>,
     
     actions: Box<dyn DeviceActions>,
 
@@ -66,7 +65,7 @@ impl Device {
         return Device {
             name: String::from("changeme"),
             bench_name: String::from("changeme"),
-            task_pool: JoinSet::new(),
+
             actions: actions,
             interfaces: Vec::new(),
             connections: LinkedList::new()
