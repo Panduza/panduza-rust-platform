@@ -132,9 +132,14 @@ impl Core {
         self.topic_info = format!("{}/info", self.topic_atts);
     }
 
+    ///
+    pub fn set_default_client(&mut self, client: AsyncClient) {
+        self.default_client = Some(client);
+    }
 
-    pub fn add_client(&mut self, client: AsyncClient) {
-        // self.clients.push_back(client);
+    ///
+    pub fn set_operational_client(&mut self, client: AsyncClient) {
+        self.operational_client = Some(client);
     }
 
     /// Get the base topic

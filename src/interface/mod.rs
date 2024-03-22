@@ -1,27 +1,22 @@
-
 use std::sync::Arc;
 use futures::FutureExt;
 use serde_json::Value;
 use tokio::sync::Mutex;
-use tracing_subscriber::fmt::format::Format;
-
-use crate::device::ConnectionUsagePolicy;
-use crate::platform::{self, PlatformError, TaskPoolLoader};
-use crate::platform_error;
-use crate::subscription::Request as SubscriptionRequest;
-use crate::connection::LinkInterfaceHandle;
-
-
-
 use async_trait::async_trait;
 
+use crate::platform_error;
+use crate::platform::TaskPoolLoader;
+use crate::device::ConnectionUsagePolicy;
+use crate::subscription::Request as SubscriptionRequest;
+use crate::connection::LinkInterfaceHandle;
 
 pub mod fsm;
 pub mod core;
 pub mod listener;
 
 use crate::interface::fsm::Fsm;
-use crate::interface::core::{ AmCore, Core };
+use crate::interface::core::Core;
+use crate::interface::core::AmCore;
 use crate::interface::listener::Listener;
 
 // ------------------------------------------------------------------------------------------------
@@ -67,10 +62,10 @@ impl Interface {
         subscriber: Box<dyn listener::Subscriber>) -> AmInterface {
 
 
-        let mut core = Arc::new(Mutex::new(Core::new(name, dev_name, bench_name)));
-        
-        // d.set_info(subscriber.get_info());
+        let mut core_obj = Core::new(name, dev_name, bench_name);
+        core_obj.set_info(idn.get_info());
 
+        let core = Arc::new(Mutex::new( core_obj ));
 
         return Arc::new(Mutex::new(
             Interface {
@@ -120,15 +115,15 @@ impl Interface {
     ///
     pub async fn set_default_link(&mut self, link: LinkInterfaceHandle) {
         let mut listener = self.listener.lock().await;
-        self.core.lock().await.add_client(link.client.clone());
+        self.core.lock().await.set_default_client(link.client.clone());
         listener.set_default_link(link);
     }
 
     /// Set the operational link
-    /// 
+    ///
     pub async fn set_operational_link(&mut self, link: LinkInterfaceHandle) {
         let mut listener = self.listener.lock().await;
-        self.core.lock().await.add_client(link.client.clone());
+        self.core.lock().await.set_operational_client(link.client.clone());
         listener.set_operational_link(link);
     }
 

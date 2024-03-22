@@ -111,8 +111,14 @@ impl Device {
     }
 
     /// Attach default connection
-    /// 
+    ///
     async fn attach_default_connection(&mut self, interface: AmInterface) {
+
+        // pza
+        // pza/cmds/set
+        // pza/atts/name
+
+
         if self.default_connection.is_some() {
             let c = self.default_connection.as_ref().unwrap();
             let mut interface_lock = interface.lock().await;
@@ -123,7 +129,7 @@ impl Device {
     }
 
     /// Attach operational connection
-    /// 
+    ///
     async fn attach_operational_connection(&mut self, interface: AmInterface) {
         if self.operational_connection.is_some() {
             let c = self.operational_connection.as_ref().unwrap();

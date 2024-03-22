@@ -1,37 +1,19 @@
+use async_trait::async_trait;
+use tokio::time::{sleep, Duration};
 
-
+use crate::subscription;
 use crate::interface::{self, Interface};
 use crate::interface::core::AmCore;
 use crate::interface::AmInterface;
 use crate::device::{ Device, DeviceActions, Producer };
-
-use async_trait::async_trait;
-
-use tokio::time::{sleep, Duration};
-
-// use crate::connection::LinkInterfaceHandle;
-
-use crate::subscription;
-
 
 struct TestInterfaceListener;
 
 #[async_trait]
 impl interface::listener::Subscriber for TestInterfaceListener {
 
-
-    // fn get_info(&self) -> Value {
-    //     return json!({
-    //         "info": {
-    //             "type": "platform",
-    //             "version": "0.0"
-    //         }
-    //     })
-    // }
-
-
     /// List of subscription requests
-    /// 
+    ///
     async fn subscription_requests(&self) -> Vec<subscription::Request> {
         return vec![
             subscription::Request::new( 0, "pza" )
@@ -39,7 +21,7 @@ impl interface::listener::Subscriber for TestInterfaceListener {
     }
 
     /// Process a message
-    /// 
+    ///
     async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
         println!("process {:?}", msg);
 
@@ -73,9 +55,7 @@ impl interface::listener::Subscriber for TestInterfaceListener {
 }
 
 
-struct TestInterfaceStates {
-
-}
+struct TestInterfaceStates;
 
 #[async_trait]
 impl interface::fsm::States for TestInterfaceStates {
@@ -129,9 +109,8 @@ impl interface::IdentityProvider for TestIdentityProvider {
 }
 
 
-struct ServerDeviceActions {
+struct ServerDeviceActions;
 
-}
 
 impl DeviceActions for ServerDeviceActions {
 
