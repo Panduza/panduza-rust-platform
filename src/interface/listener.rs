@@ -147,23 +147,20 @@ impl Listener {
         //     self.operational_link.as_mut().unwrap().rx.recv().boxed()
         // ];
 
-        let (result, _index, remaining_futures) = select_all(
+        let (msg, _index, remaining_futures) = select_all(
             vv
         ).await;
-   
-        println!("result {:?}", result);
 
-        // for link in self.links.iter_mut() {
-        //     let msg = link.rx.recv().await;
-        //     match msg {
-        //         Some(msg) => {
-        //             self.subscriber.process(&self.core, &msg).await;
-        //         },
-        //         None => {
-        //             // do nothing
-        //         }
-        //     }
-        // }
+        println!("result {:?}", msg);
+
+        match msg {
+            Some(msg) => {
+                self.subscriber.process(&self.core, &msg).await;
+            },
+            None => {
+                // do nothing
+            }
+        }
 
 
         Ok(())

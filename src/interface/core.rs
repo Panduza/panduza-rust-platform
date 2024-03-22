@@ -140,12 +140,30 @@ impl Core {
     /// Get the base topic
     pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
         println!("Publishing to topic: {}", topic);
-        // for client in self.clients.iter() {
-        //     println!("  +");
-        //     client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-        // }
+
+        match self.connection_usage_policy {
+            ConnectionUsagePolicy::UseBoth => {
+                if let Some(client) = &self.default_client {
+                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+                }
+                if let Some(client) = &self.operational_client {
+                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+                }
+            },
+            ConnectionUsagePolicy::UseOperationalOnly => {
+                if let Some(client) = &self.operational_client {
+                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+                }
+            },
+            ConnectionUsagePolicy::UseDefaultOnly => {
+                if let Some(client) = &self.default_client {
+                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+                }
+            }
+        }
     }
 
+    /// 
     /// 
     pub async fn publish_info(&self) {
         self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;

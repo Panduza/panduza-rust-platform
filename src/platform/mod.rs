@@ -168,7 +168,7 @@ impl Platform {
                     tracing::warn!("End by all tasks completed");
                     break;
                 }
-            }            
+            }
         }
 
     }
@@ -177,7 +177,7 @@ impl Platform {
     /// 
     async fn end_of_all_tasks( &mut self) {
         while let Some(join_result) = self.task_pool.join_next().await {
-            
+
             match join_result {
 
                 Ok(task_result) => {
@@ -222,7 +222,8 @@ impl Platform {
                                 tracing::info!("Tree loaded");
                             },
                             Err(e) => {
-                                tracing::error!("Failed to load tree: {}", e);
+                                tracing::warn!("Failed to load tree: {}", e);
+                                tracing::warn!("Continue with default configuration");
                             }
                         }
 
@@ -327,7 +328,8 @@ impl Platform {
         // attach
         let server_device = d.get_device(hostname).unwrap();
         let default_connection = c.get_connection(&"default".to_string());
-        server_device.set_default_connection(default_connection).await;
+        server_device.set_default_connection(default_connection.clone()).await;
+        server_device.set_operational_connection(default_connection.clone()).await;
 
         // Start connection
         c.start_connection("default").await;
