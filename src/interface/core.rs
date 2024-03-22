@@ -6,6 +6,8 @@ use tokio::sync::Mutex;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
+use crate::device::ConnectionUsagePolicy;
+
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -45,13 +47,14 @@ pub struct Core {
 
     default_client: Option<AsyncClient>,
     operational_client: Option<AsyncClient>,
+    connection_usage_policy: ConnectionUsagePolicy
 }
 pub type AmCore = Arc<Mutex<Core>>;
 
 impl Core {
 
     /// Create a new instance of the Core
-    /// 
+    ///
     pub fn new<A: Into<String>, B: Into<String>, C: Into<String>>
         (name: A, dev_name: B, bench_name: C) -> Core {
         let mut obj = Core {
@@ -61,13 +64,15 @@ impl Core {
             topic_base: String::new(),
             topic_cmds: String::new(),
             topic_atts: String::new(),
-            topic_info: String::new(),        
+            topic_info: String::new(),
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
             info: serde_json::Value::Null,
             default_client: None,
             operational_client: None,
+            connection_usage_policy: ConnectionUsagePolicy::UseOperationalOnly
         };
+        obj.update_topics();
         return obj;
     }
 
@@ -145,5 +150,18 @@ impl Core {
     pub async fn publish_info(&self) {
         self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;
     }
+
+    /// Get connection usage policy
+    /// 
+    pub async fn connection_usage_policy(&self) -> ConnectionUsagePolicy {
+        return self.connection_usage_policy.clone();
+    }
+
+    /// Set connection usage policy
+    /// 
+    pub async fn set_connection_usage_policy(&mut self, policy: ConnectionUsagePolicy) {
+        self.connection_usage_policy = policy;
+    }
+
 
 }

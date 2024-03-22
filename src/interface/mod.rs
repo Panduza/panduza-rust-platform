@@ -4,6 +4,7 @@ use futures::FutureExt;
 use serde_json::Value;
 use tokio::sync::Mutex;
 
+use crate::device::ConnectionUsagePolicy;
 use crate::platform::TaskPoolLoader;
 use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
@@ -41,7 +42,6 @@ pub trait IdentityProvider : Send {
 
 /// 
 pub struct Interface {
-        
     /// Core Object
     core: AmCore,
 
@@ -106,18 +106,21 @@ impl Interface {
         return self.listener.lock().await.subscription_requests().await;
     }
 
+    /// Set the default link
     ///
-    /// 
-    pub async fn add_link(&mut self, link: LinkInterfaceHandle) {
+    pub async fn set_default_link(&mut self, link: LinkInterfaceHandle) {
         let mut listener = self.listener.lock().await;
-
         self.core.lock().await.add_client(link.client.clone());
-
-        listener.add_link(link);
-
-
+        listener.set_default_link(link);
     }
 
+    /// Set the operational link
+    /// 
+    pub async fn set_operational_link(&mut self, link: LinkInterfaceHandle) {
+        let mut listener = self.listener.lock().await;
+        self.core.lock().await.add_client(link.client.clone());
+        listener.set_operational_link(link);
+    }
 
     pub async fn set_name(&mut self, name: String) {
         self.core.lock().await.set_name(name);
@@ -132,6 +135,11 @@ impl Interface {
     }
 
 
+    /// Set the connection usage policy
+    /// 
+    pub async fn set_connection_usage_policy(&mut self, policy: ConnectionUsagePolicy) {
+        self.core.lock().await.set_connection_usage_policy(policy);
+    }
 
 }
 

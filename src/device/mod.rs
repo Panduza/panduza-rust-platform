@@ -19,7 +19,9 @@ use crate::platform::{self, TaskPoolLoader};
 
 /// Defines the policy for using the 2 connections (default & operational)
 ///
-enum ConnectionUsagePolicy {
+/// 
+#[derive(Clone)]
+pub enum ConnectionUsagePolicy {
     /// the device must use both connections if possible
     UseBoth,
     /// the device must use only the default connection
@@ -108,6 +110,30 @@ impl Device {
         return &self.bench_name;
     }
 
+    /// Attach default connection
+    /// 
+    async fn attach_default_connection(&mut self, interface: AmInterface) {
+        if self.default_connection.is_some() {
+            let c = self.default_connection.as_ref().unwrap();
+            let mut interface_lock = interface.lock().await;
+            let requests = interface_lock.subscription_requests().await;
+            let x: LinkInterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
+            interface_lock.set_default_link(x).await;
+        }
+    }
+
+    /// Attach operational connection
+    /// 
+    async fn attach_operational_connection(&mut self, interface: AmInterface) {
+        if self.operational_connection.is_some() {
+            let c = self.operational_connection.as_ref().unwrap();
+            let mut interface_lock = interface.lock().await;
+            let requests = interface_lock.subscription_requests().await;
+            let x: LinkInterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
+            interface_lock.set_operational_link(x).await;
+        }
+    }
+
     pub async fn mount_interfaces(&mut self, task_loader: &mut TaskPoolLoader) {
 
         
@@ -117,56 +143,22 @@ impl Device {
         self.interfaces = self.actions.create_interfaces(dev_name, bench_name, &serde_json::Value::Null);
 
 
-        for interface in self.interfaces.iter_mut() {
+        let mut interfaces = self.interfaces.clone();
+        for interface in interfaces.iter_mut() {
             let itf = interface.clone();
-
 
             match self.connection_usage_policy {
                 ConnectionUsagePolicy::UseBoth => {
-                    // Use both connections
-
-                    // if let Some(connection) = self.default_connection {
-                    //     let mut interface_lock = interface.lock().await;
-                    //     let requests = interface_lock.subscription_requests().await;
-                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
-                    //     interface_lock.add_link(x).await;
-                    // }
-                    // if let Some(connection) = self.operational_connection {
-                    //     let mut interface_lock = interface.lock().await;
-                    //     let requests = interface_lock.subscription_requests().await;
-                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
-                    //     interface_lock.add_link(x).await;
-                    // }
+                    self.attach_default_connection(itf.clone()).await;
+                    self.attach_operational_connection(itf.clone()).await;
                 },
                 ConnectionUsagePolicy::UseDefaultOnly => {
-                    // Use default connection
-                    // if let Some(connection) = self.default_connection {
-                    //     let mut interface_lock = interface.lock().await;
-                    //     let requests = interface_lock.subscription_requests().await;
-                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
-                    //     interface_lock.add_link(x).await;
-                    // }
+                    self.attach_default_connection(itf.clone()).await;
                 },
                 ConnectionUsagePolicy::UseOperationalOnly => {
-                    // Use operational connection
-                    // if let Some(connection) = self.operational_connection {
-                    //     let mut interface_lock = interface.lock().await;
-                    //     let requests = interface_lock.subscription_requests().await;
-                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
-                    //     interface_lock.add_link(x).await;
-                    // }
+                    self.attach_operational_connection(itf.clone()).await;
                 }
             }
-        //     for connection in self.connections.iter_mut() {
-        //         let mut interface_lock = interface.lock().await;
-
-
-        //         let requests = interface_lock.subscription_requests().await;
-
-        //         let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
-
-        //         interface_lock.add_link(x).await;
-        //     }
 
             itf.lock().await.start(task_loader).await;
         }
