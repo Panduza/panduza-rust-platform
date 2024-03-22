@@ -4,11 +4,11 @@ use std::collections::{HashMap, LinkedList};
 
 // use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::connection::SafeLinkConnectionManager;
+use crate::connection::AmLinkConnectionManager;
 use crate::{builtin_devices, platform_error};
 use crate::interface::AmInterface;
 
-use crate::connection::SafeConnection;
+use crate::connection::AmConnection;
 use crate::connection::LinkInterfaceHandle;
 
 use serde_json;
@@ -16,6 +16,17 @@ use tokio::task::JoinSet;
 use tokio::sync::Mutex;
 
 use crate::platform::{self, TaskPoolLoader};
+
+/// Defines the policy for using the 2 connections (default & operational)
+///
+enum ConnectionUsagePolicy {
+    /// the device must use both connections if possible
+    UseBoth,
+    /// the device must use only the default connection
+    UseDefaultOnly,
+    /// the device must use only the operational connection
+    UseOperationalOnly
+}
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -54,8 +65,15 @@ pub struct Device {
 
     interfaces: Vec<AmInterface>,
 
-    connections: LinkedList<SafeLinkConnectionManager>
 
+    // Connection Usage Policy
+    connection_usage_policy: ConnectionUsagePolicy,
+
+    /// Default connection
+    default_connection: Option<AmLinkConnectionManager>,
+
+    /// Operational connection
+    operational_connection: Option<AmLinkConnectionManager>
 }
 
 impl Device {
@@ -68,7 +86,10 @@ impl Device {
 
             actions: actions,
             interfaces: Vec::new(),
-            connections: LinkedList::new()
+
+            connection_usage_policy: ConnectionUsagePolicy::UseOperationalOnly,
+            default_connection: None,
+            operational_connection: None
         }
     }
 
@@ -100,6 +121,42 @@ impl Device {
             let itf = interface.clone();
 
 
+            match self.connection_usage_policy {
+                ConnectionUsagePolicy::UseBoth => {
+                    // Use both connections
+
+                    // if let Some(connection) = self.default_connection {
+                    //     let mut interface_lock = interface.lock().await;
+                    //     let requests = interface_lock.subscription_requests().await;
+                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+                    //     interface_lock.add_link(x).await;
+                    // }
+                    // if let Some(connection) = self.operational_connection {
+                    //     let mut interface_lock = interface.lock().await;
+                    //     let requests = interface_lock.subscription_requests().await;
+                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+                    //     interface_lock.add_link(x).await;
+                    // }
+                },
+                ConnectionUsagePolicy::UseDefaultOnly => {
+                    // Use default connection
+                    // if let Some(connection) = self.default_connection {
+                    //     let mut interface_lock = interface.lock().await;
+                    //     let requests = interface_lock.subscription_requests().await;
+                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+                    //     interface_lock.add_link(x).await;
+                    // }
+                },
+                ConnectionUsagePolicy::UseOperationalOnly => {
+                    // Use operational connection
+                    // if let Some(connection) = self.operational_connection {
+                    //     let mut interface_lock = interface.lock().await;
+                    //     let requests = interface_lock.subscription_requests().await;
+                    //     let x: LinkInterfaceHandle = connection.lock().await.request_link(requests).await.unwrap();
+                    //     interface_lock.add_link(x).await;
+                    // }
+                }
+            }
         //     for connection in self.connections.iter_mut() {
         //         let mut interface_lock = interface.lock().await;
 
@@ -117,9 +174,14 @@ impl Device {
 
     }
 
+    /// Set default connection
+    pub async fn set_default_connection(&mut self, connection: AmConnection) {
+        self.default_connection = Some(connection.lock().await.clone_link_manager());
+    }
 
-    pub async fn attach_connection(&mut self, connection: SafeConnection) {
-        self.connections.push_back(connection.lock().await.clone_link_manager());
+    /// Set operational connection
+    pub async fn set_operational_connection(&mut self, connection: AmConnection) {
+        self.operational_connection = Some(connection.lock().await.clone_link_manager());
     }
 
 }

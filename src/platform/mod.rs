@@ -299,7 +299,7 @@ impl Platform {
         // attach
         let server_device = d.get_device(hostname).unwrap();
         let default_connection = c.get_connection(&"default".to_string());
-        server_device.attach_connection(default_connection).await;
+        server_device.set_default_connection(default_connection).await;
 
         // Start connection
         c.start_connection("default").await;

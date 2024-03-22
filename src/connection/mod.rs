@@ -90,7 +90,7 @@ pub struct LinkConnectionManager {
     /// List of links
     links: LinkedList<LinkConnectionHandle>
 }
-pub type SafeLinkConnectionManager = Arc<Mutex<LinkConnectionManager>>;
+pub type AmLinkConnectionManager = Arc<Mutex<LinkConnectionManager>>;
 
 impl LinkConnectionManager {
 
@@ -172,9 +172,9 @@ pub struct Connection {
     eventloop: Arc<Mutex<rumqttc::EventLoop>>,
 
     /// Links
-    link_manager: SafeLinkConnectionManager
+    link_manager: AmLinkConnectionManager
 }
-pub type SafeConnection = Arc<Mutex<Connection>>;
+pub type AmConnection = Arc<Mutex<Connection>>;
 
 impl Connection {
 
@@ -278,7 +278,7 @@ impl Connection {
 
     /// Get the link manager, to share it with the devices
     /// 
-    pub fn clone_link_manager(&self) -> SafeLinkConnectionManager {
+    pub fn clone_link_manager(&self) -> AmLinkConnectionManager {
         return self.link_manager.clone();
     }
 
@@ -298,7 +298,7 @@ pub struct Manager {
     platform_name: String,
 
     /// Map of managed connections
-    connections: HashMap<String, SafeConnection>,
+    connections: HashMap<String, AmConnection>,
 
     task_loader: TaskPoolLoader
 }
@@ -356,7 +356,7 @@ impl Manager {
 
     /// Get a connection
     /// 
-    pub fn get_connection(&mut self, name: &str) -> SafeConnection {
+    pub fn get_connection(&mut self, name: &str) -> AmConnection {
         return self.connections.get(name).unwrap().clone();
     }
 
