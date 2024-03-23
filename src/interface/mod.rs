@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use crate::platform_error;
 use crate::platform::TaskPoolLoader;
 use crate::device::ConnectionUsagePolicy;
+use crate::subscription;
 use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
 
@@ -105,10 +106,10 @@ impl Interface {
 
     }
 
-    ///
+    /// Get the name of the attributes managed by the interface
     /// 
-    pub async fn subscription_requests(&self) -> Vec<SubscriptionRequest> {
-        return self.listener.lock().await.subscription_requests().await;
+    pub async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
+        return self.listener.lock().await.attributes_names().await;
     }
 
     /// Set the default link

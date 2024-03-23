@@ -24,9 +24,12 @@ use crate::platform_error;
 #[async_trait]
 pub trait Subscriber : Send + Sync {
 
-    /// Get the subscription requests
-    async fn subscription_requests(&self) -> Vec<subscription::Request>;
+    // /// Get the subscription requests
+    // async fn subscription_requests(&self) -> Vec<subscription::Request>;
 
+    /// Get the subscription requests
+    async fn attributes_names(&self) -> Vec<(subscription::Id, String)>;
+    
     /// Process a message
     async fn process(&self, core: &AmCore, msg: &subscription::Message);
 
@@ -71,10 +74,10 @@ impl Listener {
         }
     }
 
+    /// 
     ///
-    ///
-    pub async fn subscription_requests(&self) -> Vec<subscription::Request> {
-        return self.subscriber.subscription_requests().await;
+    pub async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
+        return self.subscriber.attributes_names().await;
     }
 
     /// Set the default link

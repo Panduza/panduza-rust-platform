@@ -7,18 +7,26 @@ use crate::interface::core::AmCore;
 use crate::interface::AmInterface;
 use crate::device::{ Device, DeviceActions, Producer };
 
-struct TestInterfaceListener;
+struct PlatformInterfaceSubscriber;
 
 #[async_trait]
-impl interface::listener::Subscriber for TestInterfaceListener {
+impl interface::listener::Subscriber for PlatformInterfaceSubscriber {
 
-    /// List of subscription requests
-    ///
-    async fn subscription_requests(&self) -> Vec<subscription::Request> {
+    // /// List of subscription requests
+    // ///
+    // async fn subscription_requests(&self) -> Vec<subscription::Request> {
+    //     return vec![
+    //         subscription::Request::new( 0, "pza" )
+    //     ];
+    // }
+
+    async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
-            subscription::Request::new( 0, "pza" )
+            (0, "dtree".to_string()),
+            (1, "devices".to_string())
         ];
     }
+    
 
     /// Process a message
     ///
@@ -127,7 +135,7 @@ impl DeviceActions for ServerDeviceActions {
                 "platform", dev_name, bench_name,
                 Box::new(TestIdentityProvider{}),
                 Box::new(TestInterfaceStates{}),
-                Box::new(TestInterfaceListener{})
+                Box::new(PlatformInterfaceSubscriber{})
             )
         );
 
