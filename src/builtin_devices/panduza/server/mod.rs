@@ -12,21 +12,12 @@ struct PlatformInterfaceSubscriber;
 #[async_trait]
 impl interface::listener::Subscriber for PlatformInterfaceSubscriber {
 
-    // /// List of subscription requests
-    // ///
-    // async fn subscription_requests(&self) -> Vec<subscription::Request> {
-    //     return vec![
-    //         subscription::Request::new( 0, "pza" )
-    //     ];
-    // }
-
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
             (0, "dtree".to_string()),
             (1, "devices".to_string())
         ];
     }
-    
 
     /// Process a message
     ///
@@ -46,7 +37,7 @@ impl interface::listener::Subscriber for PlatformInterfaceSubscriber {
             subscription::Message::Mqtt(msg) => {
                 
                 match msg.get_id() {
-                    0 => {
+                    subscription::ID_PZA => {
                         data.lock().await.publish_info().await;
                         println!("Ackk !!! {:?}", msg);
                     },

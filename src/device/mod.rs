@@ -1,3 +1,4 @@
+use std::mem::zeroed;
 use std::sync::Arc;
 
 use std::collections::{HashMap, LinkedList};
@@ -5,7 +6,7 @@ use std::collections::{HashMap, LinkedList};
 // use tokio::{task::yield_now, time::{sleep, Duration}};
 
 use crate::connection::AmLinkConnectionManager;
-use crate::{builtin_devices, platform_error};
+use crate::{builtin_devices, platform_error, subscription};
 use crate::interface::AmInterface;
 
 use crate::connection::AmConnection;
@@ -114,15 +115,24 @@ impl Device {
     ///
     async fn attach_default_connection(&mut self, interface: AmInterface) {
 
-        // pza
-        // pza/cmds/set
-        // pza/atts/name
-
-
         if self.default_connection.is_some() {
             let c = self.default_connection.as_ref().unwrap();
             let mut interface_lock = interface.lock().await;
-            let requests = interface_lock.subscription_requests().await;
+            // let requests = interface_lock.subscription_requests().await;
+
+            let topic = interface_lock.get_topic().await;
+            let att_names = interface_lock.attributes_names().await;
+
+            let mut requests = vec![
+                subscription::Request::new( subscription::ID_PZA, "pza" ),
+                subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("pza/{}/cmds/set", topic) )
+            ];
+
+            for att_name in att_names {
+                let request = subscription::Request::new( att_name.0, &format!("pza/{}/{}", topic, att_name.1) );
+                requests.push(request);
+            }
+
             let x: LinkInterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
             interface_lock.set_default_link(x).await;
         }
@@ -134,7 +144,20 @@ impl Device {
         if self.operational_connection.is_some() {
             let c = self.operational_connection.as_ref().unwrap();
             let mut interface_lock = interface.lock().await;
-            let requests = interface_lock.subscription_requests().await;
+            
+            let topic = interface_lock.get_topic().await;
+            let att_names = interface_lock.attributes_names().await;
+
+            let mut requests = vec![
+                subscription::Request::new( subscription::ID_PZA, "pza" ),
+                subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("pza/{}/cmds/set", topic) )
+            ];
+
+            for att_name in att_names {
+                let request = subscription::Request::new( att_name.0, &format!("pza/{}/{}", topic, att_name.1) );
+                requests.push(request);
+            }
+
             let x: LinkInterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
             interface_lock.set_operational_link(x).await;
         }

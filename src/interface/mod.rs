@@ -141,6 +141,16 @@ impl Interface {
     }
 
 
+    /// Build the base topic of the interface
+    ///
+    pub async fn get_topic(&self) -> String {
+        let core_lock = self.core.lock().await;
+        return format!("pza/{}/{}/{}",
+            core_lock.get_bench_name(),
+            core_lock.get_dev_name(),
+            core_lock.get_name());
+    }
+
     /// Set the connection usage policy
     /// 
     pub async fn set_connection_usage_policy(&mut self, policy: ConnectionUsagePolicy) {
