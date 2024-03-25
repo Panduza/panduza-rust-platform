@@ -28,10 +28,10 @@ impl interface::listener::Subscriber for PlatformInterfaceSubscriber {
             subscription::Message::ConnectionStatus (status) => {
                 println!("ConnectionStatus {:?}", status);
                 if status.connected {
-                    data.lock().await.events().set_connection_up();
+                    data.lock().await.set_event_connection_up();
                 }
                 else {
-                    data.lock().await.events().set_connection_down();
+                    data.lock().await.set_event_connection_down();
                 }
             },
             subscription::Message::Mqtt(msg) => {
@@ -62,7 +62,9 @@ impl interface::fsm::States for TestInterfaceStates {
     async fn connecting(&self, core: &AmCore)
     {
         println!("connecting");
-        sleep(Duration::from_secs(1)).await;
+
+        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
+        fsm_events_notifier.notified().await;
     }
 
     async fn initializating(&self, core: &AmCore)
@@ -70,15 +72,15 @@ impl interface::fsm::States for TestInterfaceStates {
         println!("initializating");
         
         let mut p = core.lock().await;
-        p.events().set_init_done();
-        sleep(Duration::from_secs(1)).await;
+        p.set_event_init_done();
     }
 
     async fn running(&self, core: &AmCore)
     {
         println!("running");
-
-        sleep(Duration::from_secs(1)).await;
+        
+        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
+        fsm_events_notifier.notified().await;
     }
 
     async fn error(&self, core: &AmCore)

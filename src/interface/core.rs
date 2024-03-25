@@ -1,7 +1,11 @@
-use rumqttc::AsyncClient;
 use serde_json;
+
 use std::sync::Arc;
+
+use rumqttc::AsyncClient;
+
 use tokio::sync::Mutex;
+use tokio::sync::Notify;
 
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
@@ -25,6 +29,7 @@ pub struct Core {
     dev_name: String,
     /// Name of the bench
     bench_name: String,
+    
     /// Interface Indentity Info
     info: serde_json::Value,
 
@@ -39,6 +44,9 @@ pub struct Core {
     fsm_state: State,
     /// Events
     fsm_events: Events,
+    /// Notifier for events
+    fsm_events_notifier: Arc<Notify>,
+
 
     // -- CLIENTS --
     
@@ -67,6 +75,7 @@ impl Core {
             topic_info: String::new(),
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
+            fsm_events_notifier: Arc::new(Notify::new()),
             info: serde_json::Value::Null,
             default_client: None,
             operational_client: None,
@@ -75,6 +84,7 @@ impl Core {
         obj.update_topics();
         return obj;
     }
+
 
 
     pub fn set_info(&mut self, info: serde_json::Value) {
@@ -122,6 +132,30 @@ impl Core {
     pub fn move_to_state(&mut self, state: State) {
         self.fsm_state = state;
         tracing::debug!("Move to state {:?}", self.fsm_state);
+    }
+
+    
+    /// Get the fsm events notifier
+    /// 
+    pub fn get_fsm_events_notifier(&self) -> Arc<Notify> {
+        return self.fsm_events_notifier.clone();
+    }
+    // -- Event Setters --
+    pub fn set_event_connection_up(&mut self) {
+        self.fsm_events.insert(Events::CONNECTION_UP);
+        self.fsm_events_notifier.notify_one();
+    }
+    pub fn set_event_connection_down(&mut self) {
+        self.fsm_events.insert(Events::CONNECTION_DOWN);
+        self.fsm_events_notifier.notify_one();
+    }
+    pub fn set_event_init_done(&mut self) {
+        self.fsm_events.insert(Events::INIT_DONE);
+        self.fsm_events_notifier.notify_one();
+    }
+    pub fn set_event_state_error(&mut self) {
+        self.fsm_events.insert(Events::ERROR);
+        self.fsm_events_notifier.notify_one();
     }
 
     /// Update topics after a name change

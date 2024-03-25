@@ -158,7 +158,9 @@ impl Platform {
             tokio::select! {
                 _ = signal::ctrl_c() => {
                     tracing::warn!("End by user ctrl-c");
-                    break;
+
+                    self.task_pool.abort_all();
+                    // break;
                 },
                 task = task_pool_rx.recv() => {
                     tracing::warn!("new task !!!");

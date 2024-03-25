@@ -10,15 +10,17 @@ use tracing_subscriber::registry::LookupSpan;
 use crate::log::hash_visitor::HashVisitor;
 
 
-
+/// Color words in quotes
+/// 
 fn color_words_in_quotes(input: &str) -> String {
     let mut in_quotes = false;
     let mut result = String::new();
     let mut word = String::new();
+    let mut prev_char = '\0';
 
     for c in input.chars() {
         match c {
-            '"' => {
+            '"' if prev_char != '\\' => {
                 word.push(c);
                 in_quotes = !in_quotes;
                 if !in_quotes {
@@ -34,11 +36,11 @@ fn color_words_in_quotes(input: &str) -> String {
                 }
             }
         }
+        prev_char = c;
     }
 
     result
 }
-
 
 
 /// A custom event formatter that formats events in a platform-specific way.

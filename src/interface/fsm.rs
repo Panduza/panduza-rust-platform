@@ -35,21 +35,6 @@ bitflags! {
     }
 }
 
-impl Events {
-    pub fn set_connection_up(&mut self) {
-        self.insert(Events::CONNECTION_UP);
-    }
-    pub fn set_connection_down(&mut self) {
-        self.insert(Events::CONNECTION_DOWN);
-    }
-    pub fn set_init_done(&mut self) {
-        self.insert(Events::INIT_DONE);
-    }
-    pub fn set_state_error(&mut self) {
-        self.insert(Events::ERROR);
-    }
-}
-
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
