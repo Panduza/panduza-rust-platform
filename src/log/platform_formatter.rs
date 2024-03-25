@@ -71,10 +71,28 @@ where
         } else if metadata.level() == &tracing_core::Level::WARN {
             write!(&mut writer, "{}: ", "WARN".yellow())?;
         }
+
         
+        // Display class
+        let class_opt = visitor.entries().get("class");
+        match class_opt {
+            Some(class_name) => {
+                match class_name.trim_matches('"') {
+                    "Factory" => {
+                        write!(&mut writer, "{}", "[F] ".to_string().magenta() )?;
+                    },
+                    _ => {}
+                }
+            },
+            None => {}
+        }
+
         // Write the event's message.
         let message = visitor.entries().get("message").unwrap();
         write!(&mut writer, "{}", color_words_in_quotes(message))?;
+
+
+
 
 
         // .format_fields(writer.by_ref(),  ppp)?;

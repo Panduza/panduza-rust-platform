@@ -63,12 +63,11 @@ impl Core {
 
     /// Create a new instance of the Core
     ///
-    pub fn new<A: Into<String>, B: Into<String>, C: Into<String>>
-        (name: A, dev_name: B, bench_name: C) -> Core {
+    pub fn new<A: Into<String>>(name: A) -> Core {
         let mut obj = Core {
             name: name.into(),
-            dev_name: dev_name.into(),
-            bench_name: bench_name.into(),
+            dev_name: String::new(),
+            bench_name: String::new(),
             topic_base: String::new(),
             topic_cmds: String::new(),
             topic_atts: String::new(),
@@ -81,9 +80,37 @@ impl Core {
             operational_client: None,
             connection_usage_policy: ConnectionUsagePolicy::UseOperationalOnly
         };
-        obj.update_topics();
         return obj;
     }
+
+    /// Get the name of the interface
+    /// 
+    pub fn get_name(&self) -> &String {
+        return &self.name;
+    }
+
+    /// Set the names of the interface device and bench
+    /// 
+    pub fn set_dev_and_bench_names<A: Into<String>, B: Into<String>>(&mut self, dev_name: A, bench_name: B) {
+        self.dev_name = dev_name.into();
+        self.bench_name = bench_name.into();
+        self.update_topics();
+    }
+
+    /// Get the name of the device
+    /// 
+    pub fn get_dev_name(&self) -> &String {
+        return &self.dev_name;
+    }
+
+    /// Get the name of the bench
+    /// 
+    pub fn get_bench_name(&self) -> &String {
+        return &self.bench_name;
+    }
+
+
+
 
 
 
@@ -91,30 +118,7 @@ impl Core {
         self.info = info;
     }
 
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
-        self.update_topics();
-    }
-    pub fn get_name(&self) -> &String {
-        return &self.name;
-    }
 
-    
-    pub fn set_dev_name(&mut self, dev_name: String) {
-        self.dev_name = dev_name;
-        self.update_topics();
-    }
-    pub fn get_dev_name(&self) -> &String {
-        return &self.dev_name;
-    }
-
-    pub fn set_bench_name(&mut self, bench_name: String) {
-        self.bench_name = bench_name;
-        self.update_topics();
-    }
-    pub fn get_bench_name(&self) -> &String {
-        return &self.bench_name;
-    }
 
     pub fn current_state(&self) -> &State {
         return &self.fsm_state;

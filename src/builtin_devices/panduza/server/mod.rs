@@ -119,18 +119,20 @@ impl DeviceActions for ServerDeviceActions {
     //     return LinkedList::new();
     // }
 
+    
     /// Create the interfaces
-    fn create_interfaces(&self, dev_name: String, bench_name: String, settings: &serde_json::Value)
+    /// 
+    fn create_interfaces(&self, settings: &serde_json::Value)
         -> Vec<AmInterface> {
         let mut list = Vec::new();
-        list.push(
-            Interface::new(
-                "platform", dev_name, bench_name,
-                Box::new(TestIdentityProvider{}),
-                Box::new(TestInterfaceStates{}),
-                Box::new(PlatformInterfaceSubscriber{})
-            )
-        );
+        // list.push(
+        //     Interface::new(
+        //         "platform", dev_name, bench_name,
+        //         Box::new(TestIdentityProvider{}),
+        //         Box::new(TestInterfaceStates{}),
+        //         Box::new(PlatformInterfaceSubscriber{})
+        //     )
+        // );
 
         return list;
     }
