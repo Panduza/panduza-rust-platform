@@ -192,22 +192,17 @@ impl Device {
         }
     }
 
-
-    /// Create interfaces
-    /// 
-    pub async fn create_interfaces(&mut self) {
-
-        self.interfaces = self.actions.create_interfaces(&serde_json::Value::Null);
-
-    }
-
-    /// Start the interfaces
+    /// Create and Start the interfaces
     /// 
     pub async fn start_interfaces(&mut self, task_loader: &mut TaskPoolLoader) {
         // Do nothing if already started
         if self.started {
             return;
         }
+
+        // create interfaces
+        self.interfaces = self.actions.create_interfaces(&serde_json::Value::Null);
+
         // Do nothing if no interface in the device
         if self.interfaces.len() == 0 {
             tracing::warn!(class="Device", bname=self.bench_name, dname=self.name,
