@@ -84,6 +84,12 @@ impl Services {
         self.insert_request(Requests::RELOAD_TREE);
     }
 
+    /// Get the tree content
+    ///
+    pub fn get_tree_content(&self) -> &serde_json::Value {
+        return &self.tree_content;
+    }
+
     /// Trigger a panic mode
     /// 
     pub fn trigger_panic(&mut self, main_cause: &str) {

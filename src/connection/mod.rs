@@ -166,6 +166,10 @@ impl LinkConnectionManager {
 /// Connection object
 ///
 pub struct Connection {
+
+    // Name of the connection
+    name: String,
+
     /// Mqtt client
     client: AsyncClient,
 
@@ -182,6 +186,8 @@ impl Connection {
     /// Create a new connection
     /// 
     pub fn new(mqtt_options: MqttOptions) -> Connection {
+        // Info log
+        tracing::info!(class="Connection", name=mqtt_options.client_id(), "Connection created");
 
         // Create the client and event loop
         let (client, eventloop) = 
@@ -189,6 +195,7 @@ impl Connection {
 
         // Create Connection Object
         return Connection {
+            name: mqtt_options.client_id(),
             client: client.clone(),
             eventloop: Arc::new(Mutex::new(eventloop)),
             link_manager: Arc::new(Mutex::new(
@@ -325,9 +332,6 @@ impl Manager {
 
         // Create connection ID
         let id = format!("{}::{}", self.platform_name, name_string);
-
-        // Info log
-        tracing::info!("Create connection {:?}", id);
 
 
         // Set default options

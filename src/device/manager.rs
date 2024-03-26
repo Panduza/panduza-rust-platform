@@ -50,7 +50,7 @@ impl Manager {
     pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<(), PlatformError> {
 
         // Debug log
-        tracing::debug!("Create device: {:?}", device_def);
+        tracing::debug!(class="Platform", "Create device: {:?}", device_def);
 
         let dev = self.factory.create_device(device_def);
         match dev {
@@ -58,8 +58,6 @@ impl Manager {
                 return platform_error!("Device not created", Some(Box::new(e)));
             },
             Ok(dev) => {
-                // Info log
-                tracing::info!("Device created: {}", dev.get_name());
 
                 self.instances.insert(dev.get_name().clone(), dev);
 

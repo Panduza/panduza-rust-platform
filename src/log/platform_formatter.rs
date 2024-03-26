@@ -59,20 +59,13 @@ where
         event: &Event<'_>,
     ) -> fmt::Result {
 
+        //
         let mut visitor = HashVisitor::new();
         event.record(&mut visitor);
 
         // Format values from the event's metadata:
         let metadata = event.metadata();
 
-        
-        if metadata.level() == &tracing_core::Level::ERROR {
-            write!(&mut writer, "{}: ", "ERROR".red())?;
-        } else if metadata.level() == &tracing_core::Level::WARN {
-            write!(&mut writer, "{}: ", "WARN".yellow())?;
-        }
-
-        
         // Display class
         let class_opt = visitor.entries().get("class");
         match class_opt {
@@ -84,10 +77,25 @@ where
                     "Factory" => {
                         write!(&mut writer, "{}", "[F] ".to_string().magenta() )?;
                     },
+                    "Connection" => {
+                        let f = format!("[{}] ", visitor.entries().get("name").unwrap().trim_matches('"'));
+                        write!(&mut writer, "{}", f.blue() )?;
+                    },
+                    "Device" => {
+                        let f = format!("[{}] ", visitor.entries().get("name").unwrap().trim_matches('"'));
+                        write!(&mut writer, "{}", f.green() )?;
+                    },
                     _ => {}
                 }
             },
             None => {}
+        }
+
+        // Level
+        if metadata.level() == &tracing_core::Level::ERROR {
+            write!(&mut writer, "{}: ", "ERROR".red())?;
+        } else if metadata.level() == &tracing_core::Level::WARN {
+            write!(&mut writer, "{}: ", "WARN".yellow())?;
         }
 
         // Write the event's message.

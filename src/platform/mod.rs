@@ -207,15 +207,10 @@ impl Platform {
                         tracing::info!(class="Platform", "Booting...");
 
                         // Load the tree file
-                        let r = Platform::load_tree_file(services.clone()).await;
-                        match r {
-                            Ok(_) => {
-                                tracing::info!("Tree loaded");
-                            },
-                            Err(e) => {
-                                tracing::warn!("Failed to load tree: {}", e);
-                                tracing::warn!("Continue with default configuration");
-                            }
+                        if let Err(e) = Platform::load_tree_file(services.clone()).await
+                        {
+                            tracing::warn!(class="Platform", "Failed to load tree: {}", e);
+                            tracing::warn!(class="Platform", "Continue with default configuration");
                         }
 
                         // Sart minimal connection and devices
@@ -228,10 +223,11 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- RELOAD ---
                     if services.lock().await.reload_tree_requested() {
-                        tracing::info!(class="Platform", "Reload Configuration Tree");
+                        tracing::info!(class="Platform", "Reloading Configuration Tree...");
 
                         Platform::reload_tree(services.clone(), devices.clone(), connections.clone()).await;
                         
+                        tracing::info!(class="Platform", "Reloading Success!");
                     }
 
                 }
@@ -277,7 +273,8 @@ impl Platform {
         let json_content = serde_json::from_str::<serde_json::Value>(&content);
         match json_content {
             Ok(json) => {
-                tracing::info!("JSON content: {:?}", serde_json::to_string_pretty(&json));
+                // log
+                tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
 
                 services.lock().await.set_tree_content(json);
 
@@ -305,16 +302,11 @@ impl Platform {
         c.create_connection("default", "localhost", 1883).await;
 
         // Create server device
-        match d.create_device( &json!({
-                "name": hostname,
-                "ref": "panduza.server"
-            })).await {
-            Ok(_) => {
-                tracing::info!("Device created");
-            },
-            Err(e) => {
-                tracing::error!("Failed to create device: {}", e);
-            }
+        if let Err(e) = d.create_device(&json!({
+            "name": hostname,
+            "ref": "panduza.server"
+        })).await {
+            tracing::error!(class="Platform", "Failed to create device: {}", e);
         }
 
         // attach
@@ -332,7 +324,40 @@ impl Platform {
 
     /// Reload tree inside platform configuration
     /// 
-    async fn reload_tree(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
+    async fn reload_tree(services: AmServices, devices_manager: device::AmManager, connections_manager: connection::AmManager) {
+
+        let services_lock = services.lock().await;
+
+        let tree_ref = services_lock.get_tree_content();
+
+
+        let devices_definitions= tree_ref.get("devices");
+        match devices_definitions {
+            Some(devices) => {
+                // Iterate over the devices
+                if let Some(devices) = devices.as_array() {
+                    for device_definition in devices {
+
+
+                        if let Err(e) = devices_manager.lock().await.create_device(device_definition).await {
+                            tracing::error!("Failed to create device {}: {}", "ppp", e);
+                        }
+
+
+                        // let server_device = d.get_device(hostname).unwrap();
+                        // let default_connection = c.get_connection(&"default".to_string());
+                        // server_device.set_default_connection(default_connection.clone()).await;
+                        // server_device.set_operational_connection(default_connection.clone()).await;
+
+                    }
+                }
+            },
+            None => {
+                tracing::warn!("No devices found in the tree");
+            }
+        }
+
+
 
 
     }

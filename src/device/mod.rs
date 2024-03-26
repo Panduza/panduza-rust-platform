@@ -117,6 +117,7 @@ impl Device {
 
     pub fn set_name(&mut self, name: String) {
         self.name = name;
+        tracing::info!(class="Device", name=self.name, "Device created");
     }
     pub fn get_name(&self) -> &String {
         return &self.name;
