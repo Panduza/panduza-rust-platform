@@ -126,48 +126,37 @@ impl Platform {
     /// 
     pub async fn work(&mut self) {
         // Info log
-        tracing::info!("Platform Version ...");
+        tracing::info!(class="Platform", "Platform Version ...");
 
-        // Start service task
+        // Start the main service task directly
+        // it acts as a idle task for the platform to avoid the platform to stop if no other task
         let s = self.services.clone();
         let d = self.devices.clone();
         let c = self.connections.clone();
+        self.task_pool.spawn(async move {
+            Platform::services_task(s, d, c).await
+        });
 
-        self.task_loader.load(async move {
-                Platform::services_task(s, d, c).await
-            }.boxed()
-        ).unwrap();
-
-
-        let p = self.task_pool_rx.clone();
-        let mut task_pool_rx = p.lock().await;
-
-        let task_option = task_pool_rx.recv().await;
-        match task_option {
-            Some(task) => {
-                tracing::warn!("new task !!!");
-                self.task_pool.spawn(task);
-            },
-            None => {
-                tracing::warn!("???!!!!!");
-            }
-        }
-
-
+        // Main loop
+        // Run forever and wait for:
+        // - ctrl-c: to stop the platform after the user request it
+        // - a new task to start in the task pool
+        // - all tasks to complete
+        let task_pool_rx_clone = self.task_pool_rx.clone();
+        let mut task_pool_rx = task_pool_rx_clone.lock().await;
         loop {
             tokio::select! {
                 _ = signal::ctrl_c() => {
-                    tracing::warn!("End by user ctrl-c");
-
+                    tracing::warn!(class="Platform", "User ctrl-c, abort requested");
                     self.task_pool.abort_all();
-                    // break;
                 },
                 task = task_pool_rx.recv() => {
-                    tracing::warn!("new task !!!");
-                    self.task_pool.spawn(task.unwrap());
+                    // Function to effectily spawn tasks requested by the system
+                    let ah = self.task_pool.spawn(task.unwrap());
+                    tracing::debug!(class="Platform", "New task created ! [{:?}]", ah );
                 },
                 _ = self.end_of_all_tasks() => {
-                    tracing::warn!("End by all tasks completed");
+                    tracing::warn!(class="Platform", "All tasks completed, stop the platform");
                     break;
                 }
             }
@@ -207,15 +196,15 @@ impl Platform {
         loop {
             // Wait for an event
             requests_change_notifier.notified().await;
-
-            tracing::info!("Services task notified");
+            tracing::trace!(class="Platform", "Services task notified");
             {
                 if services.lock().await.has_pending_requests() {
 
+                    // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
                         // log
-                        tracing::info!("Booting...");
+                        tracing::info!(class="Platform", "Booting...");
 
                         // Load the tree file
                         let r = Platform::load_tree_file(services.clone()).await;
@@ -233,12 +222,13 @@ impl Platform {
                         Platform::boot_minimal_services(services.clone(), devices.clone(), connections.clone()).await;
 
                         // log
-                        tracing::info!("Boot Success!");
+                        tracing::info!(class="Platform", "Boot Success!");
                     }
                     
+                    // --------------------------------------------------------
                     // --- RELOAD ---
                     if services.lock().await.reload_tree_requested() {
-                        tracing::info!("Reload");
+                        tracing::info!(class="Platform", "Reload Configuration Tree");
 
                         Platform::reload_tree(services.clone(), devices.clone(), connections.clone()).await;
                         

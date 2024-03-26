@@ -78,6 +78,9 @@ where
         match class_opt {
             Some(class_name) => {
                 match class_name.trim_matches('"') {
+                    "Platform" => {
+                        write!(&mut writer, "{}", "[P] ".to_string().red() )?;
+                    },
                     "Factory" => {
                         write!(&mut writer, "{}", "[F] ".to_string().magenta() )?;
                     },

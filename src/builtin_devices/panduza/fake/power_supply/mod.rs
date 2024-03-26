@@ -27,23 +27,18 @@ impl DeviceActions for FakePowerSupply {
     fn create_interfaces(&self, settings: &serde_json::Value)
         -> Vec<AmInterface> {
         let mut list = Vec::new();
-        // list.push(
-        //     Interface::new(
-        //         "platform", dev_name, bench_name,
-        //         Box::new(TestIdentityProvider{}),
-        //         Box::new(TestInterfaceStates{}),
-        //         Box::new(PlatformInterfaceSubscriber{})
-        //     )
-        // );
+        list.push(
+            itf_fake_bpc::new()
+        );
 
         return list;
     }
 }
 
 
-pub struct DeviceProducer {
 
-}
+
+pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
 
