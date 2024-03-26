@@ -81,6 +81,10 @@ pub struct Device {
     name: String,
     bench_name: String,
 
+
+    started: bool,
+    stoppable: bool,
+
     
     actions: Box<dyn DeviceActions>,
 
@@ -100,10 +104,14 @@ pub struct Device {
 impl Device {
 
     /// Create a new instance of the Device
+    /// 
     pub fn new(actions: Box<dyn DeviceActions>) -> Device {
         return Device {
             name: String::from("changeme"),
             bench_name: String::from("changeme"),
+
+            started: false,
+            stoppable: false,
 
             actions: actions,
             interfaces: Vec::new(),
@@ -117,8 +125,10 @@ impl Device {
 
     pub fn set_name(&mut self, name: String) {
         self.name = name;
-        tracing::info!(class="Device", name=self.name, "Device created");
+        tracing::info!(class="Device", bname=self.bench_name, dname=self.name,
+            "Device created");
     }
+
     pub fn get_name(&self) -> &String {
         return &self.name;
     }
@@ -191,11 +201,20 @@ impl Device {
 
     }
 
-    
+    /// Start the interfaces
+    /// 
+    pub async fn start_interfaces(&mut self, task_loader: &mut TaskPoolLoader) {
+        // Do nothing if already started
+        if self.started {
+            return;
+        }
+        // Do nothing if no interface in the device
+        if self.interfaces.len() == 0 {
+            tracing::warn!(class="Device", bname=self.bench_name, dname=self.name,
+                "No interface to start, skip device start");
+            return;
+        }
 
-    pub async fn mount_interfaces(&mut self, task_loader: &mut TaskPoolLoader) {
-
-        
         let dev_name = self.get_name().clone();
         let bench_name = self.get_bench_name().clone();
 
@@ -207,6 +226,9 @@ impl Device {
 
 
         // }
+
+
+
 
         let mut interfaces = self.interfaces.clone();
         for interface in interfaces.iter_mut() {
@@ -229,7 +251,10 @@ impl Device {
             itf.lock().await.start(task_loader).await;
         }
 
-
+        // log
+        tracing::info!(class="Device", bname=self.bench_name, dname=self.name,
+            "Start Interfaces");
+        self.started = true;
     }
 
     /// Set default connection

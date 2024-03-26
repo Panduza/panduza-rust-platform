@@ -17,6 +17,15 @@ use crate::subscription;
 use crate::subscription::Filter as SubscriptionFilter;
 use crate::subscription::Request as SubscriptionRequest;
 
+
+
+mod manager;
+
+pub type Manager = manager::Manager;
+pub type AmManager = manager::AmManager;
+
+
+
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -187,7 +196,7 @@ impl Connection {
     /// 
     pub fn new(mqtt_options: MqttOptions) -> Connection {
         // Info log
-        tracing::info!(class="Connection", name=mqtt_options.client_id(), "Connection created");
+        tracing::info!(class="Connection", cname=mqtt_options.client_id(), "Connection created");
 
         // Create the client and event loop
         let (client, eventloop) = 
@@ -213,20 +222,35 @@ impl Connection {
         let ev: Arc<Mutex<rumqttc::EventLoop>> = self.eventloop.clone();
         let lm: Arc<Mutex<LinkConnectionManager>> = self.link_manager.clone();
 
+        let cname = self.name.clone();
+
         // Start connection process in a task
         task_loader.load(async move {
-            Connection::run(ev, lm).await
+            Connection::run(cname, ev, lm).await
         }.boxed()).unwrap();
 
+        // Info log
+        tracing::info!(class="Connection", cname=self.name,
+            "Connection started");
     }
 
     /// Run the connection
     ///
-    async fn run(ev: Arc<Mutex<rumqttc::EventLoop>>, lm: Arc<Mutex<LinkConnectionManager>>) -> PlatformTaskResult {
+    async fn run(
+        conneciton_name: String,
+        ev: Arc<Mutex<rumqttc::EventLoop>>,
+        lm: Arc<Mutex<LinkConnectionManager>>)
+        -> PlatformTaskResult {
 
+        // Event loop mangement
+        // Poll the reception in a loop
         loop {
             while let Ok(notification) = ev.lock().await.poll().await {
-                println!("Received = {:?}", notification);
+                // Debug log
+                tracing::trace!(class="Connection", cname=conneciton_name,
+                    "{:?}", notification);
+
+                // Check notification
                 match notification {
                     rumqttc::Event::Incoming(incoming) => {
                         Connection::process_incoming_packet(lm.clone(), &incoming).await;
@@ -237,7 +261,10 @@ impl Connection {
                     }
                 }
             }
-            tracing::warn!("Broker disconnected, trying to reconnect");
+
+            // Here the broker is disconnected
+            tracing::warn!(class="Connection", cname=conneciton_name,
+                "Broker disconnected, trying to reconnect");
 
             let message = 
                                 subscription::Message::new_connection_status(false);
@@ -256,7 +283,6 @@ impl Connection {
                 lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
                 // let message = subscription::Message::new_connection_status(true);
 
-                println!("!!!!!!! !Received = {:?}", ack);
             },
             rumqttc::Incoming::Publish(publish) => {
                 // For each link with interfaces, check if the topic matches a filter
@@ -292,78 +318,4 @@ impl Connection {
 
 }
 
-
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-
-/// Object to manage and run multiple named connections
-///
-pub struct Manager {
-    /// Platform name
-    platform_name: String,
-
-    /// Map of managed connections
-    connections: HashMap<String, AmConnection>,
-
-    task_loader: TaskPoolLoader
-}
-pub type AmManager = Arc<Mutex<Manager>>;
-
-impl Manager {
-
-    /// Create a new manager
-    ///
-    pub fn new(    task_loader: TaskPoolLoader, platform_name: &str) -> AmManager {
-        return Arc::new(Mutex::new(Manager {
-            platform_name: platform_name.to_string(),
-            connections: HashMap::new(),
-            task_loader: task_loader
-        }));
-    }
-
-    /// Create a new inactive connection
-    ///
-    pub async fn create_connection<S: Into<String>, T: Into<String>>(&mut self, name: S, host: T, port: u16) {
-        // Get name with the correct type
-        let name_string = name.into();
-
-        // Create connection ID
-        let id = format!("{}::{}", self.platform_name, name_string);
-
-
-        // Set default options
-        let mut mqtt_options = MqttOptions::new(id, host, port);
-        mqtt_options.set_keep_alive(Duration::from_secs(5));
-
-        // Create connection Object
-        self.connections.insert(name_string,
-            Arc::new(Mutex::new(
-                Connection::new(mqtt_options))
-            )
-        );
-    }
-
-    /// Start a connection
-    ///
-    /// name: name of the connection to start
-    /// task_pool: main JoinSet to attach the running connection to a task
-    ///
-    pub async fn start_connection<A: Into<String>>(&mut self, name: A) {
-        // Get the connection clone for the task
-        let conn = self.connections.get(&name.into()).unwrap().clone();
-
-        // Start the connection
-        conn.lock().await.start(&mut self.task_loader).await;
-    }
-
-    /// Get a connection
-    /// 
-    pub fn get_connection(&mut self, name: &str) -> AmConnection {
-        return self.connections.get(name).unwrap().clone();
-    }
-
-}
 

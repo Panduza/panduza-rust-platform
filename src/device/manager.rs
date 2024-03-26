@@ -46,36 +46,33 @@ impl Manager {
 
 
     /// Create a new device instance
-    /// 
-    pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<(), PlatformError> {
-
+    ///
+    /// return the name of the device if success
+    ///
+    pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<String, PlatformError> {
         // Debug log
-        tracing::debug!(class="Platform", "Create device: {:?}", device_def);
+        tracing::debug!(class="Platform", " - Try to create device -\n{}", serde_json::to_string_pretty(&device_def).unwrap() );
 
-        let dev = self.factory.create_device(device_def);
-        match dev {
+        // Create the device
+        let result = self.factory.create_device(device_def);
+        match result {
             Err(e) => {
                 return platform_error!("Device not created", Some(Box::new(e)));
             },
-            Ok(dev) => {
-
-                self.instances.insert(dev.get_name().clone(), dev);
-
+            Ok(device_object) => {
+                let name = device_object.get_name().clone();
+                self.instances.insert(device_object.get_name().clone(), device_object);
+                return Ok(name);
             }
         }
-
-
-
-        return  Ok(());
-
     }
 
 
 
-    pub async fn mount_devices(&mut self)
+    pub async fn start_devices(&mut self)
     {
         for(_, device) in self.instances.iter_mut() {
-            device.mount_interfaces(&mut self.task_loader).await;
+            device.start_interfaces(&mut self.task_loader).await;
         }
     }
 
@@ -84,53 +81,6 @@ impl Manager {
         return self.instances.get_mut(&device_ref);
     }
 
-    // pub fn get_device(&self, device_ref: &String) -> Option<&Box<dyn Device>> {
-    //     return self.instances.iter().find(|&x| x.get_name() == device_ref);
-    // }
-
-    // pub fn get_devices(&self) -> &LinkedList<Box<dyn Device>> {
-    //     return &self.instances;
-    // }
-
-    // pub fn get_factory(&self) -> &Factory {
-    //     return &self.factory;
-    // }
-
-    // pub fn get_factory_mut(&mut self) -> &mut Factory {
-    //     return &mut self.factory;
-    // }
-
-    // pub fn work(&mut self) {
-    //     // Info log
-    //     tracing::info!("Device Manager Starting...");
-
-    //     // Create a device
-    //     let device = self.create_device(&"panduza.server".to_string()).unwrap();
-
-    //     // Info log
-    //     tracing::info!("Device created: {}", device.get_name());
-
-    //     // Get the device
-    //     let device = self.get_device(&"panduza.server".to_string()).unwrap();
-
-    //     // Info log
-    //     tracing::info!("Device found: {}", device.get_name());
-
-    //     // Get the factory
-    //     let factory = self.get_factory();
-
-    //     // Info log
-    //     tracing::info!("Factory found: {:?}", factory);
-
-    //     // Get the factory
-    //     let factory = self.get_factory_mut();
-
-    //     // Info log
-    //     tracing::info!("Factory found: {:?}", factory);
-
-    //     // Info log
-    //     tracing::info!("Device Manager Stopping...");
-    // }
 
 }
 

@@ -319,7 +319,7 @@ impl Platform {
         c.start_connection("default").await;
 
         // Mount devices
-        d.mount_devices().await;
+        d.start_devices().await;
     }
 
     /// Reload tree inside platform configuration
@@ -339,15 +339,21 @@ impl Platform {
                     for device_definition in devices {
 
 
-                        if let Err(e) = devices_manager.lock().await.create_device(device_definition).await {
-                            tracing::error!("Failed to create device {}: {}", "ppp", e);
+                        let result = devices_manager.lock().await.create_device(device_definition).await;
+                        match result {
+                            Err(e) => {
+                                tracing::error!("Failed to create device {}: {}", "ppp", e);
+                            },
+                            Ok(new_device_name) => {
+                                let mut d = devices_manager.lock().await;
+                                let mut c = connections_manager.lock().await;
+                        
+                                let server_device = d.get_device(new_device_name).unwrap();
+                                let default_connection = c.get_connection(&"default".to_string());
+                                server_device.set_default_connection(default_connection.clone()).await;
+                                server_device.set_operational_connection(default_connection.clone()).await;
+                            }
                         }
-
-
-                        // let server_device = d.get_device(hostname).unwrap();
-                        // let default_connection = c.get_connection(&"default".to_string());
-                        // server_device.set_default_connection(default_connection.clone()).await;
-                        // server_device.set_operational_connection(default_connection.clone()).await;
 
                     }
                 }
@@ -357,6 +363,9 @@ impl Platform {
             }
         }
 
+
+        let mut d = devices_manager.lock().await;
+        d.start_devices().await;
 
 
 

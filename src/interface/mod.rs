@@ -104,6 +104,16 @@ impl Interface {
             }
         }.boxed()).unwrap();
 
+
+
+        // Log
+        {
+            let bname = self.core.lock().await.get_bench_name().clone();
+            let dname = self.core.lock().await.get_dev_name().clone();
+            let iname = self.core.lock().await.get_name().clone() ;
+            tracing::info!(class="Interface", bname=bname, dname=dname, iname=iname,
+                "Interface started");
+        }
     }
 
     /// Get the name of the attributes managed by the interface
