@@ -257,7 +257,7 @@ impl Connection {
                         
                     }
                     _ => {
-                        println!("Received = {:?}", notification);
+                        // println!("Received = {:?}", notification);
                     }
                 }
             }
@@ -305,7 +305,7 @@ impl Connection {
                 }
             }
             _ => {
-                println!("? = {:?}", packet);
+                // println!("? = {:?}", packet);
             }
         }
     }

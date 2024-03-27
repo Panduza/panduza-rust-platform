@@ -7,6 +7,35 @@ use crate::interface::core::AmCore;
 use crate::interface::AmInterface;
 use crate::device::{ Device, DeviceActions, Producer };
 
+
+
+struct AttEnable {
+    value: bool
+}
+
+struct AttVoltage {
+    value: f32,
+    min: f32,
+    max: f32,
+    decimals: u16
+}
+
+struct AttCurrent {
+    value: f32,
+    min: f32,
+    max: f32,
+    decimals: u16
+}
+
+struct AttsBpc {
+    enable: AttEnable,
+    voltage: AttVoltage,
+    current: AttCurrent
+}
+
+
+
+
 struct ItfFakeBpcSubscriber;
 
 
@@ -84,11 +113,11 @@ impl interface::listener::Subscriber for ItfFakeBpcSubscriber {
     /// Process a message
     ///
     async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
-        println!("process {:?}", msg);
 
+        
         match msg {
             subscription::Message::ConnectionStatus (status) => {
-                println!("ConnectionStatus {:?}", status);
+                
                 if status.connected {
                     data.lock().await.set_event_connection_up();
                 }
