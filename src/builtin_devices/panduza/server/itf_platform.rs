@@ -1,14 +1,15 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 
 use crate::{interface::{self, core::AmCore, AmInterface, Interface}, subscription};
 
 
 
-
 struct PlatformInterfaceSubscriber;
 
 #[async_trait]
-impl interface::listener::Subscriber for PlatformInterfaceSubscriber {
+impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
 
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
@@ -20,31 +21,20 @@ impl interface::listener::Subscriber for PlatformInterfaceSubscriber {
     /// Process a message
     ///
     async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
-        println!("process {:?}", msg);
-
+        // Common processing
+        interface::subscriber::process_common(data,msg).await;
+        
         match msg {
-            subscription::Message::ConnectionStatus (status) => {
-                println!("ConnectionStatus {:?}", status);
-                if status.connected {
-                    data.lock().await.set_event_connection_up();
-                }
-                else {
-                    data.lock().await.set_event_connection_down();
-                }
-            },
             subscription::Message::Mqtt(msg) => {
-                
                 match msg.get_id() {
-                    subscription::ID_PZA => {
-                        data.lock().await.publish_info().await;
-                        println!("Ackk !!! {:?}", msg);
-                    },
+                    
                     _ => {
                         println!("Mqtt {:?}", msg);
                     }
                 }
 
             }
+            _ => {}
         }
 
     }

@@ -155,9 +155,6 @@ impl LinkConnectionManager {
                 println!("Error sending message to interface {}",
                     r.err().unwrap());
             }
-            else {
-                println!("Message sent to interface");
-            }
         }
     }
 
@@ -296,9 +293,6 @@ impl Connection {
                             if r.is_err() {
                                 println!("Error sending message to interface {}",
                                     r.err().unwrap());
-                            }
-                            else {
-                                println!("Message sent to interface");
                             }
                         }
                     }

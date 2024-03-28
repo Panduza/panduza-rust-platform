@@ -133,12 +133,16 @@ impl Core {
     }
     
     /// Move to a new state
+    /// 
     pub fn move_to_state(&mut self, state: State) {
+        let previous = self.fsm_state.clone();
         self.fsm_state = state;
-        tracing::debug!("Move to state {:?}", self.fsm_state);
+        tracing::info!(
+            class="Interface", 
+            bname= self.bench_name, dname= self.dev_name, iname= self.name,
+                "State changed {:?} => {:?}", previous, self.fsm_state);
     }
 
-    
     /// Get the fsm events notifier
     /// 
     pub fn get_fsm_events_notifier(&self) -> Arc<Notify> {

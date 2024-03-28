@@ -14,26 +14,9 @@ use futures::Future;
 
 use crate::platform_error;
 
+use super::subscriber::Subscriber;
 
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
 
-#[async_trait]
-pub trait Subscriber : Send + Sync {
-
-    // /// Get the subscription requests
-    // async fn subscription_requests(&self) -> Vec<subscription::Request>;
-
-    /// Get the subscription requests
-    async fn attributes_names(&self) -> Vec<(subscription::Id, String)>;
-    
-    /// Process a message
-    async fn process(&self, core: &AmCore, msg: &subscription::Message);
-
-}
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -153,8 +136,6 @@ impl Listener {
         let (msg, _index, remaining_futures) = select_all(
             vv
         ).await;
-
-        println!("result {:?}", msg);
 
         match msg {
             Some(msg) => {

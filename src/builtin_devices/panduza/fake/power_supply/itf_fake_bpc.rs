@@ -100,7 +100,7 @@ impl interface::fsm::States for ItfFakeBpcStates {
 
 
 #[async_trait]
-impl interface::listener::Subscriber for ItfFakeBpcSubscriber {
+impl interface::subscriber::Subscriber for ItfFakeBpcSubscriber {
 
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![

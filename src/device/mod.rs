@@ -199,6 +199,8 @@ impl Device {
         if self.started {
             return;
         }
+        tracing::info!(class="Device", bname=self.bench_name, dname=self.name,
+            "Start Interfaces...");
 
         // create interfaces
         self.interfaces = self.actions.create_interfaces(&serde_json::Value::Null);
@@ -214,41 +216,24 @@ impl Device {
         let bench_name = self.get_bench_name().clone();
 
 
-        // // Finialize the interfaces by giving them names ans device informations
-        // let mut interfaces = self.interfaces.clone();
-        // for interface in interfaces.iter_mut() {
-        //     let itf = interface.clone();
-
-
-        // }
-
-
-
 
         let mut interfaces = self.interfaces.clone();
         for interface in interfaces.iter_mut() {
             let itf = interface.clone();
 
+            // Set names
+            itf.lock().await.set_dev_and_bench_names(dev_name.clone(), bench_name.clone()).await;
 
-            match self.connection_usage_policy {
-                ConnectionUsagePolicy::UseBoth => {
-                    self.attach_default_connection(itf.clone()).await;
-                    self.attach_operational_connection(itf.clone()).await;
-                },
-                ConnectionUsagePolicy::UseDefaultOnly => {
-                    self.attach_default_connection(itf.clone()).await;
-                },
-                ConnectionUsagePolicy::UseOperationalOnly => {
-                    self.attach_operational_connection(itf.clone()).await;
-                }
-            }
+
+            self.attach_default_connection(itf.clone()).await;
+            // self.attach_operational_connection(itf.clone()).await;
 
             itf.lock().await.start(task_loader).await;
         }
 
         // log
         tracing::info!(class="Device", bname=self.bench_name, dname=self.name,
-            "Start Interfaces");
+            "Interfaces started !");
         self.started = true;
     }
 

@@ -225,7 +225,11 @@ impl Platform {
                     if services.lock().await.reload_tree_requested() {
                         tracing::info!(class="Platform", "Reloading Configuration Tree...");
 
-                        Platform::reload_tree(services.clone(), devices.clone(), connections.clone()).await;
+                        // Try to reload the tree
+                        if let Err(e) = Platform::reload_tree(
+                            services.clone(), devices.clone(), connections.clone()).await {
+                            tracing::error!(class="Platform", "Failed to reload tree: {}", e);
+                        }
                         
                         tracing::info!(class="Platform", "Reloading Success!");
                     }
@@ -306,7 +310,7 @@ impl Platform {
             "name": hostname,
             "ref": "panduza.server"
         })).await {
-            tracing::error!(class="Platform", "Failed to create device: {}", e);
+            tracing::error!(class="Platform", "Failed to create device:\n{}", e);
         }
 
         // attach
@@ -324,7 +328,11 @@ impl Platform {
 
     /// Reload tree inside platform configuration
     /// 
-    async fn reload_tree(services: AmServices, devices_manager: device::AmManager, connections_manager: connection::AmManager) {
+    async fn reload_tree(
+        services: AmServices, 
+        devices_manager: device::AmManager, 
+        connections_manager: connection::AmManager) -> Result<(), PlatformError>
+    {
 
         let services_lock = services.lock().await;
 
@@ -338,11 +346,13 @@ impl Platform {
                 if let Some(devices) = devices.as_array() {
                     for device_definition in devices {
 
-
                         let result = devices_manager.lock().await.create_device(device_definition).await;
                         match result {
                             Err(e) => {
-                                tracing::error!("Failed to create device {}: {}", "ppp", e);
+                                return platform_error!(
+                                    format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap()), 
+                                    Some(Box::new(e))
+                                );
                             },
                             Ok(new_device_name) => {
                                 let mut d = devices_manager.lock().await;
@@ -367,8 +377,8 @@ impl Platform {
         let mut d = devices_manager.lock().await;
         d.start_devices().await;
 
-
-
+        // Success
+        Ok(())
     }
 
 

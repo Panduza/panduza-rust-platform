@@ -14,11 +14,15 @@ use crate::connection::LinkInterfaceHandle;
 pub mod fsm;
 pub mod core;
 pub mod listener;
+pub mod subscriber;
 
 use crate::interface::fsm::Fsm;
 use crate::interface::core::Core;
 use crate::interface::core::AmCore;
 use crate::interface::listener::Listener;
+
+
+use crate::interface::subscriber::Subscriber;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -30,6 +34,8 @@ use crate::interface::listener::Listener;
 pub trait IdentityProvider : Send {
     fn get_info(&self) -> Value;
 }
+
+
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -60,7 +66,7 @@ impl Interface {
         name: A,
         idn: Box<dyn IdentityProvider>,
         states: Box<dyn fsm::States>,
-        subscriber: Box<dyn listener::Subscriber>) -> AmInterface {
+        subscriber: Box<dyn Subscriber>) -> AmInterface {
 
 
         let mut core_obj = Core::new(name);
@@ -75,6 +81,12 @@ impl Interface {
                 listener: Arc::new(Mutex::new(Listener::new(core.clone(), subscriber)))
             }
         ));
+    }
+
+    /// Set the dev and bench name to the interface
+    /// 
+    pub async fn set_dev_and_bench_names<A: Into<String>, B: Into<String>>(&mut self, dev_name: A, bench_name: B) {
+        self.core.lock().await.set_dev_and_bench_names(dev_name, bench_name);
     }
 
     /// Start the interface, run it into tasks
@@ -164,7 +176,7 @@ impl Interface {
     /// Set the connection usage policy
     /// 
     pub async fn set_connection_usage_policy(&mut self, policy: ConnectionUsagePolicy) {
-        self.core.lock().await.set_connection_usage_policy(policy);
+        self.core.lock().await.set_connection_usage_policy(policy).await;
     }
 
 }
