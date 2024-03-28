@@ -70,7 +70,7 @@ impl Factory {
         if ref_str.is_none() {
             return platform_error!("Device definition 'ref' is not a string", None);
         }
-        let ref_string = String::from(dev_name_str.unwrap());
+        let ref_string = String::from(ref_str.unwrap());
 
         // Default if bench name not found
         let bench_name = String::from("default");
@@ -89,7 +89,8 @@ impl Factory {
         let producer = self.producers.get(device_ref);
         match producer {
             None => {
-                return platform_error!("Producer not found", None);
+                let error_text = format!("Producer not found for {}", device_ref);
+                return platform_error!(error_text , None);
             },
             Some(producer) => {
                 return Self::produce_device(dev_name, bench_name, producer);
