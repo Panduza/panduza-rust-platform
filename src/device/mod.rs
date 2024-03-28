@@ -19,10 +19,14 @@ use tokio::sync::Mutex;
 use crate::platform::{self, TaskPoolLoader};
 use crate::platform::PlatformError;
 
+use self::traits::DeviceActions;
+
+
 
 mod factory;
 mod manager;
 
+pub mod traits;
 
 pub type Factory = factory::Factory;
 pub type Manager = manager::Manager;
@@ -41,44 +45,14 @@ pub enum ConnectionUsagePolicy {
     UseOperationalOnly
 }
 
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
 
 
-pub trait Producer : Send {
-    fn create_device(&self) -> Result<Device, String>;
-}
-
-
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-
-pub trait DeviceActions : Send {
-
-    // fn hunt(&self) -> LinkedList<serde_json::Value>;
-
-    /// Create a new instance of the Device
-    /// 
-    fn create_interfaces(&self, device_settings: &serde_json::Value) -> Vec<AmInterface>;
-
-}
-
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-
+/// A device manage a set of interfaces
+/// 
 pub struct Device {
 
     /// Device name
-    name: String,
+    dev_name: String,
     bench_name: String,
 
 
@@ -105,10 +79,20 @@ impl Device {
 
     /// Create a new instance of the Device
     /// 
-    pub fn new(actions: Box<dyn DeviceActions>) -> Device {
-        return Device {
-            name: String::from("changeme"),
-            bench_name: String::from("changeme"),
+    pub fn new<
+        A: Into<String>,
+        B: Into<String>,
+    >
+    (
+        dev_name: A,
+        bench_name: B,
+        actions: Box<dyn DeviceActions>
+    ) -> Device 
+    {
+        // Create the object
+        let obj = Device {
+            dev_name: dev_name.into(),
+            bench_name: bench_name.into(),
 
             started: false,
             stoppable: false,
@@ -119,18 +103,19 @@ impl Device {
             connection_usage_policy: ConnectionUsagePolicy::UseOperationalOnly,
             default_connection: None,
             operational_connection: None
-        }
+        };
+
+        // Info log
+        tracing::info!(class="Device", bname=obj.bench_name, dname=obj.dev_name, "Device created");
+
+        // Return the object
+        return obj;
     }
 
 
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
-        tracing::info!(class="Device", bname=self.bench_name, dname=self.name,
-            "Device created");
-    }
 
     pub fn get_name(&self) -> &String {
-        return &self.name;
+        return &self.dev_name;
     }
 
     pub fn set_bench_name(&mut self, bench_name: String) {
@@ -199,7 +184,7 @@ impl Device {
         if self.started {
             return;
         }
-        tracing::info!(class="Device", bname=self.bench_name, dname=self.name,
+        tracing::info!(class="Device", bname=self.bench_name, dname=self.dev_name,
             "Start Interfaces...");
 
         // create interfaces
@@ -207,7 +192,7 @@ impl Device {
 
         // Do nothing if no interface in the device
         if self.interfaces.len() == 0 {
-            tracing::warn!(class="Device", bname=self.bench_name, dname=self.name,
+            tracing::warn!(class="Device", bname=self.bench_name, dname=self.dev_name,
                 "No interface to start, skip device start");
             return;
         }
@@ -232,7 +217,7 @@ impl Device {
         }
 
         // log
-        tracing::info!(class="Device", bname=self.bench_name, dname=self.name,
+        tracing::info!(class="Device", bname=self.bench_name, dname=self.dev_name,
             "Interfaces started !");
         self.started = true;
     }

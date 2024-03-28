@@ -5,7 +5,7 @@ use crate::subscription;
 use crate::interface::{self, Interface};
 use crate::interface::core::AmCore;
 use crate::interface::AmInterface;
-use crate::device::{ Device, DeviceActions, Producer };
+use crate::device::{ Device, traits::DeviceActions, traits::Producer };
 
 
 

@@ -1,11 +1,12 @@
 use async_trait::async_trait;
 use tokio::time::{sleep, Duration};
 
+use crate::platform::PlatformError;
 use crate::subscription;
 use crate::interface::{self, Interface};
 use crate::interface::core::AmCore;
 use crate::interface::AmInterface;
-use crate::device::{ Device, DeviceActions, Producer };
+use crate::device::{ Device, traits::DeviceActions, traits::Producer };
 
 struct PlatformInterfaceSubscriber;
 
@@ -42,8 +43,8 @@ pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
 
-    fn create_device(&self) -> Result<Device, String> {
-        return Ok(Device::new(Box::new(FakePowerSupply{})));
+    fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
+        return Ok(Box::new(FakePowerSupply{}));
     }
 
 }
