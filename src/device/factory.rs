@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 
+use super::Device;
+
 use crate::builtin_devices;
 use crate::platform_error;
 use crate::platform::PlatformError;
-
-use super::Device;
 use crate::device::traits::Producer;
-
 
 /// Factory to create devices from a configuration json
 /// 
@@ -50,36 +49,34 @@ impl Factory {
     pub fn create_device(&self, device_def: &serde_json::Value) -> Result<Device, PlatformError> {
 
         // Try to get the name
-        // 
-        let mut dev_name = String::new();
-
-        let dev_name_value = device_def.get("name");
-        match dev_name_value {
-            None => {
-                return platform_error!("Device definition does not have a 'name'", None);
-            },
-            Some(value) => {
-                dev_name = value.as_str().unwrap().to_string();
-            }
+        // Error if not found or badly formated
+        let dev_name_opt = device_def.get("name");
+        if dev_name_opt.is_none() {
+            return platform_error!("Device definition does not have a 'name'", None);
         }
+        let dev_name_str = dev_name_opt.unwrap().as_str();
+        if dev_name_str.is_none() {
+            return platform_error!("Device definition 'name' is not a string", None);
+        }
+        let dev_name = String::from(dev_name_str.unwrap());
+
+        // Try to get ref
+        // Error if not found or badly formated
+        let ref_opt = device_def.get("ref");
+        if ref_opt.is_none() {
+            return platform_error!("Device definition does not have a 'ref'", None);
+        }
+        let ref_str = ref_opt.unwrap().as_str();
+        if ref_str.is_none() {
+            return platform_error!("Device definition 'ref' is not a string", None);
+        }
+        let ref_string = String::from(dev_name_str.unwrap());
 
         // Default if bench name not found
         let bench_name = String::from("default");
 
-        // Try to get ref
-        let ref_option = device_def.get("ref");
-        match ref_option {
-            None => {
-                return platform_error!("Device definition does not have a 'ref'", None);
-            },
-            Some(ref_value) => {
-
-                return self.find_producer_and_produce_device(&name, &bench_name, &ref_value.as_str().unwrap().to_string());
-
-            }
-        }
-
-
+        // Try to get the producer
+        return self.find_producer_and_produce_device(&dev_name, &bench_name, &ref_string);
     }
 
     /// Find the producer and produce the device
