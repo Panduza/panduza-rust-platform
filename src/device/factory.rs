@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::Device;
+use super::device::Device;
 
 use crate::builtin_devices;
 use crate::platform_error;

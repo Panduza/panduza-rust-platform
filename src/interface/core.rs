@@ -10,8 +10,6 @@ use tokio::sync::Notify;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
-use crate::device::ConnectionUsagePolicy;
-
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -54,8 +52,7 @@ pub struct Core {
     // operational only
 
     default_client: Option<AsyncClient>,
-    operational_client: Option<AsyncClient>,
-    connection_usage_policy: ConnectionUsagePolicy
+    operational_client: Option<AsyncClient>
 }
 pub type AmCore = Arc<Mutex<Core>>;
 
@@ -77,8 +74,7 @@ impl Core {
             fsm_events_notifier: Arc::new(Notify::new()),
             info: serde_json::Value::Null,
             default_client: None,
-            operational_client: None,
-            connection_usage_policy: ConnectionUsagePolicy::UseOperationalOnly
+            operational_client: None
         };
         return obj;
     }
@@ -188,44 +184,17 @@ impl Core {
     pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
         println!("Publishing to topic: {}", topic);
 
-        match self.connection_usage_policy {
-            ConnectionUsagePolicy::UseBoth => {
-                if let Some(client) = &self.default_client {
-                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-                }
-                if let Some(client) = &self.operational_client {
-                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-                }
-            },
-            ConnectionUsagePolicy::UseOperationalOnly => {
-                if let Some(client) = &self.operational_client {
-                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-                }
-            },
-            ConnectionUsagePolicy::UseDefaultOnly => {
-                if let Some(client) = &self.default_client {
-                    client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-                }
-            }
-        }
+
+        // if let Some(client) = &self.default_client {
+        //     client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+        // }
+        
     }
 
     /// 
     /// 
     pub async fn publish_info(&self) {
         self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;
-    }
-
-    /// Get connection usage policy
-    /// 
-    pub async fn connection_usage_policy(&self) -> ConnectionUsagePolicy {
-        return self.connection_usage_policy.clone();
-    }
-
-    /// Set connection usage policy
-    /// 
-    pub async fn set_connection_usage_policy(&mut self, policy: ConnectionUsagePolicy) {
-        self.connection_usage_policy = policy;
     }
 
 

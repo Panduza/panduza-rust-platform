@@ -6,7 +6,6 @@ use async_trait::async_trait;
 
 use crate::platform_error;
 use crate::platform::TaskPoolLoader;
-use crate::device::ConnectionUsagePolicy;
 use crate::subscription;
 use crate::subscription::Request as SubscriptionRequest;
 use crate::connection::LinkInterfaceHandle;
@@ -142,13 +141,6 @@ impl Interface {
         listener.set_default_link(link);
     }
 
-    /// Set the operational link
-    ///
-    pub async fn set_operational_link(&mut self, link: LinkInterfaceHandle) {
-        let mut listener = self.listener.lock().await;
-        self.core.lock().await.set_operational_client(link.client.clone());
-        listener.set_operational_link(link);
-    }
 
     // pub async fn set_name(&mut self, name: String) {
     //     self.core.lock().await.set_name(name);
@@ -173,11 +165,6 @@ impl Interface {
             core_lock.get_name());
     }
 
-    /// Set the connection usage policy
-    /// 
-    pub async fn set_connection_usage_policy(&mut self, policy: ConnectionUsagePolicy) {
-        self.core.lock().await.set_connection_usage_policy(policy).await;
-    }
 
 }
 

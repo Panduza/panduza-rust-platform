@@ -3,7 +3,6 @@ use futures::future::select_all;
 use async_trait::async_trait;
 use futures::FutureExt;
 use tokio::task::JoinSet;
-use crate::device::ConnectionUsagePolicy;
 use crate::platform::PlatformError;
 use crate::subscription;
 use crate::interface::core::AmCore;
@@ -36,11 +35,7 @@ pub struct Listener {
     /// Default link
     default_link: Option<LinkInterfaceHandle>,
 
-    /// Operational link
-    operational_link: Option<LinkInterfaceHandle>,
 
-    /// Connection usage policy
-    connection_usage_policy: ConnectionUsagePolicy
 }
 
 impl Listener {
@@ -51,9 +46,7 @@ impl Listener {
         return Listener {
             core: core,
             subscriber: subscriber,
-            default_link: None,
-            operational_link: None,
-            connection_usage_policy: ConnectionUsagePolicy::UseOperationalOnly
+            default_link: None
         }
     }
 
@@ -69,12 +62,6 @@ impl Listener {
         self.default_link = Some(link);
     }
 
-    /// Set the operational link
-    /// 
-    pub fn set_operational_link(&mut self, link: LinkInterfaceHandle) {
-        self.operational_link = Some(link);
-    }
-
     /// Run the listener once
     ///
     pub async fn run_once(&mut self) -> Result<(), PlatformError> {
@@ -84,48 +71,14 @@ impl Listener {
         let mut vv: Vec<std::pin::Pin<Box<dyn Future<Output = Option<subscription::Message>> + Send>>> = vec![];
 
         
-
-        // 
-        match self.connection_usage_policy {
-            ConnectionUsagePolicy::UseBoth => {
-                match self.default_link {
-                    Some(_) => {
-                        vv.push(self.default_link.as_mut().unwrap().rx.recv().boxed());
-                    },
-                    None => {
-                        return platform_error!("No default link set", None);
-                    }
-                }
-                match self.operational_link {
-                    Some(_) => {
-                        vv.push(self.operational_link.as_mut().unwrap().rx.recv().boxed());
-                    },
-                    None => {
-                        return platform_error!("No operational link set", None);
-                    }
-                }
-            },
-            ConnectionUsagePolicy::UseDefaultOnly => {
-                match self.default_link {
-                    Some(_) => {
-                        vv.push(self.default_link.as_mut().unwrap().rx.recv().boxed());
-                    },
-                    None => {
-                        return platform_error!("No default link set", None);
-                    }
-                }
-            },
-            ConnectionUsagePolicy::UseOperationalOnly => {
-                match self.operational_link {
-                    Some(_) => {
-                        vv.push(self.operational_link.as_mut().unwrap().rx.recv().boxed());
-                    },
-                    None => {
-                        return platform_error!("No operational link set", None);
-                    }
-                }
-            },
-        }
+        // match self.default_link {
+        //     Some(_) => {
+        //         vv.push(self.default_link.as_mut().unwrap().rx.recv().boxed());
+        //     },
+        //     None => {
+        //         return platform_error!("No default link set", None);
+        //     }
+        // }
 
 
         // = vec![

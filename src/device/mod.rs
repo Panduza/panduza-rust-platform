@@ -31,19 +31,7 @@ pub mod traits;
 pub type Factory = factory::Factory;
 pub type Manager = manager::Manager;
 pub type AmManager = manager::AmManager;
-
-
-/// Defines the policy for using the 2 connections (default & operational)
-///
-#[derive(Clone)]
-pub enum ConnectionUsagePolicy {
-    /// the device must use both connections if possible
-    UseBoth,
-    /// the device must use only the default connection
-    UseDefaultOnly,
-    /// the device must use only the operational connection
-    UseOperationalOnly
-}
+pub type Device = device::Device;
 
 
 

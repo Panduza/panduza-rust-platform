@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 
 use crate::{platform::{PlatformError, TaskPoolLoader}, platform_error};
 
-use super::{factory::Factory, Device};
+use super::{factory::Factory, device::Device};
 
 pub struct Manager {
     

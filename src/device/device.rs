@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 use crate::platform::{self, TaskPoolLoader};
 use crate::platform::PlatformError;
 
-use self::traits::DeviceActions;
+use crate::device::traits::DeviceActions;
 
 
 /// A device manage a set of interfaces
@@ -34,8 +34,6 @@ pub struct Device {
     interfaces: Vec<AmInterface>,
 
 
-    // Connection Usage Policy
-    connection_usage_policy: ConnectionUsagePolicy,
 
     /// Default connection
     default_connection: Option<AmLinkConnectionManager>,
@@ -69,7 +67,6 @@ impl Device {
             actions: actions,
             interfaces: Vec::new(),
 
-            connection_usage_policy: ConnectionUsagePolicy::UseOperationalOnly,
             default_connection: None,
             operational_connection: None
         };
@@ -121,30 +118,6 @@ impl Device {
         }
     }
 
-    /// Attach operational connection
-    ///
-    async fn attach_operational_connection(&mut self, interface: AmInterface) {
-        if self.operational_connection.is_some() {
-            let c = self.operational_connection.as_ref().unwrap();
-            let mut interface_lock = interface.lock().await;
-            
-            let topic = interface_lock.get_topic().await;
-            let att_names = interface_lock.attributes_names().await;
-
-            let mut requests = vec![
-                subscription::Request::new( subscription::ID_PZA, "pza" ),
-                subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("pza/{}/cmds/set", topic) )
-            ];
-
-            for att_name in att_names {
-                let request = subscription::Request::new( att_name.0, &format!("pza/{}/{}", topic, att_name.1) );
-                requests.push(request);
-            }
-
-            let x: LinkInterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
-            interface_lock.set_operational_link(x).await;
-        }
-    }
 
     /// Create and Start the interfaces
     /// 
@@ -180,7 +153,6 @@ impl Device {
 
 
             self.attach_default_connection(itf.clone()).await;
-            // self.attach_operational_connection(itf.clone()).await;
 
             itf.lock().await.start(task_loader).await;
         }
