@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use rumqttc::MqttOptions;
 use tokio::sync::Mutex;
@@ -35,12 +35,10 @@ impl Manager {
 
     /// Create a new inactive connection
     ///
-    pub async fn load_connection<S: Into<String>, T: Into<String>>(&mut self, name: S, host: T, port: u16) {
-        // Get name with the correct type
-        let name_string = name.into();
+    pub async fn start_connection(&mut self) {
 
         // Create connection ID
-        let id = format!("{}::{}", self.platform_name, name_string);
+        let id = format!("{}", self.platform_name);
 
         // Set default options
         let mut mqtt_options = MqttOptions::new(id, host, port);
@@ -48,7 +46,11 @@ impl Manager {
 
         // Create connection Object
         self.connection = Some(Arc::new(Mutex::new(Connection::new(mqtt_options))));
+
+        // Start the connection
+        self.connection.lock().await.start(&mut self.task_loader).await;
     }
+
 
 
 }
