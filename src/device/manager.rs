@@ -60,8 +60,8 @@ impl Manager {
                 return platform_error!("Device not created", Some(Box::new(e)));
             },
             Ok(device_object) => {
-                let name = device_object.get_name().clone();
-                self.instances.insert(device_object.get_name().clone(), device_object);
+                let name = device_object.dev_name().clone();
+                self.instances.insert(device_object.dev_name().clone(), device_object);
                 return Ok(name);
             }
         }

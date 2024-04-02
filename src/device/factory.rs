@@ -1,18 +1,26 @@
 use std::collections::HashMap;
 
-use super::device::Device;
+use super::Device;
 
-use crate::builtin_devices;
+use crate::link;
+
+use crate::device::traits::Producer;
+
 use crate::platform_error;
 use crate::platform::PlatformError;
-use crate::device::traits::Producer;
+
+use crate::builtin_devices;
 
 /// Factory to create devices from a configuration json
 /// 
 pub struct Factory {
     /// List of known producers
     /// 
-    producers : HashMap<String, Box<dyn Producer>>
+    producers: HashMap<String, Box<dyn Producer>>,
+
+    /// Connection link manager
+    /// 
+    connection_link_manager: Option<link::AmManager>
 }
 
 impl Factory {
@@ -22,7 +30,8 @@ impl Factory {
     pub fn new() -> Factory {
         // New object
         let mut obj = Factory {
-            producers: HashMap::new()
+            producers: HashMap::new(),
+            connection_link_manager: None
         };
 
         // Info log
@@ -93,14 +102,14 @@ impl Factory {
                 return platform_error!(error_text , None);
             },
             Some(producer) => {
-                return Self::produce_device(dev_name, bench_name, producer);
+                return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap());
             }
         }
     }
 
     /// Create a new device instance with all the required data
     ///
-    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>)
+    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>, connection_link_manager: &link::AmManager)
         -> Result<Device, PlatformError>
     {
         let actions = producer.produce();
@@ -109,7 +118,7 @@ impl Factory {
                 return platform_error!("Fail to produce device actions", Some(Box::new(e)));
             },
             Ok(actions) => {
-                return Ok(Device::new(dev_name, bench_name, actions));
+                return Ok(Device::new(dev_name, bench_name, actions, connection_link_manager.clone()));
             }
         }
     }

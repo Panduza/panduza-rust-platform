@@ -7,7 +7,6 @@ use dirs;
 
 use futures::future::BoxFuture;
 use futures::Future;
-use futures::FutureExt;
 use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
@@ -17,10 +16,14 @@ use crate::connection;
 
 pub mod error;
 mod services;
+mod task_pool_loader;
 
 use services::{Services, AmServices};
 
 use crate::platform_error;
+
+
+pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
 
 /// Platform error type
 ///
@@ -41,41 +44,6 @@ macro_rules! platform_error {
 
 
 
-
-#[derive(Clone)]
-pub struct TaskPoolLoader {
-
-    task_pool_tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>>
-
-}
-
-impl TaskPoolLoader {
-
-    pub fn new(tx: tokio::sync::mpsc::Sender<Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>>) -> TaskPoolLoader {
-        return TaskPoolLoader {
-            task_pool_tx: tx
-        }
-    }
-
-    pub fn load(&mut self, future: Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>) -> Result<(), error::PlatformError>{
-        let r = self.task_pool_tx.try_send(future);
-        match r {
-            Ok(_) => {
-                return Ok(());
-            },
-            Err(e) => {
-                return platform_error!("Failed to send task to task pool", None);
-            }
-        }
-    }
-
-}
-
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
 
 /// Platform main object
 /// 
@@ -316,7 +284,7 @@ impl Platform {
         // attach
         let server_device = d.get_device(hostname).unwrap();
         let default_connection = c.get_connection(&"default".to_string());
-        server_device.set_default_connection(default_connection.clone()).await;
+        // server_device.set_default_connection(default_connection.clone()).await;
 
         // Start connection
         c.start_connection("default").await;
@@ -359,7 +327,7 @@ impl Platform {
                         
                                 let server_device = d.get_device(new_device_name).unwrap();
                                 let default_connection = c.get_connection(&"default".to_string());
-                                server_device.set_default_connection(default_connection.clone()).await;
+                                // server_device.set_default_connection(default_connection.clone()).await;
 
                             }
                         }
