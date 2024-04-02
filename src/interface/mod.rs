@@ -12,6 +12,8 @@ use crate::link;
 
 pub mod fsm;
 pub mod core;
+pub mod traits;
+pub mod builder;
 pub mod listener;
 pub mod subscriber;
 
