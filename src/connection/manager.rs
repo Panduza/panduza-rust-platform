@@ -1,11 +1,13 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::sync::Arc;
+use std::time::Duration;
 
-use rumqttc::MqttOptions;
 use tokio::sync::Mutex;
+use rumqttc::MqttOptions;
+
+use super::Connection;
+use super::AmConnection;
 
 use crate::platform::TaskPoolLoader;
-
-use super::{AmConnection, Connection};
 
 /// Object to manage and run multiple named connections
 ///
@@ -33,12 +35,14 @@ impl Manager {
         }));
     }
 
-    /// Create a new inactive connection
+    /// Create and start the broker connection
     ///
     pub async fn start_connection(&mut self) {
 
         // Create connection ID
         let id = format!("{}", self.platform_name);
+        let host  = "localhost";
+        let port = 1883;
 
         // Set default options
         let mut mqtt_options = MqttOptions::new(id, host, port);
@@ -48,10 +52,14 @@ impl Manager {
         self.connection = Some(Arc::new(Mutex::new(Connection::new(mqtt_options))));
 
         // Start the connection
-        self.connection.lock().await.start(&mut self.task_loader).await;
+        self.connection.as_mut().unwrap().lock().await.start(&mut self.task_loader).await;
     }
 
-
+    /// Get the connection
+    /// 
+    pub fn connection(&self) -> Option<AmConnection > {
+        return self.connection.clone();
+    }
 
 }
 

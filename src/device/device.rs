@@ -147,7 +147,6 @@ impl Device {
             itf.lock().await.set_dev_and_bench_names(dev_name.clone(), bench_name.clone()).await;
 
 
-            // self.attach_default_connection(itf.clone()).await;
 
             itf.lock().await.start(task_loader).await;
         }

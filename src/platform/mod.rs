@@ -62,7 +62,7 @@ pub struct Platform
     devices: device::AmManager,
 
     /// Connection manager
-    connections: connection::AmManager
+    connection: connection::AmManager
 }
 
 impl Platform {
@@ -83,7 +83,7 @@ impl Platform {
             task_pool_rx: Arc::new(Mutex::new(rx)),
             services: Services::new(tl.clone()),
             devices: device::Manager::new(tl.clone()),
-            connections: connection::Manager::new(tl.clone(), name)
+            connection: connection::Manager::new(tl.clone(), name)
         }
     }
 
@@ -97,7 +97,7 @@ impl Platform {
         // it acts as a idle task for the platform to avoid the platform to stop if no other task
         let s = self.services.clone();
         let d = self.devices.clone();
-        let c = self.connections.clone();
+        let c = self.connection.clone();
         self.task_pool.spawn(async move {
             Platform::services_task(s, d, c).await
         });
@@ -156,7 +156,7 @@ impl Platform {
 
     /// Services task
     /// 
-    async fn services_task(services: AmServices, devices: device::AmManager, connections: connection::AmManager) -> PlatformTaskResult {
+    async fn services_task(services: AmServices, devices: device::AmManager, connection: connection::AmManager) -> PlatformTaskResult {
         let requests_change_notifier = services.lock().await.get_requests_change_notifier();
         loop {
             // Wait for an event
@@ -179,7 +179,7 @@ impl Platform {
                         }
 
                         // Sart minimal connection and devices
-                        Platform::boot_minimal_services(services.clone(), devices.clone(), connections.clone()).await;
+                        Platform::boot_minimal_services(services.clone(), devices.clone(), connection.clone()).await;
 
                         // log
                         tracing::info!(class="Platform", "Boot Success!");
@@ -192,7 +192,7 @@ impl Platform {
 
                         // Try to reload the tree
                         if let Err(e) = Platform::reload_tree(
-                            services.clone(), devices.clone(), connections.clone()).await {
+                            services.clone(), devices.clone(), connection.clone()).await {
                             tracing::error!(class="Platform", "Failed to reload tree: {}", e);
                         }
                         
@@ -202,6 +202,13 @@ impl Platform {
                 }
             }
         }
+    }
+
+    /// Start the broker connection
+    /// 
+    async fn start_broker_connection(devices: device::AmManager, connection: connection::AmManager) {
+        connection.lock().await.start_connection().await;
+        devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
     }
 
     /// Load the tree file from system into service data
@@ -258,17 +265,15 @@ impl Platform {
 
     /// Boot default connection and platform device
     ///
-    async fn boot_minimal_services(services: AmServices, devices: device::AmManager, connections: connection::AmManager) {
+    async fn boot_minimal_services(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
+        // Start the broker connection
+        Platform::start_broker_connection(devices.clone(), connection.clone()).await;
 
         // Lock managers to create connection and device
         let mut d = devices.lock().await;
-        let mut c = connections.lock().await;
 
         // Server hostname
         let hostname = hostname::get().unwrap().to_string_lossy().to_string();
-
-        // Create default connection
-        c.create_connection("default", "localhost", 1883).await;
 
         // Create server device
         if let Err(e) = d.create_device(&json!({
@@ -277,14 +282,6 @@ impl Platform {
         })).await {
             tracing::error!(class="Platform", "Failed to create device:\n{}", e);
         }
-
-        // attach
-        let server_device = d.get_device(hostname).unwrap();
-        let default_connection = c.get_connection(&"default".to_string());
-        // server_device.set_default_connection(default_connection.clone()).await;
-
-        // Start connection
-        c.start_connection("default").await;
 
         // Mount devices
         d.start_devices().await;
@@ -323,7 +320,7 @@ impl Platform {
                                 let mut c = connections_manager.lock().await;
                         
                                 let server_device = d.get_device(new_device_name).unwrap();
-                                let default_connection = c.get_connection(&"default".to_string());
+                                let connection = c.connection().unwrap();
                                 // server_device.set_default_connection(default_connection.clone()).await;
 
                             }

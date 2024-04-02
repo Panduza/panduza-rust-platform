@@ -43,6 +43,12 @@ impl Factory {
         return obj;
     }
 
+    /// Set the connection link manager
+    /// 
+    pub fn set_connection_link_manager(&mut self, connection_link_manager: link::AmManager) {
+        self.connection_link_manager = Some(connection_link_manager);
+    }
+
     /// Add a producer to the factory
     /// 
     pub fn add_producer(&mut self, device_ref: &str, producer: Box<dyn Producer>) {

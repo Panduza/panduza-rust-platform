@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{interface::{self, core::AmCore, AmInterface, Interface}, subscription};
+use crate::{interface::{self, core::AmCore, AmInterface, Interface, InterfaceBuilder}, subscription};
 
 
 
@@ -101,7 +101,7 @@ impl interface::IdentityProvider for TestIdentityProvider {
 /// Interface to emulate a Bench Power Channel
 /// 
 pub fn new<A: Into<String>>(name: A) -> AmInterface {
-    return Interface::new(
+    return InterfaceBuilder::new(
         name,
         Box::new(TestIdentityProvider{}),
         Box::new(TestInterfaceStates{}),

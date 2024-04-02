@@ -148,7 +148,7 @@ impl Connection {
 
     /// Get the link manager, to share it with the devices
     /// 
-    pub fn clone_link_manager(&self) -> AmLinkManager {
+    pub fn link_manager(&self) -> AmLinkManager {
         return self.link_manager.clone();
     }
 

@@ -1,4 +1,4 @@
-use crate::interface::AmInterface;
+use crate::interface::{AmInterface, AmInterfaceBuilder};
 use crate::platform::PlatformError;
 
 /// Actions that are specific for each device type
@@ -7,9 +7,9 @@ pub trait DeviceActions : Send {
 
     // fn hunt(&self) -> LinkedList<serde_json::Value>;
 
-    /// Create a new instance of the Device
+    /// The device must provides a list of interface builders
     /// 
-    fn create_interfaces(&self, device_settings: &serde_json::Value) -> Vec<AmInterface>;
+    fn interface_builders(&self, device_settings: &serde_json::Value) -> Vec<AmInterfaceBuilder>;
 }
 
 /// A producer is responsible for providing actions of a device type

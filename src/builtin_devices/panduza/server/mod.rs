@@ -24,8 +24,7 @@ impl DeviceActions for ServerDeviceActions {
 
     /// Create the interfaces
     /// 
-    fn create_interfaces(&self, settings: &serde_json::Value)
-        -> Vec<AmInterface> {
+    fn interface_builders(&self, device_settings: &serde_json::Value) -> Vec<interface::AmInterfaceBuilder> {
         let mut list = Vec::new();
         list.push(
             itf_platform::new("platform")
