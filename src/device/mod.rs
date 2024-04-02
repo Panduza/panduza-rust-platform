@@ -5,12 +5,10 @@ use std::collections::{HashMap, LinkedList};
 
 // use tokio::{task::yield_now, time::{sleep, Duration}};
 
-use crate::connection::AmLinkConnectionManager;
 use crate::{builtin_devices, platform_error, subscription};
 use crate::interface::AmInterface;
 
 use crate::connection::AmConnection;
-use crate::connection::LinkInterfaceHandle;
 
 use serde_json;
 use tokio::task::JoinSet;

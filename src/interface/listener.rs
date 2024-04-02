@@ -6,7 +6,7 @@ use tokio::task::JoinSet;
 use crate::platform::PlatformError;
 use crate::subscription;
 use crate::interface::core::AmCore;
-use crate::connection::LinkInterfaceHandle;
+use crate::link;
 use futures::future::BoxFuture;
 use futures::Future;
 
@@ -33,7 +33,7 @@ pub struct Listener {
     subscriber: Box<dyn Subscriber>,
 
     /// Default link
-    default_link: Option<LinkInterfaceHandle>,
+    default_link: Option<link::InterfaceHandle>,
 
 
 }
@@ -58,7 +58,7 @@ impl Listener {
 
     /// Set the default link
     ///
-    pub fn set_default_link(&mut self, link: LinkInterfaceHandle) {
+    pub fn set_default_link(&mut self, link: link::InterfaceHandle) {
         self.default_link = Some(link);
     }
 

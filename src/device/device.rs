@@ -1,10 +1,9 @@
 
-use crate::connection::AmLinkConnectionManager;
+
 use crate::{builtin_devices, platform_error, subscription};
 use crate::interface::AmInterface;
 
 use crate::connection::AmConnection;
-use crate::connection::LinkInterfaceHandle;
 
 use serde_json;
 use tokio::task::JoinSet;
@@ -15,6 +14,8 @@ use crate::platform::PlatformError;
 
 use crate::device::traits::DeviceActions;
 
+use crate::link;
+use crate::link::AmManager as AmLinkManager;
 
 /// A device manage a set of interfaces
 /// 
@@ -36,10 +37,8 @@ pub struct Device {
 
 
     /// Default connection
-    default_connection: Option<AmLinkConnectionManager>,
+    default_connection: Option<AmLinkManager>,
 
-    /// Operational connection
-    operational_connection: Option<AmLinkConnectionManager>
 }
 
 impl Device {
@@ -67,8 +66,7 @@ impl Device {
             actions: actions,
             interfaces: Vec::new(),
 
-            default_connection: None,
-            operational_connection: None
+            default_connection: None
         };
 
         // Info log
@@ -113,7 +111,7 @@ impl Device {
                 requests.push(request);
             }
 
-            let x: LinkInterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
+            let x: link::InterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
             interface_lock.set_default_link(x).await;
         }
     }
@@ -168,10 +166,6 @@ impl Device {
         self.default_connection = Some(connection.lock().await.clone_link_manager());
     }
 
-    /// Set operational connection
-    pub async fn set_operational_connection(&mut self, connection: AmConnection) {
-        self.operational_connection = Some(connection.lock().await.clone_link_manager());
-    }
 
 }
 

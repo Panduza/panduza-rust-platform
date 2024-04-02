@@ -8,7 +8,7 @@ use crate::platform_error;
 use crate::platform::TaskPoolLoader;
 use crate::subscription;
 use crate::subscription::Request as SubscriptionRequest;
-use crate::connection::LinkInterfaceHandle;
+use crate::link;
 
 pub mod fsm;
 pub mod core;
@@ -135,7 +135,7 @@ impl Interface {
 
     /// Set the default link
     ///
-    pub async fn set_default_link(&mut self, link: LinkInterfaceHandle) {
+    pub async fn set_default_link(&mut self, link: link::InterfaceHandle) {
         let mut listener = self.listener.lock().await;
         self.core.lock().await.set_default_client(link.client.clone());
         listener.set_default_link(link);

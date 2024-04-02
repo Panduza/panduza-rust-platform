@@ -317,7 +317,6 @@ impl Platform {
         let server_device = d.get_device(hostname).unwrap();
         let default_connection = c.get_connection(&"default".to_string());
         server_device.set_default_connection(default_connection.clone()).await;
-        server_device.set_operational_connection(default_connection.clone()).await;
 
         // Start connection
         c.start_connection("default").await;
@@ -361,7 +360,7 @@ impl Platform {
                                 let server_device = d.get_device(new_device_name).unwrap();
                                 let default_connection = c.get_connection(&"default".to_string());
                                 server_device.set_default_connection(default_connection.clone()).await;
-                                server_device.set_operational_connection(default_connection.clone()).await;
+
                             }
                         }
 
