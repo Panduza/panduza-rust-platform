@@ -33,17 +33,14 @@ pub type PlatformError = error::PlatformError;
 ///
 pub type PlatformTaskResult = Result<(), PlatformError>;
 
-
-
+/// Macro to create a platform error
+/// 
 #[macro_export]
 macro_rules! platform_error {
     ($msg:expr, $parent:expr) => {
         Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), $parent))
     };
 }
-
-
-
 
 /// Platform main object
 /// 
