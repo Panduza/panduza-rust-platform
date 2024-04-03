@@ -2,6 +2,7 @@ use std::sync::Arc;
 use futures::future::select_all;
 use async_trait::async_trait;
 use futures::FutureExt;
+use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use crate::platform::PlatformError;
 use crate::subscription;
@@ -33,21 +34,25 @@ pub struct Listener {
     subscriber: Box<dyn Subscriber>,
 
     /// Default link
-    default_link: Option<link::InterfaceHandle>,
-
-
+    link: link::InterfaceHandle,
 }
 
 impl Listener {
     
     /// Create a new instance of the Listener
     /// 
-    pub fn new(core: AmCore, subscriber: Box<dyn Subscriber>) -> Listener {
+    pub fn new(core: AmCore, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Listener {
         return Listener {
-            core: core,
-            subscriber: subscriber,
-            default_link: None
+            core,
+            subscriber,
+            link
         }
+    }
+
+    /// New instance inside a safe pointer
+    /// 
+    pub fn new_am(core: AmCore, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Arc<Mutex<Listener>> {
+        return Arc::new(Mutex::new(Listener::new(core, subscriber, link)));
     }
 
     /// 
@@ -56,11 +61,6 @@ impl Listener {
         return self.subscriber.attributes_names().await;
     }
 
-    /// Set the default link
-    ///
-    pub fn set_default_link(&mut self, link: link::InterfaceHandle) {
-        self.default_link = Some(link);
-    }
 
     /// Run the listener once
     ///

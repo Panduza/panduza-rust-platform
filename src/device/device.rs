@@ -1,21 +1,9 @@
-
-
-use std::result;
-
-use crate::subscription;
-
-
-use crate::connection::AmConnection;
-
 use serde_json;
-use tokio::sync::Mutex;
 
 use crate::platform::{self, TaskPoolLoader};
 use crate::platform::PlatformError;
 
 use crate::device::traits::DeviceActions;
-
-use crate::link;
 use crate::link::AmManager as AmLinkManager;
 
 
@@ -31,7 +19,6 @@ pub struct Device {
 
 
     started: bool,
-    stoppable: bool,
 
     
     actions: Box<dyn DeviceActions>,
@@ -65,7 +52,6 @@ impl Device {
             bench_name: bench_name.into(),
 
             started: false,
-            stoppable: false,
 
             actions: actions,
             interfaces: Vec::new(),
@@ -130,6 +116,7 @@ impl Device {
         }
         self.log_info("Start Interfaces...");
 
+        // Get the interface builders
         let r = self.actions.interface_builders(&serde_json::Value::Null);
         // if let Err(e) = builders {
         //     self.log_warn("Error");
@@ -142,28 +129,22 @@ impl Device {
             return;
         }
 
-
         // create interfaces
-        
         for builder in builders {
-            let interface = Interface::new_am(
-                // self.dev_name().clone(),
-                // self.bench_name().clone(),
-                builder,
+            self.interfaces.push(
+                Interface::new_am(
+                    self.dev_name().clone(),
+                    self.bench_name().clone(),
+                    builder,
+                    connection_link_manager.clone()
+                )
             );
-            self.interfaces.push(interface);
         }
 
-
+        // Start the interfaces
         let mut interfaces = self.interfaces.clone();
         for interface in interfaces.iter_mut() {
             let itf = interface.clone();
-
-            // Set names
-            // itf.lock().await.set_dev_and_bench_names(dev_name.clone(), bench_name.clone()).await;
-
-
-
             itf.lock().await.start(task_loader).await;
         }
 

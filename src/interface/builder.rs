@@ -36,4 +36,20 @@ impl Builder {
         };
     }
 
+    /// Build a new interface
+    /// 
+    pub async fn build<A: Into<String>, B: Into<String>>
+        (&self, dev_name: A, bench_name: B, connection_link_manager: AmLinkManager) 
+            -> AmInterface {
+        
+        
+        
+        return Interface::new_am(
+            self.name.clone(),
+            self.itype.clone(),
+            self.version.clone(),
+            self
+        );
+    }
+    
 }

@@ -7,6 +7,7 @@ use crate::{link, platform::TaskPoolLoader, platform_error, subscription};
 
 use super::{core::{AmCore, Core}, fsm::{self, Fsm}, listener::Listener, subscriber::Subscriber};
 
+use crate::link::AmManager as AmLinkManager;
 
 use super::builder::Builder as InterfaceBuilder;
 
@@ -26,30 +27,61 @@ pub type AmInterface = Arc<Mutex<Interface>>;
 
 impl Interface {
 
-    /// Create a new instance of the Interface
-    /// 
-    pub fn new_am(builder: InterfaceBuilder) -> AmInterface {
-        
+
+    pub fn new<A: Into<String>, B: Into<String>>(
+        dev_name: A,
+        bench_name: B,
+        builder: InterfaceBuilder,
+        connection_link_manager: AmLinkManager,
+        ) -> Interface
+    {
+
+        // builder have the subscriber to get atts names
+
+        let att_names = builder.subscriber.attributes_names().await;
 
 
-        let mut core_obj = Core::new(builder.name);
-        // core_obj.set_info(idn.get_info());
+        let mut requests = vec![
+            subscription::Request::new( subscription::ID_PZA, "pza" ),
+            subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("pza/{}/cmds/set", topic) )
+        ];
 
+    //     for att_name in att_names {
+    //         let request = subscription::Request::new( att_name.0, &format!("pza/{}/{}", topic, att_name.1) );
+    //         requests.push(request);
+    //     }
+
+    //     let x: link::InterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
+    //     interface_lock.set_default_link(x).await;
+
+
+
+        let core_obj = Core::new(builder.name, dev_name, bench_name);
         let core = Arc::new(Mutex::new( core_obj ));
-
-        return Arc::new(Mutex::new(
+        return 
             Interface {
                 core: core.clone(),
                 fsm: Arc::new(Mutex::new(Fsm::new(core.clone(), builder.states))),
-                listener: Arc::new(Mutex::new(Listener::new(core.clone(), builder.subscriber)))
+                listener: Listener::new_am(core.clone(), builder.subscriber, )
             }
-        ));
+        ;
     }
 
-    /// Set the dev and bench name to the interface
+
+
+    // link: link::InterfaceHandle
+
+    /// Create a new instance of the Interface
     /// 
-    pub async fn set_dev_and_bench_names<A: Into<String>, B: Into<String>>(&mut self, dev_name: A, bench_name: B) {
-        self.core.lock().await.set_dev_and_bench_names(dev_name, bench_name);
+    pub fn new_am<A: Into<String>, B: Into<String>>(
+        dev_name: A,
+        bench_name: B,
+        builder: InterfaceBuilder
+        ) -> AmInterface
+    {
+        return Arc::new(Mutex::new(
+            Interface::new(dev_name, bench_name, builder);
+        ));
     }
 
     /// Start the interface, run it into tasks
@@ -65,9 +97,8 @@ impl Interface {
             }
         }.boxed()).unwrap();
 
-
         // Listen Task
-        let interface_name = self.core.lock().await.get_name().clone() ;
+        let interface_name = self.core.lock().await.name().clone() ;
         task_loader.load(async move {
             loop {
                 if let Err(e) = listener.lock().await.run_once().await {
@@ -79,16 +110,8 @@ impl Interface {
             }
         }.boxed()).unwrap();
 
-
-
-        // Log
-        {
-            let bname = self.core.lock().await.get_bench_name().clone();
-            let dname = self.core.lock().await.get_dev_name().clone();
-            let iname = self.core.lock().await.get_name().clone() ;
-            tracing::info!(class="Interface", bname=bname, dname=dname, iname=iname,
-                "Interface started");
-        }
+        // Log success
+        self.core.lock().await.log_info("Interface started");
     }
 
     /// Get the name of the attributes managed by the interface
@@ -124,9 +147,9 @@ impl Interface {
     pub async fn get_topic(&self) -> String {
         let core_lock = self.core.lock().await;
         return format!("pza/{}/{}/{}",
-            core_lock.get_bench_name(),
-            core_lock.get_dev_name(),
-            core_lock.get_name());
+            core_lock.bench_name(),
+            core_lock.dev_name(),
+            core_lock.name());
     }
 
 
