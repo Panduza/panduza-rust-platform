@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{interface::{self, core::AmCore, AmInterface, Interface, InterfaceBuilder}, subscription};
-
+use crate::{interface::{self, core::AmCore, AmInterface}, subscription};
+use crate::interface::Builder as InterfaceBuilder;
 
 
 struct PlatformInterfaceSubscriber;
@@ -80,33 +80,16 @@ impl interface::fsm::States for TestInterfaceStates {
 
 
 
-struct TestIdentityProvider {
-
-}
-
-impl interface::IdentityProvider for TestIdentityProvider {
-
-    fn get_info(&self) -> serde_json::Value {
-        return serde_json::json!({
-            "info": {
-                "type": "platform",
-                "version": "0.0"
-            }
-        });
-    }
-
-}
 
 
-/// Interface to emulate a Bench Power Channel
+///
 /// 
-pub fn new<A: Into<String>>(name: A) -> AmInterface {
+pub fn new<A: Into<String>>(name: A) -> InterfaceBuilder {
     return InterfaceBuilder::new(
         name,
-        Box::new(TestIdentityProvider{}),
+        "platform",
+        "0.0",
         Box::new(TestInterfaceStates{}),
         Box::new(PlatformInterfaceSubscriber{})
     );
 }
-
-

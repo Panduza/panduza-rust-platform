@@ -8,6 +8,7 @@ use crate::interface::core::AmCore;
 use crate::interface::AmInterface;
 use crate::device::{ Device, traits::DeviceActions, traits::Producer };
 
+use crate::interface::builder::Builder as InterfaceBuilder;
 struct PlatformInterfaceSubscriber;
 
 
@@ -25,14 +26,15 @@ impl DeviceActions for FakePowerSupply {
     // }
 
     /// Create the interfaces
-    fn create_interfaces(&self, settings: &serde_json::Value)
-        -> Vec<AmInterface> {
+    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    -> Result<Vec<InterfaceBuilder>, PlatformError>
+    {
         let mut list = Vec::new();
         list.push(
             itf_fake_bpc::new()
         );
 
-        return list;
+        return Ok(list);
     }
 }
 

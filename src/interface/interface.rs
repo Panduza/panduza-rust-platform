@@ -1,3 +1,14 @@
+use std::sync::Arc;
+
+use futures::FutureExt;
+use tokio::sync::Mutex;
+
+use crate::{link, platform::TaskPoolLoader, platform_error, subscription};
+
+use super::{core::{AmCore, Core}, fsm::{self, Fsm}, listener::Listener, subscriber::Subscriber};
+
+
+use super::builder::Builder as InterfaceBuilder;
 
 /// 
 pub struct Interface {
@@ -17,23 +28,20 @@ impl Interface {
 
     /// Create a new instance of the Interface
     /// 
-    pub fn new<A: Into<String>>(
-        name: A,
-        idn: Box<dyn IdentityProvider>,
-        states: Box<dyn fsm::States>,
-        subscriber: Box<dyn Subscriber>) -> AmInterface {
+    pub fn new_am(builder: InterfaceBuilder) -> AmInterface {
+        
 
 
-        let mut core_obj = Core::new(name);
-        core_obj.set_info(idn.get_info());
+        let mut core_obj = Core::new(builder.name);
+        // core_obj.set_info(idn.get_info());
 
         let core = Arc::new(Mutex::new( core_obj ));
 
         return Arc::new(Mutex::new(
             Interface {
                 core: core.clone(),
-                fsm: Arc::new(Mutex::new(Fsm::new(core.clone(), states))),
-                listener: Arc::new(Mutex::new(Listener::new(core.clone(), subscriber)))
+                fsm: Arc::new(Mutex::new(Fsm::new(core.clone(), builder.states))),
+                listener: Arc::new(Mutex::new(Listener::new(core.clone(), builder.subscriber)))
             }
         ));
     }

@@ -12,7 +12,7 @@ use crate::link;
 
 pub mod fsm;
 pub mod core;
-pub mod traits;
+mod interface;
 pub mod builder;
 pub mod listener;
 pub mod subscriber;
@@ -25,15 +25,10 @@ use crate::interface::listener::Listener;
 
 use crate::interface::subscriber::Subscriber;
 
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
 
 
-
-
-
+pub type Builder = builder::Builder;
+pub type Interface = interface::Interface;
+pub type AmInterface = interface::AmInterface;
 
 

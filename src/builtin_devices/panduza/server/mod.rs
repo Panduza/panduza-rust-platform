@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use tokio::time::{sleep, Duration};
 
+use crate::interface::builder::Builder as InterfaceBuilder;
 use crate::platform::PlatformError;
 use crate::subscription;
 use crate::interface::{self, Interface};
@@ -24,13 +25,15 @@ impl DeviceActions for ServerDeviceActions {
 
     /// Create the interfaces
     /// 
-    fn interface_builders(&self, device_settings: &serde_json::Value) -> Vec<interface::AmInterfaceBuilder> {
+    fn interface_builders(&self, device_settings: &serde_json::Value) 
+        -> Result<Vec<InterfaceBuilder>, PlatformError>
+    {
         let mut list = Vec::new();
         list.push(
             itf_platform::new("platform")
         );
 
-        return list;
+        return Ok(list);
     }
 }
 

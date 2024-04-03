@@ -1,7 +1,9 @@
 
 
+use std::result;
+
 use crate::subscription;
-use crate::interface::AmInterface;
+
 
 use crate::connection::AmConnection;
 
@@ -15,6 +17,9 @@ use crate::device::traits::DeviceActions;
 
 use crate::link;
 use crate::link::AmManager as AmLinkManager;
+
+
+use crate::interface::{AmInterface, Interface};
 
 /// A device manage a set of interfaces
 /// 
@@ -125,18 +130,29 @@ impl Device {
         }
         self.log_info("Start Interfaces...");
 
-        // create interfaces
-        self.interfaces = self.actions.create_interfaces(&serde_json::Value::Null);
+        let r = self.actions.interface_builders(&serde_json::Value::Null);
+        // if let Err(e) = builders {
+        //     self.log_warn("Error");
+        // }
+        let builders = r.unwrap();
 
         // Do nothing if no interface in the device
-        if self.interfaces.len() == 0 {
-            self.log_warn("No interface to start, skip device start");
+        if builders.len() == 0 {
+            self.log_warn("No interface to build, skip device start");
             return;
         }
 
-        let dev_name = self.dev_name().clone();
-        let bench_name = self.bench_name().clone();
 
+        // create interfaces
+        
+        for builder in builders {
+            let interface = Interface::new_am(
+                // self.dev_name().clone(),
+                // self.bench_name().clone(),
+                builder,
+            );
+            self.interfaces.push(interface);
+        }
 
 
         let mut interfaces = self.interfaces.clone();
@@ -144,7 +160,7 @@ impl Device {
             let itf = interface.clone();
 
             // Set names
-            itf.lock().await.set_dev_and_bench_names(dev_name.clone(), bench_name.clone()).await;
+            // itf.lock().await.set_dev_and_bench_names(dev_name.clone(), bench_name.clone()).await;
 
 
 

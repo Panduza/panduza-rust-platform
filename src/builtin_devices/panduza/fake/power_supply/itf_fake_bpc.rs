@@ -8,6 +8,7 @@ use crate::interface::AmInterface;
 use crate::device::{ Device, traits::DeviceActions, traits::Producer };
 
 
+use crate::interface::builder::Builder as InterfaceBuilder;
 
 struct AttEnable {
     value: bool
@@ -39,24 +40,6 @@ struct AttsBpc {
 struct ItfFakeBpcSubscriber;
 
 
-
-
-struct ItfIdentityProvider {
-
-}
-
-impl interface::IdentityProvider for ItfIdentityProvider {
-
-    fn get_info(&self) -> serde_json::Value {
-        return serde_json::json!({
-            "info": {
-                "type": "bpc",
-                "version": "0.0"
-            }
-        });
-    }
-
-}
 
 
 
@@ -149,10 +132,11 @@ impl interface::subscriber::Subscriber for ItfFakeBpcSubscriber {
 
 /// Interface to emulate a Bench Power Channel
 /// 
-pub fn new() -> AmInterface {
-    return Interface::new(
-        "channel", 
-        Box::new(ItfIdentityProvider{}),
+pub fn new() -> InterfaceBuilder {
+    return InterfaceBuilder::new(
+        "channel",
+        "bpc",
+        "0.0",
         Box::new(ItfFakeBpcStates{}),
         Box::new(ItfFakeBpcSubscriber{})
     );
