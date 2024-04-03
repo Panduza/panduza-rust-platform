@@ -18,9 +18,6 @@ pub struct Connection {
     // Name of the connection
     name: String,
 
-    /// Mqtt client
-    client: AsyncClient,
-
     /// Event loop
     eventloop: Arc<Mutex<rumqttc::EventLoop>>,
 
@@ -44,7 +41,6 @@ impl Connection {
         // Create Connection Object
         return Connection {
             name: mqtt_options.client_id(),
-            client: client.clone(),
             eventloop: Arc::new(Mutex::new(eventloop)),
             link_manager: Arc::new(Mutex::new(
                 LinkManager::new(client.clone())

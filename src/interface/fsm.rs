@@ -81,13 +81,13 @@ impl Fsm {
     ///
     ///
     pub async fn run_once(&mut self) {
-        
+
         // Get state but do not keep the lock
         let state = self.core.lock().await.current_state().clone();
 
         // Debug log
         self.core.lock().await.log_debug(
-            format!("FSM: Running state {:?}", state)
+            format!("Run State \"{:?}\"", state)
         );
 
         // Perform state task

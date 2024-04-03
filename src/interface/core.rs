@@ -170,9 +170,9 @@ impl Core {
         println!("Publishing to topic: {}", topic);
 
 
-        // if let Some(client) = &self.default_client {
-        //     client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-        // }
+        
+        self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+        
         
     }
 

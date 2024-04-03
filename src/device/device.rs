@@ -154,18 +154,19 @@ impl Device {
 
 
 
-    /// Log info
-    /// 
-    #[inline]
-    pub fn log_info<A: Into<String>>(&self, text: A) {
-        tracing::info!(class="Device", bname=self.bench_name, dname=self.dev_name, "{}", text.into());
-    }
 
     /// Log warning
     /// 
     #[inline]
     pub fn log_warn<A: Into<String>>(&self, text: A) {
         tracing::warn!(class="Device", bname=self.bench_name, dname=self.dev_name, "{}", text.into());
+    }
+
+    /// Log info
+    /// 
+    #[inline]
+    pub fn log_info<A: Into<String>>(&self, text: A) {
+        tracing::info!(class="Device", bname=self.bench_name, dname=self.dev_name, "{}", text.into());
     }
 
 }

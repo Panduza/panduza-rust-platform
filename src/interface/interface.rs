@@ -149,19 +149,11 @@ impl Interface {
 
 
 
+    
 
-    // pub async fn set_name(&mut self, name: String) {
-    //     self.core.lock().await.set_name(name);
-    // }
 
-    // pub async fn set_dev_name(&mut self, dev_name: String) {
-    //     self.core.lock().await.set_dev_name(dev_name);
-    // }
 
-    // pub async fn set_bench_name(&mut self, bench_name: String) {
-    //     self.core.lock().await.set_bench_name(bench_name);
-    // }
-
+    
 
     /// Build the base topic of the interface
     ///
