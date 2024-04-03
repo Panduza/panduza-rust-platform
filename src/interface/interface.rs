@@ -3,7 +3,7 @@ use std::sync::Arc;
 use futures::FutureExt;
 use tokio::sync::Mutex;
 
-use crate::{link, platform::TaskPoolLoader, platform_error, subscription};
+use crate::{link::{self, InterfaceHandle}, platform::TaskPoolLoader, platform_error, subscription};
 
 use super::{core::{AmCore, Core}, fsm::{self, Fsm}, listener::Listener, subscriber::Subscriber};
 
@@ -24,63 +24,94 @@ pub struct Interface {
 }
 pub type AmInterface = Arc<Mutex<Interface>>;
 
-
 impl Interface {
 
-
-    pub fn new<A: Into<String>, B: Into<String>>(
-        dev_name: A,
-        bench_name: B,
-        builder: InterfaceBuilder,
-        connection_link_manager: AmLinkManager,
-        ) -> Interface
+    /// Build a new interface
+    /// 
+    pub async fn build<A: Into<String>, B: Into<String>>
+        (builder: InterfaceBuilder, dev_name: A, bench_name: B, connection_link_manager: AmLinkManager) 
+            -> AmInterface
     {
+        let _dev_name = dev_name.into();
+        let _bench_name = bench_name.into();
 
-        // builder have the subscriber to get atts names
+        // Topic name
+        let topic = format!("pza/{}/{}/{}", _dev_name, _bench_name, builder.name);
 
+        // Get attributes names
         let att_names = builder.subscriber.attributes_names().await;
 
-
+        // Build subscriptions requests
         let mut requests = vec![
             subscription::Request::new( subscription::ID_PZA, "pza" ),
-            subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("pza/{}/cmds/set", topic) )
-        ];
+            subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("{}/cmds/set", topic) )
+        ];        
+        for att_name in att_names {
+            let request = subscription::Request::new( att_name.0, &format!("{}/{}", topic, att_name.1) );
+            requests.push(request);
+        }
 
-    //     for att_name in att_names {
-    //         let request = subscription::Request::new( att_name.0, &format!("pza/{}/{}", topic, att_name.1) );
-    //         requests.push(request);
-    //     }
+        // Create the link with the connection
+        let link = connection_link_manager.lock().await.request_link(requests).await.unwrap();
+        
+        // Create the interface
+        return Interface::new_am(
+            builder.name,
+            _dev_name,
+            _bench_name,
+            builder.itype,
+            builder.version,
+            builder.states,
+            builder.subscriber,
+            link
+        );
+    }
 
-    //     let x: link::InterfaceHandle = c.lock().await.request_link(requests).await.unwrap();
-    //     interface_lock.set_default_link(x).await;
+    /// Create a new instance of the Interface
+    /// 
+    pub fn new<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>(
+        name: A,
+        dev_name: B,
+        bench_name: C,
 
+        itype: D,
+        version: E,
 
-
-        let core_obj = Core::new(builder.name, dev_name, bench_name);
+        states: Box<dyn fsm::States>,
+        subscriber: Box<dyn Subscriber>,
+        
+        link: link::InterfaceHandle,
+        ) -> Interface
+    {
+        let core_obj = Core::new(name, dev_name, bench_name, link.client());
         let core = Arc::new(Mutex::new( core_obj ));
         return 
             Interface {
                 core: core.clone(),
-                fsm: Arc::new(Mutex::new(Fsm::new(core.clone(), builder.states))),
-                listener: Listener::new_am(core.clone(), builder.subscriber, )
+                fsm: Arc::new(Mutex::new(Fsm::new(core.clone(), states ))),
+                listener: Listener::new_am(core.clone(), subscriber, link)
             }
         ;
     }
 
-
-
-    // link: link::InterfaceHandle
-
     /// Create a new instance of the Interface
     /// 
-    pub fn new_am<A: Into<String>, B: Into<String>>(
-        dev_name: A,
-        bench_name: B,
-        builder: InterfaceBuilder
+    pub fn new_am<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>(
+        name: A,
+        dev_name: B,
+        bench_name: C,
+
+        itype: D,
+        version: E,
+
+        states: Box<dyn fsm::States>,
+        subscriber: Box<dyn Subscriber>,
+        
+        link: link::InterfaceHandle,
         ) -> AmInterface
     {
         return Arc::new(Mutex::new(
-            Interface::new(dev_name, bench_name, builder);
+            Interface::new(name, dev_name, bench_name, itype, version, states, subscriber, link)
         ));
     }
 
@@ -91,13 +122,15 @@ impl Interface {
         let fsm = self.fsm.clone();
         let listener = self.listener.clone();
 
+        // FSM Task
         task_loader.load(async move {
             loop {
                 fsm.lock().await.run_once().await;
             }
         }.boxed()).unwrap();
 
-        // Listen Task
+        // Listener Task
+        // Ensure communication with the MQTT connection
         let interface_name = self.core.lock().await.name().clone() ;
         task_loader.load(async move {
             loop {
@@ -114,19 +147,7 @@ impl Interface {
         self.core.lock().await.log_info("Interface started");
     }
 
-    /// Get the name of the attributes managed by the interface
-    /// 
-    pub async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
-        return self.listener.lock().await.attributes_names().await;
-    }
 
-    /// Set the default link
-    ///
-    pub async fn set_default_link(&mut self, link: link::InterfaceHandle) {
-        let mut listener = self.listener.lock().await;
-        self.core.lock().await.set_default_client(link.client.clone());
-        listener.set_default_link(link);
-    }
 
 
     // pub async fn set_name(&mut self, name: String) {

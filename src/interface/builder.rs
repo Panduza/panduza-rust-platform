@@ -1,6 +1,7 @@
-use super::fsm;
+use super::{fsm, AmInterface, Interface};
 use super::subscriber::Subscriber;
-
+use crate::link::AmManager as AmLinkManager;
+use crate::subscription;
 /// The builder allow the device to create a new interface
 /// 
 pub struct Builder {
@@ -36,20 +37,19 @@ impl Builder {
         };
     }
 
-    /// Build a new interface
+    /// Get the name of the interface
     /// 
-    pub async fn build<A: Into<String>, B: Into<String>>
-        (&self, dev_name: A, bench_name: B, connection_link_manager: AmLinkManager) 
-            -> AmInterface {
-        
-        
-        
-        return Interface::new_am(
-            self.name.clone(),
-            self.itype.clone(),
-            self.version.clone(),
-            self
-        );
+    pub fn name(&self) -> &String {
+        return &self.name;
     }
+
+    pub fn states(&self) -> &Box<dyn fsm::States> {
+        return &self.states;
+    }
+    pub fn subscriber(&self) -> &Box<dyn Subscriber> {
+        return &self.subscriber;
+    }
+
+
     
 }

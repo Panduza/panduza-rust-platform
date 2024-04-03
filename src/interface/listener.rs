@@ -55,11 +55,7 @@ impl Listener {
         return Arc::new(Mutex::new(Listener::new(core, subscriber, link)));
     }
 
-    /// 
-    ///
-    pub async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
-        return self.subscriber.attributes_names().await;
-    }
+
 
 
     /// Run the listener once
@@ -67,28 +63,7 @@ impl Listener {
     pub async fn run_once(&mut self) -> Result<(), PlatformError> {
 
 
-        // 
-        let mut vv: Vec<std::pin::Pin<Box<dyn Future<Output = Option<subscription::Message>> + Send>>> = vec![];
-
-        
-        // match self.default_link {
-        //     Some(_) => {
-        //         vv.push(self.default_link.as_mut().unwrap().rx.recv().boxed());
-        //     },
-        //     None => {
-        //         return platform_error!("No default link set", None);
-        //     }
-        // }
-
-
-        // = vec![
-        //     self.default_link.as_mut().unwrap().rx.recv().boxed(),
-        //     self.operational_link.as_mut().unwrap().rx.recv().boxed()
-        // ];
-
-        let (msg, _index, remaining_futures) = select_all(
-            vv
-        ).await;
+        let msg = self.link.rx().recv().await;
 
         match msg {
             Some(msg) => {

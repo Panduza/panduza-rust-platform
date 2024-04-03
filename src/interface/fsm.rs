@@ -85,6 +85,11 @@ impl Fsm {
         // Get state but do not keep the lock
         let state = self.core.lock().await.current_state().clone();
 
+        // Debug log
+        self.core.lock().await.log_debug(
+            format!("FSM: Running state {:?}", state)
+        );
+
         // Perform state task
         match state {
             State::Connecting => {

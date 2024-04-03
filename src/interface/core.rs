@@ -33,6 +33,9 @@ pub struct Core {
     topic_cmds: String,
     topic_atts: String,
     topic_info: String,
+    
+    // -- CLIENTS --
+    client: AsyncClient,
 
     // -- FSM --
     /// Current state
@@ -42,13 +45,6 @@ pub struct Core {
     /// Notifier for events
     fsm_events_notifier: Arc<Notify>,
 
-
-    // -- CLIENTS --
-    
-    // use both
-    // operational only
-
-    default_client: Option<AsyncClient>,
     
 
 
@@ -64,7 +60,7 @@ impl Core {
     /// Create a new instance of the Core
     ///
     pub fn new<A: Into<String>, B: Into<String>, C: Into<String>>
-        (name: A, dev_name: B, bench_name: C)
+        (name: A, dev_name: B, bench_name: C, client: AsyncClient)
         -> Core {
         let mut obj = Core {
             name: name.into(),
@@ -74,10 +70,10 @@ impl Core {
             topic_cmds: String::new(),
             topic_atts: String::new(),
             topic_info: String::new(),
+            client: client,
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
-            default_client: None,
             info: serde_json::Value::Null,
         };
         obj.update_topics();
@@ -168,11 +164,6 @@ impl Core {
     }
 
 
-    ///
-    pub fn set_default_client(&mut self, client: AsyncClient) {
-        self.default_client = Some(client);
-    }
-
 
     /// Get the base topic
     pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
@@ -201,6 +192,22 @@ impl Core {
     #[inline]
     pub fn log_info<A: Into<String>>(&self, text: A) {
         tracing::info!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
+            "{}", text.into());
+    }
+
+    /// Log debug
+    /// 
+    #[inline]
+    pub fn log_debug<A: Into<String>>(&self, text: A) {
+        tracing::debug!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
+            "{}", text.into());
+    }
+
+    /// Log trace
+    /// 
+    #[inline]
+    pub fn log_trace<A: Into<String>>(&self, text: A) {
+        tracing::trace!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
             "{}", text.into());
     }
 

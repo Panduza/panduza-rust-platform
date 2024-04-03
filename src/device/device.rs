@@ -132,12 +132,11 @@ impl Device {
         // create interfaces
         for builder in builders {
             self.interfaces.push(
-                Interface::new_am(
+                Interface::build(builder,
                     self.dev_name().clone(),
                     self.bench_name().clone(),
-                    builder,
-                    connection_link_manager.clone()
-                )
+                    self.connection_link_manager.clone()
+                ).await
             );
         }
 
