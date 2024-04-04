@@ -29,8 +29,9 @@ pub async fn process(core: &AmCore, msg: &subscription::Message) {
     }
 }
 
-/// 
-/// 
+/// Interface initializating
+///
+#[inline]
 pub async fn interface_initializating(core: &AmCore)
 {
     core.lock().await.init_info(core.clone());

@@ -1,4 +1,5 @@
 use serde_json;
+use serde_json::json;
 
 use std::sync::Arc;
 
@@ -26,16 +27,27 @@ struct JsonAttribute {
 
 impl JsonAttribute {
     pub fn new<A: Into<String>>(core: AmCore, name: A) -> JsonAttribute {
+
+        let name_str = name.into();
+
+        let data = json!({
+            name_str.clone(): {}
+        });
+
         return JsonAttribute {
             core: core,
-            name: name.into(),
-            data: serde_json::Value::Null,  
+            name: name_str,
+            data: data,
         };
     }
 
-
     pub fn update_field(&mut self, field: &str, value: serde_json::Value) {
         self.data[field] = value;
+    }
+
+    pub async fn publish(&self, retain: bool) {
+        let payload = self.data.to_string();
+        self.core.lock().await.publish(&self.core.lock().await.topic_info, payload.as_str(), retain).await;
     }
 
 }
@@ -217,10 +229,6 @@ impl Core {
     pub async fn publish_info(&self) {
         // self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;
     }
-
-
-
-
 
     /// Init the info attribute
     /// 
