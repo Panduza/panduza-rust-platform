@@ -10,11 +10,39 @@ use tokio::sync::Notify;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
+
+
+
+struct JsonAttribute {
+    /// Shared interface data
+    core: AmCore,
+
+    // 
+    name: String,
+    
+    // 
+    data: serde_json::Value,
+}
+
+impl JsonAttribute {
+    pub fn new<A: Into<String>>(core: AmCore, name: A) -> JsonAttribute {
+        return JsonAttribute {
+            core: core,
+            name: name.into(),
+            data: serde_json::Value::Null,  
+        };
+    }
+
+
+    pub fn update_field(&mut self, field: &str, value: serde_json::Value) {
+        self.data[field] = value;
+    }
+
+}
+
+
+
+
 
 /// Shared data and behaviour across an interface objects
 /// 
@@ -45,12 +73,9 @@ pub struct Core {
     /// Notifier for events
     fsm_events_notifier: Arc<Notify>,
 
-    
-
-
-        
+    // -- ATTRIBUTE --
     /// Interface Indentity Info
-    info: serde_json::Value,
+    info: Option<JsonAttribute>,
 
 }
 pub type AmCore = Arc<Mutex<Core>>;
@@ -59,7 +84,7 @@ impl Core {
 
     /// Create a new instance of the Core
     ///
-    pub fn new<A: Into<String>, B: Into<String>, C: Into<String>>
+    fn new<A: Into<String>, B: Into<String>, C: Into<String>>
         (name: A, dev_name: B, bench_name: C, client: AsyncClient)
         -> Core {
         let mut obj = Core {
@@ -74,10 +99,21 @@ impl Core {
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
-            info: serde_json::Value::Null,
+            info: None,
         };
         obj.update_topics();
         return obj;
+    }
+
+    /// Create a new instance of the Core
+    /// 
+    pub fn new_am<A: Into<String>, B: Into<String>, C: Into<String>>
+        (name: A, dev_name: B, bench_name: C, client: AsyncClient)
+            -> AmCore
+    {
+        return Arc::new(Mutex::new(
+            Core::new(name, dev_name, bench_name, client)
+        ));
     }
 
     /// Get the name of the interface
@@ -179,13 +215,18 @@ impl Core {
     /// 
     /// 
     pub async fn publish_info(&self) {
-        self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;
+        // self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;
     }
 
 
 
 
 
+    /// Init the info attribute
+    /// 
+    pub fn init_info(&mut self, core: AmCore) {
+        self.info = Some(JsonAttribute::new(core, "info"));
+    }
     
     /// Log info
     /// 

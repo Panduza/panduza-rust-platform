@@ -83,13 +83,12 @@ impl Interface {
         link: link::InterfaceHandle,
         ) -> Interface
     {
-        let core_obj = Core::new(name, dev_name, bench_name, link.client());
-        let core = Arc::new(Mutex::new( core_obj ));
+        let core_obj = Core::new_am(name, dev_name, bench_name, link.client());
         return 
             Interface {
-                core: core.clone(),
-                fsm: Arc::new(Mutex::new(Fsm::new(core.clone(), states ))),
-                listener: Listener::new_am(core.clone(), subscriber, link)
+                core: core_obj.clone(),
+                fsm: Arc::new(Mutex::new(Fsm::new(core_obj.clone(), states ))),
+                listener: Listener::new_am(core_obj.clone(), subscriber, link)
             }
         ;
     }

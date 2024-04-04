@@ -22,7 +22,7 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
     ///
     async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
         // Common processing
-        interface::subscriber::process_common(data,msg).await;
+        interface::basic::process(data,msg).await;
         
         match msg {
             subscription::Message::Mqtt(msg) => {
@@ -57,7 +57,7 @@ impl interface::fsm::States for TestInterfaceStates {
 
     async fn initializating(&self, core: &AmCore)
     {
-        println!("initializating");
+        interface::basic::interface_initializating(core).await;
         
         let mut p = core.lock().await;
         p.set_event_init_done();

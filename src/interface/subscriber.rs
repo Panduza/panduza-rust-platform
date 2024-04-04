@@ -19,31 +19,3 @@ pub trait Subscriber : Send + Sync {
 
 }
 
-/// Process a message with common behaviour for all interface
-/// 
-pub async fn process_common(core: &AmCore, msg: &subscription::Message) {
-    match msg {
-        subscription::Message::ConnectionStatus (status) => {
-            if status.connected {
-                core.lock().await.set_event_connection_up();
-            }
-            else {
-                core.lock().await.set_event_connection_down();
-            }
-        },
-        subscription::Message::Mqtt(msg) => {
-            match msg.get_id() {
-                subscription::ID_PZA => {
-                    core.lock().await.publish_info().await;
-
-                    tracing::trace!("Ackk !!!");
-                },
-                _ => {
-                    // not managed by the common level
-                }
-            }
-        }
-    }
-}
-
-
