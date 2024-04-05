@@ -1,6 +1,7 @@
 use serde_json;
 use serde_json::json;
 
+use std::io::Bytes;
 use std::sync::Arc;
 
 use rumqttc::AsyncClient;
@@ -8,54 +9,12 @@ use rumqttc::AsyncClient;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 
+use crate::attribute;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
-
-
-
-struct JsonAttribute {
-    // 
-    name: String,
-    
-    // 
-    data: serde_json::Value,
-}
-
-impl JsonAttribute {
-    pub fn new<A: Into<String>>(name: A) -> JsonAttribute {
-
-        let name_str = name.into();
-
-        let data = json!({
-            name_str.clone(): {}
-        });
-
-        return JsonAttribute {
-            name: name_str,
-            data: data,
-        };
-    }
-
-    pub fn update_field(&mut self, field: &str, value: serde_json::Value) {
-        let n = self.name.clone();
-        let d = self.data.get_mut(n);
-        if d.is_none() {
-            return;
-        }
-        d.unwrap().as_object_mut().unwrap().insert(field.to_string(), value);
-        
-    }
-
-    pub fn to_str(&self) -> String {
-        return self.data.to_string();
-    }
-
-}
-
-
-
-
+use crate::attribute::InfoAttribute;
+use crate::attribute::AttributeInterface;
 
 /// Shared data and behaviour across an interface objects
 /// 
@@ -74,9 +33,6 @@ pub struct Core {
     topic_cmds: String,
     topic_atts: String,
     topic_info: String,
-    
-    // -- CLIENTS --
-    client: AsyncClient,
 
     // -- FSM --
     /// Current state
@@ -86,9 +42,12 @@ pub struct Core {
     /// Notifier for events
     fsm_events_notifier: Arc<Notify>,
 
+    // -- CLIENT --
+    client: AsyncClient,
+
     // -- ATTRIBUTE --
     /// Interface Indentity Info
-    info: JsonAttribute,
+    info: InfoAttribute,
 
 }
 pub type AmCore = Arc<Mutex<Core>>;
@@ -102,11 +61,6 @@ impl Core {
             client: AsyncClient
         )
         -> Core {
-
-        let mut info = JsonAttribute::new("info");
-        info.update_field("type", serde_json::Value::String(itype.into()));
-        info.update_field("version", serde_json::Value::String(version.into()));
-
         let mut obj = Core {
             name: name.into(),
             dev_name: dev_name.into(),
@@ -119,7 +73,7 @@ impl Core {
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
-            info: info,
+            info: InfoAttribute::new(itype, version),
         };
         obj.update_topics();
         return obj;
@@ -135,6 +89,8 @@ impl Core {
             Core::new(name, dev_name, bench_name, itype, version, client)
         ));
     }
+
+    // -- IDENTITY --
 
     /// Get the name of the interface
     /// 
@@ -163,41 +119,37 @@ impl Core {
     }
 
 
+    // -- FSM --
 
-
-
-
-    
-
-
-
-
-
+    /// Get the current state
+    ///
     pub fn current_state(&self) -> &State {
         return &self.fsm_state;
     }
 
+    /// Get the events
+    ///
     pub fn events(&mut self) -> &mut Events {
         return &mut self.fsm_events;
     }
 
+    /// Clear the events
+    ///
     pub fn clear_events(&mut self) {
         self.fsm_events = Events::NO_EVENT;
     }
-    
+
     /// Move to a new state
-    /// 
+    ///
     pub fn move_to_state(&mut self, state: State) {
         let previous = self.fsm_state.clone();
         self.fsm_state = state;
-        tracing::info!(
-            class="Interface", 
-            bname= self.bench_name, dname= self.dev_name, iname= self.name,
-                "State changed {:?} => {:?}", previous, self.fsm_state);
+        self.info.change_state(self.fsm_state.to_string());
+        self.log_info(format!("State changed {:?} => {:?}", previous, self.fsm_state));
     }
 
     /// Get the fsm events notifier
-    /// 
+    ///
     pub fn get_fsm_events_notifier(&self) -> Arc<Notify> {
         return self.fsm_events_notifier.clone();
     }
@@ -219,24 +171,33 @@ impl Core {
         self.fsm_events_notifier.notify_one();
     }
 
-
+    // -- CLIENT --
 
     /// Get the base topic
-    /// 
+    ///
     pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
         println!("Publishing to topic: {}", topic);
+
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
     }
 
+
+    pub async fn publish_attribute(&self, attribute: &dyn AttributeInterface) {
+        self.publish(
+            format!("{}/{}", self.topic_atts, attribute.name()).as_str()
+            , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
+    }
+
+
+
     /// Publish the info
-    /// 
+    ///
     pub async fn publish_info(&self) {
-        println!("Publishing info: {:?}", self.info.to_str());
-        self.publish(&self.topic_info, &self.info.to_str(), false).await;
+        self.publish_attribute(&self.info).await;
     }
 
     /// Log info
-    /// 
+    ///
     #[inline]
     pub fn log_info<A: Into<String>>(&self, text: A) {
         tracing::info!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
@@ -244,7 +205,7 @@ impl Core {
     }
 
     /// Log debug
-    /// 
+    ///
     #[inline]
     pub fn log_debug<A: Into<String>>(&self, text: A) {
         tracing::debug!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
@@ -252,7 +213,7 @@ impl Core {
     }
 
     /// Log trace
-    /// 
+    ///
     #[inline]
     pub fn log_trace<A: Into<String>>(&self, text: A) {
         tracing::trace!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 

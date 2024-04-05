@@ -98,30 +98,30 @@ impl interface::subscriber::Subscriber for ItfFakeBpcSubscriber {
     async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
 
         
-        match msg {
-            subscription::Message::ConnectionStatus (status) => {
+        // match msg {
+        //     subscription::Message::ConnectionStatus (status) => {
                 
-                if status.connected {
-                    data.lock().await.set_event_connection_up();
-                }
-                else {
-                    data.lock().await.set_event_connection_down();
-                }
-            },
-            subscription::Message::Mqtt(msg) => {
+        //         if status.connected {
+        //             data.lock().await.set_event_connection_up();
+        //         }
+        //         else {
+        //             data.lock().await.set_event_connection_down();
+        //         }
+        //     },
+        //     subscription::Message::Mqtt(msg) => {
                 
-                match msg.get_id() {
-                    subscription::ID_PZA => {
-                        data.lock().await.publish_info().await;
-                        println!("Ackk !!! {:?}", msg);
-                    },
-                    _ => {
-                        println!("Mqtt {:?}", msg);
-                    }
-                }
+        //         match msg.get_id() {
+        //             subscription::ID_PZA => {
+        //                 data.lock().await.publish_info().await;
+        //                 println!("Ackk !!! {:?}", msg);
+        //             },
+        //             _ => {
+        //                 println!("Mqtt {:?}", msg);
+        //             }
+        //         }
 
-            }
-        }
+        //     }
+        // }
 
     }
 

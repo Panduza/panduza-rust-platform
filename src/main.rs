@@ -3,6 +3,7 @@ mod link;
 mod device;
 mod platform;
 mod interface;
+mod attribute;
 mod connection;
 mod subscription;
 mod builtin_devices;

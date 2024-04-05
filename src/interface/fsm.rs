@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use async_trait::async_trait;
 use bitflags::bitflags;
 use crate::interface::core::AmCore;
@@ -16,6 +18,17 @@ pub enum State {
     Initializating,
     Running,
     Error
+}
+
+impl Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            State::Connecting => write!(f, "Connecting"),
+            State::Initializating => write!(f, "init"),
+            State::Running => write!(f, "run"),
+            State::Error => write!(f, "err"),
+        }
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
