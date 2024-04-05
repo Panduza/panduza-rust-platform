@@ -15,9 +15,6 @@ use crate::interface::fsm::Events;
 
 
 struct JsonAttribute {
-    /// Shared interface data
-    core: AmCore,
-
     // 
     name: String,
     
@@ -26,7 +23,7 @@ struct JsonAttribute {
 }
 
 impl JsonAttribute {
-    pub fn new<A: Into<String>>(core: AmCore, name: A) -> JsonAttribute {
+    pub fn new<A: Into<String>>(name: A) -> JsonAttribute {
 
         let name_str = name.into();
 
@@ -35,19 +32,23 @@ impl JsonAttribute {
         });
 
         return JsonAttribute {
-            core: core,
             name: name_str,
             data: data,
         };
     }
 
     pub fn update_field(&mut self, field: &str, value: serde_json::Value) {
-        self.data[field] = value;
+        let n = self.name.clone();
+        let d = self.data.get_mut(n);
+        if d.is_none() {
+            return;
+        }
+        d.unwrap().as_object_mut().unwrap().insert(field.to_string(), value);
+        
     }
 
-    pub async fn publish(&self, retain: bool) {
-        let payload = self.data.to_string();
-        self.core.lock().await.publish(&self.core.lock().await.topic_info, payload.as_str(), retain).await;
+    pub fn to_str(&self) -> String {
+        return self.data.to_string();
     }
 
 }
@@ -87,7 +88,7 @@ pub struct Core {
 
     // -- ATTRIBUTE --
     /// Interface Indentity Info
-    info: Option<JsonAttribute>,
+    info: JsonAttribute,
 
 }
 pub type AmCore = Arc<Mutex<Core>>;
@@ -96,9 +97,16 @@ impl Core {
 
     /// Create a new instance of the Core
     ///
-    fn new<A: Into<String>, B: Into<String>, C: Into<String>>
-        (name: A, dev_name: B, bench_name: C, client: AsyncClient)
+    fn new<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
+        (name: A, dev_name: B, bench_name: C, itype: D, version: E,
+            client: AsyncClient
+        )
         -> Core {
+
+        let mut info = JsonAttribute::new("info");
+        info.update_field("type", serde_json::Value::String(itype.into()));
+        info.update_field("version", serde_json::Value::String(version.into()));
+
         let mut obj = Core {
             name: name.into(),
             dev_name: dev_name.into(),
@@ -111,7 +119,7 @@ impl Core {
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
-            info: None,
+            info: info,
         };
         obj.update_topics();
         return obj;
@@ -119,12 +127,12 @@ impl Core {
 
     /// Create a new instance of the Core
     /// 
-    pub fn new_am<A: Into<String>, B: Into<String>, C: Into<String>>
-        (name: A, dev_name: B, bench_name: C, client: AsyncClient)
+    pub fn new_am<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
+        (name: A, dev_name: B, bench_name: C, itype: D, version: E, client: AsyncClient)
             -> AmCore
     {
         return Arc::new(Mutex::new(
-            Core::new(name, dev_name, bench_name, client)
+            Core::new(name, dev_name, bench_name, itype, version, client)
         ));
     }
 
@@ -214,28 +222,19 @@ impl Core {
 
 
     /// Get the base topic
+    /// 
     pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
         println!("Publishing to topic: {}", topic);
-
-
-        
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-        
-        
     }
 
-    /// 
+    /// Publish the info
     /// 
     pub async fn publish_info(&self) {
-        // self.publish(&self.topic_info, self.info.to_string().as_str(), false).await;
+        println!("Publishing info: {:?}", self.info.to_str());
+        self.publish(&self.topic_info, &self.info.to_str(), false).await;
     }
 
-    /// Init the info attribute
-    /// 
-    pub fn init_info(&mut self, core: AmCore) {
-        self.info = Some(JsonAttribute::new(core, "info"));
-    }
-    
     /// Log info
     /// 
     #[inline]

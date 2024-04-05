@@ -34,7 +34,7 @@ pub async fn process(core: &AmCore, msg: &subscription::Message) {
 #[inline]
 pub async fn interface_initializating(core: &AmCore)
 {
-    core.lock().await.init_info(core.clone());
+    
 }
 
 /// Wait for a fsm event 

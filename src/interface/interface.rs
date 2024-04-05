@@ -83,7 +83,7 @@ impl Interface {
         link: link::InterfaceHandle,
         ) -> Interface
     {
-        let core_obj = Core::new_am(name, dev_name, bench_name, link.client());
+        let core_obj = Core::new_am(name, dev_name, bench_name, itype, version, link.client());
         return 
             Interface {
                 core: core_obj.clone(),
