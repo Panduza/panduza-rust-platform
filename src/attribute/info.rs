@@ -51,7 +51,7 @@ impl AttributeInterface for InfoAttribute {
         self.attr.from_mqtt_payload(payload);
     }
     
-    fn update_field<F: Into<String>, V>(&mut self, field: &F, value: &V) {
+    fn update_field<F: Into<String>, V: 'static>(&mut self, field: &F, value: &V) {
         todo!()
     }
 }

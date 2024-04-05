@@ -31,15 +31,10 @@ impl JsonAttribute {
         };
     }
 
-    pub fn update_field(&mut self, field: &str, value: serde_json::Value) {
-        let n = self.name.clone();
-        let d = self.data.get_mut(n);
-        if d.is_none() {
-            return;
-        }
-        d.unwrap().as_object_mut().unwrap().insert(field.to_string(), value);
+    // pub fn update_field(&mut self, field: &str, value: serde_json::Value) {
+
         
-    }
+    // }
 
 }
 
@@ -62,11 +57,20 @@ impl AttributeInterface for JsonAttribute {
         todo!()
     }
 
-    fn update_field<F: Into<String>, V>(&mut self, field: &F, value: &V) {
+    fn update_field<F: Into<String>, V: 'static>(&mut self, field: &F, value: &V) {
+        if TypeId::of::<V>() == TypeId::of::<String>() {
+            println!("V is a String");
 
-        // if TypeId::of::<V>() == TypeId::of::<String>() {
+            let n = self.name.clone();
+            let d = self.data.get_mut(n);
+            if d.is_none() {
+                return;
+            }
+            // d.unwrap().as_object_mut().unwrap().insert(field.into(), 
+            //     value
+            // );
 
-        // }
+        }
     }
 }
 
