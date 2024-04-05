@@ -47,8 +47,12 @@ impl AttributeInterface for InfoAttribute {
         return self.attr.to_mqtt_payload();
     }
 
-    fn from_mqtt_payload(&self, payload: &str) {
+    fn from_mqtt_payload(&mut self, payload: &str) {
         self.attr.from_mqtt_payload(payload);
+    }
+    
+    fn update_field<F: Into<String>, V>(&mut self, field: &F, value: &V) {
+        todo!()
     }
 }
 

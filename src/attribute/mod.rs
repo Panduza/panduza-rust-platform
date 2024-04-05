@@ -15,6 +15,8 @@ pub trait AttributeInterface : Send + Sync {
     fn name(&self) -> &String;
     fn retain(&self) -> &bool;
     fn to_mqtt_payload(&self) -> String;
-    fn from_mqtt_payload(&self, payload: &str);
+    fn from_mqtt_payload(&mut self, payload: &str);
+
+    fn update_field<F: Into<String>, V>(&mut self, field: &F, value: &V);
 }
 

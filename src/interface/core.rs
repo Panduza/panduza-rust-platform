@@ -1,7 +1,5 @@
 use serde_json;
-use serde_json::json;
 
-use std::io::Bytes;
 use std::sync::Arc;
 
 use rumqttc::AsyncClient;
@@ -9,12 +7,11 @@ use rumqttc::AsyncClient;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 
-use crate::attribute;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
 use crate::attribute::InfoAttribute;
-use crate::attribute::AttributeInterface;
+// use crate::attribute::AttributeInterface;
 
 /// Shared data and behaviour across an interface objects
 /// 
@@ -182,18 +179,18 @@ impl Core {
     }
 
 
-    pub async fn publish_attribute(&self, attribute: &dyn AttributeInterface) {
-        self.publish(
-            format!("{}/{}", self.topic_atts, attribute.name()).as_str()
-            , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
-    }
+    // pub async fn publish_attribute(&self, attribute: &dyn AttributeInterface) {
+    //     self.publish(
+    //         format!("{}/{}", self.topic_atts, attribute.name()).as_str()
+    //         , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
+    // }
 
 
 
     /// Publish the info
     ///
     pub async fn publish_info(&self) {
-        self.publish_attribute(&self.info).await;
+        // self.publish_attribute(&self.info).await;
     }
 
     /// Log info

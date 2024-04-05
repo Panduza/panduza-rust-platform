@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use serde_json::json;
 
 use super::AttributeInterface;
@@ -56,8 +58,15 @@ impl AttributeInterface for JsonAttribute {
         return self.data.to_string();
     }
     
-    fn from_mqtt_payload(&self, payload: &str) {
+    fn from_mqtt_payload(&mut self, payload: &str) {
         todo!()
+    }
+
+    fn update_field<F: Into<String>, V>(&mut self, field: &F, value: &V) {
+
+        // if TypeId::of::<V>() == TypeId::of::<String>() {
+
+        // }
     }
 }
 
