@@ -22,6 +22,11 @@ struct FakeBpcActions;
 #[async_trait]
 impl bpc::BpcActions for FakeBpcActions {
 
+    async fn initializating(&self) -> Result<(), PlatformError> {
+        println!("initializating");
+        return Ok(());
+    }
+
     async fn read_enable_value(&self) -> Result<bool, PlatformError> {
         return Ok(true);
     }
@@ -54,7 +59,7 @@ pub fn build<A: Into<String>>(
             voltage_min: 0.0,
             voltage_max: 5.0,
         }, 
-    Box::new(FakeBpcActions {
+        Box::new(FakeBpcActions {
 
         })
     )

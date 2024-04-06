@@ -26,7 +26,7 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
         
         match msg {
             subscription::Message::Mqtt(msg) => {
-                match msg.get_id() {
+                match msg.id() {
                     
                     _ => {
                         println!("Mqtt {:?}", msg);

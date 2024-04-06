@@ -24,9 +24,16 @@ impl MqttMessage {
         }
     }
 
-    
-    pub fn get_id(&self) -> subscription::Id {
+    pub fn id(&self) -> subscription::Id {
         return self.id;
+    }
+
+    pub fn topic(&self) -> &String {
+        return &self.topic;
+    }
+
+    pub fn payload(&self) -> &Bytes {
+        return &self.payload;
     }
 
 }

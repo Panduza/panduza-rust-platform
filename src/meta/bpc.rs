@@ -15,6 +15,8 @@ pub struct BpcParams {
 #[async_trait]
 pub trait BpcActions: Send + Sync {
 
+    async fn initializating(&self) -> Result<(), PlatformError>;
+
     async fn read_enable_value(&self) -> Result<bool, PlatformError>;
 
     async fn write_enable_value(&self, v: bool);
@@ -55,6 +57,12 @@ pub trait BpcActions: Send + Sync {
 
 
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
 struct BpcCore {
     bpc_params: BpcParams,
     bpc_actions: Box<dyn BpcActions>
@@ -72,6 +80,12 @@ impl BpcCore {
         return Arc::new(Mutex::new( BpcCore::new(bpc_params, bpc_actions) ));
     }
 }
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 struct BpcStates {
     bpc_core: Arc<Mutex<BpcCore>>
@@ -91,8 +105,8 @@ impl interface::fsm::States for BpcStates {
 
     async fn initializating(&self, core: &interface::AmCore)
     {
-        println!("initializating");
-        
+        self.bpc_core.lock().await.bpc_actions.initializating().await.unwrap();
+
         let mut p = core.lock().await;
         p.set_event_init_done();
     }
@@ -112,32 +126,65 @@ impl interface::fsm::States for BpcStates {
 
 }
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+const ID_ENABLE: subscription::Id = 0;
+const ID_VOLTAGE: subscription::Id = 1;
+const ID_CURRENT: subscription::Id = 2;
+
 struct BpcSubscriber {
     bpc_core: Arc<Mutex<BpcCore>>
 }
 
-
 #[async_trait]
 impl interface::subscriber::Subscriber for BpcSubscriber {
 
+    /// Get the list of attributes names
+    ///
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
-            (0, "enable".to_string()),
-            (1, "voltage".to_string()),
-            (2, "current".to_string())
+            (ID_ENABLE, "enable".to_string()),
+            (ID_VOLTAGE, "voltage".to_string()),
+            (ID_CURRENT, "current".to_string())
         ];
     }
 
     /// Process a message
     ///
-    async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
+    async fn process(&self, core: &interface::core::AmCore, msg: &subscription::Message) {
+        match msg {
+            subscription::Message::Mqtt(msg) => {
+                match msg.id() {
+                    ID_ENABLE => {
+                        // core.lock().await.publish_info().await;
 
+                        // msg.payload();
+
+                    },
+                    _ => {
+                        // not managed by the common level
+                    }
+                }
+            }
+            _ => {
+                // not managed by the common level
+            }
+        }
     }
 }
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
-
-
+/// Build the meta interface for a Bench Power Channel
+///
 pub fn build<A: Into<String>>(
     name: A,
     bpc_params: BpcParams,

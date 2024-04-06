@@ -15,7 +15,7 @@ pub async fn process(core: &AmCore, msg: &subscription::Message) {
             }
         },
         subscription::Message::Mqtt(msg) => {
-            match msg.get_id() {
+            match msg.id() {
                 subscription::ID_PZA => {
                     core.lock().await.publish_info().await;
 
