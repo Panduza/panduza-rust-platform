@@ -1,9 +1,11 @@
 mod log;
 mod link;
+mod meta;
 mod device;
 mod platform;
 mod interface;
 mod attribute;
+mod connector;
 mod connection;
 mod subscription;
 mod builtin_devices;

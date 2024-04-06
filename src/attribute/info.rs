@@ -1,7 +1,4 @@
 
-
-use serde_json::json;
-
 use super::AttributeInterface;
 use super::JsonAttribute;
 
@@ -21,15 +18,15 @@ impl InfoAttribute {
         itype: A, version: B
     ) -> InfoAttribute {
         let mut attr = JsonAttribute::new("info", false);
-        attr.update_field("type", serde_json::Value::String(itype.into()));
-        attr.update_field("version", serde_json::Value::String(version.into()));
-        attr.update_field("state", serde_json::Value::String("init".to_string()));
-        attr.update_field("error", serde_json::Value::String("".to_string()));
+        attr.update_field_with_string("type", &itype.into());
+        attr.update_field_with_string("version", version.into());
+        attr.update_field_with_string("state", "init".to_string());
+        attr.update_field_with_string("error", "".to_string());
         return InfoAttribute { attr };
     }
 
     pub fn change_state<A: Into<String>>(&mut self, state: A) {
-        self.attr.update_field("state", serde_json::Value::String(state.into()));
+        self.attr.update_field_with_string("state", state.into());
     }
 
 }
@@ -50,9 +47,9 @@ impl AttributeInterface for InfoAttribute {
     fn from_mqtt_payload(&mut self, payload: &str) {
         self.attr.from_mqtt_payload(payload);
     }
-    
-    fn update_field<F: Into<String>, V: 'static>(&mut self, field: &F, value: &V) {
-        todo!()
+
+    fn update_field_with_string<F: Into<String>, V: Into<String>>(&mut self, field: F, value: V) {
+        self.attr.update_field_with_string(field, value);
     }
 }
 

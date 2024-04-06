@@ -1,4 +1,3 @@
-use std::any::TypeId;
 
 use serde_json::json;
 
@@ -56,21 +55,19 @@ impl AttributeInterface for JsonAttribute {
     fn from_mqtt_payload(&mut self, payload: &str) {
         todo!()
     }
-
-    fn update_field<F: Into<String>, V: 'static>(&mut self, field: &F, value: &V) {
-        if TypeId::of::<V>() == TypeId::of::<String>() {
-            println!("V is a String");
-
-            let n = self.name.clone();
-            let d = self.data.get_mut(n);
-            if d.is_none() {
-                return;
-            }
-            // d.unwrap().as_object_mut().unwrap().insert(field.into(), 
-            //     value
-            // );
-
+    
+    fn update_field_with_string<F: Into<String>, V: Into<String>>(&mut self, field: F, value: V) {
+        let n = self.name.clone();
+        let d = self.data.get_mut(n);
+        if d.is_none() {
+            return;
         }
+        d.unwrap().as_object_mut().unwrap().insert(field.into(), 
+            serde_json::Value::String(value.into())
+        );
     }
+
+
+
 }
 
