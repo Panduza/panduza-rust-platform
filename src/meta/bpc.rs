@@ -138,7 +138,8 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
 
 
 
-pub fn new(
+pub fn build<A: Into<String>>(
+    name: A,
     bpc_params: BpcParams,
     bpc_actions: Box<dyn BpcActions>
 ) -> InterfaceBuilder {
@@ -146,7 +147,7 @@ pub fn new(
     let c = BpcCore::new_am(bpc_params, bpc_actions);
 
     return InterfaceBuilder::new(
-        "channel",
+        name,
         "bpc",
         "0.0",
         Box::new(BpcStates{bpc_core: c.clone()}),

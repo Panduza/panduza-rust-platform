@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use tokio::time::{sleep, Duration};
 
+use crate::platform::PlatformError;
 use crate::subscription;
 use crate::interface::{self, Interface};
 use crate::interface::core::AmCore;
@@ -8,140 +9,54 @@ use crate::interface::AmInterface;
 use crate::device::{ Device, traits::DeviceActions, traits::Producer };
 
 
-use crate::meta::bpc::BpcParams;
-use crate::meta::bpc::BpcActions;
+use crate::meta::bpc;
 
 
 use crate::interface::builder::Builder as InterfaceBuilder;
 
-struct AttEnable {
-    value: bool
-}
-
-struct AttVoltage {
-    value: f32,
-    min: f32,
-    max: f32,
-    decimals: u16
-}
-
-struct AttCurrent {
-    value: f32,
-    min: f32,
-    max: f32,
-    decimals: u16
-}
-
-struct AttsBpc {
-    enable: AttEnable,
-    voltage: AttVoltage,
-    current: AttCurrent
-}
 
 
 
-
-struct ItfFakeBpcSubscriber;
-
-
-
-
-
-struct ItfFakeBpcStates;
+struct FakeBpcActions;
 
 #[async_trait]
-impl interface::fsm::States for ItfFakeBpcStates {
+impl bpc::BpcActions for FakeBpcActions {
 
-    async fn connecting(&self, core: &AmCore)
-    {
-        println!("connecting");
-
-        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
-        fsm_events_notifier.notified().await;
+    async fn read_enable_value(&self) -> Result<bool, PlatformError> {
+        return Ok(true);
     }
 
-    async fn initializating(&self, core: &AmCore)
-    {
-        println!("initializating");
-        
-        let mut p = core.lock().await;
-        p.set_event_init_done();
+    async fn write_enable_value(&self, v: bool) {
+        println!("write_enable_value: {}", v);
     }
 
-    async fn running(&self, core: &AmCore)
-    {
-        println!("running");
-        
-        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
-        fsm_events_notifier.notified().await;
+    async fn read_voltage_value(&self) -> Result<f32, PlatformError> {
+        return Ok(3.3);
     }
 
-    async fn error(&self, core: &AmCore)
-    {
-        println!("error");
+    async fn write_voltage_value(&self, v: f32) {
+        println!("write_voltage_value: {}", v);
     }
 
 }
-
-
-
-
-#[async_trait]
-impl interface::subscriber::Subscriber for ItfFakeBpcSubscriber {
-
-    async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
-        return vec![
-            (0, "enable".to_string()),
-            (1, "voltage".to_string()),
-            (2, "current".to_string())
-        ];
-    }
-
-    /// Process a message
-    ///
-    async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
-
-        
-        // match msg {
-        //     subscription::Message::ConnectionStatus (status) => {
-                
-        //         if status.connected {
-        //             data.lock().await.set_event_connection_up();
-        //         }
-        //         else {
-        //             data.lock().await.set_event_connection_down();
-        //         }
-        //     },
-        //     subscription::Message::Mqtt(msg) => {
-                
-        //         match msg.get_id() {
-        //             subscription::ID_PZA => {
-        //                 data.lock().await.publish_info().await;
-        //                 println!("Ackk !!! {:?}", msg);
-        //             },
-        //             _ => {
-        //                 println!("Mqtt {:?}", msg);
-        //             }
-        //         }
-
-        //     }
-        // }
-
-    }
-
-}
-
 
 
 
 /// Interface to emulate a Bench Power Channel
 /// 
-pub fn new() -> InterfaceBuilder {
-    return InterfaceBuilder::new(
-        "channel",
-        "bpc",
-        "0.0",
-        Box::new(ItfFakeBpcStates{}),
-        Box::new(ItfFakeBpcSubscriber{})
-    );
+pub fn build<A: Into<String>>(
+    name: A
+) -> InterfaceBuilder {
+
+    return bpc::build(
+        name, 
+        bpc::BpcParams {
+            voltage_min: 0.0,
+            voltage_max: 5.0,
+        }, 
+    Box::new(FakeBpcActions {
+
+        })
+    )
 }
+

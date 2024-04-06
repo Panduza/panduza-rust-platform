@@ -31,7 +31,7 @@ impl DeviceActions for FakePowerSupply {
     {
         let mut list = Vec::new();
         list.push(
-            itf_fake_bpc::new()
+            itf_fake_bpc::build("channel")
         );
 
         return Ok(list);
