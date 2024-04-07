@@ -1,5 +1,7 @@
+use rumqttc::tokio_rustls::rustls::crypto::hash::Hash;
 use serde_json;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use rumqttc::AsyncClient;
@@ -7,12 +9,11 @@ use rumqttc::AsyncClient;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 
-use crate::attribute::AttributeInterface;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
 use crate::attribute::InfoAttribute;
-// use crate::attribute::AttributeInterface;
+use crate::attribute::AttributeInterface;
 
 /// Shared data and behaviour across an interface objects
 /// 
@@ -47,6 +48,8 @@ pub struct Core {
     /// Interface Indentity Info
     info: InfoAttribute,
 
+
+    attributes: HashMap<String, Box<dyn AttributeInterface>>,
 }
 pub type AmCore = Arc<Mutex<Core>>;
 
@@ -72,6 +75,7 @@ impl Core {
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
             info: InfoAttribute::new(itype, version),
+            attributes: HashMap::new(),
         };
         obj.update_topics();
         return obj;
