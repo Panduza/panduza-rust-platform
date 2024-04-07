@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use tokio::sync::Mutex;
 
+use crate::attribute::JsonAttribute;
 use crate::platform::PlatformError;
 use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
@@ -15,15 +16,19 @@ pub struct BpcParams {
 #[async_trait]
 pub trait BpcActions: Send + Sync {
 
-    async fn initializating(&self) -> Result<(), PlatformError>;
+    async fn initializating(&mut self, core: &interface::AmCore) -> Result<(), PlatformError>;
 
-    async fn read_enable_value(&self) -> Result<bool, PlatformError>;
+    async fn read_enable_value(&mut self, core: &interface::AmCore) -> Result<bool, PlatformError>;
 
-    async fn write_enable_value(&self, v: bool);
+    async fn write_enable_value(&mut self, core: &interface::AmCore, v: bool);
 
-    async fn read_voltage_value(&self) -> Result<f32, PlatformError>;
+    async fn read_voltage_value(&mut self, core: &interface::AmCore) -> Result<f32, PlatformError>;
 
-    async fn write_voltage_value(&self, v: f32);
+    async fn write_voltage_value(&mut self, core: &interface::AmCore, v: f32);
+
+    async fn read_current_value(&mut self, core: &interface::AmCore) -> Result<f32, PlatformError>;
+
+    async fn write_current_value(&mut self, core: &interface::AmCore, v: f32);
 
 
 // async def _PZA_DRV_BPC_read_voltage_decimals(self):
@@ -33,15 +38,6 @@ pub trait BpcActions: Send + Sync {
 
 // # ---
 
-// async def _PZA_DRV_BPC_read_current_value(self):
-//     """Must get the current value value on the BPC and return it
-//     """
-//     raise NotImplementedError("Must be implemented !")
-
-// async def _PZA_DRV_BPC_write_current_value(self, v):
-//     """Must set *v* as the new current value value on the BPC
-//     """
-//     raise NotImplementedError("Must be implemented !")
 
 // async def _PZA_DRV_BPC_current_value_min_max(self):
 //     """Must return the current range of the power supply
@@ -55,6 +51,20 @@ pub trait BpcActions: Send + Sync {
 
 }
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+
+pub struct EnableAttribute {
+    attr: JsonAttribute,
+}
+
+pub struct F32ValueAttribute {
+    attr: JsonAttribute,
+}
 
 
 // ----------------------------------------------------------------------------
@@ -64,6 +74,11 @@ pub trait BpcActions: Send + Sync {
 // ----------------------------------------------------------------------------
 
 struct BpcCore {
+
+    // enable: EnableAttribute,
+    // voltage: F32ValueAttribute,
+    // current: F32ValueAttribute,
+
     bpc_params: BpcParams,
     bpc_actions: Box<dyn BpcActions>
 }
@@ -103,7 +118,7 @@ impl interface::fsm::States for BpcStates {
 
     async fn initializating(&self, core: &interface::AmCore)
     {
-        self.bpc_core.lock().await.bpc_actions.initializating().await.unwrap();
+        self.bpc_core.lock().await.bpc_actions.initializating(&core).await.unwrap();
 
         let mut p = core.lock().await;
         p.set_event_init_done();
