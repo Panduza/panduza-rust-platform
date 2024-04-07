@@ -18,15 +18,15 @@ impl InfoAttribute {
         itype: A, version: B
     ) -> InfoAttribute {
         let mut attr = JsonAttribute::new("info", false);
-        // attr.update_field_with_string("type", &itype.into());
-        // attr.update_field_with_string("version", version.into());
-        // attr.update_field_with_string("state", "init".to_string());
-        // attr.update_field_with_string("error", "".to_string());
+        attr.update_field_with_string("type", &itype.into());
+        attr.update_field_with_string("version", &version.into());
+        attr.update_field_with_string("state", &"init".to_string());
+        attr.update_field_with_string("error", &"".to_string());
         return InfoAttribute { attr };
     }
 
     pub fn change_state<A: Into<String>>(&mut self, state: A) {
-        // self.attr.update_field_with_string("state", state.into());
+        self.attr.update_field_with_string("state", &state.into());
     }
 
 }
@@ -48,9 +48,10 @@ impl AttributeInterface for InfoAttribute {
         self.attr.from_mqtt_payload(payload);
     }
 
-    // fn update_field_with_string<F: Into<String>, V: Into<String>>(&mut self, field: F, value: V) {
-    //     self.attr.update_field_with_string(field, value);
-    // }
+    fn update_field_with_string(&mut self, field: &str, value: &String) {
+        self.attr.update_field_with_string(field, value);
+    }
+
 }
 
 
