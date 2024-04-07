@@ -49,8 +49,6 @@ impl interface::fsm::States for TestInterfaceStates {
 
     async fn connecting(&self, core: &AmCore)
     {
-        println!("connecting");
-
         let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
         fsm_events_notifier.notified().await;
     }
@@ -65,8 +63,6 @@ impl interface::fsm::States for TestInterfaceStates {
 
     async fn running(&self, core: &AmCore)
     {
-        println!("running");
-        
         let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
         fsm_events_notifier.notified().await;
     }

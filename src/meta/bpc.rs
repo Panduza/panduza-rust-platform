@@ -97,8 +97,6 @@ impl interface::fsm::States for BpcStates {
 
     async fn connecting(&self, core: &interface::AmCore)
     {
-        println!("connecting");
-
         let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
         fsm_events_notifier.notified().await;
     }
@@ -156,13 +154,18 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
     /// Process a message
     ///
     async fn process(&self, core: &interface::core::AmCore, msg: &subscription::Message) {
+        // Common processing
+        interface::basic::process(core, msg).await;
+
         match msg {
             subscription::Message::Mqtt(msg) => {
                 match msg.id() {
-                    ID_ENABLE => {
+                    subscription::ID_PZA_CMDS_SET => {
                         // core.lock().await.publish_info().await;
 
-                        // msg.payload();
+                        println!("BpcSubscriber::process: {:?}", msg.topic());
+                        println!("BpcSubscriber::process: {:?}", msg.payload());
+
 
                     },
                     _ => {

@@ -108,7 +108,7 @@ impl Fsm {
             State::Connecting => {
                 // Execute state
                 self.states.connecting(&self.core).await;
-                
+
                 // Manage transitions
                 let evs = self.core.lock().await.events().clone();
 
