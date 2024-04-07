@@ -7,6 +7,7 @@ use rumqttc::AsyncClient;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 
+use crate::attribute::AttributeInterface;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
@@ -173,24 +174,21 @@ impl Core {
     /// Get the base topic
     ///
     pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
-        println!("Publishing to topic: {}", topic);
-
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
     }
 
-
-    // pub async fn publish_attribute(&self, attribute: &dyn AttributeInterface) {
-    //     self.publish(
-    //         format!("{}/{}", self.topic_atts, attribute.name()).as_str()
-    //         , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
-    // }
-
-
+    /// Publish an attribute
+    ///
+    pub async fn publish_attribute(&self, attribute: &dyn AttributeInterface) {
+        self.publish(
+            format!("{}/{}", self.topic_atts, attribute.name()).as_str()
+            , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
+    }
 
     /// Publish the info
     ///
     pub async fn publish_info(&self) {
-        // self.publish_attribute(&self.info).await;
+        self.publish_attribute(&self.info).await;
     }
 
     /// Log info

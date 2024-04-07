@@ -56,16 +56,16 @@ impl AttributeInterface for JsonAttribute {
         todo!()
     }
     
-    fn update_field_with_string<F: Into<String>, V: Into<String>>(&mut self, field: F, value: V) {
-        let n = self.name.clone();
-        let d = self.data.get_mut(n);
-        if d.is_none() {
-            return;
-        }
-        d.unwrap().as_object_mut().unwrap().insert(field.into(), 
-            serde_json::Value::String(value.into())
-        );
-    }
+    // fn update_field_with_string<F: Into<String>, V: Into<String>>(&mut self, field: F, value: V) {
+    //     let n = self.name.clone();
+    //     let d = self.data.get_mut(n);
+    //     if d.is_none() {
+    //         return;
+    //     }
+    //     d.unwrap().as_object_mut().unwrap().insert(field.into(), 
+    //         serde_json::Value::String(value.into())
+    //     );
+    // }
 
 
 
