@@ -1,4 +1,5 @@
 
+use std::any::Any;
 
 mod json;
 mod info;
@@ -16,7 +17,6 @@ pub trait AttributeInterface : Send + Sync {
     fn retain(&self) -> &bool;
     fn to_mqtt_payload(&self) -> String;
     fn from_mqtt_payload(&mut self, payload: &str);
-
 
     fn update_field_with_string(&mut self, field: &str, value: &String);
 }

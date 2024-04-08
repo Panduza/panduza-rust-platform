@@ -18,6 +18,7 @@ use rumqttc::AsyncClient;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 
+use crate::attribute;
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 
@@ -59,14 +60,11 @@ pub struct Interface {
     // -- CLIENT --
     client: AsyncClient,
 
-    // -- ATTRIBUTE --
-    /// Interface Indentity Info
-    info: InfoAttribute,
-
+    // -- ATTRIBUTES --
+ 
 
     attributes: HashMap<String, Box<dyn AttributeInterface>>,
-    // register_attributes
-    // publish_attributes
+
 }
 pub type AmInterface = Arc<Mutex<Interface>>;
 
@@ -91,9 +89,9 @@ impl Interface {
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
-            info: InfoAttribute::new(itype, version),
             attributes: HashMap::new(),
         };
+        obj.register_attribute(InfoAttribute::new_boxed(itype, version));
         obj.update_topics();
         return obj;
     }
@@ -163,7 +161,11 @@ impl Interface {
     pub fn move_to_state(&mut self, state: State) {
         let previous = self.fsm_state.clone();
         self.fsm_state = state;
-        self.info.change_state(self.fsm_state.to_string());
+        // let info = self.attribute("info").unwrap().as_any().downcast_ref::<InfoAttribute>().unwrap();
+        // info.change_state(self.fsm_state.to_string());
+
+        self.update_attribute_with_string("info", "state", &self.fsm_state);
+
         self.log_info(format!("State changed {:?} => {:?}", previous, self.fsm_state));
     }
 
@@ -198,9 +200,27 @@ impl Interface {
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
     }
 
+    // -- ATTRIBUTES --
+
+    /// Register a new attribute
+    /// 
+    pub fn register_attribute(&mut self, attribute: Box<dyn AttributeInterface>) {
+        self.log_debug(
+            format!("Registering attribute \"{:?}\"", attribute.name())
+        );
+        self.attributes.insert(attribute.name().clone(), attribute);
+    }
+
+    /// Get an attribute
+    /// 
+    pub fn attribute(&self, name: &str) -> Option<&Box<dyn AttributeInterface>> {
+        return self.attributes.get(name);
+    }
+
     /// Publish an attribute
     ///
-    pub async fn publish_attribute(&self, attribute: &dyn AttributeInterface) {
+    pub async fn publish_attribute(&self, name: &str) {
+        let attribute = self.attribute(name).unwrap();
         self.publish(
             format!("{}/{}", self.topic_atts, attribute.name()).as_str()
             , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
@@ -209,8 +229,16 @@ impl Interface {
     /// Publish the info
     ///
     pub async fn publish_info(&self) {
-        self.publish_attribute(&self.info).await;
+        self.publish_attribute("info").await;
     }
+
+    pub fn update_attribute_with_string(&mut self, attribute: &str, field: &str, value: &String) {
+        let att_obj = self.attribute(attribute).unwrap();
+        att_obj.update_field_with_string(field, value);
+        // self.publish_attribute(name).await;
+    }
+
+    // -- LOGS --
 
     /// Log info
     ///

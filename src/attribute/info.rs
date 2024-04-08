@@ -1,4 +1,5 @@
 
+
 use super::AttributeInterface;
 use super::JsonAttribute;
 
@@ -25,6 +26,14 @@ impl InfoAttribute {
         return InfoAttribute { attr };
     }
 
+    /// Create a new instance of the object inside a box
+    ///
+    pub fn new_boxed<A: Into<String>, B: Into<String>>(
+        itype: A, version: B
+    ) -> Box<dyn AttributeInterface> {
+        return Box::new(InfoAttribute::new(itype, version));
+    }
+
     pub fn change_state<A: Into<String>>(&mut self, state: A) {
         self.attr.update_field_with_string("state", &state.into());
     }
@@ -47,6 +56,8 @@ impl AttributeInterface for InfoAttribute {
     fn from_mqtt_payload(&mut self, payload: &str) {
         self.attr.from_mqtt_payload(payload);
     }
+    
+
 
     fn update_field_with_string(&mut self, field: &str, value: &String) {
         self.attr.update_field_with_string(field, value);

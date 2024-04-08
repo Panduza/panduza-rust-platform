@@ -55,7 +55,7 @@ impl AttributeInterface for JsonAttribute {
     fn from_mqtt_payload(&mut self, payload: &str) {
         todo!()
     }
-    
+
     fn update_field_with_string(&mut self, field: &str, value: &String) {
         let n = self.name.clone();
         let d = self.data.get_mut(n);
