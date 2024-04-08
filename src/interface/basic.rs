@@ -1,23 +1,23 @@
 use crate::subscription;
 
-use super::core::AmCore;
+use super::AmInterface;
 
 /// Process a message with common behaviour for all interface
 /// 
-pub async fn process(core: &AmCore, msg: &subscription::Message) {
+pub async fn process(interface: &AmInterface, msg: &subscription::Message) {
     match msg {
         subscription::Message::ConnectionStatus (status) => {
             if status.connected {
-                core.lock().await.set_event_connection_up();
+                interface.lock().await.set_event_connection_up();
             }
             else {
-                core.lock().await.set_event_connection_down();
+                interface.lock().await.set_event_connection_down();
             }
         },
         subscription::Message::Mqtt(msg) => {
             match msg.id() {
                 subscription::ID_PZA => {
-                    core.lock().await.publish_info().await;
+                    interface.lock().await.publish_info().await;
 
                     tracing::trace!("Ackk !!!");
                 },
@@ -32,7 +32,7 @@ pub async fn process(core: &AmCore, msg: &subscription::Message) {
 /// Interface initializating
 ///
 #[inline]
-pub async fn interface_initializating(core: &AmCore)
+pub async fn interface_initializating(interface: &AmInterface)
 {
     
 }
@@ -40,8 +40,8 @@ pub async fn interface_initializating(core: &AmCore)
 /// Wait for a fsm event 
 ///
 #[inline]
-pub async fn wait_for_fsm_event(core: &AmCore)
+pub async fn wait_for_fsm_event(interface: &AmInterface)
 {
-    let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
+    let fsm_events_notifier = interface.lock().await.get_fsm_events_notifier();
     fsm_events_notifier.notified().await;
 }

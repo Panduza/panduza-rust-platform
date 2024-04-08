@@ -3,9 +3,9 @@ use tokio::time::{sleep, Duration};
 
 use crate::platform::PlatformError;
 use crate::subscription;
-use crate::interface::{self, Interface};
-use crate::interface::core::AmCore;
+use crate::interface::{self, Runner};
 use crate::interface::AmInterface;
+use crate::interface::AmRunner;
 use crate::device::{ Device, traits::DeviceActions, traits::Producer };
 
 use crate::interface::builder::Builder as InterfaceBuilder;

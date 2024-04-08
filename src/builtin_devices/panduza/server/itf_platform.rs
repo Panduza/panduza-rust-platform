@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{interface::{self, core::AmCore, AmInterface}, subscription};
+use crate::{interface::{self, AmInterface, AmRunner}, subscription};
 use crate::interface::Builder as InterfaceBuilder;
 
 
@@ -20,7 +20,7 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
 
     /// Process a message
     ///
-    async fn process(&self, data: &interface::core::AmCore, msg: &subscription::Message) {
+    async fn process(&self, data: &AmInterface, msg: &subscription::Message) {
         // Common processing
         interface::basic::process(data,msg).await;
         
@@ -47,27 +47,27 @@ struct TestInterfaceStates;
 #[async_trait]
 impl interface::fsm::States for TestInterfaceStates {
 
-    async fn connecting(&self, core: &AmCore)
+    async fn connecting(&self, interface: &AmInterface)
     {
-        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
+        let fsm_events_notifier = interface.lock().await.get_fsm_events_notifier();
         fsm_events_notifier.notified().await;
     }
 
-    async fn initializating(&self, core: &AmCore)
+    async fn initializating(&self, interface: &AmInterface)
     {
-        interface::basic::interface_initializating(core).await;
+        interface::basic::interface_initializating(interface).await;
         
-        let mut p = core.lock().await;
+        let mut p = interface.lock().await;
         p.set_event_init_done();
     }
 
-    async fn running(&self, core: &AmCore)
+    async fn running(&self, interface: &AmInterface)
     {
-        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
+        let fsm_events_notifier = interface.lock().await.get_fsm_events_notifier();
         fsm_events_notifier.notified().await;
     }
 
-    async fn error(&self, core: &AmCore)
+    async fn error(&self, interface: &AmInterface)
     {
         println!("error");
     }

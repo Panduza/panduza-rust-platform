@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use tokio::sync::Mutex;
 
 use crate::attribute::JsonAttribute;
+use crate::interface::AmInterface;
 use crate::platform::PlatformError;
 use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
@@ -16,19 +17,19 @@ pub struct BpcParams {
 #[async_trait]
 pub trait BpcActions: Send + Sync {
 
-    async fn initializating(&mut self, core: &interface::AmCore) -> Result<(), PlatformError>;
+    async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn read_enable_value(&mut self, core: &interface::AmCore) -> Result<bool, PlatformError>;
+    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
 
-    async fn write_enable_value(&mut self, core: &interface::AmCore, v: bool);
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
 
-    async fn read_voltage_value(&mut self, core: &interface::AmCore) -> Result<f32, PlatformError>;
+    async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f32, PlatformError>;
 
-    async fn write_voltage_value(&mut self, core: &interface::AmCore, v: f32);
+    async fn write_voltage_value(&mut self, interface: &AmInterface, v: f32);
 
-    async fn read_current_value(&mut self, core: &interface::AmCore) -> Result<f32, PlatformError>;
+    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f32, PlatformError>;
 
-    async fn write_current_value(&mut self, core: &interface::AmCore, v: f32);
+    async fn write_current_value(&mut self, interface: &AmInterface, v: f32);
 
 
 // async def _PZA_DRV_BPC_read_voltage_decimals(self):
@@ -110,13 +111,13 @@ struct BpcStates {
 #[async_trait]
 impl interface::fsm::States for BpcStates {
 
-    async fn connecting(&self, core: &interface::AmCore)
+    async fn connecting(&self, core: &AmInterface)
     {
         let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
         fsm_events_notifier.notified().await;
     }
 
-    async fn initializating(&self, core: &interface::AmCore)
+    async fn initializating(&self, core: &AmInterface)
     {
         self.bpc_core.lock().await.bpc_actions.initializating(&core).await.unwrap();
 
@@ -124,7 +125,7 @@ impl interface::fsm::States for BpcStates {
         p.set_event_init_done();
     }
 
-    async fn running(&self, core: &interface::AmCore)
+    async fn running(&self, core: &AmInterface)
     {
         println!("running");
         
@@ -132,7 +133,7 @@ impl interface::fsm::States for BpcStates {
         fsm_events_notifier.notified().await;
     }
 
-    async fn error(&self, core: &interface::AmCore)
+    async fn error(&self, core: &AmInterface)
     {
         println!("error");
     }
@@ -168,7 +169,7 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
 
     /// Process a message
     ///
-    async fn process(&self, core: &interface::core::AmCore, msg: &subscription::Message) {
+    async fn process(&self, core: &AmInterface, msg: &subscription::Message) {
         // Common processing
         interface::basic::process(core, msg).await;
 

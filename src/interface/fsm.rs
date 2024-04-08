@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use async_trait::async_trait;
 use bitflags::bitflags;
-use crate::interface::core::AmCore;
+use crate::interface::AmInterface;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -57,10 +57,10 @@ bitflags! {
 #[async_trait]
 pub trait States : Send {
 
-    async fn connecting(&self, core: &AmCore);
-    async fn initializating(&self, core: &AmCore);
-    async fn running(&self, core: &AmCore);
-    async fn error(&self, core: &AmCore);
+    async fn connecting(&self, interface: &AmInterface);
+    async fn initializating(&self, interface: &AmInterface);
+    async fn running(&self, interface: &AmInterface);
+    async fn error(&self, interface: &AmInterface);
 
 }
 
@@ -74,7 +74,7 @@ pub trait States : Send {
 ///
 pub struct Fsm {
     /// Shared state data
-    core: AmCore,
+    interface: AmInterface,
 
     /// State Implementations
     states: Box<dyn States>,
@@ -84,9 +84,9 @@ impl Fsm {
 
     ///
     /// 
-    pub fn new(core: AmCore, states: Box<dyn States>) -> Fsm {
+    pub fn new(interface: AmInterface, states: Box<dyn States>) -> Fsm {
         Fsm {
-            core: core,
+            interface: interface,
             states: states,
         }
     }
@@ -96,10 +96,10 @@ impl Fsm {
     pub async fn run_once(&mut self) {
 
         // Get state but do not keep the lock
-        let state = self.core.lock().await.current_state().clone();
+        let state = self.interface.lock().await.current_state().clone();
 
         // Debug log
-        self.core.lock().await.log_debug(
+        self.interface.lock().await.log_debug(
             format!("Run State \"{:?}\"", state)
         );
 
@@ -107,56 +107,56 @@ impl Fsm {
         match state {
             State::Connecting => {
                 // Execute state
-                self.states.connecting(&self.core).await;
+                self.states.connecting(&self.interface).await;
 
                 // Manage transitions
-                let evs = self.core.lock().await.events().clone();
+                let evs = self.interface.lock().await.events().clone();
 
                 // If connection up, go to running state
                 if evs.contains(Events::CONNECTION_UP) && !evs.contains(Events::ERROR) {
-                    self.core.lock().await.move_to_state(State::Initializating);
+                    self.interface.lock().await.move_to_state(State::Initializating);
                 }
             },
             State::Initializating => {
                 // Execute state
-                self.states.initializating(&self.core).await;
+                self.states.initializating(&self.interface).await;
 
                 // Manage transitions
-                let evs = self.core.lock().await.events().clone();
+                let evs = self.interface.lock().await.events().clone();
 
                 // If initialization ok, go to running state
                 if evs.contains(Events::INIT_DONE) && !evs.contains(Events::ERROR) {
-                    self.core.lock().await.move_to_state(State::Running);
+                    self.interface.lock().await.move_to_state(State::Running);
                 }
                 // If error, go to error state
                 else if evs.contains(Events::ERROR) {
-                    self.core.lock().await.move_to_state(State::Error);
+                    self.interface.lock().await.move_to_state(State::Error);
                 }
             },
             State::Running => {
                 // Execute state
-                self.states.running(&self.core).await;
+                self.states.running(&self.interface).await;
 
                 // Manage transitions
-                let evs = self.core.lock().await.events().clone();
+                let evs = self.interface.lock().await.events().clone();
 
                 // If error, go to error state
                 if evs.contains(Events::ERROR) {
-                    self.core.lock().await.move_to_state(State::Error);
+                    self.interface.lock().await.move_to_state(State::Error);
                 }
                 // // If connection down, go to connecting state
                 // else if evs.contains(Events::CONNECTION_DOWN) {
-                //     self.core.lock().await.move_to_state(State::Connecting);
+                //     self.interface.lock().await.move_to_state(State::Connecting);
                 // }
             },
             State::Error => {
                 // Execute state
-                self.states.error(&self.core).await;
+                self.states.error(&self.interface).await;
             }
         }
 
         // Clear events for next run
-        self.core.lock().await.clear_events();
+        self.interface.lock().await.clear_events();
 
     }
 

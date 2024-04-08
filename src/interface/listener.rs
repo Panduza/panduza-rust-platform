@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 
 use crate::link;
 use crate::platform::PlatformError;
-use crate::interface::core::AmCore;
+use crate::interface::AmInterface;
 
 use super::subscriber::Subscriber;
 
@@ -11,7 +11,7 @@ use super::subscriber::Subscriber;
 /// 
 pub struct Listener {
     /// Shared state core
-    core: AmCore,
+    interface: AmInterface,
 
     /// Subscriber
     subscriber: Box<dyn Subscriber>,
@@ -24,9 +24,9 @@ impl Listener {
     
     /// Create a new instance of the Listener
     /// 
-    pub fn new(core: AmCore, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Listener {
+    pub fn new(interface: AmInterface, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Listener {
         return Listener {
-            core,
+            interface,
             subscriber,
             link
         }
@@ -34,8 +34,8 @@ impl Listener {
 
     /// New instance inside a safe pointer
     /// 
-    pub fn new_am(core: AmCore, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Arc<Mutex<Listener>> {
-        return Arc::new(Mutex::new(Listener::new(core, subscriber, link)));
+    pub fn new_am(interface: AmInterface, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Arc<Mutex<Listener>> {
+        return Arc::new(Mutex::new(Listener::new(interface, subscriber, link)));
     }
 
     /// Run the listener once
@@ -44,7 +44,7 @@ impl Listener {
         let msg = self.link.rx().recv().await;
         match msg {
             Some(msg) => {
-                self.subscriber.process(&self.core, &msg).await;
+                self.subscriber.process(&self.interface, &msg).await;
             },
             None => {
                 // do nothing

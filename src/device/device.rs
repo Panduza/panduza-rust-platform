@@ -7,7 +7,8 @@ use crate::device::traits::DeviceActions;
 use crate::link::AmManager as AmLinkManager;
 
 
-use crate::interface::{AmInterface, Interface};
+use crate::interface;
+use crate::interface::{AmRunner, Runner};
 
 /// A device manage a set of interfaces
 /// 
@@ -23,7 +24,7 @@ pub struct Device {
     
     actions: Box<dyn DeviceActions>,
 
-    interfaces: Vec<AmInterface>,
+    interfaces: Vec<AmRunner>,
 
     /// Connection link manager
     /// To generate connection links for the interfaces
@@ -82,7 +83,7 @@ impl Device {
 
     /// Attach default connection
     ///
-    // async fn attach_default_connection(&mut self, interface: AmInterface) {
+    // async fn attach_default_connection(&mut self, interface: AmRunner) {
 
     //     let c = self.default_connection.as_ref().unwrap();
     //     let mut interface_lock = interface.lock().await;
@@ -132,7 +133,7 @@ impl Device {
         // create interfaces
         for builder in builders {
             self.interfaces.push(
-                Interface::build(builder,
+                interface::Runner::build(builder,
                     self.dev_name().clone(),
                     self.bench_name().clone(),
                     self.connection_link_manager.clone()

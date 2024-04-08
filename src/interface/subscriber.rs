@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use super::core::AmCore;
+use super::AmInterface;
 use crate::subscription;
 
 /// Subscriber trait, to allow a user to insert its own processing of the messages
@@ -15,7 +15,7 @@ pub trait Subscriber : Send + Sync {
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)>;
     
     /// Process a message
-    async fn process(&self, core: &AmCore, msg: &subscription::Message);
+    async fn process(&self, interface: &AmInterface, msg: &subscription::Message);
 
 }
 

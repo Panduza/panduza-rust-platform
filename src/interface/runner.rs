@@ -5,16 +5,16 @@ use tokio::sync::Mutex;
 
 use crate::{link::{self, InterfaceHandle}, platform::TaskPoolLoader, platform_error, subscription};
 
-use super::{core::{AmCore, Core}, fsm::{self, Fsm}, listener::Listener, subscriber::Subscriber};
+use super::{fsm::{self, Fsm}, listener::Listener, subscriber::Subscriber, AmInterface, Interface};
 
 use crate::link::AmManager as AmLinkManager;
 
 use super::builder::Builder as InterfaceBuilder;
 
 /// 
-pub struct Interface {
+pub struct Runner {
     /// Core Object
-    core: AmCore,
+    interface: AmInterface,
 
     /// FSM
     fsm: Arc<Mutex<Fsm>>,
@@ -22,15 +22,15 @@ pub struct Interface {
     /// Listener
     listener: Arc<Mutex<Listener>>,
 }
-pub type AmInterface = Arc<Mutex<Interface>>;
+pub type AmRunner = Arc<Mutex<Runner>>;
 
-impl Interface {
+impl Runner {
 
     /// Build a new interface
     /// 
     pub async fn build<A: Into<String>, B: Into<String>>
         (builder: InterfaceBuilder, dev_name: A, bench_name: B, connection_link_manager: AmLinkManager) 
-            -> AmInterface
+            -> AmRunner
     {
         let _dev_name = dev_name.into();
         let _bench_name = bench_name.into();
@@ -55,7 +55,7 @@ impl Interface {
         let link = connection_link_manager.lock().await.request_link(requests).await.unwrap();
         
         // Create the interface
-        return Interface::new_am(
+        return Runner::new_am(
             builder.name,
             _dev_name,
             _bench_name,
@@ -81,12 +81,12 @@ impl Interface {
         subscriber: Box<dyn Subscriber>,
         
         link: link::InterfaceHandle,
-        ) -> Interface
+        ) -> Runner
     {
-        let core_obj = Core::new_am(name, dev_name, bench_name, itype, version, link.client());
+        let core_obj = Interface::new_am(name, dev_name, bench_name, itype, version, link.client());
         return 
-            Interface {
-                core: core_obj.clone(),
+            Runner {
+                interface: core_obj.clone(),
                 fsm: Arc::new(Mutex::new(Fsm::new(core_obj.clone(), states ))),
                 listener: Listener::new_am(core_obj.clone(), subscriber, link)
             }
@@ -107,10 +107,10 @@ impl Interface {
         subscriber: Box<dyn Subscriber>,
         
         link: link::InterfaceHandle,
-        ) -> AmInterface
+        ) -> AmRunner
     {
         return Arc::new(Mutex::new(
-            Interface::new(name, dev_name, bench_name, itype, version, states, subscriber, link)
+            Runner::new(name, dev_name, bench_name, itype, version, states, subscriber, link)
         ));
     }
 
@@ -130,7 +130,7 @@ impl Interface {
 
         // Listener Task
         // Ensure communication with the MQTT connection
-        let interface_name = self.core.lock().await.name().clone() ;
+        let interface_name = self.interface.lock().await.name().clone() ;
         task_loader.load(async move {
             loop {
                 if let Err(e) = listener.lock().await.run_once().await {
@@ -143,7 +143,7 @@ impl Interface {
         }.boxed()).unwrap();
 
         // Log success
-        self.core.lock().await.log_info("Interface started");
+        self.interface.lock().await.log_info("Interface started");
     }
 
 
@@ -157,7 +157,7 @@ impl Interface {
     /// Build the base topic of the interface
     ///
     pub async fn get_topic(&self) -> String {
-        let core_lock = self.core.lock().await;
+        let core_lock = self.interface.lock().await;
         return format!("pza/{}/{}/{}",
             core_lock.bench_name(),
             core_lock.dev_name(),
