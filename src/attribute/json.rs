@@ -9,9 +9,12 @@ pub struct JsonAttribute {
     name: String,
 
     retain: bool,
-    
+
     // 
     data: serde_json::Value,
+
+    // 
+    orign: serde_json::Value,
 }
 
 impl JsonAttribute {
@@ -27,6 +30,7 @@ impl JsonAttribute {
             name: name_str,
             retain: retain,
             data: data,
+            orign: serde_json::Value::Null,
         };
     }
 
@@ -59,7 +63,15 @@ impl AttributeInterface for JsonAttribute {
         todo!()
     }
 
-    fn update_field_with_f32(&mut self, field: &str, value: f32)
+    fn need_publication(&self) -> bool {
+        return true;
+    }
+
+    fn publication_done(&self) {
+        todo!()
+    }
+
+    fn update_field_with_f64(&mut self, field: &str, value: f64)
     {
         let n = self.name.clone();
         let d = self.data.get_mut(n);

@@ -53,8 +53,16 @@ impl AttributeInterface for InfoAttribute {
         self.attr.from_mqtt_payload(payload);
     }
 
-    fn update_field_with_f32(&mut self, field: &str, value: f32) {
-        self.attr.update_field_with_f32(field, value);
+    fn need_publication(&self) -> bool {
+        self.attr.need_publication()
+    }
+
+    fn publication_done(&self) {
+        todo!()
+    }
+
+    fn update_field_with_f64(&mut self, field: &str, value: f64) {
+        self.attr.update_field_with_f64(field, value);
     }
 
     fn update_field_with_bool(&mut self, field: &str, value: bool) {

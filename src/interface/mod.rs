@@ -237,9 +237,9 @@ impl Interface {
 
 
 
-    pub fn update_attribute_with_f32(&mut self, attribute: &str, field: &str, value: f32) {
+    pub fn update_attribute_with_f64(&mut self, attribute: &str, field: &str, value: f64) {
         let att = self.attributes.get_mut(attribute).unwrap();
-        att.as_mut().update_field_with_f32(field, value);
+        att.as_mut().update_field_with_f64(field, value);
     }
     pub fn update_attribute_with_bool(&mut self, attribute: &str, field: &str, value: bool) {
         let att = self.attributes.get_mut(attribute).unwrap();

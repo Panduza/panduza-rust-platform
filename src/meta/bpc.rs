@@ -134,18 +134,18 @@ impl interface::fsm::States for BpcStates {
         interface.lock().await.update_attribute_with_bool("enable", "value", enable_value);
 
         // Init voltage
-        interface.lock().await.update_attribute_with_f32("voltage", "min", 0.0);
-        interface.lock().await.update_attribute_with_f32("voltage", "max", 0.0);
-        interface.lock().await.update_attribute_with_f32("voltage", "value", 0.0);
-        interface.lock().await.update_attribute_with_f32("voltage", "decimals", 0.0);
-        interface.lock().await.update_attribute_with_f32("voltage", "polling_cycle", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "min", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "max", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "decimals", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "polling_cycle", 0.0);
 
         // Init current
-        interface.lock().await.update_attribute_with_f32("current", "min", 0.0);
-        interface.lock().await.update_attribute_with_f32("current", "max", 0.0);
-        interface.lock().await.update_attribute_with_f32("current", "value", 0.0);
-        interface.lock().await.update_attribute_with_f32("current", "decimals", 0.0);
-        interface.lock().await.update_attribute_with_f32("current", "polling_cycle", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "min", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "max", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "decimals", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -215,6 +215,7 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                         println!("BpcSubscriber::process: {:?}", msg.topic());
                         println!("BpcSubscriber::process: {:?}", msg.payload());
 
+                        
 
                     },
                     _ => {

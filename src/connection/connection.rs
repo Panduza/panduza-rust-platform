@@ -89,30 +89,28 @@ impl Connection {
                 match notification {
                     rumqttc::Event::Incoming(incoming) => {
                         Connection::process_incoming_packet(lm.clone(), &incoming).await;
-                        
-                    }
-                    rumqttc::Event::Outgoing(outgoing) => {
-                        match outgoing {
-                            
-                            rumqttc::Outgoing::Subscribe(subscribe) => {
-                                println!("Subscribe = {:?}", subscribe);
-                            },
-                            _ => {
-                                // println!("Outgoing = {:?}", outgoing);
-                            }
-                            // rumqttc::Outgoing::Publish(_) => todo!(),
-                            // rumqttc::Outgoing::Unsubscribe(_) => todo!(),
-                            // rumqttc::Outgoing::PubAck(_) => todo!(),
-                            // rumqttc::Outgoing::PubRec(_) => todo!(),
-                            // rumqttc::Outgoing::PubRel(_) => todo!(),
-                            // rumqttc::Outgoing::PubComp(_) => todo!(),
-                            // rumqttc::Outgoing::PingReq => todo!(),
-                            // rumqttc::Outgoing::PingResp => todo!(),
-                            // rumqttc::Outgoing::Disconnect => todo!(),
-                            // rumqttc::Outgoing::AwaitAck(_) => todo!(),
-                        }
-                        // println!("Outgoing = {:?}", outgoing);
-                    }
+                    },
+                    // rumqttc::Event::Outgoing(outgoing) => {
+                    //     match outgoing {
+                    //         rumqttc::Outgoing::Subscribe(subscribe) => {
+                    //             println!("Subscribe = {:?}", subscribe);
+                    //         },
+                    //         _ => {
+                    //             // println!("Outgoing = {:?}", outgoing);
+                    //         }
+                    //         // rumqttc::Outgoing::Publish(_) => todo!(),
+                    //         // rumqttc::Outgoing::Unsubscribe(_) => todo!(),
+                    //         // rumqttc::Outgoing::PubAck(_) => todo!(),
+                    //         // rumqttc::Outgoing::PubRec(_) => todo!(),
+                    //         // rumqttc::Outgoing::PubRel(_) => todo!(),
+                    //         // rumqttc::Outgoing::PubComp(_) => todo!(),
+                    //         // rumqttc::Outgoing::PingReq => todo!(),
+                    //         // rumqttc::Outgoing::PingResp => todo!(),
+                    //         // rumqttc::Outgoing::Disconnect => todo!(),
+                    //         // rumqttc::Outgoing::AwaitAck(_) => todo!(),
+                    //     }
+                    //     // println!("Outgoing = {:?}", outgoing);
+                    // }
                     _ => {
                         // println!("Received = {:?}", notification);
                     }
@@ -150,8 +148,8 @@ impl Connection {
                             let message = 
                                 subscription::Message::from_filter_and_publish_packet(filter, publish);
 
-                            tracing::trace!(
-                                "Sending message to interface {}", message);
+                            // tracing::trace!(
+                            //     "Sending message to interface {}", message);
 
 
                             let r = link.tx().send(message).await;

@@ -36,7 +36,7 @@ impl Runner {
         let _bench_name = bench_name.into();
 
         // Topic name
-        let topic = format!("pza/{}/{}/{}", _dev_name, _bench_name, builder.name);
+        let topic = format!("pza/{}/{}/{}", _bench_name, _dev_name, builder.name);
 
         // Get attributes names
         let att_names = builder.subscriber.attributes_names().await;
