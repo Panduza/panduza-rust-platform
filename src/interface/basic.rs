@@ -18,8 +18,6 @@ pub async fn process(interface: &AmInterface, msg: &subscription::Message) {
             match msg.id() {
                 subscription::ID_PZA => {
                     interface.lock().await.publish_info().await;
-
-                    tracing::trace!("Ackk !!!");
                 },
                 _ => {
                     // not managed by the common level

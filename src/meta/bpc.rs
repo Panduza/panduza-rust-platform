@@ -17,6 +17,9 @@ pub struct BpcParams {
 #[async_trait]
 pub trait BpcActions: Send + Sync {
 
+    /// Initialize the interface
+    /// The connector initialization must be done here
+    ///
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
@@ -74,26 +77,22 @@ pub struct F32ValueAttribute {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-struct BpcCore {
-
-    // enable: EnableAttribute,
-    // voltage: F32ValueAttribute,
-    // current: F32ValueAttribute,
+struct BpcInterface {
 
     bpc_params: BpcParams,
     bpc_actions: Box<dyn BpcActions>
 }
-type AmBpcCore = Arc<Mutex<BpcCore>>;
+type AmBpcInterface = Arc<Mutex<BpcInterface>>;
 
-impl BpcCore {
-    fn new(bpc_params: BpcParams, bpc_actions: Box<dyn BpcActions>) -> BpcCore {
-        return BpcCore {
+impl BpcInterface {
+    fn new(bpc_params: BpcParams, bpc_actions: Box<dyn BpcActions>) -> BpcInterface {
+        return BpcInterface {
             bpc_params: bpc_params,
             bpc_actions: bpc_actions
         }
     }
-    fn new_am(bpc_params: BpcParams, bpc_actions: Box<dyn BpcActions>) -> AmBpcCore {
-        return Arc::new(Mutex::new( BpcCore::new(bpc_params, bpc_actions) ));
+    fn new_am(bpc_params: BpcParams, bpc_actions: Box<dyn BpcActions>) -> AmBpcInterface {
+        return Arc::new(Mutex::new( BpcInterface::new(bpc_params, bpc_actions) ));
     }
 }
 
@@ -104,40 +103,74 @@ impl BpcCore {
 // ----------------------------------------------------------------------------
 
 struct BpcStates {
-    bpc_core: Arc<Mutex<BpcCore>>
+    bpc_interface: Arc<Mutex<BpcInterface>>
 }
 
 
 #[async_trait]
 impl interface::fsm::States for BpcStates {
 
-    async fn connecting(&self, core: &AmInterface)
+    /// Just wait for an fsm event for the connection
+    ///
+    async fn connecting(&self, interface: &AmInterface)
     {
-        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
-        fsm_events_notifier.notified().await;
+        interface::basic::wait_for_fsm_event(interface).await;
     }
 
-    async fn initializating(&self, core: &AmInterface)
+    /// Initialize the interface
+    ///
+    async fn initializating(&self, interface: &AmInterface)
     {
-        self.bpc_core.lock().await.bpc_actions.initializating(&core).await.unwrap();
+        // Custom initialization slot
+        self.bpc_interface.lock().await.bpc_actions.initializating(&interface).await.unwrap();
 
-        let mut p = core.lock().await;
-        p.set_event_init_done();
+        // Register attributes
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("voltage", true));
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
+
+        // Init enable
+        let enable_value = self.bpc_interface.lock().await.bpc_actions.read_enable_value(&interface).await.unwrap();
+        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value);
+
+        // Init voltage
+        interface.lock().await.update_attribute_with_f32("voltage", "min", 0.0);
+        interface.lock().await.update_attribute_with_f32("voltage", "max", 0.0);
+        interface.lock().await.update_attribute_with_f32("voltage", "value", 0.0);
+        interface.lock().await.update_attribute_with_f32("voltage", "decimals", 0.0);
+        interface.lock().await.update_attribute_with_f32("voltage", "polling_cycle", 0.0);
+
+        // Init current
+        interface.lock().await.update_attribute_with_f32("current", "min", 0.0);
+        interface.lock().await.update_attribute_with_f32("current", "max", 0.0);
+        interface.lock().await.update_attribute_with_f32("current", "value", 0.0);
+        interface.lock().await.update_attribute_with_f32("current", "decimals", 0.0);
+        interface.lock().await.update_attribute_with_f32("current", "polling_cycle", 0.0);
+
+        // Publish all attributes for start
+        interface.lock().await.publish_all_attributes().await;
+
+        // Notify the end of the initialization
+        interface.lock().await.set_event_init_done();
     }
 
-    async fn running(&self, core: &AmInterface)
+    async fn running(&self, interface: &AmInterface)
     {
         println!("running");
         
-        let fsm_events_notifier = core.lock().await.get_fsm_events_notifier();
+        let fsm_events_notifier = interface.lock().await.get_fsm_events_notifier();
         fsm_events_notifier.notified().await;
     }
 
-    async fn error(&self, core: &AmInterface)
+    async fn error(&self, interface: &AmInterface)
     {
         println!("error");
     }
 
+    async fn cleaning(&self, interface: &AmInterface)
+    {
+        println!("cleaning");
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -151,7 +184,7 @@ const ID_VOLTAGE: subscription::Id = 1;
 const ID_CURRENT: subscription::Id = 2;
 
 struct BpcSubscriber {
-    bpc_core: Arc<Mutex<BpcCore>>
+    bpc_interface: Arc<Mutex<BpcInterface>>
 }
 
 #[async_trait]
@@ -169,15 +202,15 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
 
     /// Process a message
     ///
-    async fn process(&self, core: &AmInterface, msg: &subscription::Message) {
+    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) {
         // Common processing
-        interface::basic::process(core, msg).await;
+        interface::basic::process(&interface, msg).await;
 
         match msg {
             subscription::Message::Mqtt(msg) => {
                 match msg.id() {
                     subscription::ID_PZA_CMDS_SET => {
-                        // core.lock().await.publish_info().await;
+                        // interface.lock().await.publish_info().await;
 
                         println!("BpcSubscriber::process: {:?}", msg.topic());
                         println!("BpcSubscriber::process: {:?}", msg.payload());
@@ -210,14 +243,14 @@ pub fn build<A: Into<String>>(
     bpc_actions: Box<dyn BpcActions>
 ) -> InterfaceBuilder {
 
-    let c = BpcCore::new_am(bpc_params, bpc_actions);
+    let c = BpcInterface::new_am(bpc_params, bpc_actions);
 
     return InterfaceBuilder::new(
         name,
         "bpc",
         "0.0",
-        Box::new(BpcStates{bpc_core: c.clone()}),
-        Box::new(BpcSubscriber{bpc_core: c.clone()})
+        Box::new(BpcStates{bpc_interface: c.clone()}),
+        Box::new(BpcSubscriber{bpc_interface: c.clone()})
     );
 }
 

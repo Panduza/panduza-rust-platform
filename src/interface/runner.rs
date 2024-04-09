@@ -45,7 +45,7 @@ impl Runner {
         let mut requests = vec![
             subscription::Request::new( subscription::ID_PZA, "pza" ),
             subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("{}/cmds/set", topic) )
-        ];        
+        ];
         for att_name in att_names {
             let request = subscription::Request::new( att_name.0, &format!("{}/{}", topic, att_name.1) );
             requests.push(request);

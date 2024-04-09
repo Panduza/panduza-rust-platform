@@ -161,10 +161,7 @@ impl Interface {
     pub fn move_to_state(&mut self, state: State) {
         let previous = self.fsm_state.clone();
         self.fsm_state = state;
-        // let info = self.attribute("info").unwrap().as_any().downcast_ref::<InfoAttribute>().unwrap();
-        // info.change_state(self.fsm_state.to_string());
-
-        self.update_attribute_with_string("info", "state", &self.fsm_state);
+        self.update_attribute_with_string("info", "state", &self.fsm_state.to_string());
 
         self.log_info(format!("State changed {:?} => {:?}", previous, self.fsm_state));
     }
@@ -206,7 +203,7 @@ impl Interface {
     /// 
     pub fn register_attribute(&mut self, attribute: Box<dyn AttributeInterface>) {
         self.log_debug(
-            format!("Registering attribute \"{:?}\"", attribute.name())
+            format!("Registering attribute {:?}", attribute.name())
         );
         self.attributes.insert(attribute.name().clone(), attribute);
     }
@@ -226,16 +223,31 @@ impl Interface {
             , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
     }
 
+    pub async fn publish_all_attributes(&self) {
+        for (_, attribute) in self.attributes.iter() {
+            self.publish_attribute(attribute.name()).await;
+        }
+    }
+
     /// Publish the info
     ///
     pub async fn publish_info(&self) {
         self.publish_attribute("info").await;
     }
 
+
+
+    pub fn update_attribute_with_f32(&mut self, attribute: &str, field: &str, value: f32) {
+        let att = self.attributes.get_mut(attribute).unwrap();
+        att.as_mut().update_field_with_f32(field, value);
+    }
+    pub fn update_attribute_with_bool(&mut self, attribute: &str, field: &str, value: bool) {
+        let att = self.attributes.get_mut(attribute).unwrap();
+        att.as_mut().update_field_with_bool(field, value);
+    }
     pub fn update_attribute_with_string(&mut self, attribute: &str, field: &str, value: &String) {
-        let att_obj = self.attribute(attribute).unwrap();
-        att_obj.update_field_with_string(field, value);
-        // self.publish_attribute(name).await;
+        let att = self.attributes.get_mut(attribute).unwrap();
+        att.as_mut().update_field_with_string(field, value);
     }
 
     // -- LOGS --

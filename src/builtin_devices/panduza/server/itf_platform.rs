@@ -72,6 +72,10 @@ impl interface::fsm::States for TestInterfaceStates {
         println!("error");
     }
 
+    async fn cleaning(&self, interface: &AmInterface)
+    {
+        println!("cleaning");
+    }
 }
 
 

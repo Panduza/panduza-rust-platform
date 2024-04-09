@@ -34,10 +34,6 @@ impl InfoAttribute {
         return Box::new(InfoAttribute::new(itype, version));
     }
 
-    pub fn change_state<A: Into<String>>(&mut self, state: A) {
-        self.attr.update_field_with_string("state", &state.into());
-    }
-
 }
 
 impl AttributeInterface for InfoAttribute {
@@ -56,13 +52,18 @@ impl AttributeInterface for InfoAttribute {
     fn from_mqtt_payload(&mut self, payload: &str) {
         self.attr.from_mqtt_payload(payload);
     }
-    
 
+    fn update_field_with_f32(&mut self, field: &str, value: f32) {
+        self.attr.update_field_with_f32(field, value);
+    }
+
+    fn update_field_with_bool(&mut self, field: &str, value: bool) {
+        self.attr.update_field_with_bool(field, value);
+    }
 
     fn update_field_with_string(&mut self, field: &str, value: &String) {
         self.attr.update_field_with_string(field, value);
     }
-
 }
 
 

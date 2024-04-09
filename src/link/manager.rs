@@ -31,8 +31,11 @@ impl Manager {
     ///
     pub async fn request_link(&mut self, requests: Vec<subscription::Request>) -> Result<InterfaceHandle, String> {
 
-        // Debug
-        tracing::trace!("Request link with {} subscriptions", requests.len());
+        // Trace
+        tracing::trace!("Link Manager Request link with {} subscriptions", requests.len());
+        for request in requests.iter() {
+            tracing::trace!("  - {}", request.topic());
+        }
 
         // Create the channel
         let (tx, rx) =

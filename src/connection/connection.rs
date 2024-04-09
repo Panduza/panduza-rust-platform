@@ -91,6 +91,28 @@ impl Connection {
                         Connection::process_incoming_packet(lm.clone(), &incoming).await;
                         
                     }
+                    rumqttc::Event::Outgoing(outgoing) => {
+                        match outgoing {
+                            
+                            rumqttc::Outgoing::Subscribe(subscribe) => {
+                                println!("Subscribe = {:?}", subscribe);
+                            },
+                            _ => {
+                                // println!("Outgoing = {:?}", outgoing);
+                            }
+                            // rumqttc::Outgoing::Publish(_) => todo!(),
+                            // rumqttc::Outgoing::Unsubscribe(_) => todo!(),
+                            // rumqttc::Outgoing::PubAck(_) => todo!(),
+                            // rumqttc::Outgoing::PubRec(_) => todo!(),
+                            // rumqttc::Outgoing::PubRel(_) => todo!(),
+                            // rumqttc::Outgoing::PubComp(_) => todo!(),
+                            // rumqttc::Outgoing::PingReq => todo!(),
+                            // rumqttc::Outgoing::PingResp => todo!(),
+                            // rumqttc::Outgoing::Disconnect => todo!(),
+                            // rumqttc::Outgoing::AwaitAck(_) => todo!(),
+                        }
+                        // println!("Outgoing = {:?}", outgoing);
+                    }
                     _ => {
                         // println!("Received = {:?}", notification);
                     }
@@ -114,11 +136,11 @@ impl Connection {
     
         match packet {
             rumqttc::Incoming::ConnAck(ack) => {
-
                 lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
-                // let message = subscription::Message::new_connection_status(true);
-
             },
+            // rumqttc::Packet::SubAck(ack) => {
+            //     println!("SubAck = {:?}", ack);
+            // },
             rumqttc::Incoming::Publish(publish) => {
                 // For each link with interfaces, check if the topic matches a filter
                 // then send the message to the interface
@@ -127,6 +149,11 @@ impl Connection {
                         if filter.match_topic(&publish.topic) {
                             let message = 
                                 subscription::Message::from_filter_and_publish_packet(filter, publish);
+
+                            tracing::trace!(
+                                "Sending message to interface {}", message);
+
+
                             let r = link.tx().send(message).await;
                             if r.is_err() {
                                 println!("Error sending message to interface {}",
@@ -147,6 +174,7 @@ impl Connection {
     pub fn link_manager(&self) -> AmLinkManager {
         return self.link_manager.clone();
     }
+
 
 }
 

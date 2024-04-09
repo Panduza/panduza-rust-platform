@@ -57,11 +57,26 @@ bitflags! {
 #[async_trait]
 pub trait States : Send {
 
+    /// Without a broker connection, the interface is useless and must wait for it.
+    ///
     async fn connecting(&self, interface: &AmInterface);
+
+    /// The interface is now connected to a broker and need some initialization tasks.
+    /// This state must hold the initialization of the connector and the initial atttribute values.
+    ///
     async fn initializating(&self, interface: &AmInterface);
+
+    /// The interface is now running and can perform its main operationnal state.
+    /// 
     async fn running(&self, interface: &AmInterface);
+
+    ///
+    /// 
     async fn error(&self, interface: &AmInterface);
 
+    /// The interface must be able to clean up all resources before being destroyed.
+    ///
+    async fn cleaning(&self, interface: &AmInterface);
 }
 
 // ------------------------------------------------------------------------------------------------
