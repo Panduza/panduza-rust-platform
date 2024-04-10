@@ -773,6 +773,7 @@ dependencies = [
  "dirs",
  "futures",
  "hostname",
+ "lazy_static",
  "regex",
  "rumqttc",
  "serde_json",
