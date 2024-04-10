@@ -1,3 +1,7 @@
+use std::pin::Pin;
+
+use futures::Future;
+
 mod json;
 mod info;
 
@@ -15,10 +19,11 @@ pub trait AttributeInterface : Send + Sync {
     fn from_mqtt_payload(&mut self, payload: &str);
 
     fn need_publication(&self) -> bool;
-    fn publication_done(&self);
+    fn publication_done(&mut self);
 
     fn update_field_with_f64(&mut self, field: &str, value: f64);
     fn update_field_with_bool(&mut self, field: &str, value: bool);
     fn update_field_with_string(&mut self, field: &str, value: &String);
 }
+
 

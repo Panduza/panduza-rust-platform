@@ -57,8 +57,8 @@ impl AttributeInterface for InfoAttribute {
         self.attr.need_publication()
     }
 
-    fn publication_done(&self) {
-        todo!()
+    fn publication_done(&mut self) {
+        self.attr.publication_done();
     }
 
     fn update_field_with_f64(&mut self, field: &str, value: f64) {

@@ -49,6 +49,7 @@ impl bpc::BpcActions for FakeBpcActions {
 
     async fn write_voltage_value(&mut self, interface: &AmInterface, v: f32) {
         println!("write_voltage_value: {}", v);
+        self.voltage_value = v;
     }
  
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f32, PlatformError> {
@@ -59,7 +60,8 @@ impl bpc::BpcActions for FakeBpcActions {
     }
 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f32) {
-
+        println!("write_voltage_value: {}", v);
+        self.current_value = v;
     }
 
 }

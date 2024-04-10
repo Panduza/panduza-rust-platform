@@ -1,8 +1,10 @@
 
+use std::collections::HashMap;
+
 use serde_json::json;
 
 use super::AttributeInterface;
-
+// use super::FieldF64;
 
 pub struct JsonAttribute {
     // 
@@ -64,11 +66,11 @@ impl AttributeInterface for JsonAttribute {
     }
 
     fn need_publication(&self) -> bool {
-        return true;
+        return self.orign != self.data;
     }
 
-    fn publication_done(&self) {
-        todo!()
+    fn publication_done(&mut self) {
+        self.orign = self.data.clone();
     }
 
     fn update_field_with_f64(&mut self, field: &str, value: f64)

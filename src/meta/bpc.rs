@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use serde_json::Value;
 use tokio::sync::Mutex;
 
-use crate::attribute::JsonAttribute;
+use crate::attribute::{self, JsonAttribute};
 use crate::interface::AmInterface;
 use crate::platform::PlatformError;
 use crate::{interface, subscription};
@@ -157,9 +158,9 @@ impl interface::fsm::States for BpcStates {
     async fn running(&self, interface: &AmInterface)
     {
         println!("running");
-        
-        let fsm_events_notifier = interface.lock().await.get_fsm_events_notifier();
-        fsm_events_notifier.notified().await;
+
+
+        interface::basic::wait_for_fsm_event(interface).await;
     }
 
     async fn error(&self, interface: &AmInterface)
@@ -209,15 +210,62 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
         match msg {
             subscription::Message::Mqtt(msg) => {
                 match msg.id() {
-                    subscription::ID_PZA_CMDS_SET => {
-                        // interface.lock().await.publish_info().await;
+                subscription::ID_PZA_CMDS_SET => {
+                    // interface.lock().await.publish_info().await;
 
-                        println!("BpcSubscriber::process: {:?}", msg.topic());
-                        println!("BpcSubscriber::process: {:?}", msg.payload());
+                    // only when running state
 
-                        
+                    println!("BpcSubscriber::process: {:?}", msg.topic());
+                    println!("BpcSubscriber::process: {:?}", msg.payload());
 
-                    },
+                    let payload = msg.payload();
+                    let oo = serde_json::from_slice::<Value>(payload).unwrap();
+                    let o = oo.as_object().unwrap();
+
+
+                    for (attribute_name, fields) in o.iter() {
+
+                        for (field_name, field_data) in fields.as_object().unwrap().iter() {
+
+                            if attribute_name == "enable" && field_name == "value" {
+                                let enable_value = fields.as_bool().unwrap();
+                                self.bpc_interface.lock().await.bpc_actions.write_enable_value(&interface, enable_value).await;
+                                interface.lock().await.update_attribute_with_bool(&attribute_name, "value", enable_value);
+                            }
+                            else if attribute_name == "voltage" && field_name == "value" {
+                                
+                            }
+                            else if attribute_name == "current" && field_name == "value" {
+                                
+                            }
+
+
+
+                        //     if field_data.is_boolean() {
+
+                        //         if field_name == "enable" {
+                        //             self.bpc_interface.lock().await.bpc_actions.write_enable_value(&interface, field_data.as_bool().unwrap()).await;
+                        //             interface.lock().await.update_attribute_with_bool(
+                        //                 &attribute_name, &field_name, field_data.as_bool().unwrap());
+                        //         }
+                        //     }
+                        //     else if field_data.is_f64() {
+                        //         interface.lock().await.update_attribute_with_f64(
+                        //             &attribute_name, &field_name, field_data.as_f64().unwrap());
+                        //     }
+                        //     else if field_data.is_string() {
+                        //         interface.lock().await.update_attribute_with_string(
+                        //             &attribute_name, &field_name, &String::from(field_data.as_str().unwrap()) );
+                        //     }
+
+                        // }
+                        }
+
+
+                    }
+
+
+                },
                     _ => {
                         // not managed by the common level
                     }
