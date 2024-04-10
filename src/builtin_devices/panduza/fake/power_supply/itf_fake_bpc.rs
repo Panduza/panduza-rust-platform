@@ -8,8 +8,8 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 /// 
 struct FakeBpcActions {
     enable_value: bool,
-    voltage_value: f32,
-    current_value: f32,
+    voltage_value: f64,
+    current_value: f64,
 }
 
 #[async_trait]
@@ -40,27 +40,31 @@ impl bpc::BpcActions for FakeBpcActions {
 
     /// Read the voltage value
     /// 
-    async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f32, PlatformError> {
+    async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBpc - read_voltage_value: {}", self.voltage_value)
         );
         return Ok(self.voltage_value);
     }
 
-    async fn write_voltage_value(&mut self, interface: &AmInterface, v: f32) {
-        println!("write_voltage_value: {}", v);
+    async fn write_voltage_value(&mut self, interface: &AmInterface, v: f64) {
+        interface.lock().await.log_info(
+            format!("FakeBpc - write_voltage_value: {}", v)
+        );
         self.voltage_value = v;
     }
  
-    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f32, PlatformError> {
+    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBpc - read_current_value: {}", self.current_value)
         );
         return Ok(self.current_value);
     }
 
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f32) {
-        println!("write_voltage_value: {}", v);
+    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
+        interface.lock().await.log_info(
+            format!("FakeBpc - write_current_value: {}", v)
+        );
         self.current_value = v;
     }
 
@@ -79,6 +83,11 @@ pub fn build<A: Into<String>>(
         bpc::BpcParams {
             voltage_min: 0.0,
             voltage_max: 5.0,
+            voltage_decimals: 2,
+
+            current_min: 0.0,
+            current_max: 3.0,
+            current_decimals: 3,
         }, 
         Box::new(FakeBpcActions {
             enable_value: false,

@@ -11,8 +11,13 @@ use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 pub struct BpcParams {
-    pub voltage_min: f32,
-    pub voltage_max: f32,
+    pub voltage_min: f64,
+    pub voltage_max: f64,
+    pub voltage_decimals: i32,
+
+    pub current_min: f64,
+    pub current_max: f64,
+    pub current_decimals: i32,
 }
 
 #[async_trait]
@@ -27,13 +32,13 @@ pub trait BpcActions: Send + Sync {
 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
 
-    async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f32, PlatformError>;
+    async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
-    async fn write_voltage_value(&mut self, interface: &AmInterface, v: f32);
+    async fn write_voltage_value(&mut self, interface: &AmInterface, v: f64);
 
-    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f32, PlatformError>;
+    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f32);
+    async fn write_current_value(&mut self, interface: &AmInterface, v: f64);
 
 
 // async def _PZA_DRV_BPC_read_voltage_decimals(self):
@@ -80,20 +85,20 @@ pub struct F32ValueAttribute {
 
 struct BpcInterface {
 
-    bpc_params: BpcParams,
-    bpc_actions: Box<dyn BpcActions>
+    params: BpcParams,
+    actions: Box<dyn BpcActions>
 }
 type AmBpcInterface = Arc<Mutex<BpcInterface>>;
 
 impl BpcInterface {
-    fn new(bpc_params: BpcParams, bpc_actions: Box<dyn BpcActions>) -> BpcInterface {
+    fn new(params: BpcParams, actions: Box<dyn BpcActions>) -> BpcInterface {
         return BpcInterface {
-            bpc_params: bpc_params,
-            bpc_actions: bpc_actions
+            params: params,
+            actions: actions
         }
     }
-    fn new_am(bpc_params: BpcParams, bpc_actions: Box<dyn BpcActions>) -> AmBpcInterface {
-        return Arc::new(Mutex::new( BpcInterface::new(bpc_params, bpc_actions) ));
+    fn new_am(params: BpcParams, actions: Box<dyn BpcActions>) -> AmBpcInterface {
+        return Arc::new(Mutex::new( BpcInterface::new(params, actions) ));
     }
 }
 
@@ -123,7 +128,7 @@ impl interface::fsm::States for BpcStates {
     async fn initializating(&self, interface: &AmInterface)
     {
         // Custom initialization slot
-        self.bpc_interface.lock().await.bpc_actions.initializating(&interface).await.unwrap();
+        self.bpc_interface.lock().await.actions.initializating(&interface).await.unwrap();
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
@@ -131,7 +136,7 @@ impl interface::fsm::States for BpcStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
 
         // Init enable
-        let enable_value = self.bpc_interface.lock().await.bpc_actions.read_enable_value(&interface).await.unwrap();
+        let enable_value = self.bpc_interface.lock().await.actions.read_enable_value(&interface).await.unwrap();
         interface.lock().await.update_attribute_with_bool("enable", "value", enable_value);
 
         // Init voltage
@@ -190,19 +195,55 @@ struct BpcSubscriber {
 
 impl BpcSubscriber {
 
+    /// 
+    /// 
+    #[inline(always)]
     async fn process_enable_value(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_bool().unwrap();
         self.bpc_interface.lock().await
-            .bpc_actions.write_enable_value(&interface, requested_value).await;
+            .actions.write_enable_value(&interface, requested_value).await;
 
         let r_value = self.bpc_interface.lock().await
-            .bpc_actions.read_enable_value(&interface).await
+            .actions.read_enable_value(&interface).await
             .unwrap();
 
         interface.lock().await
             .update_attribute_with_bool("enable", "value", r_value);
-
     }
+
+    /// 
+    /// 
+    #[inline(always)]
+    async fn process_voltage_value(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
+        let requested_value = field_data.as_f64().unwrap();
+        self.bpc_interface.lock().await
+            .actions.write_voltage_value(&interface, requested_value as f64).await;
+
+        let r_value = self.bpc_interface.lock().await
+            .actions.read_voltage_value(&interface).await
+            .unwrap();
+
+        interface.lock().await
+            .update_attribute_with_f64("voltage", "value", r_value as f64);
+    }
+
+    /// 
+    /// 
+    #[inline(always)]
+    async fn process_current_value(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
+        let requested_value = field_data.as_f64().unwrap();
+        self.bpc_interface.lock().await
+            .actions.write_current_value(&interface, requested_value as f64).await;
+
+        let r_value = self.bpc_interface.lock().await
+            .actions.read_current_value(&interface).await
+            .unwrap();
+
+        interface.lock().await
+            .update_attribute_with_f64("current", "value", r_value as f64);
+    }
+
+
 }
 
 #[async_trait]
@@ -244,20 +285,19 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
 
 
                     for (attribute_name, fields) in o.iter() {
-
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
-
                             if attribute_name == "enable" && field_name == "value" {
                                 self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
                             }
-                            else if attribute_name == "current" && field_name == "value" {
-                                
+                            else if attribute_name == "voltage" && field_name == "value" {
+                                self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
                             }
-
+                            else if attribute_name == "current" && field_name == "value" {
+                                self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                            }
                         }
-
-
                     }
+                    interface.lock().await.publish_all_attributes().await;
 
 
                 },
@@ -285,11 +325,11 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
 ///
 pub fn build<A: Into<String>>(
     name: A,
-    bpc_params: BpcParams,
-    bpc_actions: Box<dyn BpcActions>
+    params: BpcParams,
+    actions: Box<dyn BpcActions>
 ) -> InterfaceBuilder {
 
-    let c = BpcInterface::new_am(bpc_params, bpc_actions);
+    let c = BpcInterface::new_am(params, actions);
 
     return InterfaceBuilder::new(
         name,
