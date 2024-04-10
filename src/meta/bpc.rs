@@ -188,6 +188,23 @@ struct BpcSubscriber {
     bpc_interface: Arc<Mutex<BpcInterface>>
 }
 
+impl BpcSubscriber {
+
+    async fn process_enable_value(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
+        let requested_value = field_data.as_bool().unwrap();
+        self.bpc_interface.lock().await
+            .bpc_actions.write_enable_value(&interface, requested_value).await;
+
+        let r_value = self.bpc_interface.lock().await
+            .bpc_actions.read_enable_value(&interface).await
+            .unwrap();
+
+        interface.lock().await
+            .update_attribute_with_bool("enable", "value", r_value);
+
+    }
+}
+
 #[async_trait]
 impl interface::subscriber::Subscriber for BpcSubscriber {
 
@@ -200,6 +217,9 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
             (ID_CURRENT, "current".to_string())
         ];
     }
+
+
+
 
     /// Process a message
     ///
@@ -228,37 +248,12 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
 
                             if attribute_name == "enable" && field_name == "value" {
-                                let enable_value = fields.as_bool().unwrap();
-                                self.bpc_interface.lock().await.bpc_actions.write_enable_value(&interface, enable_value).await;
-                                interface.lock().await.update_attribute_with_bool(&attribute_name, "value", enable_value);
-                            }
-                            else if attribute_name == "voltage" && field_name == "value" {
-                                
+                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "current" && field_name == "value" {
                                 
                             }
 
-
-
-                        //     if field_data.is_boolean() {
-
-                        //         if field_name == "enable" {
-                        //             self.bpc_interface.lock().await.bpc_actions.write_enable_value(&interface, field_data.as_bool().unwrap()).await;
-                        //             interface.lock().await.update_attribute_with_bool(
-                        //                 &attribute_name, &field_name, field_data.as_bool().unwrap());
-                        //         }
-                        //     }
-                        //     else if field_data.is_f64() {
-                        //         interface.lock().await.update_attribute_with_f64(
-                        //             &attribute_name, &field_name, field_data.as_f64().unwrap());
-                        //     }
-                        //     else if field_data.is_string() {
-                        //         interface.lock().await.update_attribute_with_string(
-                        //             &attribute_name, &field_name, &String::from(field_data.as_str().unwrap()) );
-                        //     }
-
-                        // }
                         }
 
 
@@ -276,6 +271,8 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
             }
         }
     }
+
+
 }
 
 // ----------------------------------------------------------------------------
