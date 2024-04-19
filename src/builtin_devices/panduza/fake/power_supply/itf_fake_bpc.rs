@@ -24,7 +24,7 @@ impl bpc::BpcActions for FakeBpcActions {
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
         
-        // tty::Get(name)
+        let co = tty::Get("test");
 
         return Ok(());
     }
