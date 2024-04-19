@@ -11,7 +11,7 @@ lazy_static! {
 
 pub fn Get(name: &str) -> Tty {
     let gate = GATE.lock().unwrap();
-    gate.get(name)
+    gate.get(Some(name.to_string()) )
 }
 
 
@@ -21,8 +21,22 @@ struct Gate {
 
 impl Gate {
 
-    fn get(&self, name: &str) -> Tty {
-        self.instances.get(name).unwrap().clone()
+
+    fn get(&self, serial_port_name: Option<String>) -> Tty {
+
+    //     * ** (``str``) --
+    //     serial port name
+
+    // * *serial_baudrate* (``int``) --
+    //     serial baudrate
+
+    // * *usb_vendor* (``str``) --
+    //     ID_VENDOR_ID
+    // * *usb_model* (``str``) --
+    //     ID_MODEL_ID
+
+
+        self.instances.get(serial_port_name.unwrap().as_str()).unwrap().clone()
     }
 
     // fn add_instance(&mut self, name: &str, tty: Tty) {
@@ -32,13 +46,8 @@ impl Gate {
 
 
 
-// lazy_static! {
-// static mut INSTANCES: Arc<Mutex<>>
-//     = Arc::new(Mutex::new(HashMap::new()));
-// }
-
 #[derive(Clone)]
-struct Tty {
+pub struct Tty {
 //     // fd: RawFd,
 //     // termios: Termios,
 //     // termios_backup: Termios,
