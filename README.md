@@ -3,6 +3,8 @@
 
 ## Usage
 
+You must install Rust and Cargo then execute this commands
+
 ```bash
 # Enable fmt tracing (std terminal logs)
 cargo run --features trac-fmt
