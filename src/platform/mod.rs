@@ -204,6 +204,58 @@ impl Platform {
         }
     }
 
+    async fn load_network_file(services: AmServices) -> Result<(), error::PlatformError> {
+
+        // Get the network file path
+        let network_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("network.json");
+        match env::consts::OS {
+            "linux" => {
+
+                // Lucas
+                // println!("We are running linux!");
+            }
+            "windows" => {
+
+            }
+            _ => {
+                tracing::error!("Unsupported system!");
+            }
+        }
+
+        // Try to read the file content
+        let file_content = tokio::fs::read_to_string(&network_file_path).await;
+        match file_content {
+            Ok(content) => {
+                return Platform::load_network_string(services.clone(), &content).await;
+            },
+            Err(e) => {
+                return platform_error!(
+                    format!("Failed to read {:?} file content: {}", network_file_path, e), None)
+            }
+        }
+    }
+
+    /// Load a network string into service data
+    ///
+    async fn load_network_string(services: AmServices, content: &String) -> Result<(), error::PlatformError> {
+        // Parse the JSON content
+        let json_content = serde_json::from_str::<serde_json::Value>(&content);
+        match json_content {
+            Ok(json) => {
+                // log
+                tracing::info!(class="Platform", " - Network Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
+
+                // services.lock().await.set_network_content(json);
+
+                return Ok(());
+            },
+            Err(e) => {
+                return platform_error!(
+                    format!("Failed to parse JSON content: {}", e), None)
+            }
+        }
+    }
+
     /// Start the broker connection
     /// 
     async fn start_broker_connection(devices: device::AmManager, connection: connection::AmManager) {
@@ -219,6 +271,8 @@ impl Platform {
         let tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
         match env::consts::OS {
             "linux" => {
+
+                // Lucas
                 // println!("We are running linux!");
             }
             "windows" => {
@@ -266,6 +320,9 @@ impl Platform {
     /// Boot default connection and platform device
     ///
     async fn boot_minimal_services(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
+        // Get host and port of the broker
+        Platform::load_network_file(services.clone()).await;
+
         // Start the broker connection
         Platform::start_broker_connection(devices.clone(), connection.clone()).await;
 
