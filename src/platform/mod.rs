@@ -11,6 +11,7 @@ use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
+use tokio::net::UdpSocket;
 use crate::device;
 use crate::connection;
 
@@ -102,6 +103,11 @@ impl Platform {
             Platform::services_task(s, d, c).await
         });
 
+        // Start local discovery at the start of the application
+        self.task_pool.spawn(
+            Platform::run_local_service_discovery()
+        );
+
         // Main loop
         // Run forever and wait for:
         // - ctrl-c: to stop the platform after the user request it
@@ -151,6 +157,34 @@ impl Platform {
                 }
             }
 
+        }
+    }
+
+    /// Start the local service discovery 
+    ///
+    pub async fn run_local_service_discovery() -> PlatformTaskResult {
+
+        // If panic send the message expected 
+        // start the connection
+        let socket = UdpSocket::bind("0.0.0.0:53035").await.expect("creation local discovery socket failed");
+
+        println!("local service start");
+
+        let mut buf = [0; 1024];
+        let json_reply_bytes = "{\"name\": \"panduza_platform\",\"version\": 1.0}".as_bytes();
+        
+        loop {
+            // Receive request and answer it 
+            let Ok((amt, src_addr)) = socket.recv_from(&mut buf).await else {
+                // manage error "local discovery message not received"
+                return platform_error!(
+                    "local service discovery error socket recv",
+                    None
+                )
+            };
+            println!("local discovery request received");
+            let _ = socket.send_to(json_reply_bytes, &src_addr).await;
+            println!("local disovery reply send");
         }
     }
 
