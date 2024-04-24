@@ -163,7 +163,7 @@ impl Platform {
 
     /// Start the local service discovery 
     ///
-    pub async fn run_local_service_discovery() -> PlatformTaskResult {
+    pub async fn local_service_discovery_task() -> PlatformTaskResult {
 
         // If panic send the message expected 
         // start the connection
@@ -189,6 +189,7 @@ impl Platform {
                         tracing::trace!(class="Platform", "Local discovery request message incorrect");
                         continue;
                     }
+                    println!("{}", src_addr);
                     let _ = socket.send_to(json_reply_bytes, &src_addr).await;
                     tracing::trace!(class="Platform", "Local discovery reply send success");
                 },
