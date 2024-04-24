@@ -4,9 +4,7 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use rumqttc::MqttOptions;
 
-// use std::io;
-use tokio::fs::File;
-use tokio::io::AsyncReadExt;
+use serde_json::Value;
 
 use super::Connection;
 use super::AmConnection;
@@ -39,58 +37,14 @@ impl Manager {
         }));
     }
 
-    // /// Load the network file from system into service data
-    // ///
-    // async fn load_network_file(services: AmServices) -> Result<(), error::PlatformError> {
-
-    //     // Get the network file path
-    //     let network_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("network.json");// Try to read the file content
-        
-    //     let file_content = tokio::fs::read_to_string(&network_file_path).await;
-    //     match file_content {
-    //         Ok(content) => {
-    //             return Platform::load_network_string(services.clone(), &content).await;
-    //         },
-    //         Err(e) => {
-    //             return platform_error!(
-    //                 format!("Failed to read {:?} file content: {}", network_file_path, e), None)
-    //         }
-    //     }
-    // }
-
-    // /// Load a network string into service data
-    // ///
-    // async fn load_network_string(services: AmServices, content: &String) -> Result<(), error::PlatformError> {
-    //     // Parse the JSON content
-    //     let json_content = serde_json::from_str::<serde_json::Value>(&content);
-    //     match json_content {
-    //         Ok(json) => {
-    //             let host = json_value.get("BROKER_HOST").as_str();
-    //             let port = json_value.get("BROKER_PORT").as_i64;
-    //             println!("extracted : host={}, port={}", host, port);
-
-    //             return Ok(());
-    //         },
-    //         Err(e) => {
-    //             return platform_error!(
-    //                 format!("Failed to parse JSON content: {}", e), None)
-    //         }
-    //     }
-    // }
-
     /// Create and start the broker connection
     ///
-    pub async fn start_connection(&mut self) {
-
-        // let network_file = File::open("/home/lucas/panduza/network.txt").await;
-        // let mut content = vec![];
-        // network_file.expect("REASON").read_to_end(&mut content).await;
-        // println!("extracted : {:?}", &content);
+    pub async fn start_connection(&mut self, host: &str, port: u16) {
 
         // Create connection ID
         let id = format!("{}", self.platform_name);
-        let host  = "localhost";
-        let port = 1883;
+        let host  = host;
+        let port = port;
 
         // Set default options
         let mut mqtt_options = MqttOptions::new(id, host, port);

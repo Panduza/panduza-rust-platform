@@ -204,12 +204,13 @@ impl Platform {
         }
     }
 
-    async fn load_network_file(services: AmServices) -> Result<(), error::PlatformError> {
+    async fn load_network_file(services: AmServices, connection: connection::AmManager) -> Result<(), error::PlatformError> {
 
         // Get the network file path
-        let network_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("network.json");
+        let mut network_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("network.json");
         match env::consts::OS {
             "linux" => {
+                network_file_path = PathBuf::from("/etc/panduza/network.json");
 
                 // Lucas
                 // println!("We are running linux!");
@@ -226,7 +227,7 @@ impl Platform {
         let file_content = tokio::fs::read_to_string(&network_file_path).await;
         match file_content {
             Ok(content) => {
-                return Platform::load_network_string(services.clone(), &content).await;
+                return Platform::load_network_string(services.clone(), connection.clone(), &content).await;
             },
             Err(e) => {
                 return platform_error!(
@@ -237,15 +238,22 @@ impl Platform {
 
     /// Load a network string into service data
     ///
-    async fn load_network_string(services: AmServices, content: &String) -> Result<(), error::PlatformError> {
+    async fn load_network_string(services: AmServices, connection: connection::AmManager, content: &String) -> Result<(), error::PlatformError> {
         // Parse the JSON content
         let json_content = serde_json::from_str::<serde_json::Value>(&content);
         match json_content {
             Ok(json) => {
+
+                let host_string = &json["BROKER_HOST"].to_string();
+                let port_string = &json["BROKER_PORT"].to_string();
+
+                let host = host_string.replace('"', "");
+                let port: u16 = port_string.parse().unwrap();
+
                 // log
                 tracing::info!(class="Platform", " - Network Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
 
-                // services.lock().await.set_network_content(json);
+                connection.lock().await.start_connection(&host, port).await;
 
                 return Ok(());
             },
@@ -258,8 +266,11 @@ impl Platform {
 
     /// Start the broker connection
     /// 
-    async fn start_broker_connection(devices: device::AmManager, connection: connection::AmManager) {
-        connection.lock().await.start_connection().await;
+    async fn start_broker_connection(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
+        
+        // Get host and port of the broker and start connection
+        let _ = Platform::load_network_file(services.clone(), connection.clone()).await;
+
         devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
     }
 
@@ -268,9 +279,10 @@ impl Platform {
     async fn load_tree_file(services: AmServices) -> Result<(), error::PlatformError> {
 
         // Get the tree file path
-        let tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
+        let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
         match env::consts::OS {
             "linux" => {
+                tree_file_path = PathBuf::from("/etc/panduza/tree.json");
 
                 // Lucas
                 // println!("We are running linux!");
@@ -320,11 +332,9 @@ impl Platform {
     /// Boot default connection and platform device
     ///
     async fn boot_minimal_services(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
-        // Get host and port of the broker
-        Platform::load_network_file(services.clone()).await;
 
         // Start the broker connection
-        Platform::start_broker_connection(devices.clone(), connection.clone()).await;
+        Platform::start_broker_connection(services.clone(), devices.clone(), connection.clone()).await;
 
         // Lock managers to create connection and device
         let mut d = devices.lock().await;
