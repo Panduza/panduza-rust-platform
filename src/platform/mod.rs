@@ -106,7 +106,7 @@ impl Platform {
 
         // Start local discovery at the start of the application
         self.task_pool.spawn(
-            Platform::run_local_service_discovery()
+            Platform::local_service_discovery_task()
         );
 
         // Main loop
