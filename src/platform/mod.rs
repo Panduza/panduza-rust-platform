@@ -163,6 +163,10 @@ impl Platform {
 
     /// Start the local service discovery 
     ///
+    /// > COVER:PLATF_REQ_LSD_0000_00 - Service Port
+    /// > COVER:PLATF_REQ_LSD_0010_00 - Request Payload
+    /// > COVER:PLATF_REQ_LSD_0020_00 - Answer Payload
+    ///
     pub async fn local_service_discovery_task() -> PlatformTaskResult {
 
         // If panic send the message expected 
