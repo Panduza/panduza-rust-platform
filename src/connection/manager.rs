@@ -4,8 +4,6 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use rumqttc::MqttOptions;
 
-use serde_json::Value;
-
 use super::Connection;
 use super::AmConnection;
 

@@ -211,8 +211,6 @@ impl Platform {
         match env::consts::OS {
             "linux" => {
                 network_file_path = PathBuf::from("/etc/panduza/network.json");
-
-                // Lucas
                 // println!("We are running linux!");
             }
             "windows" => {
@@ -247,8 +245,17 @@ impl Platform {
                 let host_string = &json["BROKER_HOST"].to_string();
                 let port_string = &json["BROKER_PORT"].to_string();
 
-                let host = host_string.replace('"', "");
-                let port: u16 = port_string.parse().unwrap();
+                // defaut values if not specified in the file network.json 
+                let mut host = "localhost".to_string();
+                let mut port = 1883;
+
+                if json["BROKER_HOST"] != json!(null) {
+                    host = host_string.replace('"', "");
+                }
+
+                if json["BROKER_PORT"] != json!(null) {
+                    port = port_string.parse::<u16>().unwrap();
+                }
 
                 // log
                 tracing::info!(class="Platform", " - Network Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
@@ -283,8 +290,6 @@ impl Platform {
         match env::consts::OS {
             "linux" => {
                 tree_file_path = PathBuf::from("/etc/panduza/tree.json");
-
-                // Lucas
                 // println!("We are running linux!");
             }
             "windows" => {
