@@ -1,9 +1,9 @@
 use crate::device::Factory as DeviceFactory;
 
-mod korad;
-mod panduza;
+mod ka3005;
 
 pub fn import_plugin_producers(factory: &mut DeviceFactory)
 {
-    panduza::import_plugin_producers(factory);  
+    // factory.add_producer("panduza.server", Box::new(server::DeviceProducer{}));
 }
+

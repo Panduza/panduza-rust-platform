@@ -4,16 +4,16 @@ use crate::meta::bpc;
 use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
-/// Fake Bench Power Channel Data
+///
 /// 
-struct FakeBpcActions {
+struct Ka3005BpcActions {
     enable_value: bool,
     voltage_value: f64,
     current_value: f64,
 }
 
 #[async_trait]
-impl bpc::BpcActions for FakeBpcActions {
+impl bpc::BpcActions for Ka3005BpcActions {
 
     /// Initialize the interface
     /// 
@@ -88,7 +88,7 @@ pub fn build<A: Into<String>>(
             current_max: 3.0,
             current_decimals: 3,
         }, 
-        Box::new(FakeBpcActions {
+        Box::new(Ka3005BpcActions {
             enable_value: false,
             voltage_value: 0.0,
             current_value: 0.0,
