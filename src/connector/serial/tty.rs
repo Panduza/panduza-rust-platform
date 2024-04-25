@@ -9,9 +9,20 @@ lazy_static! {
         = Mutex::new(Gate { instances: HashMap::new() });
 }
 
-pub fn Get(name: &str) -> Tty {
+pub fn Get(config: &Config) -> Tty {
     let gate = GATE.lock().unwrap();
-    gate.get(Some(name.to_string()) )
+    gate.get(config)
+}
+
+
+struct Config {
+
+    serial_port_name: Option<String>,
+
+    usb_vendor: Option<String>,
+    usb_model: Option<String>,
+
+    // serial_baudrate: Option<>
 }
 
 
@@ -22,26 +33,31 @@ struct Gate {
 impl Gate {
 
 
-    fn get(&self, serial_port_name: Option<String>) -> Tty {
+    fn get(&self, config: &Config) -> Tty {
 
-    //     * ** (``str``) --
-    //     serial port name
+        // First try to get the key
+        let mut key = String::new();
+        if config.serial_port_name.is_some() {
+            key = config.serial_port_name.clone().unwrap();
+        }
 
-    // * *serial_baudrate* (``int``) --
-    //     serial baudrate
+        // # Get the serial port name
+        // serial_port_name = None
+        // if "serial_port_name" in kwargs:
+        //     serial_port_name = kwargs["serial_port_name"]
+        // elif "usb_vendor" in kwargs:
+        //     # Get the serial port name using "usb_vendor"
+        //     serial_port_name = SerialPortFromUsbSetting(**kwargs)
+        //     kwargs["serial_port_name"] = serial_port_name
+    
+        // else:
+        //     raise Exception("no way to identify the serial port")
 
-    // * *usb_vendor* (``str``) --
-    //     ID_VENDOR_ID
-    // * *usb_model* (``str``) --
-    //     ID_MODEL_ID
 
-
-        self.instances.get(serial_port_name.unwrap().as_str()).unwrap().clone()
+        // Return the instance
+        self.instances.get(key.as_str()).unwrap().clone()
     }
 
-    // fn add_instance(&mut self, name: &str, tty: Tty) {
-    //     self.instances.insert(name.to_string(), tty);
-    // }
 }
 
 
