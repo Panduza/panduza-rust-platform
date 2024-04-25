@@ -242,18 +242,16 @@ impl Platform {
         match json_content {
             Ok(json) => {
 
-                let host_string = &json["BROKER_HOST"].to_string();
-                let port_string = &json["BROKER_PORT"].to_string();
-
                 // defaut values if not specified in the file network.json 
-                let mut host = "localhost".to_string();
+                let mut host = "localhost";
                 let mut port = 1883;
 
                 if json["BROKER_HOST"] != json!(null) {
-                    host = host_string.replace('"', "");
+                    host = &json["BROKER_HOST"].as_str().unwrap();
                 }
 
                 if json["BROKER_PORT"] != json!(null) {
+                    let port_string = &json["BROKER_PORT"].to_string();
                     port = port_string.parse::<u16>().unwrap();
                 }
 
