@@ -8,9 +8,11 @@ use dirs;
 use futures::future::BoxFuture;
 use futures::Future;
 use serde_json::json;
+use serde_json::Value;
 use tokio::signal;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
+use tokio::net::UdpSocket;
 use crate::device;
 use crate::connection;
 
@@ -102,6 +104,11 @@ impl Platform {
             Platform::services_task(s, d, c).await
         });
 
+        // Start local discovery at the start of the application
+        self.task_pool.spawn(
+            Platform::run_local_service_discovery()
+        );
+
         // Main loop
         // Run forever and wait for:
         // - ctrl-c: to stop the platform after the user request it
@@ -151,6 +158,50 @@ impl Platform {
                 }
             }
 
+        }
+    }
+
+    /// Start the local service discovery 
+    ///
+    /// > COVER:PLATF_REQ_LSD_0000_00 - Service Port
+    /// > COVER:PLATF_REQ_LSD_0010_00 - Request Payload
+    /// > COVER:PLATF_REQ_LSD_0020_00 - Answer Payload
+    ///
+    pub async fn local_service_discovery_task() -> PlatformTaskResult {
+
+        // If panic send the message expected 
+        // start the connection
+        let socket = UdpSocket::bind("0.0.0.0:53035").await.expect("creation local discovery socket failed");
+        tracing::trace!(class="Platform", "Local discovery service start");
+
+        let mut buf = [0; 1024];
+        let json_reply_bytes = "{\"name\": \"panduza_platform\",\"version\": 1.0}".as_bytes();
+        
+        loop {
+            // Receive request and answer it 
+            // Error who didn't depend of the user so user unwrap or expect
+            let (nbr_bytes, src_addr) = socket.recv_from(&mut buf).await.expect("receive local discovery failed");
+            tracing::trace!(class="Platform", "Local discovery request received");
+
+            let filled_buf = &mut buf[..nbr_bytes];
+            let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_slice(&filled_buf);
+            
+            // check if json correct format
+            match json_content {
+                Ok(content) => {
+                    if content["search"] != json!(true) {
+                        tracing::trace!(class="Platform", "Local discovery request message incorrect");
+                        continue;
+                    }
+                    println!("{}", src_addr);
+                    let _ = socket.send_to(json_reply_bytes, &src_addr).await;
+                    tracing::trace!(class="Platform", "Local discovery reply send success");
+                },
+                Err(e) => {
+                    return platform_error!(
+                        format!("Json request not correctly formatted"), None)
+                }
+            }
         }
     }
 
