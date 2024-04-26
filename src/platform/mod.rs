@@ -204,6 +204,10 @@ impl Platform {
         }
     }
 
+    /// Load the network file from system into service data
+    ///
+    /// > CONF_REQ_FILE_NET_0010_00 - Location and format of the configuration file
+    /// 
     async fn load_network_file(services: AmServices, connection: connection::AmManager) -> Result<(), error::PlatformError> {
 
         // Get the network file path
@@ -236,6 +240,8 @@ impl Platform {
 
     /// Load a network string into service data
     ///
+    /// CONF_REQ_FILE_NET_0020_00 - Content of the configuration file
+    /// 
     async fn load_network_string(services: AmServices, connection: connection::AmManager, content: &String) -> Result<(), error::PlatformError> {
         // Parse the JSON content
         let json_content = serde_json::from_str::<serde_json::Value>(&content);
