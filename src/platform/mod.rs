@@ -246,12 +246,12 @@ impl Platform {
                 let mut host = "localhost";
                 let mut port = 1883;
 
-                if json["BROKER_HOST"] != json!(null) {
-                    host = &json["BROKER_HOST"].as_str().unwrap();
+                if json["broker_host"] != json!(null) {
+                    host = &json["broker_host"].as_str().unwrap();
                 }
 
-                if json["BROKER_PORT"] != json!(null) {
-                    let port_string = &json["BROKER_PORT"].to_string();
+                if json["broker_port"] != json!(null) {
+                    let port_string = &json["broker_port"].to_string();
                     port = port_string.parse::<u16>().unwrap();
                 }
 
