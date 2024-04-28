@@ -37,12 +37,12 @@ impl Manager {
 
     /// Create and start the broker connection
     ///
-    pub async fn start_connection(&mut self) {
+    pub async fn start_connection(&mut self, host: &str, port: u16) {
 
         // Create connection ID
         let id = format!("{}", self.platform_name);
-        let host  = "localhost";
-        let port = 1883;
+        let host  = host;
+        let port = port;
 
         // Set default options
         let mut mqtt_options = MqttOptions::new(id, host, port);
