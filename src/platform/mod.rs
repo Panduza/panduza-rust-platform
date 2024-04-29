@@ -198,8 +198,7 @@ impl Platform {
                     tracing::trace!(class="Platform", "Local discovery reply send success");
                 },
                 Err(e) => {
-                    return platform_error!(
-                        format!("Json request not correctly formatted"), None)
+                    tracing::trace!(class="Platform", "Json request not correctly formatted");
                 }
             }
         }
