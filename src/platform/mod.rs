@@ -181,26 +181,39 @@ impl Platform {
             // Receive request and answer it 
             // Error who didn't depend of the user so user unwrap or expect
             let (nbr_bytes, src_addr) = socket.recv_from(&mut buf).await.expect("receive local discovery failed");
-            tracing::trace!(class="Platform", "Local discovery request received");
-
             let filled_buf = &mut buf[..nbr_bytes];
-            let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_slice(&filled_buf);
+
+            // need to manage if conversion from utf8 fail (with log)
+            let buf_utf8 = std::str::from_utf8(&filled_buf);
             
-            // check if json correct format
-            match json_content {
-                Ok(content) => {
-                    if content["search"] != json!(true) {
-                        tracing::trace!(class="Platform", "Local discovery request message incorrect");
-                        continue;
+            match buf_utf8 {
+                Ok(buf) => {
+                    match json_content {
+                        Ok(content) => {
+                            if content["search"] != json!(true) {
+                                tracing::trace!(class="Platform", "Local discovery request message incorrect");
+                                continue;
+                            }
+                            println!("{}", src_addr);
+                            let _ = socket.send_to(json_reply_bytes, &src_addr).await;
+                            tracing::trace!(class="Platform", "Local discovery reply send success");
+                        },
+                        Err(e) => {
+                            tracing::trace!(class="Platform", "Json request not correctly formatted");
+                        }
                     }
-                    println!("{}", src_addr);
-                    let _ = socket.send_to(json_reply_bytes, &src_addr).await;
-                    tracing::trace!(class="Platform", "Local discovery reply send success");
                 },
                 Err(e) => {
-                    tracing::trace!(class="Platform", "Json request not correctly formatted");
+                    tracing::trace!(class="Platform", "Request need to be send to UTF-8 format");
                 }
             }
+
+            let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf_utf8);
+
+            tracing::trace!(class="Platform", "Local discovery request received");
+
+            // check if json correct format
+            
         }
     }
 
