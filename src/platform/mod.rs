@@ -161,6 +161,31 @@ impl Platform {
         }
     }
 
+    /// Load the content of the network file 
+    async fn load_network_file_content() -> serde_json::Value {
+
+        // Get the network file path
+        let mut network_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("network.json");
+        match env::consts::OS {
+            "linux" => {
+                network_file_path = PathBuf::from("/etc/panduza/network.json");
+                // println!("We are running linux!");
+            }
+            "windows" => {
+
+            }
+            _ => {
+                tracing::error!("Unsupported system!");
+            }
+        }
+
+        // Try to read the file content, fail didn't depend of the user so panic the application
+        let file_content = tokio::fs::read_to_string(&network_file_path).await.expect("Failed to read network file");
+        // Parse the JSON content
+        let json_content = serde_json::from_str::<serde_json::Value>(&file_content).expect("Failed to parse JSON content: {}");
+        return json_content;
+    }
+
     /// Start the local service discovery 
     ///
     /// > COVER:PLATF_REQ_LSD_0000_00 - Service Port
@@ -168,6 +193,9 @@ impl Platform {
     /// > COVER:PLATF_REQ_LSD_0020_00 - Answer Payload
     ///
     pub async fn local_service_discovery_task() -> PlatformTaskResult {
+        
+        // Get port and address of broker used 
+        // let broker_info_json = Platform::load_network_file_content().await;
 
         // If panic send the message expected 
         // start the connection
@@ -188,13 +216,13 @@ impl Platform {
             
             match buf_utf8 {
                 Ok(buf) => {
+                    let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf);
                     match json_content {
                         Ok(content) => {
                             if content["search"] != json!(true) {
                                 tracing::trace!(class="Platform", "Local discovery request message incorrect");
                                 continue;
                             }
-                            println!("{}", src_addr);
                             let _ = socket.send_to(json_reply_bytes, &src_addr).await;
                             tracing::trace!(class="Platform", "Local discovery reply send success");
                         },
@@ -208,12 +236,7 @@ impl Platform {
                 }
             }
 
-            let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf_utf8);
-
             tracing::trace!(class="Platform", "Local discovery request received");
-
-            // check if json correct format
-            
         }
     }
 
@@ -266,6 +289,8 @@ impl Platform {
             }
         }
     }
+
+    
 
     /// Load the network file from system into service data
     ///
