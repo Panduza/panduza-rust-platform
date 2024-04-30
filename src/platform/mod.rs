@@ -161,31 +161,6 @@ impl Platform {
         }
     }
 
-    /// Load the content of the network file 
-    async fn load_network_file_content() -> serde_json::Value {
-
-        // Get the network file path
-        let mut network_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("network.json");
-        match env::consts::OS {
-            "linux" => {
-                network_file_path = PathBuf::from("/etc/panduza/network.json");
-                // println!("We are running linux!");
-            }
-            "windows" => {
-
-            }
-            _ => {
-                tracing::error!("Unsupported system!");
-            }
-        }
-
-        // Try to read the file content, fail didn't depend of the user so panic the application
-        let file_content = tokio::fs::read_to_string(&network_file_path).await.expect("Failed to read network file");
-        // Parse the JSON content
-        let json_content = serde_json::from_str::<serde_json::Value>(&file_content).expect("Failed to parse JSON content: {}");
-        return json_content;
-    }
-
     /// Start the local service discovery 
     ///
     /// > COVER:PLATF_REQ_LSD_0000_00 - Service Port
@@ -235,8 +210,6 @@ impl Platform {
                     tracing::trace!(class="Platform", "Request need to be send to UTF-8 format");
                 }
             }
-
-            tracing::trace!(class="Platform", "Local discovery request received");
         }
     }
 
