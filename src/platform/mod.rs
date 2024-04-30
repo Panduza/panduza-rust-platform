@@ -168,6 +168,9 @@ impl Platform {
     /// > COVER:PLATF_REQ_LSD_0020_00 - Answer Payload
     ///
     pub async fn local_service_discovery_task() -> PlatformTaskResult {
+        
+        // Get port and address of broker used 
+        // let broker_info_json = Platform::load_network_file_content().await;
 
         // If panic send the message expected 
         // start the connection
@@ -188,13 +191,13 @@ impl Platform {
             
             match buf_utf8 {
                 Ok(buf) => {
+                    let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf);
                     match json_content {
                         Ok(content) => {
                             if content["search"] != json!(true) {
                                 tracing::trace!(class="Platform", "Local discovery request message incorrect");
                                 continue;
                             }
-                            println!("{}", src_addr);
                             let _ = socket.send_to(json_reply_bytes, &src_addr).await;
                             tracing::trace!(class="Platform", "Local discovery reply send success");
                         },
@@ -207,13 +210,6 @@ impl Platform {
                     tracing::trace!(class="Platform", "Request need to be send to UTF-8 format");
                 }
             }
-
-            let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf_utf8);
-
-            tracing::trace!(class="Platform", "Local discovery request received");
-
-            // check if json correct format
-            
         }
     }
 
@@ -266,6 +262,8 @@ impl Platform {
             }
         }
     }
+
+    
 
     /// Load the network file from system into service data
     ///
