@@ -309,22 +309,21 @@ impl Platform {
         match json_content {
             Ok(json) => {
 
-                // defaut values if not specified in the file network.json 
-                let mut host = "localhost";
-                let mut port = 1883;
-
-                if json["broker_host"] != json!(null) {
-                    host = &json["broker_host"].as_str().unwrap();
-                } else {
-                    tracing::warn!(class="Platform", "host not provided in network.json, continue with default host");
-                }
-
-                if json["broker_port"] != json!(null) {
-                    let port_string = &json["broker_port"].to_string();
-                    port = port_string.parse::<u16>().unwrap();
-                } else {
-                    tracing::warn!(class="Platform", "port not provided in network.json, continue with default port");
-                }
+                let host = match json.get("broker_host") {
+                    Some(host) => host.as_str().unwrap(),
+                    None => {
+                        tracing::warn!(class="Platform", "host not provided in network.json, continue with default host");
+                        "localhost"
+                    }
+                };
+                
+                let port = match json.get("broker_port"){
+                    Some(port) => port.as_u64().map(|port| port as u16).unwrap(),
+                    None => {
+                        tracing::warn!(class="Platform", "port not provided in network.json, continue with default port");
+                        1883
+                    }
+                };
 
                 // log
                 tracing::info!(class="Platform", " - Network Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
