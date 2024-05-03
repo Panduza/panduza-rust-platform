@@ -315,11 +315,15 @@ impl Platform {
 
                 if json["broker_host"] != json!(null) {
                     host = &json["broker_host"].as_str().unwrap();
+                } else {
+                    tracing::warn!(class="Platform", "host not provided in network.json, continue with default host");
                 }
 
                 if json["broker_port"] != json!(null) {
                     let port_string = &json["broker_port"].to_string();
                     port = port_string.parse::<u16>().unwrap();
+                } else {
+                    tracing::warn!(class="Platform", "port not provided in network.json, continue with default port");
                 }
 
                 // log
@@ -341,7 +345,15 @@ impl Platform {
     async fn start_broker_connection(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
         
         // Get host and port of the broker and start connection
-        let _ = Platform::load_network_file(services.clone(), connection.clone()).await;
+        if let Err(e) = Platform::load_network_file(services.clone(), connection.clone()).await 
+        {
+            tracing::warn!(class="Platform", "Failed to load network configuration: {}", e);
+            tracing::warn!(class="Platform", "Continue with default broker configuration");
+
+            let host = "localhost";
+            let port = 1883;
+            connection.lock().await.start_connection(&host, port).await;
+        }
 
         devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
     }
