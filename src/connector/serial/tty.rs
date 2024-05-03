@@ -39,6 +39,10 @@ impl Gate {
         let mut key = String::new();
         if config.serial_port_name.is_some() {
             key = config.serial_port_name.clone().unwrap();
+        // } else if config.usb_vendor.is_some() {
+
+        // } else {
+        //     tracing::trace!(class="Platform", "No way to identify the serial port");
         }
 
         // # Get the serial port name
@@ -53,6 +57,10 @@ impl Gate {
         // else:
         //     raise Exception("no way to identify the serial port")
 
+        // if !(key in self.instances) {
+        //     self.instances.get(key) = String::new();
+        //     match 
+        // }
 
         // Return the instance
         self.instances.get(key.as_str()).unwrap().clone()
