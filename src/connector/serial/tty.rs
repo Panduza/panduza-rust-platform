@@ -1,4 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
+use tokio_serial::{UsbPortInfo};
 
 use std::sync::Mutex;
 use lazy_static::lazy_static;
@@ -39,10 +40,8 @@ impl Gate {
         let mut key = String::new();
         if config.serial_port_name.is_some() {
             key = config.serial_port_name.clone().unwrap();
-        // } else if config.usb_vendor.is_some() {
-
-        // } else {
-        //     tracing::trace!(class="Platform", "No way to identify the serial port");
+        } else {
+            tracing::trace!(class="Platform", "No way to identify the serial port");
         }
 
         // # Get the serial port name
@@ -57,10 +56,24 @@ impl Gate {
         // else:
         //     raise Exception("no way to identify the serial port")
 
-        // if !(key in self.instances) {
-        //     self.instances.get(key) = String::new();
-        //     match 
-        // }
+        if !(self.instances.contains_key(&key)) {
+            self.instances.get(&key) = String::new();
+            match (Gate{instanes: self.instances}) {
+                Ok(mut new_instance) => {
+                    async {
+                        new_instance.connect().await;
+                    };
+                    
+                    self.instances.get(&key) = new_instance;
+                    tracing::info!(class="Platform", "connector created");
+                }
+                Err(e) => {
+                    tracing::trace!(class="Platform", "Error during initialization");
+                }
+            }
+        } else {
+            tracing::info!(class="Platform", "connector already created, use existing instance");
+        }
 
         // Return the instance
         self.instances.get(key.as_str()).unwrap().clone()
