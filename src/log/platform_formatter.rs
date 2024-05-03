@@ -119,9 +119,16 @@ where
             write!(&mut writer, "{}: ", "WARN".yellow())?;
         }
 
-        // Write the event's message.
-        let message = visitor.entries().get("message").unwrap();
-        write!(&mut writer, "{}", color_words_in_quotes(message))?;
+        // Write the event's message, if it has one.
+        let res = visitor.entries().get("message");
+        match res {
+            Some(message) => {
+                write!(&mut writer, "{}", color_words_in_quotes(message))?;
+            },
+            None => {
+                write!(&mut writer, "{}", "no message")?;
+            }
+        }
 
 
 
