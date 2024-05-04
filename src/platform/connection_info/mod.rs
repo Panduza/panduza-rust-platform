@@ -72,22 +72,35 @@ impl ConnectionInfo {
         
         let hostname = 
             map_obj.get("broker_host")
-            .and_then(|v| v.as_str())
-            .ok_or("hostname not provided in network.json, continue with default host")?;
-            // .ok_or_else(err)
-            // .or("localhost");
-            // .ok_or("hostname not provided in network.json, continue with default host");
-        
-        // Implement the logic here
-        
-        Err("pokkk")
-        // Ok(
-        //     Self {
-        //         hostname: "localhost".to_string(),
-        //         port: 1883,
-        //     }
-        // )
+                .and_then(|v| v.as_str())
+                .ok_or("'broker_host' not provided in network.json, continue with default host")?;
+
+        let port = 
+            map_obj.get("broker_port")
+                .and_then(|v| v.as_u64())
+                .ok_or("'broker_port' not provided in network.json, continue with default port")?;
+
+    
+        Ok(
+            Self {
+                hostname: hostname.to_string(),
+                port: port as u16,
+            }
+        )
     }
+
+    /// Getter Hostname
+    ///
+    pub fn hostname(&self) -> &String {
+        &self.hostname
+    }
+
+    /// Getter Port
+    ///
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
 
     /// Extract the hostname from the JSON object
     ///
