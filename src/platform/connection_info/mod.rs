@@ -8,12 +8,17 @@ use crate::platform::PlatformError;
 mod tests;
 
 #[derive(Debug)]
-struct NetworkFile {
+pub struct ConnectionInfo {
+    
+    // broker info
     hostname: String,
     port: u16,
+
+    // credential
+    
 }
 
-impl NetworkFile {
+impl ConnectionInfo {
     // fn new() -> Self {
     //     // Implement the constructor here
     // }
@@ -45,11 +50,22 @@ impl NetworkFile {
     }
 
 
-    fn from_json_value(&self, json_value: serde_json::Value) -> Result<(), Box<dyn std::error::Error>> {
-        // Process the parsed data
+    /// Create a new ConnectionInfo object from a JSON value
+    /// 
+    fn from_json_value(json_obj: JsonValue) -> Result<Self, String> {
 
+        let p = 
+            json_obj.as_object()
+                    .ok_or("Invalid JSON object");
 
-        Ok(())
+        println!("{:?}", p);
+
+        Ok(
+            Self {
+                hostname: "localhost".to_string(),
+                port: 1883,
+            }
+        )
     }
 
     /// Extract the hostname from the JSON object
@@ -58,7 +74,12 @@ impl NetworkFile {
 
         // let hostname_json_value = 
         
-        // let hostname_json_value = obj.get("broker_host");
+        // let hostname_json_value = 
+        //     obj.get("broker_host")
+        //     .or_else(|| obj.get("host"));
+
+
+        // hostname_json_value.ok_or(PlatformError::new("host not provided in network.json, continue with default host"))?;
 
         // obj.get("broker_host")
         // .a

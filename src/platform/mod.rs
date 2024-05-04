@@ -16,7 +16,7 @@ use tokio::net::UdpSocket;
 use crate::device;
 use crate::connection;
 
-mod network_file;
+mod connection_info;
 pub mod error;
 mod services;
 mod task_pool_loader;
