@@ -8,7 +8,7 @@ use crate::platform::PlatformError;
 
 mod tests;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ConnectionInfo {
     
     // broker info
@@ -59,29 +59,33 @@ impl ConnectionInfo {
 
     /// Create a new ConnectionInfo object from a JSON value
     ///
-    fn from_json_value(json_obj: JsonValue) -> Result<Self, &'static str> {
+    fn build_from_json_value(json_obj: JsonValue) -> Option<Self> {
         json_obj.as_object()
-                .ok_or("Except a JSON object at file root")
-                .and_then(ConnectionInfo::from_map_object)
+                // .ok_or("Except a JSON object at file root")
+                .and_then(ConnectionInfo::build_from_map_object)
     }
 
     ///
     ///
-    fn from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, &'static str> {
+    fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Option<Self> {
         
         
         let hostname = 
             map_obj.get("broker_host")
                 .and_then(|v| v.as_str())
-                .ok_or("'broker_host' not provided in network.json, continue with default host")?;
+                .unwrap_or("localhost");
+
+        // let fallback_port = || {
+        //     Some(JsonValue::from(1883))
+        // };
 
         let port = 
             map_obj.get("broker_port")
+                // .or_else(fallback_port)
                 .and_then(|v| v.as_u64())
-                .ok_or("'broker_port' not provided in network.json, continue with default port")?;
-
+                .unwrap_or(1883);
     
-        Ok(
+        Some(
             Self {
                 hostname: hostname.to_string(),
                 port: port as u16,
