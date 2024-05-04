@@ -18,7 +18,8 @@ fn from_json_value_1() {
         "port": 1883
     });
     let ci = ConnectionInfo::from_json_value(input);
-    assert_eq!(ci.is_err(), true);
+    assert_eq!(ci.is_err(), false, "Error: {:?}", ci);
+    
 }
 
 

@@ -1,4 +1,5 @@
 
+use serde_json::Map as JsonMap;
 use serde_json::Value as JsonValue;
 use std::fs::File;
 use std::io::Read;
@@ -19,9 +20,15 @@ pub struct ConnectionInfo {
 }
 
 impl ConnectionInfo {
-    // fn new() -> Self {
-    //     // Implement the constructor here
-    // }
+
+    /// Create a new ConnectionInfo object with default values
+    ///
+    fn default() -> Self {
+        Self {
+            hostname: "localhost".to_string(),
+            port: 1883,
+        }
+    }
 
     fn from_json_file(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Read the file contents
@@ -51,21 +58,35 @@ impl ConnectionInfo {
 
 
     /// Create a new ConnectionInfo object from a JSON value
-    /// 
-    fn from_json_value(json_obj: JsonValue) -> Result<Self, String> {
+    ///
+    fn from_json_value(json_obj: JsonValue) -> Result<Self, &'static str> {
+        json_obj.as_object()
+                .ok_or("Except a JSON object at file root")
+                .and_then(ConnectionInfo::from_map_object)
+    }
 
-        let p = 
-            json_obj.as_object()
-                    .ok_or("Invalid JSON object");
-
-        println!("{:?}", p);
-
-        Ok(
-            Self {
-                hostname: "localhost".to_string(),
-                port: 1883,
-            }
-        )
+    ///
+    ///
+    fn from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, &'static str> {
+        
+        
+        let hostname = 
+            map_obj.get("broker_host")
+            .and_then(|v| v.as_str())
+            .ok_or("hostname not provided in network.json, continue with default host")?;
+            // .ok_or_else(err)
+            // .or("localhost");
+            // .ok_or("hostname not provided in network.json, continue with default host");
+        
+        // Implement the logic here
+        
+        Err("pokkk")
+        // Ok(
+        //     Self {
+        //         hostname: "localhost".to_string(),
+        //         port: 1883,
+        //     }
+        // )
     }
 
     /// Extract the hostname from the JSON object
