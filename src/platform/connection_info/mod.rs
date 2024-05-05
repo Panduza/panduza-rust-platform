@@ -8,6 +8,56 @@ use crate::platform::PlatformError;
 
 mod tests;
 
+
+#[derive(Debug)]
+enum ErrorType {
+    // COVER:REQ_CONN_INFO_0030_00
+    ContentBadFormat,
+    // COVER:REQ_CONN_INFO_0040_00
+    MandatoryFieldMissing,
+    // COVER:REQ_CONN_INFO_0050_00
+    FileDoesNotExist,
+}
+
+
+#[derive(Debug)]
+pub struct Error {
+
+    type_: ErrorType,
+
+    message: String,
+}
+
+impl Error {
+
+    fn new(type_: ErrorType, message: &str) -> Self {
+        Self {
+            type_,
+            message: message.to_string(),
+        }
+    }
+
+    fn message(&self) -> &str {
+        &self.message
+    }
+
+    fn type_(&self) -> &ErrorType {
+        &self.type_
+    }
+}
+
+fn ContentBadFormatError(message: &str) -> Error {
+    Error::new(ErrorType::ContentBadFormat, message)
+}
+fn MandatoryFieldMissingError(message: &str) -> Error {
+    Error::new(ErrorType::MandatoryFieldMissing, message)
+}
+fn FileDoesNotExistError(message: &str) -> Error {
+    Error::new(ErrorType::FileDoesNotExist, message)
+}
+
+
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct ConnectionInfo {
     
@@ -59,21 +109,29 @@ impl ConnectionInfo {
 
     /// Create a new ConnectionInfo object from a JSON value
     ///
-    fn build_from_json_value(json_obj: JsonValue) -> Option<Self> {
+    fn build_from_json_value(json_obj: JsonValue) -> Result<Self, Error> {
         json_obj.as_object()
-                // .ok_or("Except a JSON object at file root")
-                .and_then(ConnectionInfo::build_from_map_object)
+            .ok_or(ContentBadFormatError( "Except a JSON object at file root"))
+            .and_then(ConnectionInfo::build_from_map_object)
     }
 
+    /// Create a new ConnectionInfo object from a JSON map object
     ///
-    ///
-    fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Option<Self> {
+    fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, Error> {
+
+        
+        let host = map_obj.get("host")
+            .ok_or(MandatoryFieldMissingError("[host] section must be provided"))?;
+
+        
+        // let hostname = 
+        //         .and_then(|v| v.as_object() )
         
         
-        let hostname = 
-            map_obj.get("broker_host")
-                .and_then(|v| v.as_str())
-                .unwrap_or("localhost");
+        //     map_obj.get("broker_host")
+        //         .ok_or(err!(MandatoryFieldMissing, "broker_host")
+        //         .and_then(|v| v.as_str())
+        //         .unwrap_or("localhost");
 
         // let fallback_port = || {
         //     Some(JsonValue::from(1883))
@@ -85,7 +143,7 @@ impl ConnectionInfo {
                 .and_then(|v| v.as_u64())
                 .unwrap_or(1883);
     
-        Some(
+        Ok(
             Self {
                 hostname: hostname.to_string(),
                 port: port as u16,
