@@ -62,8 +62,8 @@ fn FileDoesNotExistError(message: &str) -> Error {
 pub struct ConnectionInfo {
     
     // broker info
-    hostname: String,
-    port: u16,
+    host_addr: String,
+    host_port: u16,
 
     // credential
     
@@ -119,14 +119,23 @@ impl ConnectionInfo {
     ///
     fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, Error> {
 
-        
+        // Get Host Section
         let host = map_obj.get("host")
             .ok_or(MandatoryFieldMissingError("[host] section must be provided"))?;
 
-        
-        // let hostname = 
-        //         .and_then(|v| v.as_object() )
-        
+        // Get Host Address
+        let host_addr = host.get("addr")
+            .ok_or(MandatoryFieldMissingError("[host.addr] must be provided"))?
+            .as_str()
+            .ok_or(ContentBadFormatError("[host.addr] must be a string"))?
+            .to_string();
+
+        // Get Host Port
+        let host_port = host.get("port")
+            .ok_or(MandatoryFieldMissingError("[host.port] must be provided"))?
+            .as_u64()
+            .ok_or(ContentBadFormatError("[host.port] must be a number"))?
+            as u16;
         
         //     map_obj.get("broker_host")
         //         .ok_or(err!(MandatoryFieldMissing, "broker_host")
@@ -145,22 +154,22 @@ impl ConnectionInfo {
     
         Ok(
             Self {
-                hostname: hostname.to_string(),
-                port: port as u16,
+                host_addr: host_addr,
+                host_port: host_port,
             }
         )
     }
 
     /// Getter Hostname
     ///
-    pub fn hostname(&self) -> &String {
-        &self.hostname
+    pub fn host_addr(&self) -> &String {
+        &self.host_addr
     }
 
     /// Getter Port
     ///
-    pub fn port(&self) -> u16 {
-        self.port
+    pub fn host_port(&self) -> u16 {
+        self.host_port
     }
 
 
