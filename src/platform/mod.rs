@@ -359,7 +359,8 @@ impl Platform {
                         tracing::error!(class="Platform", "Failed to load network configuration: {}", e.message());
                     }
                 }
-            });
+            })
+            .unwrap();
 
 
         // Get host and port of the broker and start connection
