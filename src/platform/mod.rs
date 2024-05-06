@@ -25,6 +25,8 @@ use services::{Services, AmServices};
 
 use crate::platform_error;
 
+use self::connection_info::ConnectionInfo;
+
 
 pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
 
@@ -344,6 +346,22 @@ impl Platform {
     /// 
     async fn start_broker_connection(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
         
+
+        let conn_info = ConnectionInfo::build_from_file()
+            .await
+            .map_err(|e| {
+                match e.type_() {
+                    connection_info::CiErrorType::FileDoesNotExist => {
+                        tracing::warn!(class="Platform", "Failed to load network configuration: {}", e.message());
+                        tracing::warn!(class="Platform", "Continue with default broker configuration");
+                    },
+                    _ => {
+                        tracing::error!(class="Platform", "Failed to load network configuration: {}", e.message());
+                    }
+                }
+            });
+
+
         // Get host and port of the broker and start connection
         if let Err(e) = Platform::load_network_file(services.clone(), connection.clone()).await 
         {

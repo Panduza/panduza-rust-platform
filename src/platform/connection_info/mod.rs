@@ -1,16 +1,15 @@
+use std::env;
+use std::path::PathBuf;
 
+use serde_json::json;
 use serde_json::Map as JsonMap;
 use serde_json::Value as JsonValue;
-use std::fs::File;
-use std::io::Read;
-
-use crate::platform::PlatformError;
 
 mod tests;
 
 
 #[derive(Debug)]
-enum ErrorType {
+pub enum CiErrorType {
     // COVER:REQ_CONN_INFO_0030_00
     ContentBadFormat,
     // COVER:REQ_CONN_INFO_0040_00
@@ -21,39 +20,39 @@ enum ErrorType {
 
 
 #[derive(Debug)]
-pub struct Error {
+pub struct CiError {
 
-    type_: ErrorType,
+    type_: CiErrorType,
 
     message: String,
 }
 
-impl Error {
+impl CiError {
 
-    fn new(type_: ErrorType, message: &str) -> Self {
+    fn new(type_: CiErrorType, message: &str) -> Self {
         Self {
             type_,
             message: message.to_string(),
         }
     }
 
-    fn message(&self) -> &str {
+    pub fn message(&self) -> &str {
         &self.message
     }
 
-    fn type_(&self) -> &ErrorType {
+    pub fn type_(&self) -> &CiErrorType {
         &self.type_
     }
 }
 
-fn ContentBadFormatError(message: &str) -> Error {
-    Error::new(ErrorType::ContentBadFormat, message)
+fn content_bad_format_error(message: &str) -> CiError {
+    CiError::new(CiErrorType::ContentBadFormat, message)
 }
-fn MandatoryFieldMissingError(message: &str) -> Error {
-    Error::new(ErrorType::MandatoryFieldMissing, message)
+fn mandatory_field_missing_error(message: &str) -> CiError {
+    CiError::new(CiErrorType::MandatoryFieldMissing, message)
 }
-fn FileDoesNotExistError(message: &str) -> Error {
-    Error::new(ErrorType::FileDoesNotExist, message)
+fn file_does_not_exist_error(message: &str) -> CiError {
+    CiError::new(CiErrorType::FileDoesNotExist, message)
 }
 
 
@@ -64,6 +63,7 @@ pub struct ConnectionInfo {
     // broker info
     host_addr: String,
     host_port: u16,
+    host_retry: u32,
 
     // credential
     
@@ -75,87 +75,107 @@ impl ConnectionInfo {
     ///
     fn default() -> Self {
         Self {
-            hostname: "localhost".to_string(),
-            port: 1883,
+            host_addr: "localhost".to_string(),
+            host_port: 1883,
+            host_retry: 1,
         }
     }
 
-    fn from_json_file(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        // Read the file contents
-        let mut file = File::open(file_path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+    /// Give the system path of the connection.json file
+    ///
+    /// COVER:REQ_CONN_INFO_0010_00
+    ///
+    fn system_file_path() -> PathBuf {
+        // Define the paths
+        let filename = "connection.json";
+        let unix_path =
+            PathBuf::from("/etc/panduza").join(filename);
+        let windows_path = 
+            PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join(filename);
 
-        // Parse the JSON contents
-        let parsed_data: serde_json::Value = serde_json::from_str(&contents)?;
-
-        // Process the parsed data
-        // TODO: Implement your logic here
-
-
-        Ok(())
+        // Return the file path depeding on the OS
+        match env::consts::OS {
+            "windows" => {
+                return windows_path;
+            }
+            "unix" => {
+                return unix_path;
+            }
+            _ => {
+                tracing::warn!("Unsupported system bu try with unix path anyway !");
+                return unix_path;
+            }
+        }
     }
 
-    fn from_json_string(&self, json_string: &str) -> Result<(), Box<dyn std::error::Error>> {
-        // Parse the JSON contents
-        // let parsed_data: serde_json::Value = serde_json::from_str(json_string)?;
+    /// Create a new ConnectionInfo object from a JSON file
+    /// 
+    pub async fn build_from_file() -> Result<Self, CiError> {
+        // Get the file path
+        let file_path = ConnectionInfo::system_file_path();
 
-        
-        // Process the parsed data
-    
-        Ok(())
+        // Check if the file exists
+        if !file_path.exists()  {
+            return Err(file_does_not_exist_error(file_path.to_str().unwrap()));
+        }
+
+        // Try to read the file content
+        tokio::fs::read_to_string(&file_path).await
+            .map_err(|e| content_bad_format_error(e.to_string().as_str()))
+            .and_then(|v| ConnectionInfo::build_from_str(v.as_str()) )
     }
 
+    /// Create a new ConnectionInfo object from a JSON string
+    /// 
+    fn build_from_str(json_string: &str) -> Result<Self, CiError> {
+        serde_json::from_str(json_string)
+            .map_err(|e| content_bad_format_error(e.to_string().as_str()))
+            .and_then(ConnectionInfo::build_from_json_value)
+    }
 
     /// Create a new ConnectionInfo object from a JSON value
     ///
-    fn build_from_json_value(json_obj: JsonValue) -> Result<Self, Error> {
+    fn build_from_json_value(json_obj: JsonValue) -> Result<Self, CiError> {
         json_obj.as_object()
-            .ok_or(ContentBadFormatError( "Except a JSON object at file root"))
+            .ok_or(content_bad_format_error( "Except a JSON object at file root"))
             .and_then(ConnectionInfo::build_from_map_object)
     }
 
     /// Create a new ConnectionInfo object from a JSON map object
     ///
-    fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, Error> {
+    fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, CiError> {
 
         // Get Host Section
         let host = map_obj.get("host")
-            .ok_or(MandatoryFieldMissingError("[host] section must be provided"))?;
+            .ok_or(mandatory_field_missing_error("[host] section must be provided"))?;
 
         // Get Host Address
         let host_addr = host.get("addr")
-            .ok_or(MandatoryFieldMissingError("[host.addr] must be provided"))?
+            .ok_or(mandatory_field_missing_error("[host.addr] must be provided"))?
             .as_str()
-            .ok_or(ContentBadFormatError("[host.addr] must be a string"))?
+            .ok_or(content_bad_format_error("[host.addr] must be a string"))?
             .to_string();
 
         // Get Host Port
         let host_port = host.get("port")
-            .ok_or(MandatoryFieldMissingError("[host.port] must be provided"))?
+            .ok_or(mandatory_field_missing_error("[host.port] must be provided"))?
             .as_u64()
-            .ok_or(ContentBadFormatError("[host.port] must be a number"))?
+            .ok_or(content_bad_format_error("[host.port] must be a number"))?
             as u16;
-        
-        //     map_obj.get("broker_host")
-        //         .ok_or(err!(MandatoryFieldMissing, "broker_host")
-        //         .and_then(|v| v.as_str())
-        //         .unwrap_or("localhost");
 
-        // let fallback_port = || {
-        //     Some(JsonValue::from(1883))
-        // };
+        // Get Host Retry
+        let default_retry_value: u32 = 1;
+        let host_retry = host.get("retry")
+            .unwrap_or(&json!(default_retry_value))
+            .as_u64()
+            .ok_or(content_bad_format_error("[host.retry] must be a number"))?
+            as u32;
 
-        let port = 
-            map_obj.get("broker_port")
-                // .or_else(fallback_port)
-                .and_then(|v| v.as_u64())
-                .unwrap_or(1883);
-    
         Ok(
             Self {
                 host_addr: host_addr,
                 host_port: host_port,
+                host_retry: host_retry,
             }
         )
     }
@@ -171,70 +191,6 @@ impl ConnectionInfo {
     pub fn host_port(&self) -> u16 {
         self.host_port
     }
-
-
-    /// Extract the hostname from the JSON object
-    ///
-    fn extract_hostname_from_json_object(&self, obj: JsonValue) -> Result<(), PlatformError> {
-
-        // let hostname_json_value = 
-        
-        // let hostname_json_value = 
-        //     obj.get("broker_host")
-        //     .or_else(|| obj.get("host"));
-
-
-        // hostname_json_value.ok_or(PlatformError::new("host not provided in network.json, continue with default host"))?;
-
-        // obj.get("broker_host")
-        // .a
-            // .ok_or(|)
-
-
-        // match hostname_json_value {
-        //     Some(host) => {
-
-
-        //         match host {
-        //             JsonValue::String(_) => {
-        //                 // ...
-        //             }
-        //             _ => {
-        //                 // ...
-        //             }
-        //         }
-
-        //         // if let Some(JsonValue::String(host)) = hostname_json_value {
-        //         //     tracing::info!(class="Platform", "host: {}", host);
-        //         // } else {
-        //         //     tracing::warn!(class="Platform", "host not provided in network.json, continue with default host");
-        //         //     "localhost"
-        //         // }
-
-        //         if host == JsonValue::String {
-        //             let host_str = host.as_str().unwrap();
-        //             tracing::info!(class="Platform", "host: {}", host_str);
-        //         }
-
-        //         // host.as_str().unwrap()
-        //     }
-        //     None => {
-        //         tracing::warn!(class="Platform", "host not provided in network.json, continue with default host");
-        //         "localhost"
-        //     }
-        // };
-
-
-
-        Ok(())
-    }
-
-
-    fn extract_hostname_from_json_value(&self, obj: JsonValue) -> Result<(), PlatformError> {
-        // Implement the logic here
-        Ok(())
-    }
-
 
 }
 
