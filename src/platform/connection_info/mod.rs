@@ -1,9 +1,11 @@
 use std::env;
+use std::io::Write;
 use std::path::PathBuf;
 
 use serde_json::json;
 use serde_json::Map as JsonMap;
 use serde_json::Value as JsonValue;
+use std::fs::File;
 
 mod tests;
 
@@ -56,10 +58,15 @@ fn file_does_not_exist_error(message: &str) -> CiError {
 }
 
 
-
-#[derive(Debug, PartialEq, Eq)]
+/// This object is responsible of the connection information
+/// 
+/// It must manage the data but also the file used to store them
+/// 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ConnectionInfo {
-    
+    // Path of the file
+    file_path: String,
+
     // broker info
     host_addr: String,
     host_port: u16,
@@ -73,8 +80,9 @@ impl ConnectionInfo {
 
     /// Create a new ConnectionInfo object with default values
     ///
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
+            file_path: ConnectionInfo::system_file_path().to_str().unwrap().to_string(),
             host_addr: "localhost".to_string(),
             host_port: 1883,
             host_retry: 1,
@@ -85,7 +93,7 @@ impl ConnectionInfo {
     ///
     /// COVER:REQ_CONN_INFO_0010_00
     ///
-    fn system_file_path() -> PathBuf {
+    pub fn system_file_path() -> PathBuf {
         // Define the paths
         let filename = "connection.json";
         let unix_path =
@@ -173,6 +181,7 @@ impl ConnectionInfo {
 
         Ok(
             Self {
+                file_path: ConnectionInfo::system_file_path().to_str().unwrap().to_string(),
                 host_addr: host_addr,
                 host_port: host_port,
                 host_retry: host_retry,
@@ -190,6 +199,25 @@ impl ConnectionInfo {
     ///
     pub fn host_port(&self) -> u16 {
         self.host_port
+    }
+
+    /// Save content into the connection file
+    /// 
+    pub fn save_to_file(&self) -> Result<(), std::io::Error> {
+        // Create the JSON object
+        let json_obj = json!({
+            "host": {
+                "addr": self.host_addr,
+                "port": self.host_port,
+                "retry": self.host_retry,
+            }
+        });
+
+        //  Write new file
+        let mut file = File::create(&self.file_path)?;
+        let json_string = json_obj.to_string();
+        file.write_all(json_string.as_bytes())?;
+        Ok(())
     }
 
 }

@@ -1,10 +1,11 @@
 use std::env;
+use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use dirs;
-
+use std::io::{self, Read};
 use futures::future::BoxFuture;
 use futures::Future;
 use serde_json::json;
@@ -342,37 +343,87 @@ impl Platform {
         }
     }
 
+
+    /// Ask the user if he wants to create a default connection info.
+    /// Stop the platform in case it does not work or the user does not want.
+    ///
+    fn ask_user_about_default_connection_info_creation(services: &mut Services) {
+        // Warning message
+        println!("!");
+        println!("!");
+        println!("!");
+        println!("===========================================================");
+        println!("No configuration file found ! ({})", ConnectionInfo::system_file_path().to_str().unwrap());
+        println!("Do you want to create one with default settings ? [N/y]");
+
+        // Get input from user
+        let mut input = [0; 1];
+        io::stdin().read(&mut input).unwrap();
+        let char = input[0] as char;
+
+        // Check if user answer Yes
+        if char == 'y' || char == 'Y' {
+            // Set default connection info
+            services.generate_default_connection_info()
+                .map_err(|e| {
+                    println!("Failed to create default connection info: {}", e.to_string());
+                })
+                .expect("Failed to create default connection info");
+        }
+        // Other answers are considered as No
+        else {
+
+        }
+
+    }
+
+
     /// Start the broker connection
     /// 
     async fn start_broker_connection(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
-        
 
-        let conn_info = ConnectionInfo::build_from_file()
-            .await
-            .map_err(|e| {
+        // Try to import connection info from the user file
+        match ConnectionInfo::build_from_file().await {
+
+            // Set the connection info if build from file is ok
+            Ok(ci) => {
+                services.lock().await.set_connection_info(ci);
+            },
+
+            // Else Manage errors and unperfect situations
+            Err(e) => {
                 match e.type_() {
                     connection_info::CiErrorType::FileDoesNotExist => {
-                        tracing::warn!(class="Platform", "Failed to load network configuration: {}", e.message());
-                        tracing::warn!(class="Platform", "Continue with default broker configuration");
+                        Platform::ask_user_about_default_connection_info_creation(
+                            services.lock().await.deref_mut()
+                        );
                     },
                     _ => {
-                        tracing::error!(class="Platform", "Failed to load network configuration: {}", e.message());
+                        println!("pok");
+
+                        // tracing::error!(class="Platform", "Failed to load network configuration: {}", e.message());
                     }
                 }
-            })
-            .unwrap();
-
-
-        // Get host and port of the broker and start connection
-        if let Err(e) = Platform::load_network_file(services.clone(), connection.clone()).await 
-        {
-            tracing::warn!(class="Platform", "Failed to load network configuration: {}", e);
-            tracing::warn!(class="Platform", "Continue with default broker configuration");
-
-            let host = "localhost";
-            let port = 1883;
-            connection.lock().await.start_connection(&host, port).await;
+            }
         }
+
+
+
+        // // Get host and port of the broker and start connection
+        // if let Err(e) = Platform::load_network_file(services.clone(), connection.clone()).await 
+        // {
+        //     tracing::warn!(class="Platform", "Failed to load network configuration: {}", e);
+        //     tracing::warn!(class="Platform", "Continue with default broker configuration");
+
+        //     let host = "localhost";
+        //     let port = 1883;
+        //     connection.lock().await.start_connection(&host, port).await;
+        // }
+
+
+        let ci = services.lock().await.connection_info();
+
+        connection.lock().await.start_connection(&ci.host_addr(), ci.host_port()).await;
 
         devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
     }

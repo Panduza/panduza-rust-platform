@@ -5,7 +5,7 @@ use bitflags::bitflags;
 use tokio::sync::Notify;
 use std::cmp::PartialEq;
 
-use super::TaskPoolLoader;
+use super::{connection_info::ConnectionInfo, TaskPoolLoader};
 
 bitflags! {
     #[derive(Copy, Clone, Debug)]
@@ -42,6 +42,9 @@ pub struct Services {
     /// Panic cause, try to keep ip empty :)
     panic_cause: String,
 
+
+    connection_info: Option<ConnectionInfo>,
+
     task_loader: TaskPoolLoader
 }
 pub type AmServices = Arc<Mutex<Services>>;
@@ -60,6 +63,7 @@ impl Services {
             requests_change_notifier: notify,
             tree_content: serde_json::Value::Null,
             panic_cause: String::new(),
+            connection_info: None,
             task_loader: task_loader
         }));
     }
@@ -123,6 +127,28 @@ impl Services {
     /// 
     pub fn reload_tree_requested(&mut self) -> bool {
         return self.xxx_requested(Requests::RELOAD_TREE);
+    }
+
+    /// Get the connection info
+    ///
+    pub fn connection_info(&self) -> ConnectionInfo {
+        self.connection_info
+            .as_ref()
+            .unwrap()
+            .clone()
+    }
+
+    /// Set the connection info
+    ///
+    pub fn set_connection_info(&mut self, ci: ConnectionInfo) {
+        self.connection_info = Some(ci);
+    }
+
+    /// Set the default connection info
+    ///
+    pub fn generate_default_connection_info(&mut self) -> Result<(), std::io::Error> {
+        self.connection_info = Some(ConnectionInfo::default());
+        self.connection_info.as_ref().unwrap().save_to_file()
     }
 
 }
