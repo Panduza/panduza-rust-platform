@@ -1,15 +1,12 @@
 use std::env;
-use std::ops::DerefMut;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 
 use dirs;
-use std::io::{self, Read};
 use futures::future::BoxFuture;
 use futures::Future;
 use serde_json::json;
-use serde_json::Value;
 use tokio::signal;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
@@ -26,7 +23,8 @@ use services::{Services, AmServices};
 
 use crate::platform_error;
 
-use self::connection_info::ConnectionInfo;
+
+use self::services::boot::execute_service_boot;
 
 
 pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
@@ -145,6 +143,9 @@ impl Platform {
     async fn end_of_all_tasks( &mut self) {
         while let Some(join_result) = self.task_pool.join_next().await {
 
+
+            // self.services.lock().await.stop_requested();
+
             match join_result {
 
                 Ok(task_result) => {
@@ -154,6 +155,8 @@ impl Platform {
                         },
                         Err(e) => {
                             tracing::error!("Task failed: {}", e);
+                            self.task_pool.abort_all();
+
                         }
                     }
                 },
@@ -231,8 +234,12 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        // log
-                        tracing::info!(class="Platform", "Booting...");
+                        
+
+                        if let Err(e) = execute_service_boot(services.clone()).await {
+                            return platform_error!("Failed to boot", None);
+                        }
+                        // , devices.clone(), connection.clone()
 
                         // Load the tree file
                         if let Err(e) = Platform::load_tree_file(services.clone()).await
@@ -275,72 +282,13 @@ impl Platform {
         }
     }
 
-    /// Ask the user if he wants to create a default connection info.
-    /// Stop the platform in case it does not work or the user does not want.
-    ///
-    fn ask_user_about_default_connection_info_creation(services: &mut Services) {
-        // Warning message
-        println!("!");
-        println!("!");
-        println!("!");
-        println!("===========================================================");
-        println!("No configuration file found ! ({})", ConnectionInfo::system_file_path().to_str().unwrap());
-        println!("Do you want to create one with default settings ? [N/y]");
-
-        // Get input from user
-        let mut input = [0; 1];
-        io::stdin().read(&mut input).unwrap();
-        let char = input[0] as char;
-
-        // Check if user answer Yes
-        if char == 'y' || char == 'Y' {
-            // Set default connection info
-            services.generate_default_connection_info()
-                .map_err(|e| {
-                    println!("Failed to create default connection info: {}", e.to_string());
-                })
-                .expect("Failed to create default connection info");
-        }
-        // Other answers are considered as No
-        else {
-            println!("No connection info set ! stopping the platform...");
-            println!("!");
-            println!("!");
-            println!("!");
-            services.trigger_stop();
-        }
-
-    }
 
 
     /// Start the broker connection
     /// 
     async fn start_broker_connection(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
 
-        // Try to import connection info from the user file
-        match ConnectionInfo::build_from_file().await {
 
-            // Set the connection info if build from file is ok
-            Ok(ci) => {
-                services.lock().await.set_connection_info(ci);
-            },
-
-            // Else Manage errors and unperfect situations
-            Err(e) => {
-                match e.type_() {
-                    connection_info::CiErrorType::FileDoesNotExist => {
-                        Platform::ask_user_about_default_connection_info_creation(
-                            services.lock().await.deref_mut()
-                        );
-                    },
-                    _ => {
-                        println!("pok");
-
-                        // tracing::error!(class="Platform", "Failed to load network configuration: {}", e.message());
-                    }
-                }
-            }
-        }
 
 
         let sss = services.lock().await;
