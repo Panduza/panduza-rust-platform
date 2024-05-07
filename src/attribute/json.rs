@@ -1,6 +1,4 @@
 
-use std::collections::HashMap;
-
 use serde_json::json;
 
 use super::AttributeInterface;
@@ -61,7 +59,7 @@ impl AttributeInterface for JsonAttribute {
         return self.data.to_string();
     }
     
-    fn from_mqtt_payload(&mut self, payload: &str) {
+    fn from_mqtt_payload(&mut self, _payload: &str) {
         todo!()
     }
 

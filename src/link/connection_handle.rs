@@ -2,7 +2,7 @@ use std::collections::LinkedList;
 
 use tokio::sync::mpsc;
 
-use crate::subscription::{self, Filter};
+use crate::subscription;
 
 
 /// Link handle for the connection

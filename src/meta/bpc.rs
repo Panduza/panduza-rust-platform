@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
 
-use crate::attribute::{self, JsonAttribute};
+use crate::attribute::JsonAttribute;
 use crate::interface::AmInterface;
 use crate::platform::PlatformError;
 use crate::{interface, subscription};
@@ -68,13 +68,13 @@ pub trait BpcActions: Send + Sync {
 // ----------------------------------------------------------------------------
 
 
-pub struct EnableAttribute {
-    attr: JsonAttribute,
-}
+// pub struct EnableAttribute {
+//     attr: JsonAttribute,
+// }
 
-pub struct F32ValueAttribute {
-    attr: JsonAttribute,
-}
+// pub struct F32ValueAttribute {
+//     attr: JsonAttribute,
+// }
 
 
 // ----------------------------------------------------------------------------
@@ -168,12 +168,12 @@ impl interface::fsm::States for BpcStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
-    async fn error(&self, interface: &AmInterface)
+    async fn error(&self, _interface: &AmInterface)
     {
         println!("error");
     }
 
-    async fn cleaning(&self, interface: &AmInterface)
+    async fn cleaning(&self, _interface: &AmInterface)
     {
         println!("cleaning");
     }
@@ -198,7 +198,7 @@ impl BpcSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_enable_value(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
+    async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_bool().unwrap();
         self.bpc_interface.lock().await
             .actions.write_enable_value(&interface, requested_value).await;
@@ -214,7 +214,7 @@ impl BpcSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_voltage_value(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
+    async fn process_voltage_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_f64().unwrap();
         self.bpc_interface.lock().await
             .actions.write_voltage_value(&interface, requested_value as f64).await;
@@ -230,7 +230,7 @@ impl BpcSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_current_value(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
+    async fn process_current_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_f64().unwrap();
         self.bpc_interface.lock().await
             .actions.write_current_value(&interface, requested_value as f64).await;

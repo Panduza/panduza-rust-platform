@@ -1,9 +1,9 @@
-use std::{collections::LinkedList, sync::Arc};
+use std::collections::LinkedList;
 
 use rumqttc::AsyncClient;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc;
 
-use crate::subscription::{self, Filter};
+use crate::subscription::{self};
 
 use super::{ConnectionHandle, InterfaceHandle};
 
