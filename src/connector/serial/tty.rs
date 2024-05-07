@@ -1,5 +1,5 @@
-use std::{collections::HashMap, sync::Arc};
-use tokio_serial::{UsbPortInfo};
+use std::collections::HashMap;
+// use tokio_serial::{UsbPortInfo};
 
 use std::sync::Mutex;
 use lazy_static::lazy_static;
@@ -10,21 +10,33 @@ lazy_static! {
         = Mutex::new(Gate { instances: HashMap::new() });
 }
 
-pub fn Get(config: &Config) -> Option<Tty> {
+pub fn get(config: &Config) -> Option<Tty> {
     let gate = GATE.lock().unwrap();
     gate.get(config)
 }
 
 
-struct Config {
+#[derive(Clone, Debug)]
+pub struct Config {
 
-    serial_port_name: Option<String>,
+    pub serial_port_name: Option<String>,
 
-    usb_vendor: Option<String>,
-    usb_model: Option<String>,
+    pub usb_vendor: Option<String>,
+    pub usb_model: Option<String>,
 
     // serial_baudrate: Option<>
 }
+
+impl Config {
+    pub fn new() -> Config {
+        Config {
+            serial_port_name: None,
+            usb_vendor: None,
+            usb_model: None,
+        }
+    }
+}
+
 
 
 struct Gate {

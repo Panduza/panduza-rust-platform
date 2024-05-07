@@ -4,9 +4,16 @@ use crate::meta::bpc;
 use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
+
+// use crate::connector::serial::tty::Tty;
+use crate::connector::serial::tty;
+use crate::connector::serial::tty::Config as SerialConfig;
+
 ///
 /// 
 struct Ka3005BpcActions {
+    connector_tty: Option<tty::Tty>,
+    serial_config: SerialConfig,
     enable_value: bool,
     voltage_value: f64,
     current_value: f64,
@@ -18,6 +25,9 @@ impl bpc::BpcActions for Ka3005BpcActions {
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
+
+        self.connector_tty = tty::get(&self.serial_config);
+
         return Ok(());
     }
 
@@ -74,7 +84,8 @@ impl bpc::BpcActions for Ka3005BpcActions {
 /// Interface to emulate a Bench Power Channel
 /// 
 pub fn build<A: Into<String>>(
-    name: A
+    name: A,
+    serial_config: &SerialConfig
 ) -> InterfaceBuilder {
 
     return bpc::build(
@@ -89,6 +100,8 @@ pub fn build<A: Into<String>>(
             current_decimals: 3,
         }, 
         Box::new(Ka3005BpcActions {
+            connector_tty: None,
+            serial_config: serial_config.clone(),
             enable_value: false,
             voltage_value: 0.0,
             current_value: 0.0,
