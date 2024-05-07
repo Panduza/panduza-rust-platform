@@ -17,7 +17,7 @@ impl bpc::BpcActions for Ka3005BpcActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
+    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
         return Ok(());
     }
 

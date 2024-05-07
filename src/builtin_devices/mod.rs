@@ -5,5 +5,6 @@ mod panduza;
 
 pub fn import_plugin_producers(factory: &mut DeviceFactory)
 {
-    panduza::import_plugin_producers(factory);  
+    korad::import_plugin_producers(factory);
+    panduza::import_plugin_producers(factory);
 }

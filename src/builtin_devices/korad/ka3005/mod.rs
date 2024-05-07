@@ -1,15 +1,8 @@
-use async_trait::async_trait;
-use tokio::time::{sleep, Duration};
 
 use crate::platform::PlatformError;
-use crate::subscription;
-use crate::interface::{self, Runner};
-use crate::interface::AmInterface;
-use crate::interface::AmRunner;
-use crate::device::{ Device, traits::DeviceActions, traits::Producer };
+use crate::device::{ traits::DeviceActions, traits::Producer };
 
 use crate::interface::builder::Builder as InterfaceBuilder;
-struct PlatformInterfaceSubscriber;
 
 
 mod itf_bpc;
@@ -25,14 +18,13 @@ impl DeviceActions for Ka3005 {
     // }
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, _device_settings: &serde_json::Value) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
         let mut list = Vec::new();
-        // list.push(
-        //     itf_fake_bpc::build("channel")
-        // );
-
+        list.push(
+            itf_bpc::build("channel")
+        );
         return Ok(list);
     }
 }

@@ -10,7 +10,7 @@ lazy_static! {
         = Mutex::new(Gate { instances: HashMap::new() });
 }
 
-pub fn Get(config: &Config) -> Tty {
+pub fn Get(config: &Config) -> Option<Tty> {
     let gate = GATE.lock().unwrap();
     gate.get(config)
 }
@@ -34,15 +34,10 @@ struct Gate {
 impl Gate {
 
 
-    fn get(&self, config: &Config) -> Tty {
-
+    fn get(&self, config: &Config) -> Option<Tty> {
         // First try to get the key
-        let mut key = String::new();
-        if config.serial_port_name.is_some() {
-            key = config.serial_port_name.clone().unwrap();
-        } else {
-            tracing::trace!(class="Platform", "No way to identify the serial port");
-        }
+        let key_string = Gate::generate_unique_key_from_config(config)?;
+        let key= key_string.as_str();
 
         // # Get the serial port name
         // serial_port_name = None
@@ -56,27 +51,47 @@ impl Gate {
         // else:
         //     raise Exception("no way to identify the serial port")
 
-        if !(self.instances.contains_key(&key)) {
-            self.instances.get(&key) = String::new();
-            match (Gate{instanes: self.instances}) {
-                Ok(mut new_instance) => {
-                    async {
-                        new_instance.connect().await;
-                    };
+        // if !(self.instances.contains_key(&key)) {
+        //     self.instances.get(&key) = String::new();
+        //     match (Gate{instanes: self.instances}) {
+        //         Ok(mut new_instance) => {
+        //             async {
+        //                 new_instance.connect().await;
+        //             };
                     
-                    self.instances.get(&key) = new_instance;
-                    tracing::info!(class="Platform", "connector created");
-                }
-                Err(e) => {
-                    tracing::trace!(class="Platform", "Error during initialization");
-                }
-            }
-        } else {
-            tracing::info!(class="Platform", "connector already created, use existing instance");
+        //             self.instances.get(&key) = new_instance;
+        //             tracing::info!(class="Platform", "connector created");
+        //         }
+        //         Err(e) => {
+        //             tracing::trace!(class="Platform", "Error during initialization");
+        //         }
+        //     }
+        // } else {
+        //     tracing::info!(class="Platform", "connector already created, use existing instance");
+        // }
+
+
+        //
+        if ! self.instances.contains_key(key) {
+
         }
 
+        // Try to find the instance
+        let instance = self.instances.get(key)?;
+
         // Return the instance
-        self.instances.get(key.as_str()).unwrap().clone()
+        Some(instance.clone())
+    }
+
+    /// The on this connector is the serial port name
+    ///
+    fn generate_unique_key_from_config(config: &Config) -> Option<String> {
+        // Check if the serial port name is provided
+        if let Some(k) = config.serial_port_name.as_ref() {
+            return Some(k.clone());
+        }
+        // Finally unable to generate a key with the config
+        None
     }
 
 }
