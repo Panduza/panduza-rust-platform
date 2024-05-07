@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
 
-use crate::attribute::{self, JsonAttribute};
+use crate::attribute::JsonAttribute;
 use crate::interface::AmInterface;
 use crate::platform::PlatformError;
 use crate::{interface, subscription};
@@ -33,9 +33,9 @@ pub trait RelayActions: Send + Sync {
 // ----------------------------------------------------------------------------
 
 
-pub struct StateAttribute {
-    attr: JsonAttribute,
-}
+// pub struct StateAttribute {
+//     attr: JsonAttribute,
+// }
 
 
 // ----------------------------------------------------------------------------
@@ -111,12 +111,12 @@ impl interface::fsm::States for RelayStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
-    async fn error(&self, interface: &AmInterface)
+    async fn error(&self, _interface: &AmInterface)
     {
         println!("error");
     }
 
-    async fn cleaning(&self, interface: &AmInterface)
+    async fn cleaning(&self, _interface: &AmInterface)
     {
         println!("cleaning");
     }
@@ -139,7 +139,7 @@ impl RelaySubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_state_open(&self, interface: &AmInterface, attribute_name: &str, field_name: &str, field_data: &Value) {
+    async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_bool().unwrap();
         self.relay_interface.lock().await
             .actions.write_state_open(&interface, requested_value).await;

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use futures::FutureExt;
 use tokio::sync::Mutex;
 
-use crate::{link::{self, InterfaceHandle}, platform::TaskPoolLoader, platform_error, subscription};
+use crate::{link::{self}, platform::TaskPoolLoader, platform_error, subscription};
 
 use super::{fsm::{self, Fsm}, listener::Listener, subscriber::Subscriber, AmInterface, Interface};
 

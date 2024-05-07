@@ -1,8 +1,7 @@
-use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{interface::{self, AmInterface, AmRunner}, subscription};
+use crate::{interface::{self, AmInterface}, subscription};
 use crate::interface::Builder as InterfaceBuilder;
 
 
@@ -67,12 +66,12 @@ impl interface::fsm::States for TestInterfaceStates {
         fsm_events_notifier.notified().await;
     }
 
-    async fn error(&self, interface: &AmInterface)
+    async fn error(&self, _interface: &AmInterface)
     {
         println!("error");
     }
 
-    async fn cleaning(&self, interface: &AmInterface)
+    async fn cleaning(&self, _interface: &AmInterface)
     {
         println!("cleaning");
     }

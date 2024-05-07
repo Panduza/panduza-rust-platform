@@ -7,8 +7,6 @@ pub mod subscriber;
 
 
 
-use rumqttc::tokio_rustls::rustls::crypto::hash::Hash;
-use serde_json;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -18,7 +16,7 @@ use rumqttc::AsyncClient;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 
-use crate::attribute;
+
 use crate::interface::fsm::State;
 use crate::interface::fsm::Events;
 

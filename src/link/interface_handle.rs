@@ -1,7 +1,5 @@
-use std::sync::Arc;
-
 use rumqttc::AsyncClient;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc;
 
 use crate::subscription;
 

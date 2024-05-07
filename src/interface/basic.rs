@@ -1,9 +1,7 @@
-use std::str::FromStr;
 
 use crate::subscription;
 
 use super::AmInterface;
-use serde_json::Value;
 
 /// Process a message with common behaviour for all interface
 /// 
@@ -73,7 +71,7 @@ pub async fn process(interface: &AmInterface, msg: &subscription::Message) {
 /// Interface initializating
 ///
 #[inline]
-pub async fn interface_initializating(interface: &AmInterface)
+pub async fn interface_initializating(_interface: &AmInterface)
 {
     
 }

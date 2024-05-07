@@ -133,7 +133,7 @@ impl Connection {
     async fn process_incoming_packet(lm: Arc<Mutex<LinkManager>>, packet: &rumqttc::Packet) {
     
         match packet {
-            rumqttc::Incoming::ConnAck(ack) => {
+            rumqttc::Incoming::ConnAck(_ack) => {
                 lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
             },
             // rumqttc::Packet::SubAck(ack) => {

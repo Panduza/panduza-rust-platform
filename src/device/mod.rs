@@ -1,7 +1,5 @@
 
-use std::collections::{HashMap, LinkedList};
 
-use crate::platform::{self, TaskPoolLoader};
 
 
 mod device;

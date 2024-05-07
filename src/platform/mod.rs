@@ -54,7 +54,7 @@ pub struct Platform
     task_pool: JoinSet<PlatformTaskResult>,
 
     /// Task loader
-    task_loader: TaskPoolLoader,
+    // task_loader: TaskPoolLoader,
 
     /// Task pool receiver
     task_pool_rx: Arc<Mutex< tokio::sync::mpsc::Receiver<Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>> >>,
@@ -83,7 +83,7 @@ impl Platform {
 
         return Platform {
             task_pool: JoinSet::new(),
-            task_loader: tl.clone(),
+            // task_loader: tl.clone(),
             task_pool_rx: Arc::new(Mutex::new(rx)),
             services: Services::new(tl.clone()),
             devices: device::Manager::new(tl.clone()),
@@ -208,12 +208,12 @@ impl Platform {
                             let _ = socket.send_to(json_reply_bytes, &src_addr).await;
                             tracing::trace!(class="Platform", "Local discovery reply send success");
                         },
-                        Err(e) => {
+                        Err(_e) => {
                             tracing::trace!(class="Platform", "Json request not correctly formatted");
                         }
                     }
                 },
-                Err(e) => {
+                Err(_e) => {
                     tracing::trace!(class="Platform", "Request need to be send to UTF-8 format");
                 }
             }
@@ -234,9 +234,7 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        
-
-                        if let Err(e) = execute_service_boot(services.clone()).await {
+                        if execute_service_boot(services.clone()).await.is_err() {
                             return platform_error!("Failed to boot", None);
                         }
                         // , devices.clone(), connection.clone()

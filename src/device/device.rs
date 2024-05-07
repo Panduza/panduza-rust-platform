@@ -1,14 +1,13 @@
 use serde_json;
 
-use crate::platform::{self, TaskPoolLoader};
-use crate::platform::PlatformError;
+use crate::platform::TaskPoolLoader;
 
 use crate::device::traits::DeviceActions;
 use crate::link::AmManager as AmLinkManager;
 
 
 use crate::interface;
-use crate::interface::{AmRunner, Runner};
+use crate::interface::AmRunner;
 
 /// A device manage a set of interfaces
 /// 
