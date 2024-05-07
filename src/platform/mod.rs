@@ -172,7 +172,7 @@ impl Platform {
     /// > COVER:PLATF_REQ_LSD_0020_00 - Answer Payload
     ///
     pub async fn local_service_discovery_task() -> PlatformTaskResult {
-        
+
         // Get port and address of broker used 
         // let broker_info_json = Platform::load_network_file_content().await;
 
@@ -183,7 +183,7 @@ impl Platform {
 
         let mut buf = [0; 1024];
         let json_reply_bytes = "{\"name\": \"panduza_platform\",\"version\": 1.0}".as_bytes();
-        
+
         loop {
             // Receive request and answer it 
             // Error who didn't depend of the user so user unwrap or expect
@@ -192,7 +192,7 @@ impl Platform {
 
             // need to manage if conversion from utf8 fail (with log)
             let buf_utf8 = std::str::from_utf8(&filled_buf);
-            
+
             match buf_utf8 {
                 Ok(buf) => {
                     let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf);
@@ -262,87 +262,18 @@ impl Platform {
                         tracing::info!(class="Platform", "Reloading Success!");
                     }
 
+                    // --------------------------------------------------------
+                    // --- STOP ---
+                    if services.lock().await.stop_requested() {
+
+                        
+                        return Ok(());
+                    }
+
                 }
             }
         }
     }
-
-    
-
-    /// Load the network file from system into service data
-    ///
-    /// > CONF_REQ_FILE_NET_0010_00 - Location and format of the configuration file
-    /// 
-    async fn load_network_file(services: AmServices, connection: connection::AmManager) -> Result<(), error::PlatformError> {
-
-        // Get the network file path
-        let mut network_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("network.json");
-        match env::consts::OS {
-            "linux" => {
-                network_file_path = PathBuf::from("/etc/panduza/network.json");
-                // println!("We are running linux!");
-            }
-            "windows" => {
-
-            }
-            _ => {
-                tracing::error!("Unsupported system!");
-            }
-        }
-
-        // Try to read the file content
-        let file_content = tokio::fs::read_to_string(&network_file_path).await;
-        match file_content {
-            Ok(content) => {
-                return Platform::load_network_string(services.clone(), connection.clone(), &content).await;
-            },
-            Err(e) => {
-                return platform_error!(
-                    format!("Failed to read {:?} file content: {}", network_file_path, e), None)
-            }
-        }
-    }
-
-    /// Load a network string into service data
-    ///
-    /// CONF_REQ_FILE_NET_0020_00 - Content of the configuration file
-    /// 
-    async fn load_network_string(services: AmServices, connection: connection::AmManager, content: &String) -> Result<(), error::PlatformError> {
-        // Parse the JSON content
-        let json_content = serde_json::from_str::<serde_json::Value>(&content);
-        match json_content {
-            Ok(json) => {
-
-                let host = match json.get("broker_host") {
-                    Some(host) => host.as_str().unwrap(),
-                    None => {
-                        tracing::warn!(class="Platform", "host not provided in network.json, continue with default host");
-                        "localhost"
-                    }
-                };
-                
-                let port = match json.get("broker_port"){
-                    Some(port) => port.as_u64().map(|port| port as u16).unwrap(),
-                    None => {
-                        tracing::warn!(class="Platform", "port not provided in network.json, continue with default port");
-                        1883
-                    }
-                };
-
-                // log
-                tracing::info!(class="Platform", " - Network Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
-
-                connection.lock().await.start_connection(&host, port).await;
-
-                return Ok(());
-            },
-            Err(e) => {
-                return platform_error!(
-                    format!("Failed to parse JSON content: {}", e), None)
-            }
-        }
-    }
-
 
     /// Ask the user if he wants to create a default connection info.
     /// Stop the platform in case it does not work or the user does not want.
@@ -372,7 +303,11 @@ impl Platform {
         }
         // Other answers are considered as No
         else {
-
+            println!("No connection info set ! stopping the platform...");
+            println!("!");
+            println!("!");
+            println!("!");
+            services.trigger_stop();
         }
 
     }
@@ -408,24 +343,21 @@ impl Platform {
         }
 
 
+        let sss = services.lock().await;
+        let oci = sss.connection_info();
 
-        // // Get host and port of the broker and start connection
-        // if let Err(e) = Platform::load_network_file(services.clone(), connection.clone()).await 
-        // {
-        //     tracing::warn!(class="Platform", "Failed to load network configuration: {}", e);
-        //     tracing::warn!(class="Platform", "Continue with default broker configuration");
+        if oci.is_none() {
+            return;
+        }
 
-        //     let host = "localhost";
-        //     let port = 1883;
-        //     connection.lock().await.start_connection(&host, port).await;
-        // }
-
-
-        let ci = services.lock().await.connection_info();
+        let ci = oci.as_ref()
+            .unwrap()
+            .clone();
 
         connection.lock().await.start_connection(&ci.host_addr(), ci.host_port()).await;
-
         devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
+
+
     }
 
     /// Load the tree file from system into service data

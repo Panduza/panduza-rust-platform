@@ -14,6 +14,8 @@ bitflags! {
         const BOOTING               = 0b00000001;
         const RELOAD_TREE           = 0b00000010;
 
+        /// Request a normal stop of the platform
+        const STOP                  = 0b01000000;
 
         /// Critical error detected, the platform cannot work anymore even in degraded mode
         /// try to stop and give as many information as possible
@@ -45,7 +47,8 @@ pub struct Services {
 
     connection_info: Option<ConnectionInfo>,
 
-    task_loader: TaskPoolLoader
+    task_loader: TaskPoolLoader,
+
 }
 pub type AmServices = Arc<Mutex<Services>>;
 
@@ -101,8 +104,14 @@ impl Services {
         self.insert_request(Requests::PANIC);
     }
 
+    /// Trigger a platform stop
+    ///
+    pub fn trigger_stop(&mut self) {
+        self.insert_request(Requests::STOP);
+    }
+
     /// Check if there are pending requests
-    /// 
+    ///
     pub fn has_pending_requests(&self) -> bool {
         return self.requests != Requests::NO_REQUEST;
     }
@@ -129,13 +138,16 @@ impl Services {
         return self.xxx_requested(Requests::RELOAD_TREE);
     }
 
+    /// Check if stop is requested and remove the flag
+    /// 
+    pub fn stop_requested(&mut self) -> bool {
+        return self.xxx_requested(Requests::STOP);
+    }
+
     /// Get the connection info
     ///
-    pub fn connection_info(&self) -> ConnectionInfo {
-        self.connection_info
-            .as_ref()
-            .unwrap()
-            .clone()
+    pub fn connection_info(&self) -> &Option<ConnectionInfo> {
+        &self.connection_info
     }
 
     /// Set the connection info
