@@ -1,6 +1,7 @@
-use std::collections::HashMap;
-// use tokio_serial::{UsbPortInfo};
+use std::{collections::HashMap, sync::Arc};
+use tokio_serial;
 
+use tokio;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 
@@ -18,21 +19,20 @@ pub fn get(config: &Config) -> Option<Tty> {
 
 #[derive(Clone, Debug)]
 pub struct Config {
-
-    pub serial_port_name: Option<String>,
-
     pub usb_vendor: Option<String>,
     pub usb_model: Option<String>,
 
-    // serial_baudrate: Option<>
+    pub serial_port_name: Option<String>,
+    pub serial_baudrate: Option<u32>
 }
 
 impl Config {
     pub fn new() -> Config {
         Config {
-            serial_port_name: None,
             usb_vendor: None,
             usb_model: None,
+            serial_port_name: None,
+            serial_baudrate: None,
         }
     }
 }
@@ -83,7 +83,7 @@ impl Gate {
         // }
 
 
-        //
+        // if the instance is not found, it means that the port is not opened yet
         if ! self.instances.contains_key(key) {
 
         }
@@ -112,11 +112,48 @@ impl Gate {
 
 #[derive(Clone)]
 pub struct Tty {
+    config: Config,
 //     // fd: RawFd,
 //     // termios: Termios,
 //     // termios_backup: Termios,
 //     // baudrate: BaudRate,
 //     // timeout: Duration,
+    core: Arc<Mutex<TtyCore>>,
+}
+
+impl Tty {
+    
+    fn new(config: Config) -> Tty {
+
+        Tty {
+            config: config,
+            core: Arc::new(Mutex::new(TtyCore{})),
+            // fd: 0,
+            // termios: Termios::from_fd(0).unwrap(),
+            // termios_backup: Termios::from_fd(0).unwrap(),
+            // baudrate: BaudRate::B9600,
+            // timeout: Duration::from_secs(1),
+
+        }
+    }
+
+    pub async fn init(&mut self) {
+
+        let c = self.core.lock();
+        // let serial_builder = tokio_serial::new(
+        //     self.config.serial_port_name.unwrap(),
+        //     self.config.serial_baudrate.unwrap()
+        // );
+
+        // let serial = serial_builder.open().await.unwrap();
+    }
+
+
+}
+
+
+struct TtyCore {
+
 }
 
 

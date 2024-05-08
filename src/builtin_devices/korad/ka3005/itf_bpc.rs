@@ -8,6 +8,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 // use crate::connector::serial::tty::Tty;
 use crate::connector::serial::tty;
 use crate::connector::serial::tty::Config as SerialConfig;
+use crate::platform_error;
 
 ///
 /// 
@@ -27,7 +28,11 @@ impl bpc::BpcActions for Ka3005BpcActions {
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
 
         self.connector_tty = tty::get(&self.serial_config);
-
+        if self.connector_tty.is_none() {
+            return platform_error!("Unable to get the serial connector", None);
+        }
+        self.connector_tty.as_mut().unwrap().init().await;
+        
         return Ok(());
     }
 
