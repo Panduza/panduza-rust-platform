@@ -175,21 +175,28 @@ impl TtyCore {
         );
 
 
-        match serial_builder.open() {
-            Ok(serial) => {
-                self.serial_port = Some(serial);
+        // let pp = SerialStream::open(&serial_builder)
+        //     .map(|sp| {
+                
+        //         // sp.rea
+        //         // self.serial_port = Some(sp);
+        //     });
+
+        // match serial_builder.open() {
+        //     Ok(serial) => {
+        //         self.serial_port = Some(serial);
                 
 
-                // self.serial_port.unwrap().write_all(b"Hello, world!").await?;
+        //         // self.serial_port.unwrap().write_all(b"Hello, world!").await?;
 
-                // self.serial_port.unwrap().read(buf)
+        //         // self.serial_port.unwrap().read(buf)
 
-                tracing::info!(class="Platform", "Serial port opened");
-            }
-            Err(_e) => {
-                tracing::error!(class="Platform", "Error during serial port opening");
-            }
-        }
+        //         tracing::info!(class="Platform", "Serial port opened");
+        //     }
+        //     Err(_e) => {
+        //         tracing::error!(class="Platform", "Error during serial port opening");
+        //     }
+        // }
 
 
         // let mut port = SerialPort::new(
