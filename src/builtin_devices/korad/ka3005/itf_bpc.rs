@@ -6,14 +6,14 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 
 
 // use crate::connector::serial::tty::Tty;
-use crate::connector::serial::tty;
+use crate::connector::serial::tty::{self, TtyConnector};
 use crate::connector::serial::tty::Config as SerialConfig;
-use crate::platform_error;
+// use crate::platform_error;
 
 ///
 /// 
 struct Ka3005BpcActions {
-    connector_tty: Option<tty::Tty>,
+    connector_tty: tty::TtyConnector,
     serial_config: SerialConfig,
     enable_value: bool,
     voltage_value: f64,
@@ -27,12 +27,12 @@ impl bpc::BpcActions for Ka3005BpcActions {
     /// 
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
 
-        self.connector_tty = tty::get(&self.serial_config);
-        if self.connector_tty.is_none() {
-            return platform_error!("Unable to get the serial connector", None);
-        }
-        self.connector_tty.as_mut().unwrap().init().await;
-        
+        self.connector_tty = tty::get(&self.serial_config).unwrap();
+        // if self.connector_tty.is_none() {
+        //     return platform_error!("Unable to get the serial connector", None);
+        // }
+        self.connector_tty.init().await;
+
         return Ok(());
     }
 
@@ -105,7 +105,7 @@ pub fn build<A: Into<String>>(
             current_decimals: 3,
         }, 
         Box::new(Ka3005BpcActions {
-            connector_tty: None,
+            connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
             enable_value: false,
             voltage_value: 0.0,
