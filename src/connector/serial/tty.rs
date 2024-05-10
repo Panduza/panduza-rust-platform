@@ -1,7 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
-use tokio_serial::{self, SerialPort};
-use tokio::io::{AsyncReadExt, Result};
+use tokio_serial::{self, SerialPort, SerialPortBuilder};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, Result};
 use tokio_serial::{SerialStream};
+use tokio::time::{sleep, Duration};
 
 use tokio;
 use std::sync::Mutex;
@@ -131,7 +132,7 @@ impl TtyConnector {
                 TtyConnector {
                     core: Some(
                         Arc::new(tokio::sync::Mutex::new(
-                            TtyCore{config: config, serial_port: None}))
+                            TtyCore::new(config)))
                     )
                 }
             }
@@ -158,16 +159,24 @@ impl TtyConnector {
 
 
 
+
 struct TtyCore {
     config: Config,
-    serial_port: Option< Box<dyn SerialPort> >,
+    builder: Option< SerialPortBuilder >,
+    serial_stream: Option< SerialStream >,
 }
 
 impl TtyCore {
 
+    fn new(config: Config) -> TtyCore {
+        TtyCore {
+            config: config,
+            builder: None,
+            serial_stream: None,
+        }
+    }
+
     async fn init(&mut self) {
-
-
 
         let serial_builder = tokio_serial::new(
             self.config.serial_port_name.as_ref().unwrap()   ,
@@ -175,51 +184,39 @@ impl TtyCore {
         );
 
 
-        // let pp = SerialStream::open(&serial_builder)
-        //     .map(|sp| {
-                
-        //         // sp.rea
-        //         // self.serial_port = Some(sp);
-        //     });
+        let pp = SerialStream::open(&serial_builder);
+        let aa = pp.expect("pok");
 
-        // match serial_builder.open() {
-        //     Ok(serial) => {
-        //         self.serial_port = Some(serial);
-                
-
-        //         // self.serial_port.unwrap().write_all(b"Hello, world!").await?;
-
-        //         // self.serial_port.unwrap().read(buf)
-
-        //         tracing::info!(class="Platform", "Serial port opened");
-        //     }
-        //     Err(_e) => {
-        //         tracing::error!(class="Platform", "Error during serial port opening");
-        //     }
-        // }
-
-
-        // let mut port = SerialPort::new(
-        //     self.config.serial_port_name.as_ref().unwrap(), 
-        //     self.config.serial_baudrate.unwrap()
-        // );
-
-        //         let mut stream = port.open(async)?;
-
-        //         let mut buffer = vec![0; 1024];
-
-        //         loop {
-        //             let n = stream.read(&mut buffer).await?;
-
-        //     if n == 0 {
-        //         // No data received, handle it (e.g., break loop)
-        //         break;
-        //     }
-
-        //     // Process the received data
-        //     println!("Received data: {:?}", &buffer[..n]);
-        // }
+        
+        self.builder = Some(serial_builder);
+        self.serial_stream = Some(aa);
+       
+        // aa.read(buf).await;
     }
+
+
+    async fn time_locked_write(&mut self, command: &[u8]) {
+        self.serial_stream.as_mut().unwrap().write(command).await.unwrap();
+    
+        // Duration
+    }
+
+
+    async fn write_then_read_during(&mut self, command: &[u8]) {
+
+
+        // self.serial_stream.as_mut().unwrap().write(command).await.unwrap();
+
+        // self.serial_stream.as_mut().unwrap().read(&mut [0; 10]).await;
+    }
+
+    // async def write_and_read_during(self, message, time_lock_s=0, read_duration_s=0.5):
+    //     """Write command then read data for specified duration
+    //     """
+    //     async with self._mutex:
+    //         await self.__write(message, time_lock_s)
+    //         return await self.__read_during(read_duration_s)
+
 
 }
 
