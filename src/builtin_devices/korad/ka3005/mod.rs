@@ -20,17 +20,23 @@ impl DeviceActions for Ka3005 {
     // }
 
     /// Create the interfaces
-    fn interface_builders(&self, _device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device_settings: &serde_json::Value) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
 
-        let serial_conf = SerialConfig::new();
+        println!("Ka3005::interface_builders");
+        println!("{}", device_settings);
+
+        let mut serial_conf = SerialConfig::new();
+        serial_conf.import_from_json_settings(device_settings);
 
         // const_settings = {
         //     "usb_vendor": '0416',
         //     "usb_model": '5011',
         //     "serial_baudrate": 9600
         // }
+
+        serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
         list.push(

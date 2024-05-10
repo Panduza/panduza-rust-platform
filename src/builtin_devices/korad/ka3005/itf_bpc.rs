@@ -28,11 +28,23 @@ impl bpc::BpcActions for Ka3005BpcActions {
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
 
         self.connector_tty = tty::get(&self.serial_config).unwrap();
-        // if self.connector_tty.is_none() {
-        //     return platform_error!("Unable to get the serial connector", None);
-        // }
         self.connector_tty.init().await;
 
+        println!("yooooo!");
+
+        let mut response: &mut [u8] = &mut [0; 1024];
+        let _result = self.connector_tty.write_then_read(
+            b"*IDN?",
+            &mut response,
+            Some(tokio::time::Duration::from_secs(1))
+        ).await
+            .map(|c| {
+                let pp = &response[0..c];
+                let sss = String::from_utf8(pp.to_vec()).unwrap();
+                println!("Ka3005BpcActions - initializating: {:?}", sss);
+            });
+
+        
         return Ok(());
     }
 

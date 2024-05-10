@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
-use tokio_serial::{self, SerialPort, SerialPortBuilder};
+use tokio_serial::{self, SerialPortBuilder};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, Result};
-use tokio_serial::{SerialStream};
+use tokio_serial::SerialStream;
 use tokio::time::{sleep, Duration};
 
 use tokio;
@@ -37,6 +37,15 @@ impl Config {
             serial_port_name: None,
             serial_baudrate: None,
         }
+    }
+
+    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
+
+        self.serial_port_name =
+            settings.get("serial_port_name")
+                .map(|v| v.as_str().unwrap().to_string());
+
+                // .unwrap().to_string()
     }
 }
 
@@ -155,15 +164,34 @@ impl TtyConnector {
     }
 
 
+    pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
+        time_lock: Option<Duration>) 
+            -> Result<usize> {
+        self.core
+            .as_ref()
+            .unwrap()
+            .lock()
+            .await
+            .write_then_read(command, response, time_lock)
+            .await
+    }
+
 }
 
 
+
+
+struct TimeLock {
+    duration: tokio::time::Duration,
+    t0: tokio::time::Instant
+}
 
 
 struct TtyCore {
     config: Config,
     builder: Option< SerialPortBuilder >,
     serial_stream: Option< SerialStream >,
+    time_lock: Option<TimeLock>
 }
 
 impl TtyCore {
@@ -173,6 +201,7 @@ impl TtyCore {
             config: config,
             builder: None,
             serial_stream: None,
+            time_lock: None
         }
     }
 
@@ -190,32 +219,50 @@ impl TtyCore {
         
         self.builder = Some(serial_builder);
         self.serial_stream = Some(aa);
-       
-        // aa.read(buf).await;
+
     }
 
 
-    async fn time_locked_write(&mut self, command: &[u8]) {
-        self.serial_stream.as_mut().unwrap().write(command).await.unwrap();
-    
-        // Duration
+    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>) {
+
+
+        if let Some(lock) = self.time_lock.as_mut() {
+            let elapsed = tokio::time::Instant::now() - lock.t0;
+            if elapsed < lock.duration {
+                let wait_time = lock.duration - elapsed;
+                sleep(wait_time).await;
+            }
+            self.time_lock = None;
+        }
+
+        // Send the command
+        let p = self.serial_stream.as_mut().unwrap().write(command).await.unwrap();
+        println!("Wrote {} bytes", p);
+
+        // Set the time lock
+        if let Some(duration) = duration {
+            self.time_lock = Some(TimeLock {
+                duration: duration,
+                t0: tokio::time::Instant::now()
+            });
+        }
     }
 
 
-    async fn write_then_read_during(&mut self, command: &[u8]) {
+    async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
+        time_lock: Option<Duration>) 
+            -> Result<usize> {
 
 
-        // self.serial_stream.as_mut().unwrap().write(command).await.unwrap();
+        self.time_locked_write(command, time_lock).await;
 
-        // self.serial_stream.as_mut().unwrap().read(&mut [0; 10]).await;
+
+        // let mut buf: &mut [u8] = &mut [0; 1024];
+        self.serial_stream.as_mut().unwrap().read(response).await
+        // let n = p.unwrap();
+        // println!("Read {} bytes", n);
+
     }
-
-    // async def write_and_read_during(self, message, time_lock_s=0, read_duration_s=0.5):
-    //     """Write command then read data for specified duration
-    //     """
-    //     async with self._mutex:
-    //         await self.__write(message, time_lock_s)
-    //         return await self.__read_during(read_duration_s)
 
 
 }
