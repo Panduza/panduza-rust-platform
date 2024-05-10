@@ -1,6 +1,3 @@
-use std::pin::Pin;
-
-use futures::Future;
 
 mod json;
 mod info;

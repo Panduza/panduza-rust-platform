@@ -324,6 +324,7 @@ impl Platform {
                 tracing::error!("Unsupported system!");
             }
         }
+        tracing::info!(class="Platform", "Loading tree file: {:?}", tree_file_path);
 
         // Try to read the file content
         let file_content = tokio::fs::read_to_string(&tree_file_path).await;

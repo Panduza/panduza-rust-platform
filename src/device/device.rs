@@ -18,6 +18,8 @@ pub struct Device {
     bench_name: String,
 
 
+    settings: serde_json::Value,
+
     started: bool,
 
     
@@ -41,6 +43,7 @@ impl Device {
     (
         dev_name: A,
         bench_name: B,
+        settings: serde_json::Value,
         actions: Box<dyn DeviceActions>,
 
         connection_link_manager: AmLinkManager,
@@ -50,6 +53,8 @@ impl Device {
         let obj = Device {
             dev_name: dev_name.into(),
             bench_name: bench_name.into(),
+
+            settings: settings,
 
             started: false,
 
@@ -117,7 +122,7 @@ impl Device {
         self.log_info("Start Interfaces...");
 
         // Get the interface builders
-        let r = self.actions.interface_builders(&serde_json::Value::Null);
+        let r = self.actions.interface_builders(&self.settings);
         // if let Err(e) = builders {
         //     self.log_warn("Error");
         // }

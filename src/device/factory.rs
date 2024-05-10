@@ -90,14 +90,19 @@ impl Factory {
         // Default if bench name not found
         let bench_name = String::from("default");
 
+
+        let settings = device_def.get("settings")
+            .unwrap_or(&serde_json::Value::Null)
+            .clone();
+
         // Try to get the producer
-        return self.find_producer_and_produce_device(&dev_name, &bench_name, &ref_string);
+        return self.find_producer_and_produce_device(&dev_name, &bench_name, &ref_string, settings);
     }
 
     /// Find the producer and produce the device
     /// 
     fn find_producer_and_produce_device(&self,
-        dev_name: &String, bench_name: &String, device_ref: &String
+        dev_name: &String, bench_name: &String, device_ref: &String, settings: serde_json::Value
     )
         -> Result<Device, PlatformError>
     {
@@ -108,14 +113,14 @@ impl Factory {
                 return platform_error!(error_text , None);
             },
             Some(producer) => {
-                return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap());
+                return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap(), settings);
             }
         }
     }
 
     /// Create a new device instance with all the required data
     ///
-    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>, connection_link_manager: &link::AmManager)
+    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>, connection_link_manager: &link::AmManager, settings: serde_json::Value)
         -> Result<Device, PlatformError>
     {
         let actions = producer.produce();
@@ -124,7 +129,7 @@ impl Factory {
                 return platform_error!("Fail to produce device actions", Some(Box::new(e)));
             },
             Ok(actions) => {
-                return Ok(Device::new(dev_name, bench_name, actions, connection_link_manager.clone()));
+                return Ok(Device::new(dev_name, bench_name, settings, actions, connection_link_manager.clone()));
             }
         }
     }

@@ -4,11 +4,6 @@ use crate::meta::bpc;
 use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
-
-use crate::connector::serial::tty;
-
-
-
 /// Fake Bench Power Channel Data
 /// 
 struct FakeBpcActions {
@@ -23,9 +18,6 @@ impl bpc::BpcActions for FakeBpcActions {
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
-        
-        // tty::Get(name)
-
         return Ok(());
     }
 
