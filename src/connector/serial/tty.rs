@@ -163,6 +163,18 @@ impl TtyConnector {
             .await;
     }
 
+    pub async fn write(&mut self, command: &[u8],
+        time_lock: Option<Duration>) 
+            -> Result<usize> {
+        self.core
+            .as_ref()
+            .unwrap()
+            .lock()
+            .await
+            .write(command, time_lock)
+            .await
+    }
+
 
     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
         time_lock: Option<Duration>) 
@@ -223,7 +235,7 @@ impl TtyCore {
     }
 
 
-    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>) {
+    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>)-> Result<usize> {
 
 
         if let Some(lock) = self.time_lock.as_mut() {
@@ -236,8 +248,7 @@ impl TtyCore {
         }
 
         // Send the command
-        let p = self.serial_stream.as_mut().unwrap().write(command).await.unwrap();
-        println!("Wrote {} bytes", p);
+        let rrr = self.serial_stream.as_mut().unwrap().write(command).await;
 
         // Set the time lock
         if let Some(duration) = duration {
@@ -246,15 +257,24 @@ impl TtyCore {
                 t0: tokio::time::Instant::now()
             });
         }
+
+        rrr
     }
 
+    
+    async fn write(&mut self, command: &[u8],
+        time_lock: Option<Duration>) 
+            -> Result<usize> {
+
+        self.time_locked_write(command, time_lock).await
+    }
 
     async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
         time_lock: Option<Duration>) 
             -> Result<usize> {
 
 
-        self.time_locked_write(command, time_lock).await;
+        let _ = self.time_locked_write(command, time_lock).await;
 
 
         // let mut buf: &mut [u8] = &mut [0; 1024];

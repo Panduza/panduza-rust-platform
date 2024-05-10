@@ -18,6 +18,7 @@ struct Ka3005BpcActions {
     enable_value: bool,
     voltage_value: f64,
     current_value: f64,
+    time_lock_duration: Option<tokio::time::Duration>,
 }
 
 #[async_trait]
@@ -36,7 +37,7 @@ impl bpc::BpcActions for Ka3005BpcActions {
         let _result = self.connector_tty.write_then_read(
             b"*IDN?",
             &mut response,
-            Some(tokio::time::Duration::from_secs(1))
+            self.time_lock_duration
         ).await
             .map(|c| {
                 let pp = &response[0..c];
@@ -44,20 +45,58 @@ impl bpc::BpcActions for Ka3005BpcActions {
                 println!("Ka3005BpcActions - initializating: {:?}", sss);
             });
 
-        
+
         return Ok(());
     }
 
     /// Read the enable value
     /// 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
+
+        let mut response: &mut [u8] = &mut [0; 1024];
+        let _result = self.connector_tty.write_then_read(
+            b"STATUS?",
+            &mut response,
+            self.time_lock_duration
+        ).await
+            .map(|c| {
+                println!("c: {:?}", c);
+                let pp = &response[0..c];
+                if (pp[0] & (1 << 6)) == 0 {
+                    self.enable_value = false;
+                } else {
+                    self.enable_value = true;
+                }
+                // let sss = String::from_utf8(pp.to_vec()).unwrap();
+                // println!("rettt: {:?}", sss);
+            });
+
+
         interface.lock().await.log_info(
-            format!("FakeBpc - read_enable_value: {}", self.enable_value)
+            format!("KA3005 - read_enable_value: {}", self.enable_value)
         );
+
+        // status = await self.serial_connector.write_and_read_during(f"STATUS?", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
+
+        // return bool(status[0] & (1 << 6))
+
+
         return Ok(self.enable_value);
     }
 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
+
+
+        let command = format!("OUT{}", if v { 1 } else { 0 });
+
+        let _result = self.connector_tty.write(
+            command.as_bytes(),
+            self.time_lock_duration
+        ).await
+            .map(|c| {
+                println!("c: {:?}", c);
+            });
+
         interface.lock().await.log_info(
             format!("FakeBpc - write_enable_value: {}", self.enable_value)
         );
@@ -122,6 +161,7 @@ pub fn build<A: Into<String>>(
             enable_value: false,
             voltage_value: 0.0,
             current_value: 0.0,
+            time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
     )
 }
