@@ -67,25 +67,17 @@ impl bpc::BpcActions for Ka3005BpcActions {
                 } else {
                     self.enable_value = true;
                 }
-                // let sss = String::from_utf8(pp.to_vec()).unwrap();
-                // println!("rettt: {:?}", sss);
             });
-
 
         interface.lock().await.log_info(
             format!("KA3005 - read_enable_value: {}", self.enable_value)
         );
-
-        // status = await self.serial_connector.write_and_read_during(f"STATUS?", time_lock_s=COMMAND_TIME_LOCK, read_duration_s=0.1)
-
-        // return bool(status[0] & (1 << 6))
-
-
         return Ok(self.enable_value);
     }
 
+    /// Write the enable value
+    /// 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
-
 
         let command = format!("OUT{}", if v { 1 } else { 0 });
 
@@ -98,7 +90,7 @@ impl bpc::BpcActions for Ka3005BpcActions {
             });
 
         interface.lock().await.log_info(
-            format!("FakeBpc - write_enable_value: {}", self.enable_value)
+            format!("KA3005 - write_enable_value: {}", self.enable_value)
         );
         self.enable_value = v;
     }
@@ -106,29 +98,29 @@ impl bpc::BpcActions for Ka3005BpcActions {
     /// Read the voltage value
     /// 
     async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
-        interface.lock().await.log_info(
-            format!("FakeBpc - read_voltage_value: {}", self.voltage_value)
+        interface.lock().await.log_warn(
+            format!("NOT IMPLEMENTED KA3005 - read_voltage_value: {}", self.voltage_value)
         );
         return Ok(self.voltage_value);
     }
 
     async fn write_voltage_value(&mut self, interface: &AmInterface, v: f64) {
-        interface.lock().await.log_info(
-            format!("FakeBpc - write_voltage_value: {}", v)
+        interface.lock().await.log_warn(
+            format!("NOT IMPLEMENTED KA3005 - write_voltage_value: {}", v)
         );
         self.voltage_value = v;
     }
- 
+
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
-        interface.lock().await.log_info(
-            format!("FakeBpc - read_current_value: {}", self.current_value)
+        interface.lock().await.log_warn(
+            format!("NOT IMPLEMENTED KA3005 - read_current_value: {}", self.current_value)
         );
         return Ok(self.current_value);
     }
 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
-        interface.lock().await.log_info(
-            format!("FakeBpc - write_current_value: {}", v)
+        interface.lock().await.log_warn(
+            format!("NOT IMPLEMENTED KA3005 - write_current_value: {}", v)
         );
         self.current_value = v;
     }
@@ -148,7 +140,7 @@ pub fn build<A: Into<String>>(
         name, 
         bpc::BpcParams {
             voltage_min: 0.0,
-            voltage_max: 5.0,
+            voltage_max: 30.0,
             voltage_decimals: 2,
 
             current_min: 0.0,

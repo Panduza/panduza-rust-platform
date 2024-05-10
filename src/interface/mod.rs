@@ -182,10 +182,10 @@ impl Interface {
         self.fsm_events.insert(Events::INIT_DONE);
         self.fsm_events_notifier.notify_one();
     }
-    pub fn set_event_state_error(&mut self) {
-        self.fsm_events.insert(Events::ERROR);
-        self.fsm_events_notifier.notify_one();
-    }
+    // pub fn set_event_state_error(&mut self) {
+    //     self.fsm_events.insert(Events::ERROR);
+    //     self.fsm_events_notifier.notify_one();
+    // }
 
     // -- CLIENT --
 
@@ -250,6 +250,14 @@ impl Interface {
 
     // -- LOGS --
 
+    /// Log trace
+    ///
+    #[inline]
+    pub fn log_warn<A: Into<String>>(&self, text: A) {
+        tracing::warn!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
+            "{}", text.into());
+    }
+
     /// Log info
     ///
     #[inline]
@@ -266,12 +274,12 @@ impl Interface {
             "{}", text.into());
     }
 
-    /// Log trace
-    ///
-    #[inline]
-    pub fn log_trace<A: Into<String>>(&self, text: A) {
-        tracing::trace!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
-            "{}", text.into());
-    }
+    // /// Log trace
+    // ///
+    // #[inline]
+    // pub fn log_trace<A: Into<String>>(&self, text: A) {
+    //     tracing::trace!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
+    //         "{}", text.into());
+    // }
 
 }

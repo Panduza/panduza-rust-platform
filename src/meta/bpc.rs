@@ -127,8 +127,10 @@ impl interface::fsm::States for BpcStates {
     ///
     async fn initializating(&self, interface: &AmInterface)
     {
+        let mut bpc_itf = self.bpc_interface.lock().await;
+
         // Custom initialization slot
-        self.bpc_interface.lock().await.actions.initializating(&interface).await.unwrap();
+        bpc_itf.actions.initializating(&interface).await.unwrap();
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
@@ -136,21 +138,21 @@ impl interface::fsm::States for BpcStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
 
         // Init enable
-        let enable_value = self.bpc_interface.lock().await.actions.read_enable_value(&interface).await.unwrap();
+        let enable_value = bpc_itf.actions.read_enable_value(&interface).await.unwrap();
         interface.lock().await.update_attribute_with_bool("enable", "value", enable_value);
 
         // Init voltage
-        interface.lock().await.update_attribute_with_f64("voltage", "min", 0.0);
-        interface.lock().await.update_attribute_with_f64("voltage", "max", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "min", bpc_itf.params.voltage_min );
+        interface.lock().await.update_attribute_with_f64("voltage", "max", bpc_itf.params.voltage_max );
         interface.lock().await.update_attribute_with_f64("voltage", "value", 0.0);
-        interface.lock().await.update_attribute_with_f64("voltage", "decimals", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "decimals", bpc_itf.params.voltage_decimals as f64);
         interface.lock().await.update_attribute_with_f64("voltage", "polling_cycle", 0.0);
 
         // Init current
-        interface.lock().await.update_attribute_with_f64("current", "min", 0.0);
-        interface.lock().await.update_attribute_with_f64("current", "max", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "min", bpc_itf.params.current_min );
+        interface.lock().await.update_attribute_with_f64("current", "max", bpc_itf.params.current_max );
         interface.lock().await.update_attribute_with_f64("current", "value", 0.0);
-        interface.lock().await.update_attribute_with_f64("current", "decimals", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "decimals", bpc_itf.params.current_decimals as f64);
         interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
 
         // Publish all attributes for start
