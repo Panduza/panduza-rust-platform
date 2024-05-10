@@ -6,7 +6,7 @@ pub mod listener;
 pub mod subscriber;
 
 
-
+use crate::platform::services::AmServices;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -59,9 +59,10 @@ pub struct Interface {
     client: AsyncClient,
 
     // -- ATTRIBUTES --
- 
-
     attributes: HashMap<String, Box<dyn AttributeInterface>>,
+
+    //
+    platform_services: AmServices
 
 }
 pub type AmInterface = Arc<Mutex<Interface>>;
@@ -72,7 +73,7 @@ impl Interface {
     ///
     fn new<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
         (name: A, dev_name: B, bench_name: C, itype: D, version: E,
-            client: AsyncClient
+            client: AsyncClient, platform_services: AmServices
         )
         -> Interface {
         let mut obj = Interface {
@@ -88,6 +89,7 @@ impl Interface {
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
             attributes: HashMap::new(),
+            platform_services: platform_services
         };
         obj.register_attribute(InfoAttribute::new_boxed(itype, version));
         obj.update_topics();
@@ -97,11 +99,11 @@ impl Interface {
     /// Create a new instance of the Core
     /// 
     pub fn new_am<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
-        (name: A, dev_name: B, bench_name: C, itype: D, version: E, client: AsyncClient)
+        (name: A, dev_name: B, bench_name: C, itype: D, version: E, client: AsyncClient, platform_services: AmServices)
             -> AmInterface
     {
         return Arc::new(Mutex::new(
-            Interface::new(name, dev_name, bench_name, itype, version, client)
+            Interface::new(name, dev_name, bench_name, itype, version, client, platform_services)
         ));
     }
 
@@ -247,6 +249,12 @@ impl Interface {
         let att = self.attributes.get_mut(attribute).unwrap();
         att.as_mut().update_field_with_string(field, value);
     }
+
+
+    pub fn platform_services(&self) -> AmServices {
+        return self.platform_services.clone();
+    }
+
 
     // -- LOGS --
 

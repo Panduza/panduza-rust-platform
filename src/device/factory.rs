@@ -20,18 +20,21 @@ pub struct Factory {
 
     /// Connection link manager
     /// 
-    connection_link_manager: Option<link::AmManager>
+    connection_link_manager: Option<link::AmManager>,
+
+    platform_services: crate::platform::services::AmServices
 }
 
 impl Factory {
 
     /// Create a new factory
     /// 
-    pub fn new() -> Factory {
+    pub fn new(platform_services: crate::platform::services::AmServices) -> Factory {
         // New object
         let mut obj = Factory {
             producers: HashMap::new(),
-            connection_link_manager: None
+            connection_link_manager: None,
+            platform_services: platform_services
         };
 
         // Info log
@@ -113,14 +116,16 @@ impl Factory {
                 return platform_error!(error_text , None);
             },
             Some(producer) => {
-                return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap(), settings);
+                return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap(), settings
+                , self.platform_services.clone());
             }
         }
     }
 
     /// Create a new device instance with all the required data
     ///
-    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>, connection_link_manager: &link::AmManager, settings: serde_json::Value)
+    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>, connection_link_manager: &link::AmManager, settings: serde_json::Value
+        ,platform_services: crate::platform::services::AmServices)
         -> Result<Device, PlatformError>
     {
         let actions = producer.produce();
@@ -129,7 +134,8 @@ impl Factory {
                 return platform_error!("Fail to produce device actions", Some(Box::new(e)));
             },
             Ok(actions) => {
-                return Ok(Device::new(dev_name, bench_name, settings, actions, connection_link_manager.clone()));
+                return Ok(Device::new(dev_name, bench_name, settings, actions, connection_link_manager.clone()
+                , platform_services));
             }
         }
     }

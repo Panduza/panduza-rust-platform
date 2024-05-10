@@ -29,7 +29,8 @@ impl Runner {
     /// Build a new interface
     /// 
     pub async fn build<A: Into<String>, B: Into<String>>
-        (builder: InterfaceBuilder, dev_name: A, bench_name: B, connection_link_manager: AmLinkManager) 
+        (builder: InterfaceBuilder, dev_name: A, bench_name: B, connection_link_manager: AmLinkManager,
+            platform_services: crate::platform::services::AmServices) 
             -> AmRunner
     {
         let _dev_name = dev_name.into();
@@ -63,7 +64,8 @@ impl Runner {
             builder.version,
             builder.states,
             builder.subscriber,
-            link
+            link,
+            platform_services
         );
     }
 
@@ -81,9 +83,10 @@ impl Runner {
         subscriber: Box<dyn Subscriber>,
         
         link: link::InterfaceHandle,
+        platform_services: crate::platform::services::AmServices
         ) -> Runner
     {
-        let core_obj = Interface::new_am(name, dev_name, bench_name, itype, version, link.client());
+        let core_obj = Interface::new_am(name, dev_name, bench_name, itype, version, link.client(), platform_services);
         return 
             Runner {
                 interface: core_obj.clone(),
@@ -107,10 +110,11 @@ impl Runner {
         subscriber: Box<dyn Subscriber>,
         
         link: link::InterfaceHandle,
+        platform_services: crate::platform::services::AmServices
         ) -> AmRunner
     {
         return Arc::new(Mutex::new(
-            Runner::new(name, dev_name, bench_name, itype, version, states, subscriber, link)
+            Runner::new(name, dev_name, bench_name, itype, version, states, subscriber, link, platform_services)
         ));
     }
 

@@ -3,6 +3,7 @@ use tokio::sync::Mutex;
 use std::collections::HashMap;
 
 use crate::link;
+use crate::platform::services::AmServices;
 use crate::platform::{PlatformError, TaskPoolLoader};
 use crate::platform_error;
 
@@ -26,9 +27,9 @@ impl Manager {
 
     /// Create a new manager
     /// 
-    pub fn new(task_loader: TaskPoolLoader) -> AmManager {
+    pub fn new(task_loader: TaskPoolLoader, platform_services: AmServices) -> AmManager {
         return Arc::new(Mutex::new(Manager {
-            factory: Factory::new(),
+            factory: Factory::new(platform_services),
             instances: HashMap::new(),
             task_loader: task_loader
         }));

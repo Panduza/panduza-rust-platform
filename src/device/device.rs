@@ -30,6 +30,8 @@ pub struct Device {
     /// Connection link manager
     /// To generate connection links for the interfaces
     connection_link_manager: AmLinkManager,
+
+    platform_services: crate::platform::services::AmServices
 }
 
 impl Device {
@@ -47,6 +49,7 @@ impl Device {
         actions: Box<dyn DeviceActions>,
 
         connection_link_manager: AmLinkManager,
+        platform_services: crate::platform::services::AmServices
     ) -> Device 
     {
         // Create the object
@@ -61,7 +64,8 @@ impl Device {
             actions: actions,
             interfaces: Vec::new(),
 
-            connection_link_manager: connection_link_manager
+            connection_link_manager: connection_link_manager,
+            platform_services: platform_services
         };
 
         // Info log
@@ -140,7 +144,8 @@ impl Device {
                 interface::Runner::build(builder,
                     self.dev_name().clone(),
                     self.bench_name().clone(),
-                    self.connection_link_manager.clone()
+                    self.connection_link_manager.clone(),
+                    self.platform_services.clone()
                 ).await
             );
         }

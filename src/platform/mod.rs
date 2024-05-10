@@ -16,7 +16,7 @@ use crate::connection;
 
 mod connection_info;
 pub mod error;
-mod services;
+pub mod services;
 mod task_pool_loader;
 
 use services::{Services, AmServices};
@@ -25,6 +25,8 @@ use crate::platform_error;
 
 
 use self::services::boot::execute_service_boot;
+use self::services::hunt::execute_service_hunt;
+
 
 
 pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
@@ -81,12 +83,14 @@ impl Platform {
         
         let tl = TaskPoolLoader::new(tx);
 
+        let srvs = Services::new(tl.clone());
+
         return Platform {
             task_pool: JoinSet::new(),
             // task_loader: tl.clone(),
             task_pool_rx: Arc::new(Mutex::new(rx)),
-            services: Services::new(tl.clone()),
-            devices: device::Manager::new(tl.clone()),
+            services: srvs.clone(),
+            devices: device::Manager::new(tl.clone(), srvs.clone()),
             connection: connection::Manager::new(tl.clone(), name)
         }
     }
@@ -265,6 +269,15 @@ impl Platform {
                         }
                         
                         tracing::info!(class="Platform", "Reloading Success!");
+                    }
+
+                    // --------------------------------------------------------
+                    // --- HUNT ---
+                    if services.lock().await.hunt_requested() {
+
+                        if execute_service_hunt(services.clone()).await.is_err() {
+                            return platform_error!("Failed to hunt", None);
+                        }
                     }
 
                     // --------------------------------------------------------

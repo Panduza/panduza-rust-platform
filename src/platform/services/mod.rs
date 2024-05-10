@@ -7,7 +7,7 @@ use std::cmp::PartialEq;
 
 
 pub mod boot;
-
+pub mod hunt;
 
 use super::{connection_info::ConnectionInfo, TaskPoolLoader};
 
@@ -17,6 +17,8 @@ bitflags! {
         const NO_REQUEST            = 0b00000000;
         const BOOTING               = 0b00000001;
         const RELOAD_TREE           = 0b00000010;
+
+        const HUNT                  = 0b00000100;
 
         /// Request a normal stop of the platform
         const STOP                  = 0b01000000;
@@ -95,6 +97,10 @@ impl Services {
         self.insert_request(Requests::RELOAD_TREE);
     }
 
+    pub fn start_hunting(&mut self) {
+        self.insert_request(Requests::HUNT);
+    }
+
     /// Get the tree content
     ///
     pub fn get_tree_content(&self) -> &serde_json::Value {
@@ -146,6 +152,10 @@ impl Services {
     /// 
     pub fn stop_requested(&mut self) -> bool {
         return self.xxx_requested(Requests::STOP);
+    }
+
+    pub fn hunt_requested(&mut self) -> bool {
+        return self.xxx_requested(Requests::HUNT);
     }
 
     /// Get the connection info
