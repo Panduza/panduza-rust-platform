@@ -16,7 +16,7 @@ use crate::connection;
 
 mod connection_info;
 pub mod error;
-mod services;
+pub mod services;
 mod task_pool_loader;
 
 use services::{Services, AmServices};
@@ -25,6 +25,8 @@ use crate::platform_error;
 
 
 use self::services::boot::execute_service_boot;
+use self::services::hunt::execute_service_hunt;
+
 
 
 pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
@@ -81,12 +83,14 @@ impl Platform {
         
         let tl = TaskPoolLoader::new(tx);
 
+        let srvs = Services::new(tl.clone());
+
         return Platform {
             task_pool: JoinSet::new(),
             // task_loader: tl.clone(),
             task_pool_rx: Arc::new(Mutex::new(rx)),
-            services: Services::new(tl.clone()),
-            devices: device::Manager::new(tl.clone()),
+            services: srvs.clone(),
+            devices: device::Manager::new(tl.clone(), srvs.clone()),
             connection: connection::Manager::new(tl.clone(), name)
         }
     }
@@ -102,6 +106,12 @@ impl Platform {
         let s = self.services.clone();
         let d = self.devices.clone();
         let c = self.connection.clone();
+
+        // Quick and dirty store init
+        let store = d.lock().await.create_an_empty_store();
+        s.lock().await.update_device_store(store);
+
+        // Start the services task
         self.task_pool.spawn(async move {
             Platform::services_task(s, d, c).await
         });
@@ -268,6 +278,15 @@ impl Platform {
                     }
 
                     // --------------------------------------------------------
+                    // --- HUNT ---
+                    if services.lock().await.hunt_requested() {
+
+                        if execute_service_hunt(services.clone(), devices.clone()).await.is_err() {
+                            return platform_error!("Failed to hunt", None);
+                        }
+                    }
+
+                    // --------------------------------------------------------
                     // --- STOP ---
                     if services.lock().await.stop_requested() {
 
@@ -415,10 +434,10 @@ impl Platform {
                             },
                             Ok(new_device_name) => {
                                 let mut d = devices_manager.lock().await;
-                                let mut c = connections_manager.lock().await;
+                                let mut _c = connections_manager.lock().await;
                         
-                                let server_device = d.get_device(new_device_name).unwrap();
-                                let connection = c.connection().unwrap();
+                                let _server_device = d.get_device(new_device_name).unwrap();
+                                let _connection = _c.connection().unwrap();
                                 // server_device.set_default_connection(default_connection.clone()).await;
 
                             }

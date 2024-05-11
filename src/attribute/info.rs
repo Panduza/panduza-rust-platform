@@ -72,6 +72,10 @@ impl AttributeInterface for InfoAttribute {
     fn update_field_with_string(&mut self, field: &str, value: &String) {
         self.attr.update_field_with_string(field, value);
     }
+    
+    fn update_field_with_json(&mut self, field: &str, value: &serde_json::Value) {
+        self.attr.update_field_with_json(field, value);
+    }
 }
 
 

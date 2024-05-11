@@ -22,8 +22,9 @@ pub fn get(config: &Config) -> Option<TtyConnector> {
 
 #[derive(Clone, Debug)]
 pub struct Config {
-    pub usb_vendor: Option<String>,
-    pub usb_model: Option<String>,
+    pub usb_vendor: Option<u16>,
+    pub usb_model: Option<u16>,
+    pub usb_serial: Option<String>,
 
     pub serial_port_name: Option<String>,
     pub serial_baudrate: Option<u32>
@@ -34,6 +35,7 @@ impl Config {
         Config {
             usb_vendor: None,
             usb_model: None,
+            usb_serial: None,
             serial_port_name: None,
             serial_baudrate: None,
         }

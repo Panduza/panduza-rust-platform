@@ -107,6 +107,14 @@ impl AttributeInterface for JsonAttribute {
         );
     }
 
+    fn update_field_with_json(&mut self, field: &str, value: &serde_json::Value) {
+        let n = self.name.clone();
+        let d = self.data.get_mut(n);
+        if d.is_none() {
+            return;
+        }
+        d.unwrap().as_object_mut().unwrap().insert(field.into(), value.clone());
+    }
 
 }
 

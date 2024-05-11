@@ -1,10 +1,15 @@
 use std::collections::HashMap;
+use std::vec;
+
+use serde_json::json;
 
 use super::Device;
 
 use crate::link;
 
 use crate::device::traits::Producer;
+
+use crate::device::traits::Hunter;
 
 use crate::platform_error;
 use crate::platform::PlatformError;
@@ -18,20 +23,27 @@ pub struct Factory {
     /// 
     producers: HashMap<String, Box<dyn Producer>>,
 
+
+    hunters: Vec<Box<dyn Hunter>>,
+
     /// Connection link manager
     /// 
-    connection_link_manager: Option<link::AmManager>
+    connection_link_manager: Option<link::AmManager>,
+
+    platform_services: crate::platform::services::AmServices
 }
 
 impl Factory {
 
     /// Create a new factory
     /// 
-    pub fn new() -> Factory {
+    pub fn new(platform_services: crate::platform::services::AmServices) -> Factory {
         // New object
         let mut obj = Factory {
             producers: HashMap::new(),
-            connection_link_manager: None
+            hunters: Vec::new(),
+            connection_link_manager: None,
+            platform_services: platform_services
         };
 
         // Info log
@@ -57,6 +69,16 @@ impl Factory {
 
         // Append the producer
         self.producers.insert(device_ref.to_string(), producer);
+    }
+
+    /// Add a hunter to the factory
+    /// 
+    pub fn add_hunter(&mut self, hunter: Box<dyn Hunter>) {
+        // Info log
+        tracing::info!(class="Factory", "  - new hunter");
+
+        // Append the producer
+        self.hunters.push(hunter);
     }
 
     /// Create a new device instance
@@ -113,14 +135,16 @@ impl Factory {
                 return platform_error!(error_text , None);
             },
             Some(producer) => {
-                return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap(), settings);
+                return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap(), settings
+                , self.platform_services.clone());
             }
         }
     }
 
     /// Create a new device instance with all the required data
     ///
-    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>, connection_link_manager: &link::AmManager, settings: serde_json::Value)
+    fn produce_device(dev_name: &String, bench_name: &String, producer: &Box<dyn Producer>, connection_link_manager: &link::AmManager, settings: serde_json::Value
+        ,platform_services: crate::platform::services::AmServices)
         -> Result<Device, PlatformError>
     {
         let actions = producer.produce();
@@ -129,11 +153,44 @@ impl Factory {
                 return platform_error!("Fail to produce device actions", Some(Box::new(e)));
             },
             Ok(actions) => {
-                return Ok(Device::new(dev_name, bench_name, settings, actions, connection_link_manager.clone()));
+                return Ok(Device::new(dev_name, bench_name, settings, actions, connection_link_manager.clone()
+                , platform_services));
             }
         }
     }
     
+
+    pub fn hunters(&self) -> &Vec<Box<dyn Hunter>> {
+        return &self.hunters;
+    }
+
+    pub fn create_an_empty_store(&self)
+        -> serde_json::Value {
+
+        let mut store_map = serde_json::Map::new();
+
+
+        for producer in &self.producers {
+
+            let mut product_map = serde_json::Map::new();
+
+            let producer_ref = producer.0;
+            let producer_obj = producer.1;
+
+            product_map.insert("settings_props".to_string(), producer_obj.settings_props() );
+            product_map.insert("instances".to_string(), 
+                serde_json::Value::Array(vec![]) );
+
+            store_map.insert(producer_ref.to_string(), 
+                serde_json::Value::Object(product_map) );
+        }
+
+        
+
+        return serde_json::Value::Object(store_map);
+    }
+
+
 }
 
 
