@@ -1,34 +1,72 @@
+use async_trait::async_trait;
+use serde_json::json;
 
 use crate::platform::PlatformError;
-use crate::device::{ traits::DeviceActions, traits::Producer };
+use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
 
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 
 use crate::connector::serial::tty::Config as SerialConfig;
 
+use tokio_serial;
+
 mod itf_bpc;
 
 
-struct Ka3005;
+
+static VID: u16 = 0x0416;
+static PID: u16 = 0x5011;
+
+pub struct DeviceHunter;
 
 
-impl DeviceActions for Ka3005 {
+#[async_trait]
+impl Hunter for DeviceHunter {
 
-    fn hunt(&self) -> Option<Vec<serde_json::Value>> {
-        // let mut list = Vec::new();
-        // list.push(serde_json::json!({
-        //     "name": "Server",
-        //     "type": "platform",
-        //     "id": "server",
-        //     "settings": {
-        //         "host": "localhost",
-        //         "port": 8080
-        //     }
-        // }));
-        return None;
+    async fn hunt(&self) -> Option<Vec<serde_json::Value>> {
+
+        let mut bag = Vec::new();
+
+        println!("DeviceHunter::hunt");
+
+        let ports = tokio_serial::available_ports();
+        for port in ports.unwrap() {
+            println!("{:?}", port);
+
+            match port.port_type {
+                tokio_serial::SerialPortType::UsbPort(info) => {
+                    if info.vid == VID && info.pid == PID {
+                        println!("Found device");
+
+                        // "settings" {
+                        //     "usb_vendor": format!("{:04x}", info.vid),
+                        //     "usb_model": format!("{:04x}", info.pid),
+                        // }
+                        bag.push(json!(
+                            {
+
+                            }
+                        ))
+                    }
+                },
+                _ => {}
+            }
+        }
+
+        if bag.is_empty() {
+            return None;
+        }
+        else {
+            return Some(bag);
+        }
     }
 
+}
+
+struct Ka3005;
+
+impl DeviceActions for Ka3005 {
 
     /// Create the interfaces
     fn interface_builders(&self, device_settings: &serde_json::Value) 

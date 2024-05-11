@@ -1,10 +1,13 @@
 use std::collections::HashMap;
+use std::vec;
 
 use super::Device;
 
 use crate::link;
 
 use crate::device::traits::Producer;
+
+use crate::device::traits::Hunter;
 
 use crate::platform_error;
 use crate::platform::PlatformError;
@@ -17,6 +20,9 @@ pub struct Factory {
     /// List of known producers
     /// 
     producers: HashMap<String, Box<dyn Producer>>,
+
+
+    hunters: Vec<Box<dyn Hunter>>,
 
     /// Connection link manager
     /// 
@@ -33,6 +39,7 @@ impl Factory {
         // New object
         let mut obj = Factory {
             producers: HashMap::new(),
+            hunters: Vec::new(),
             connection_link_manager: None,
             platform_services: platform_services
         };
@@ -60,6 +67,16 @@ impl Factory {
 
         // Append the producer
         self.producers.insert(device_ref.to_string(), producer);
+    }
+
+    /// Add a hunter to the factory
+    /// 
+    pub fn add_hunter(&mut self, hunter: Box<dyn Hunter>) {
+        // Info log
+        tracing::info!(class="Factory", "  - new hunter");
+
+        // Append the producer
+        self.hunters.push(hunter);
     }
 
     /// Create a new device instance
@@ -140,6 +157,12 @@ impl Factory {
         }
     }
     
+
+    pub fn hunters(&self) -> &Vec<Box<dyn Hunter>> {
+        return &self.hunters;
+    }
+
+
 }
 
 

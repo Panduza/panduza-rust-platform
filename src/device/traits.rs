@@ -1,13 +1,10 @@
 use crate::interface::Builder as InterfaceBuilder;
 use crate::platform::PlatformError;
+use async_trait::async_trait;
 
 /// Actions that are specific for each device type
 /// 
 pub trait DeviceActions : Send {
-
-
-    fn hunt(&self) -> Option<Vec<serde_json::Value>>;
-
 
     /// The device must provides a list of interface builders
     /// 
@@ -26,3 +23,16 @@ pub trait Producer : Send {
     /// 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError>;
 }
+
+
+#[async_trait]
+pub trait Hunter : Send + Sync {
+
+    async fn hunt(&self) -> Option<Vec<serde_json::Value>>;
+
+}
+
+
+
+
+

@@ -7,6 +7,7 @@ use crate::platform::services::AmServices;
 use crate::platform::{PlatformError, TaskPoolLoader};
 use crate::platform_error;
 
+use super::traits::Hunter;
 use super::{factory::Factory, device::Device};
 
 /// Object to manage and run multiple named devices
@@ -90,6 +91,10 @@ impl Manager {
         return self.instances.get_mut(&device_ref);
     }
 
+
+    pub fn hunters(&self) -> &Vec<Box<dyn Hunter>> {
+        return self.factory.hunters();
+    }
 
 }
 

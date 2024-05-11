@@ -20,22 +20,6 @@ struct VoxpowerInhibiter;
 
 impl DeviceActions for VoxpowerInhibiter {
 
-    fn hunt(&self) -> Option<Vec<serde_json::Value>> {
-        // let mut list = Vec::new();
-        // list.push(serde_json::json!({
-        //     "name": "Server",
-        //     "type": "platform",
-        //     "id": "server",
-        //     "settings": {
-        //         "host": "localhost",
-        //         "port": 8080
-        //     }
-        // }));
-        return None;
-    }
-
-
-
     /// Create the interfaces
     fn interface_builders(&self, device_settings: &serde_json::Value) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>

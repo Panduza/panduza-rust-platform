@@ -275,7 +275,7 @@ impl Platform {
                     // --- HUNT ---
                     if services.lock().await.hunt_requested() {
 
-                        if execute_service_hunt(services.clone()).await.is_err() {
+                        if execute_service_hunt(services.clone(), devices.clone()).await.is_err() {
                             return platform_error!("Failed to hunt", None);
                         }
                     }
