@@ -1,4 +1,6 @@
 
+use serde_json::json;
+
 use crate::interface::builder::Builder as InterfaceBuilder;
 use crate::platform::PlatformError;
 use crate::device::{ traits::DeviceActions, traits::Producer };
@@ -30,6 +32,12 @@ impl DeviceActions for ServerDeviceActions {
 
 pub struct DeviceProducer;
 impl Producer for DeviceProducer {
+
+    
+    fn settings_props(&self) -> serde_json::Value {
+        return json!([
+        ]);
+    }
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
         return Ok(Box::new(ServerDeviceActions{}));

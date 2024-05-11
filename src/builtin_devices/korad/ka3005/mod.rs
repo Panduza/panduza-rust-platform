@@ -39,13 +39,15 @@ impl Hunter for DeviceHunter {
                     if info.vid == VID && info.pid == PID {
                         println!("Found device");
 
-                        // "settings" {
-                        //     "usb_vendor": format!("{:04x}", info.vid),
-                        //     "usb_model": format!("{:04x}", info.pid),
-                        // }
                         bag.push(json!(
                             {
-
+                                "name": "Korad KA3005",
+                                "ref": "korad.ka3005",
+                                "settings": {
+                                    "usb_vendor": format!("{:04x}", info.vid),
+                                    "usb_model": format!("{:04x}", info.pid),
+                                    "usb_serial": info.serial_number,
+                                }
                             }
                         ))
                     }
@@ -101,6 +103,40 @@ impl DeviceActions for Ka3005 {
 pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
+
+    // fn manufacturer(&self) -> String {
+    //     return "korad".to_string();
+    // }
+    // fn model(&self) -> String {
+    //     return "KA3005".to_string();
+    // }
+
+    fn settings_props(&self) -> serde_json::Value {
+
+        return json!([
+            {
+                "name": "usb_vendor",
+                "type": "string",
+                "default": format!("{:04x}", VID)
+            },
+            {
+                "name": "usb_model",
+                "type": "string",
+                "default": format!("{:04x}", PID)
+            },
+            {
+                "name": "usb_serial",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "serial_port_name",
+                "type": "string",
+                "default": ""
+            }
+        ]);
+    }
+
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
         return Ok(Box::new(Ka3005{}));

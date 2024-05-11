@@ -47,6 +47,8 @@ pub struct Services {
     /// Brut content of the currently loaded tree
     tree_content: serde_json::Value,
 
+    device_store: serde_json::Value,
+
     /// Panic cause, try to keep ip empty :)
     panic_cause: String,
 
@@ -71,6 +73,7 @@ impl Services {
             requests: Requests::BOOTING,
             requests_change_notifier: notify,
             tree_content: serde_json::Value::Null,
+            device_store: serde_json::Value::Null,
             panic_cause: String::new(),
             connection_info: None,
             task_loader: task_loader

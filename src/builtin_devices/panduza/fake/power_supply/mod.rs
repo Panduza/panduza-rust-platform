@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use serde_json::json;
 use tokio::time::{sleep, Duration};
 
 use crate::platform::PlatformError;
@@ -41,6 +42,12 @@ impl DeviceActions for FakePowerSupply {
 pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
+
+    fn settings_props(&self) -> serde_json::Value {
+        return json!([
+        ]);
+    }
+
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
         return Ok(Box::new(FakePowerSupply{}));

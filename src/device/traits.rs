@@ -19,6 +19,11 @@ pub trait DeviceActions : Send {
 /// combining the actions with device data (naem, settings...)
 /// 
 pub trait Producer : Send {
+
+    // fn manufacturer(&self) -> String;
+    // fn model(&self) -> String;
+    fn settings_props(&self) -> serde_json::Value;
+
     /// Produce a new instance of the device actions
     /// 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError>;
