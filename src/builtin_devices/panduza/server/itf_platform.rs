@@ -2,7 +2,7 @@
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{interface::{self, AmInterface}, subscription};
+use crate::{attribute::JsonAttribute, interface::{self, AmInterface}, subscription};
 use crate::interface::Builder as InterfaceBuilder;
 
 
@@ -19,17 +19,24 @@ impl PlatformInterfaceSubscriber {
         // self.bpc_interface.lock().await
         //     .actions.write_enable_value(&interface, requested_value).await;
 
-        let platform_services = interface.lock().await
+        if requested_value == true {
+            let platform_services = interface.lock().await
             .platform_services();
 
-        platform_services.lock().await.start_hunting();
+            platform_services.lock().await.start_hunting();
 
-        // let r_value = self.bpc_interface.lock().await
-        //     .actions.read_enable_value(&interface).await
-        //     .unwrap();
+            while platform_services.lock().await.is_hunt_in_progress() {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            }
 
-        // interface.lock().await
-        //     .update_attribute_with_bool("enable", "value", r_value);
+            interface.lock().await
+                .update_attribute_with_json("devices", "hunting", 
+                    platform_services.lock().await.get_device_store()
+                );
+            interface.lock().await
+                .publish_all_attributes().await;
+        }
+
     }
 
 }
@@ -104,8 +111,19 @@ impl interface::fsm::States for TestInterfaceStates {
     {
         interface::basic::interface_initializating(interface).await;
         
-        let mut p = interface.lock().await;
-        p.set_event_init_done();
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("dtree", true));
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("devices", true));
+
+
+        let mut ii = interface.lock().await;
+        let ps = ii.platform_services().clone();
+        ii.update_attribute_with_json("devices", "hunting", 
+                    ps.lock().await.get_device_store()
+            );
+        ii.publish_all_attributes().await;
+
+
+        ii.set_event_init_done();
     }
 
     async fn running(&self, interface: &AmInterface)

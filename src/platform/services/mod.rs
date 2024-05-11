@@ -47,6 +47,9 @@ pub struct Services {
     /// Brut content of the currently loaded tree
     tree_content: serde_json::Value,
 
+
+    hunt_in_progress: bool,
+
     device_store: serde_json::Value,
 
     /// Panic cause, try to keep ip empty :)
@@ -73,6 +76,7 @@ impl Services {
             requests: Requests::BOOTING,
             requests_change_notifier: notify,
             tree_content: serde_json::Value::Null,
+            hunt_in_progress: false,
             device_store: serde_json::Value::Null,
             panic_cause: String::new(),
             connection_info: None,
@@ -178,6 +182,24 @@ impl Services {
     pub fn generate_default_connection_info(&mut self) -> Result<(), std::io::Error> {
         self.connection_info = Some(ConnectionInfo::default());
         self.connection_info.as_ref().unwrap().save_to_file()
+    }
+
+
+    pub fn is_hunt_in_progress(&self) -> bool {
+        self.hunt_in_progress
+    }
+
+    pub fn start_hunting_set_flag(&mut self) {
+        self.hunt_in_progress = true;
+    }
+
+    pub fn update_device_store(&mut self, store: serde_json::Value) {
+        self.device_store = store;
+        self.hunt_in_progress = false;
+    }
+
+    pub fn get_device_store(&self) -> &serde_json::Value {
+        &self.device_store
     }
 
 }

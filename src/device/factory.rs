@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::vec;
 
+use serde_json::json;
+
 use super::Device;
 
 use crate::link;
@@ -160,6 +162,32 @@ impl Factory {
 
     pub fn hunters(&self) -> &Vec<Box<dyn Hunter>> {
         return &self.hunters;
+    }
+
+    pub fn create_an_empty_store(&self)
+        -> serde_json::Value {
+
+        let mut store_map = serde_json::Map::new();
+
+
+        for producer in &self.producers {
+
+            let mut product_map = serde_json::Map::new();
+
+            let producer_ref = producer.0;
+            let producer_obj = producer.1;
+
+            product_map.insert("settings_props".to_string(), producer_obj.settings_props() );
+            product_map.insert("instances".to_string(), 
+                serde_json::Value::Array(vec![]) );
+
+            store_map.insert(producer_ref.to_string(), 
+                serde_json::Value::Object(product_map) );
+        }
+
+        
+
+        return serde_json::Value::Object(store_map);
     }
 
 

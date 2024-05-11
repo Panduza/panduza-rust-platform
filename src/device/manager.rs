@@ -96,5 +96,10 @@ impl Manager {
         return self.factory.hunters();
     }
 
+    pub fn create_an_empty_store(&self)
+    -> serde_json::Value {
+        return self.factory.create_an_empty_store();
+    }
+
 }
 

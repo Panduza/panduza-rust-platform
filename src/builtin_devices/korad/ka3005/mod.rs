@@ -112,7 +112,6 @@ impl Producer for DeviceProducer {
     // }
 
     fn settings_props(&self) -> serde_json::Value {
-
         return json!([
             {
                 "name": "usb_vendor",

@@ -106,6 +106,12 @@ impl Platform {
         let s = self.services.clone();
         let d = self.devices.clone();
         let c = self.connection.clone();
+
+        // Quick and dirty store init
+        let store = d.lock().await.create_an_empty_store();
+        s.lock().await.update_device_store(store);
+
+        // Start the services task
         self.task_pool.spawn(async move {
             Platform::services_task(s, d, c).await
         });
@@ -428,10 +434,10 @@ impl Platform {
                             },
                             Ok(new_device_name) => {
                                 let mut d = devices_manager.lock().await;
-                                let mut c = connections_manager.lock().await;
+                                let mut _c = connections_manager.lock().await;
                         
-                                let server_device = d.get_device(new_device_name).unwrap();
-                                let connection = c.connection().unwrap();
+                                let _server_device = d.get_device(new_device_name).unwrap();
+                                let _connection = _c.connection().unwrap();
                                 // server_device.set_default_connection(default_connection.clone()).await;
 
                             }

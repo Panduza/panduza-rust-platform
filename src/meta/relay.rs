@@ -139,7 +139,7 @@ impl RelaySubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, field_name: &str, field_data: &Value) {
+    async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_bool().unwrap();
         self.relay_interface.lock().await
             .actions.write_state_open(&interface, requested_value).await;
