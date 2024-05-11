@@ -6,6 +6,12 @@ use crate::{attribute::JsonAttribute, interface::{self, AmInterface}, subscripti
 use crate::interface::Builder as InterfaceBuilder;
 
 
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
 struct PlatformInterfaceSubscriber;
 
 
@@ -38,6 +44,23 @@ impl PlatformInterfaceSubscriber {
         }
 
     }
+
+    /// 
+    /// 
+    #[inline(always)]
+    async fn process_dtree_content(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
+        let obj = field_data.as_object().unwrap();
+
+        println!("process_dtree_content: {:?}", obj);
+
+        let platform_services = 
+            interface.lock().await.platform_services();
+
+        platform_services.lock().await
+            .set_tree_content(
+                serde_json::Value::Object(obj.clone()) );
+    }
+
 
 }
 
@@ -74,12 +97,9 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
                                 if attribute_name == "devices" && field_name == "hunting" {
                                     self.process_devices_hunting(&interface, attribute_name, field_name, field_data).await;
                                 }
-                        //         else if attribute_name == "voltage" && field_name == "value" {
-                        //             self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
-                        //         }
-                        //         else if attribute_name == "current" && field_name == "value" {
-                        //             self.process_current_value(interface, attribute_name, field_name, field_data).await;
-                        //         }
+                                else if attribute_name == "dtree" && field_name == "content" {
+                                    self.process_dtree_content(interface, attribute_name, field_name, field_data).await;
+                                }
                             }
                         }
                         // interface.lock().await.publish_all_attributes().await;
@@ -95,6 +115,12 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
 
 }
 
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 struct TestInterfaceStates;
 
@@ -145,6 +171,12 @@ impl interface::fsm::States for TestInterfaceStates {
 
 
 
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 
 ///
