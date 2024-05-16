@@ -87,6 +87,8 @@ impl Manager {
     }
 
 
+    /// Process new links with saved information about connection status
+    /// 
     pub async fn process_new_links(&mut self, is_connected: &AtomicBool) {
         let mut new_links = self.new_links.lock().await;
         while let Some(link) = new_links.pop_front() {
