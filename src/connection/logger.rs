@@ -18,15 +18,14 @@ impl Logger {
         }
     }
 
-    // // -- LOGS --
+    // -- LOGS --
 
-    // /// Log trace
-    // ///
-    // #[inline]
-    // pub fn log_warn<A: Into<String>>(&self, text: A) {
-    //     tracing::warn!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
-    //         "{}", text.into());
-    // }
+    /// Log trace
+    ///
+    #[inline]
+    pub fn log_warn<A: Into<String>>(&self, text: A) {
+        tracing::warn!(class="Connection", cname=self.name, "{}", text.into());
+    }
 
     // /// Log info
     // ///

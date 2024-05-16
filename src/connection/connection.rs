@@ -4,6 +4,7 @@ use futures::FutureExt;
 use rumqttc::{AsyncClient, MqttOptions};
 use tokio::sync::Mutex;
 
+use crate::link::ThreadSafeLinkManager;
 use crate::platform::PlatformTaskResult;
 use crate::platform::TaskPoolLoader;
 
@@ -18,12 +19,12 @@ use super::task::task as ConnectionTask;
 /// Event loop for a single owner (the connection)
 /// But this ownership is took by the task that runs the connection and released when the task ends
 type ThreadSafeEventLoop = std::sync::Arc<
-                                    std::sync::Mutex<
+                                tokio::sync::Mutex<
                                         rumqttc::EventLoop
                                     >    
                                 >;
 fn new_thread_safe_event_loop(event_loop: rumqttc::EventLoop) -> ThreadSafeEventLoop {
-    std::sync::Arc::new(std::sync::Mutex::new(event_loop))
+    std::sync::Arc::new(tokio::sync::Mutex::new(event_loop))
 }
 
 
@@ -110,48 +111,10 @@ impl Connection {
 
     // }
 
-    /// Process incoming packets
-    /// 
-    async fn process_incoming_packet(lm: Arc<Mutex<LinkManager>>, packet: &rumqttc::Packet) {
-    
-        match packet {
-            rumqttc::Incoming::ConnAck(_ack) => {
-                lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
-            },
-            // rumqttc::Packet::SubAck(ack) => {
-            //     println!("SubAck = {:?}", ack);
-            // },
-            rumqttc::Incoming::Publish(publish) => {
-                // For each link with interfaces, check if the topic matches a filter
-                // then send the message to the interface
-                for link in lm.lock().await.links_as_mut().iter_mut() {
-                    for filter in link.filters().iter() {
-                        if filter.match_topic(&publish.topic) {
-                            let message = 
-                                subscription::Message::from_filter_and_publish_packet(filter, publish);
-
-                            // tracing::trace!(
-                            //     "Sending message to interface {}", message);
-
-
-                            let r = link.tx().send(message).await;
-                            if r.is_err() {
-                                println!("Error sending message to interface {}",
-                                    r.err().unwrap());
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {
-                // println!("? = {:?}", packet);
-            }
-        }
-    }
 
     /// Get the link manager, to share it with the devices
     /// 
-    pub fn link_manager(&self) -> AmLinkManager {
+    pub fn link_manager(&self) -> ThreadSafeLinkManager {
         return self.link_manager.clone();
     }
 
@@ -161,7 +124,7 @@ impl Connection {
     }
 
     pub fn event_loop(&self) -> ThreadSafeEventLoop {
-        return self.eventloop;
+        return self.eventloop.clone();
     }
 
 }

@@ -61,10 +61,10 @@ impl Manager {
 
         // Start connection process in a task
         self.task_loader.load(async move {
-            ConnectionTask( co ).await
-        }.boxed()).unwrap();
+                ConnectionTask( co ).await
+            }.boxed()
+        ).unwrap();
 
-        
     }
 
     /// Get the connection

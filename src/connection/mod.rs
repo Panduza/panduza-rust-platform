@@ -12,6 +12,7 @@ pub type AmConnection = connection::AmConnection;
 /// Thread safe connection object
 pub type ThreadSafeConnection = std::sync::Arc<
                                     tokio::sync::Mutex<
-                                        Connection
+                                        connection::Connection
                                     >
                                 >;
+
