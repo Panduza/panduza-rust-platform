@@ -13,6 +13,7 @@ use crate::subscription;
 
 use super::logger::Logger;
 
+use super::task::task as ConnectionTask;
 
 /// Event loop for a single owner (the connection)
 /// But this ownership is took by the task that runs the connection and released when the task ends
@@ -28,6 +29,7 @@ fn new_thread_safe_event_loop(event_loop: rumqttc::EventLoop) -> ThreadSafeEvent
 
 /// Connection object
 ///
+#[derive(Clone)]
 pub struct Connection {
 
     // Name of the connection
@@ -69,25 +71,28 @@ impl Connection {
 
     }
 
-    /// Start the connection
-    ///
-    pub async fn start(&mut self, task_loader: &mut TaskPoolLoader) {
+    // /// Start the connection
+    // ///
+    // pub async fn start(&mut self, task_loader: &mut TaskPoolLoader) {
 
-        //
-        let ev: Arc<Mutex<rumqttc::EventLoop>> = self.eventloop.clone();
-        let lm: Arc<Mutex<LinkManager>> = self.link_manager.clone();
+    //     // //
+    //     // let ev: Arc<Mutex<rumqttc::EventLoop>> = self.eventloop.clone();
+    //     // let lm: Arc<Mutex<LinkManager>> = self.link_manager.clone();
 
-        let cname = self.name.clone();
+    //     // let cname = self.name.clone();
 
-        // Start connection process in a task
-        task_loader.load(async move {
-            Connection::run(cname, ev, lm).await
-        }.boxed()).unwrap();
 
-        // Info log
-        tracing::info!(class="Connection", cname=self.name,
-            "Connection started");
-    }
+    //     let pp = self.clone();
+
+    //     // Start connection process in a task
+    //     task_loader.load(async move {
+    //         ConnectionTask(pp).await
+    //     }.boxed()).unwrap();
+
+    //     // Info log
+    //     tracing::info!(class="Connection", cname=self.name,
+    //         "Connection started");
+    // }
 
     /// Run the connection
     /// 
@@ -150,6 +155,10 @@ impl Connection {
         return self.link_manager.clone();
     }
 
+
+    pub fn logger(&self) -> Logger {
+        return self.logger.clone();
+    }
 
     pub fn event_loop(&self) -> ThreadSafeEventLoop {
         return self.eventloop;

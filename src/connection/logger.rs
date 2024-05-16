@@ -9,11 +9,12 @@ pub struct Logger {
 
 ///
 impl Logger {
+
     /// Create a new logger
     /// 
-    pub fn new(name: &str) -> Logger {
+    pub fn new<A: Into<String>>(name: A) -> Logger {
         return Logger {
-            name: name.to_string()
+            name: name.into()
         }
     }
 

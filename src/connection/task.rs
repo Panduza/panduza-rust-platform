@@ -1,10 +1,13 @@
-use super::ThreadSafeConnection;
+use super::{logger, ThreadSafeConnection};
 use crate::platform::TaskResult;
 
 /// Task that run the connection
 ///
-async fn task(connection: ThreadSafeConnection) -> TaskResult {
+pub async fn task(connection: ThreadSafeConnection) -> TaskResult {
 
+    // --- Take from the connection required elements to run the task ---
+    // Take logger
+    let logger = connection.lock().await.logger().clone();
     // Take the ownership of the connection while the connection task is running
     let connection_event_loop = connection.lock().await.event_loop().clone();
     let mut ev = connection_event_loop.lock().expect("Failed to lock connection event loop");
@@ -13,13 +16,8 @@ async fn task(connection: ThreadSafeConnection) -> TaskResult {
     loop {
         // Poll the connection event loop to get messages
         while let Ok(connection_event) = ev.poll().await {
-        //     // Debug log
-        //     tracing::trace!(
-        //         class = "Connection",
-        //         cname = conneciton_name,
-        //         "{:?}",
-        //         notification
-        //     );
+            // Log the event
+            logger.log_trace(format!("Connection event received {:?}", connection_event));
 
         //     // Check notification
         //     match notification {

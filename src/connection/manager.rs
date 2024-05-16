@@ -1,9 +1,12 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures::FutureExt;
+use futures::FutureExt as _;
 use tokio::sync::Mutex;
 use rumqttc::MqttOptions;
 
+use super::task::task as ConnectionTask;
 use super::Connection;
 use super::AmConnection;
 
@@ -51,8 +54,17 @@ impl Manager {
         // Create connection Object
         self.connection = Some(Arc::new(Mutex::new(Connection::new(mqtt_options))));
 
-        // Start the connection
-        self.connection.as_mut().unwrap().lock().await.start(&mut self.task_loader).await;
+
+
+
+        let co = self.connection.as_mut().unwrap().clone();
+
+        // Start connection process in a task
+        self.task_loader.load(async move {
+            ConnectionTask( co ).await
+        }.boxed()).unwrap();
+
+        
     }
 
     /// Get the connection
