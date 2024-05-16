@@ -1,4 +1,5 @@
 mod task;
+mod logger;
 mod manager;
 mod connection;
 

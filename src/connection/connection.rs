@@ -11,6 +11,21 @@ use crate::link::Manager as LinkManager;
 use crate::link::AmManager as AmLinkManager;
 use crate::subscription;
 
+use super::logger::Logger;
+
+
+/// Event loop for a single owner (the connection)
+/// But this ownership is took by the task that runs the connection and released when the task ends
+type ThreadSafeEventLoop = std::sync::Arc<
+                                    std::sync::Mutex<
+                                        rumqttc::EventLoop
+                                    >    
+                                >;
+fn new_thread_safe_event_loop(event_loop: rumqttc::EventLoop) -> ThreadSafeEventLoop {
+    std::sync::Arc::new(std::sync::Mutex::new(event_loop))
+}
+
+
 /// Connection object
 ///
 pub struct Connection {
@@ -20,8 +35,10 @@ pub struct Connection {
 
     // \todo: append connection status
 
+    logger: Logger,
+
     /// Event loop
-    eventloop: Arc<Mutex<rumqttc::EventLoop>>,
+    eventloop: ThreadSafeEventLoop,
 
     /// Links
     link_manager: AmLinkManager
@@ -42,8 +59,9 @@ impl Connection {
 
         // Create Connection Object
         return Connection {
-            name: mqtt_options.client_id(),
-            eventloop: Arc::new(Mutex::new(eventloop)),
+            name: mqtt_options.client_id().clone(),
+            logger: Logger::new( mqtt_options.client_id().clone() ),
+            eventloop: new_thread_safe_event_loop(eventloop),
             link_manager: Arc::new(Mutex::new(
                 LinkManager::new(client.clone())
             ))
@@ -132,6 +150,10 @@ impl Connection {
         return self.link_manager.clone();
     }
 
+
+    pub fn event_loop(&self) -> ThreadSafeEventLoop {
+        return self.eventloop;
+    }
 
 }
 
