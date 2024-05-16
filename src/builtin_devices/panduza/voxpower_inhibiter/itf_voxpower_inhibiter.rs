@@ -65,9 +65,10 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         let _result = self.connector_tty.write_then_read(
             b"S6",
             &mut response_buf,
-            self.time_lock_duration
+            self.time_lock_duration,
         ).await
             .map(|nb_of_bytes| {
+                println!("nb of bytes: {:?}", nb_of_bytes);
                 let response_bytes = &response_buf[0..nb_of_bytes];
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
                 println!("VoxpowerInhibiterActions - channel state: {:?}", response_string);
@@ -117,9 +118,9 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     async fn write_state_open(&mut self, interface: &AmInterface, v: bool) {
         
         let command = if v {
-            format!("I")
+            format!("I6")
         } else {
-            format!("E")
+            format!("E6")
         };
 
         let _result = self.connector_tty.write(
