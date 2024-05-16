@@ -207,6 +207,8 @@ impl TtyConnector {
     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
         time_lock: Option<Duration>) 
             -> Result<usize> {
+        // println!("{:?}", command);
+        // println!("{:?}", response);
         self.core
             .as_ref()
             .unwrap()
