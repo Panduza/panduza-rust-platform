@@ -101,9 +101,9 @@ impl Manager {
     }
 
     
-    // pub fn links_as_mut(&mut self) -> &mut LinkedList<ConnectionHandle> {
-    //     return &mut self.links;
-    // }
+    pub fn links_as_mut(&mut self) -> &mut Vec<ConnectionHandle> {
+        return &mut self.links;
+    }
 
 }
 

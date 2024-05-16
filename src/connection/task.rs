@@ -43,31 +43,28 @@ pub async fn task(connection: ThreadSafeConnection) -> TaskResult {
                         rumqttc::Incoming::ConnAck(ack) => {
                             process_incoming_conn_ack(&logger, &link_manager, &ack, &mut is_connected).await;
                         },
-                    //     // rumqttc::Packet::SubAck(ack) => {
-                    //     //     println!("SubAck = {:?}", ack);
-                    //     // },
-                    //     rumqttc::Incoming::Publish(publish) => {
-                    //         // For each link with interfaces, check if the topic matches a filter
-                    //         // then send the message to the interface
-                    //         for link in lm.lock().await.links_as_mut().iter_mut() {
-                    //             for filter in link.filters().iter() {
-                    //                 if filter.match_topic(&publish.topic) {
-                    //                     let message = 
-                    //                         subscription::Message::from_filter_and_publish_packet(filter, publish);
+                        rumqttc::Incoming::Publish(publish) => {
+                            // For each link with interfaces, check if the topic matches a filter
+                            // then send the message to the interface
+                            for link in link_manager.lock().await.links_as_mut().iter_mut() {
+                                for filter in link.filters().iter() {
+                                    if filter.match_topic(&publish.topic) {
+                                        let message = 
+                                            subscription::Message::from_filter_and_publish_packet(filter, &publish);
                 
-                    //                     // tracing::trace!(
-                    //                     //     "Sending message to interface {}", message);
+                                        // tracing::trace!(
+                                        //     "Sending message to interface {}", message);
                 
                 
-                    //                     let r = link.tx().send(message).await;
-                    //                     if r.is_err() {
-                    //                         println!("Error sending message to interface {}",
-                    //                             r.err().unwrap());
-                    //                     }
-                    //                 }
-                    //             }
-                    //         }
-                    //     }
+                                        let r = link.tx().send(message).await;
+                                        if r.is_err() {
+                                            println!("Error sending message to interface {}",
+                                                r.err().unwrap());
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         _ => {
                         }
                     }
