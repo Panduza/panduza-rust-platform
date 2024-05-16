@@ -33,18 +33,17 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
 
         println!("yooooo!");
 
-        let mut response_buf: &mut [u8] = &mut [0; 1024];
-        let _result = self.connector_tty.write_then_read(
-            b"*IDN?",
-            &mut response_buf,
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                let response_bytes = &response_buf[0..nb_of_bytes];
-                let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-                println!("VoxpowerInhibiterActions - initializating: {:?}", response_string);
-            });
-
+        // let mut response_buf: &mut [u8] = &mut [0; 1024];
+        // let _result = self.connector_tty.write_then_read(
+        //     b"*IDN?",
+        //     &mut response_buf,
+        //     self.time_lock_duration
+        // ).await
+        //     .map(|nb_of_bytes| {
+        //         let response_bytes = &response_buf[0..nb_of_bytes];
+        //         let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
+        //         println!("VoxpowerInhibiterActions - initializating: {:?}", response_string);
+        //     });
 
         return Ok(());
     }
@@ -64,7 +63,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
 
         let mut response_buf: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
-            b"S",
+            b"S6",
             &mut response_buf,
             self.time_lock_duration
         ).await
@@ -84,6 +83,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         );
 
         return Ok(self.state_open);
+        // Ok(true)
 
         // let mut response: &mut [u8] = &mut [0; 1024];
         // let _result = self.connector_tty.write_then_read(
