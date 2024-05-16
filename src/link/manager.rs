@@ -1,7 +1,12 @@
+// use std::sync::atomic::{AtomicU32, Ordering};
+
 use std::collections::LinkedList;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 
 use rumqttc::AsyncClient;
 use tokio::sync::mpsc;
+use tokio::sync::Mutex;
 
 use crate::subscription::{self};
 
@@ -14,7 +19,11 @@ pub struct Manager {
     client: AsyncClient,
 
     /// List of links
-    links: LinkedList<ConnectionHandle>
+    links: Vec<ConnectionHandle>,
+
+    
+    new_links: Mutex<LinkedList<ConnectionHandle>>
+
 }
 
 impl Manager {
@@ -23,7 +32,8 @@ impl Manager {
     pub fn new(client: AsyncClient) -> Manager {
         return Manager {
             client: client,
-            links: LinkedList::new()
+            links: Vec::new(),
+            new_links: Mutex::new( LinkedList::new() ),
         }
     }
 
@@ -56,7 +66,7 @@ impl Manager {
 
 
         // 
-        self.links.push_back(
+        self.new_links.lock().await.push_back(
             ConnectionHandle::new(tx, filters)
         );
 
@@ -77,10 +87,23 @@ impl Manager {
     }
 
 
-    
-    pub fn links_as_mut(&mut self) -> &mut LinkedList<ConnectionHandle> {
-        return &mut self.links;
+    /// Process new links with saved information about connection status
+    /// 
+    pub async fn process_new_links(&mut self, is_connected: &AtomicBool) {
+        let mut new_links = self.new_links.lock().await;
+        while let Some(link) = new_links.pop_front() {
+            
+            link.tx().send(subscription::Message::new_connection_status(is_connected.load(Ordering::Acquire)  )).await.unwrap();
+
+
+            self.links.push(link);
+        }
     }
+
+    
+    // pub fn links_as_mut(&mut self) -> &mut LinkedList<ConnectionHandle> {
+    //     return &mut self.links;
+    // }
 
 }
 
