@@ -1,3 +1,4 @@
+use super::logger::Logger;
 use super::ThreadSafeConnection;
 use crate::platform::TaskResult;
 use crate::link::ThreadSafeLinkManager;
@@ -31,10 +32,10 @@ pub async fn task(connection: ThreadSafeConnection) -> TaskResult {
             // Check event
             match connection_event {
                 rumqttc::Event::Incoming(incoming) => {
-                    process_incoming_packet(&link_manager, &incoming).await;
+                    process_incoming_packet(&logger, &link_manager, &incoming).await;
                 },
                 rumqttc::Event::Outgoing(outgoing) => {
-                    process_outgoing_packet(&link_manager, &outgoing).await;
+                    process_outgoing_packet(&logger, &link_manager, &outgoing).await;
                 },
                 _ => {
                     logger.log_warn(format!("UNEXPECTED Event received !!! {:?}", connection_event));
@@ -64,12 +65,11 @@ pub async fn task(connection: ThreadSafeConnection) -> TaskResult {
 
 /// Process incoming packets
 /// 
-async fn process_incoming_packet(link_manager: &ThreadSafeLinkManager, packet: &rumqttc::Packet) {
+async fn process_incoming_packet(logger: &Logger, link_manager: &ThreadSafeLinkManager, packet: &rumqttc::Packet) {
 
     match packet {
         rumqttc::Incoming::ConnAck(ack) => {
-            println!("ConnAck = {:?}", ack);
-            // lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
+            process_incoming_conn_ack(logger, link_manager, ack).await;
         },
     //     // rumqttc::Packet::SubAck(ack) => {
     //     //     println!("SubAck = {:?}", ack);
@@ -97,7 +97,6 @@ async fn process_incoming_packet(link_manager: &ThreadSafeLinkManager, packet: &
     //         }
     //     }
         _ => {
-            // println!("? = {:?}", packet);
         }
     }
 }
@@ -108,9 +107,31 @@ async fn process_incoming_packet(link_manager: &ThreadSafeLinkManager, packet: &
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
+/// Process incoming connection ack
+/// 
+async fn process_incoming_conn_ack(logger: &Logger, link_manager: &ThreadSafeLinkManager, conn_ack: &rumqttc::ConnAck) {
+
+    match conn_ack.code {
+        rumqttc::ConnectReturnCode::Success => {
+            // lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
+        },
+        _ => {
+
+        }
+    }
+// println!("ConnAck = {:?}", ack.code);
+            // lm.lock().await.send_to_all(subscription::Message::new_connection_status(true)).await;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
 /// Process outgoing packets
 /// 
-async fn process_outgoing_packet(link_manager: &ThreadSafeLinkManager, outgoing: &rumqttc::Outgoing) {
+async fn process_outgoing_packet(logger: &Logger, link_manager: &ThreadSafeLinkManager, outgoing: &rumqttc::Outgoing) {
 
 
 }
