@@ -78,24 +78,18 @@ impl DeviceActions for VoxpowerInhibiter {
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
 
-        println!("Voxpower::interface_builders");
+        println!("Voxpower Inhibiter::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = SerialConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
-        serial_conf.serial_baudrate = Some(115200);
+        serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
         list.push(
-            itf_voxpower_inhibiter::build("channel", &serial_conf)
+            itf_voxpower_inhibiter::build("channel_6", &serial_conf)
         );
-
-        // for n in 2..10 {
-        //     list.push(
-        //         itf_voxpower_inhibiter::build(format!("channel_{}", n))
-        //     );
-        // }
 
         return Ok(list);
     }
