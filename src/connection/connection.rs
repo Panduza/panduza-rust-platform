@@ -18,6 +18,8 @@ pub struct Connection {
     // Name of the connection
     name: String,
 
+    // \todo: append connection status
+
     /// Event loop
     eventloop: Arc<Mutex<rumqttc::EventLoop>>,
 
@@ -70,7 +72,10 @@ impl Connection {
     }
 
     /// Run the connection
-    ///
+    /// 
+    /// \todo: rename connection_task and move it outisde of the connection impl block
+    /// \todo: pass as parameter the connection object inside of all its components (connection will be clonable)
+    /// 
     async fn run(
         conneciton_name: String,
         ev: Arc<Mutex<rumqttc::EventLoop>>,
@@ -115,6 +120,8 @@ impl Connection {
                         // println!("Received = {:?}", notification);
                     }
                 }
+
+                // \todo: check for link manager events and initialize the new created links
             }
 
             // Here the broker is disconnected

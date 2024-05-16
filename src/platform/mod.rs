@@ -38,6 +38,7 @@ pub type PlatformError = error::PlatformError;
 /// Platform result type
 ///
 pub type PlatformTaskResult = Result<(), PlatformError>;
+pub type TaskResult = Result<(), PlatformError>;
 
 /// Macro to create a platform error
 /// 
