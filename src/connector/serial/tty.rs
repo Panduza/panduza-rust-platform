@@ -259,6 +259,11 @@ impl TtyCore {
 
     async fn init(&mut self) {
 
+        // dirty fix, need to be improved
+        if self.serial_stream.is_some() {
+            return;
+        }
+
         if self.config.serial_port_name.is_none() && self.config.usb_vendor.is_some() && self.config.usb_model.is_some() {
 
             let ports = tokio_serial::available_ports().unwrap();
