@@ -81,6 +81,8 @@ impl Gate {
 
 
     fn get(&mut self, config: &Config) -> Option<TtyConnector> {
+        println!("IN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
         // First try to get the key
         let key_string = Gate::generate_unique_key_from_config(config)?;
         let key= key_string.as_str();
@@ -114,6 +116,8 @@ impl Gate {
             // Create a new instance
             let new_instance = TtyConnector::new(Some(config.clone()));
 
+            println!("FIN new instance !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!, {}", key);
+
             // Save the instance
             self.instances.insert(key.to_string(), new_instance.clone());
             tracing::info!(class="Platform", "connector created");
@@ -122,6 +126,7 @@ impl Gate {
         // Try to find the instance
         let instance = self.instances.get(key)?;
 
+        println!("OUT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         // Return the instance
         Some(instance.clone())
     }
