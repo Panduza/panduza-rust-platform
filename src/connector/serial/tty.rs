@@ -85,18 +85,6 @@ impl Gate {
         let key_string = Gate::generate_unique_key_from_config(config)?;
         let key= key_string.as_str();
 
-        // # Get the serial port name
-        // serial_port_name = None
-        // if "serial_port_name" in kwargs:
-        //     serial_port_name = kwargs["serial_port_name"]
-        // elif "usb_vendor" in kwargs:
-        //     # Get the serial port name using "usb_vendor"
-        //     serial_port_name = SerialPortFromUsbSetting(**kwargs)
-        //     kwargs["serial_port_name"] = serial_port_name
-    
-        // else:
-        //     raise Exception("no way to identify the serial port")
-
         // if !(self.instances.contains_key(&key)) {
         //     self.instances.get(&key) = String::new();
         //     match (Gate{instanes: self.instances}) {
@@ -119,6 +107,9 @@ impl Gate {
 
         // if the instance is not found, it means that the port is not opened yet
         if ! self.instances.contains_key(key) {
+
+
+            println!("Creating new instance !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!, {}", key);
 
             // Create a new instance
             let new_instance = TtyConnector::new(Some(config.clone()));
