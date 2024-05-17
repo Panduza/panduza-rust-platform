@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::{collections::HashMap, sync::Arc};
 use tokio_serial::{self, SerialPortBuilder};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, Result};
@@ -134,16 +135,37 @@ impl Gate {
         Some(instance.clone())
     }
 
-    /// The on this connector is the serial port name
+    /// Try to generate a unique key from the config
+    /// This key will be used to find back the tty connector
     ///
     fn generate_unique_key_from_config(config: &Config) -> Option<String> {
         // Check if the serial port name is provided
         if let Some(k) = config.serial_port_name.as_ref() {
             return Some(k.clone());
         }
+
+        // Check if the usb vendor and model are provided to find the key
+        if let Some(k) = tokio_serial::available_ports()
+            .and_then(|ports| {
+                for port in ports {
+                    match port.port_type {
+                        tokio_serial::SerialPortType::UsbPort(info) => {
+                            if info.vid == config.usb_vendor.unwrap() && info.pid == config.usb_model.unwrap() {
+                                return Ok(port.port_name);
+                            }
+                        },
+                        _ => {}
+                    }
+                }
+                Err(tokio_serial::Error::new(tokio_serial::ErrorKind::Unknown, "no port found"))
+            })
+            .ok()
+        {
+            return Some(k.clone());
+        }
+
         // Finally unable to generate a key with the config
-        return Some("".to_string());
-        // None
+        return None;
     }
 
 }
