@@ -74,6 +74,8 @@ pub struct ConnectionInfo {
 
     // credential
     
+    // Platform info
+    platform_name: String,
 }
 
 impl ConnectionInfo {
@@ -86,6 +88,7 @@ impl ConnectionInfo {
             host_addr: "localhost".to_string(),
             host_port: 1883,
             host_retry: 1,
+            platform_name: "panduza_platform".to_string()
         }
     }
 
@@ -179,12 +182,32 @@ impl ConnectionInfo {
             .ok_or(content_bad_format_error("[host.retry] must be a number"))?
             as u32;
 
+        // Get Platform info section, if not platform info section 
+        let platform_info = map_obj.get("platform_info");
+
+        let platform_name: String;
+        let default_platform_name: String = "platform_name".to_string();
+
+        match platform_info {
+            Some(value) => {
+                platform_name = value.get("platform_name")
+                .unwrap_or(&json!(default_platform_name))
+                .as_str()
+                .ok_or(content_bad_format_error("[platform_info.platform_name] must be a string"))?
+                .to_string();
+            },
+            None => {
+                platform_name = default_platform_name
+            }
+        }
+
         Ok(
             Self {
                 file_path: ConnectionInfo::system_file_path().to_str().unwrap().to_string(),
                 host_addr: host_addr,
                 host_port: host_port,
                 host_retry: host_retry,
+                platform_name: platform_name
             }
         )
     }
@@ -193,6 +216,12 @@ impl ConnectionInfo {
     ///
     pub fn host_addr(&self) -> &String {
         &self.host_addr
+    }
+
+    ///
+    /// 
+    pub fn platform_name(&self) -> &String {
+        &self.platform_name
     }
 
     /// Getter Port

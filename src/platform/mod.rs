@@ -195,8 +195,18 @@ impl Platform {
         let socket = UdpSocket::bind("0.0.0.0:53035").await.expect("creation local discovery socket failed");
         tracing::trace!(class="Platform", "Local discovery service start");
 
+        // Go look the platform_name in the connection.json
+
+        // The file connection.json is supposed already exist, because
+        // if he didn't exist at the start of the application he should 
+        // been created 
+        let ci = connection_info::ConnectionInfo::build_from_file().await.
+            expect("connection.json not found");
+       
+        let json_reply: String = format!("{{\"name\": \"{}\",\"version\": 1.0}}", ci.platform_name());;
+
         let mut buf = [0; 1024];
-        let json_reply_bytes = "{\"name\": \"panduza_platform\",\"version\": 1.0}".as_bytes();
+        let json_reply_bytes = json_reply.as_bytes();
 
         loop {
             // Receive request and answer it 
