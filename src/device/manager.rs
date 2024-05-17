@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::link;
 use crate::platform::services::AmServices;
 use crate::platform::{PlatformError, TaskPoolLoader};
-use crate::platform_error;
+use crate::platform_error_result;
 
 use super::traits::Hunter;
 use super::{factory::Factory, device::Device};
@@ -67,7 +67,7 @@ impl Manager {
         let result = self.factory.create_device(device_def);
         match result {
             Err(e) => {
-                return platform_error!("Device not created", Some(Box::new(e)));
+                return platform_error_result!("Device not created", Some(Box::new(e)));
             },
             Ok(device_object) => {
                 let name = device_object.dev_name().clone();

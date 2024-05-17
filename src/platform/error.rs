@@ -1,35 +1,32 @@
 use std::fmt;
+use std::error::Error;
 
 #[derive(Debug)]
 pub struct PlatformError {
-    pub file: &'static str,
-    pub line: u32,
     pub message: String,
-    pub parent: Option<Box<PlatformError>>
+    pub backtrace: Vec<String>,
 }
 
 impl PlatformError {
-    pub fn new(file: &'static str, line: u32, message: String, parent: Option<Box<PlatformError>>) -> Self {
-        Self { file, line, message, parent }
-    }
-
-    fn print_stack(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.parent.is_some() {
-            self.parent.as_ref().unwrap().print_stack(f).unwrap();
+    pub fn new(file: &'static str, line: u32, message: String, source: Option<Box<PlatformError>>) -> Self {
+        let formated_message = format!("{}:{} - {}", file, line, message);
+        if let Some(source) = source {
+            let mut backtrace = source.backtrace.iter().map(|s| s.to_string()).collect::<Vec<String>>();
+            backtrace.push(source.message);
+            Self { message: formated_message, backtrace:backtrace }
         }
-        writeln!(f, "{}:{} - {}", self.file, self.line, self.message)
+        else {
+            Self { message: formated_message, backtrace: vec![] }
+        }
     }
 }
 
 impl fmt::Display for PlatformError {
-
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f)?;
-        self.print_stack(f)
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
     }
-
 }
 
-impl std::error::Error for PlatformError {}
+impl Error for PlatformError {
 
-
+}

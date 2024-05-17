@@ -1,16 +1,11 @@
-use async_trait::async_trait;
+
 use serde_json::json;
-use tokio::time::{sleep, Duration};
 
 use crate::platform::PlatformError;
-use crate::subscription;
-use crate::interface::{self, Runner};
-use crate::interface::AmInterface;
-use crate::interface::AmRunner;
-use crate::device::{ Device, traits::DeviceActions, traits::Producer };
+// use crate::interface;
+use crate::device::{ traits::DeviceActions, traits::Producer };
 
 use crate::interface::builder::Builder as InterfaceBuilder;
-struct PlatformInterfaceSubscriber;
 
 
 mod itf_fake_bpc;
@@ -23,7 +18,7 @@ struct FakePowerSupply;
 impl DeviceActions for FakePowerSupply {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, _device_settings: &serde_json::Value) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
         let mut list = Vec::new();
