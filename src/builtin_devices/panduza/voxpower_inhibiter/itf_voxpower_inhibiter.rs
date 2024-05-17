@@ -115,7 +115,9 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     }
 
     /// Write the state value
+    /// 
     async fn write_state_open(&mut self, interface: &AmInterface, v: bool) {
+        println!("{}", v);
         
         let command = if v {
             format!("I6")
