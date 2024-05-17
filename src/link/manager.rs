@@ -1,4 +1,3 @@
-// use std::sync::atomic::{AtomicU32, Ordering};
 
 use std::collections::LinkedList;
 use std::sync::atomic::AtomicBool;
@@ -93,7 +92,7 @@ impl Manager {
         let mut new_links = self.new_links.lock().await;
         while let Some(link) = new_links.pop_front() {
             
-            link.tx().send(subscription::Message::new_connection_status(is_connected.load(Ordering::Acquire)  )).await.unwrap();
+            link.tx().send(subscription::Message::new_connection_status(is_connected.load(Ordering::Relaxed)  )).await.unwrap();
 
 
             self.links.push(link);
