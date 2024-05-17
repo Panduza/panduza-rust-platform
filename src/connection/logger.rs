@@ -23,6 +23,13 @@ impl Logger {
     /// Log trace
     ///
     #[inline]
+    pub fn log_error<A: Into<String>>(&self, text: A) {
+        tracing::error!(class="Connection", cname=self.name, "{}", text.into());
+    }
+
+    /// Log trace
+    ///
+    #[inline]
     pub fn log_warn<A: Into<String>>(&self, text: A) {
         tracing::warn!(class="Connection", cname=self.name, "{}", text.into());
     }

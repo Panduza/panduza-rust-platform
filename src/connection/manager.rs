@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures::FutureExt;
-use futures::FutureExt as _;
 use tokio::sync::Mutex;
 use rumqttc::MqttOptions;
 
