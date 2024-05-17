@@ -141,6 +141,7 @@ impl RelaySubscriber {
     #[inline(always)]
     async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_bool().unwrap();
+        println!("hay2");
         self.relay_interface.lock().await
             .actions.write_state_open(&interface, requested_value).await;
 
@@ -197,6 +198,7 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
                         }
                     }
                     interface.lock().await.publish_all_attributes().await;
+                    println!("hay");
 
 
                 },
