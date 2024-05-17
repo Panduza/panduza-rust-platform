@@ -66,11 +66,6 @@ impl Config {
         self.usb_serial =
             settings.get("usb_serial")
                 .map(|v| v.as_str().unwrap().to_string());
-        // println!("{:?}", self.serial_port_name);
-        // println!("{:?}", self.serial_baudrate);
-        // println!("{:?}", self.usb_vendor);
-        // println!("{:?}", self.usb_model);
-        // println!("{:?}", self.usb_serial);
 
     }
 }
@@ -88,7 +83,6 @@ impl Gate {
         // First try to get the key
         let key_string = Gate::generate_unique_key_from_config(config)?;
         let key= key_string.as_str();
-        println!("{}", key);
 
         // # Get the serial port name
         // serial_port_name = None
@@ -207,8 +201,6 @@ impl TtyConnector {
     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
         time_lock: Option<Duration>) 
             -> Result<usize> {
-        // println!("{:?}", command);
-        // println!("{:?}", response);
         self.core
             .as_ref()
             .unwrap()
@@ -252,29 +244,14 @@ impl TtyCore {
         if self.config.serial_port_name.is_none() && self.config.usb_vendor.is_some() && self.config.usb_model.is_some() {
 
             let ports = tokio_serial::available_ports().unwrap();
-            // println!("{}", ports.len());
             for port in ports {
-                // println!("{:?}", self.config.usb_vendor);
-                // println!("{:?}", self.config.usb_model);
                 match port.port_type {
                     tokio_serial::SerialPortType::UsbPort(info) => {
-                        // println!("{}", info.vid);
-                        // println!("{}", info.pid);
-                        // println!("{:?}", info.product);
-                        // println!("{:?}", info.manufacturer);
-                        // println!("{:?}", info.serial_number);
-                        // println!("usb");
                         if info.vid == self.config.usb_vendor.unwrap() && info.pid == self.config.usb_model.unwrap(){
-                            // println!("found");
-                            // println!("{:?}", port.port_name);
                             self.config.serial_port_name = Some(port.port_name);
-                            println!("{:?}", self.config.serial_port_name);
                         }
                     },
-                    _ => {
-                        // println!("not usb");
-                        // println!("{:?}", port.port_type);
-                    }
+                    _ => {}
                 }
             }
         } else {

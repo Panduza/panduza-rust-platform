@@ -31,19 +31,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         self.connector_tty = tty::get(&self.serial_config).unwrap();
         self.connector_tty.init().await;
 
-        println!("yooooo!");
-
-        // let mut response_buf: &mut [u8] = &mut [0; 1024];
-        // let _result = self.connector_tty.write_then_read(
-        //     b"*IDN?",
-        //     &mut response_buf,
-        //     self.time_lock_duration
-        // ).await
-        //     .map(|nb_of_bytes| {
-        //         let response_bytes = &response_buf[0..nb_of_bytes];
-        //         let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-        //         println!("VoxpowerInhibiterActions - initializating: {:?}", response_string);
-        //     });
+        // println!("yooooo!");
 
         return Ok(());
     }
@@ -84,40 +72,11 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         );
 
         return Ok(self.state_open);
-        // Ok(true)
-
-        // let mut response: &mut [u8] = &mut [0; 1024];
-        // let _result = self.connector_tty.write_then_read(
-        //     b"S{}",
-        //     &mut response,
-        //     self.time_lock_duration
-        // ).await
-        //     .map(|c| {
-        //         println!("c: {:?}", c);
-        //         let pp = &response[0..c];
-        //         if pp[0] == "H" {
-        //             self.state_open = "H".to_string();
-        //         } else {
-        //             self.state_open = "L".to_string();
-        //         }
-        //     });
-        
-        // interface.lock().await.log_info(
-        //     format!("Voxpower Inhibiter - state_open: {}", self.state_open)
-        // );
-        // return Ok(if self.state_open == "H" { true } else { false });
-
-    //     if self.state_open == "H" {
-    //         return Ok(true);
-    //     } else {
-    //         return Ok(false);
-    //     }
     }
 
     /// Write the state value
     /// 
     async fn write_state_open(&mut self, interface: &AmInterface, v: bool) {
-        println!("{}", v);
         
         let command = if v {
             format!("I6")
@@ -136,35 +95,6 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         interface.lock().await.log_info(
             format!("Voxpower Inhibiter - write_state_open; {}", self.state_open)
         );
-
-        // let command = format!("{}", if v { "I" + self.channel_id } else { "E" + self.channel_id });
-
-        // let _result = self.connector_tty.write(
-        //     command.as_bytes(),
-        //     self.time_lock_duration
-        // ).await
-        //     .map(|c| {
-        //         println!("cc: {:?}", c);
-        //     });
-
-        // interface.lock().await.log_info(
-        //     format!("Voxpower Inhibiter - write_state_open; {}", self.state_open)
-        // );
-        // self.state_open = if v { "H" } else { "L" };
-
-        // if v {
-        //     let command = "I\n"; //format!("I{}\n", self.channel);
-        //     self.state_open = command.to_string();
-        //     interface.lock().await.log_info(
-        //         format!("VoxpowerInhibiter - inhibit channel: {}", self.state_open)
-        //     );
-        // } else {
-        //     let command = "E\n"; //format!("E{}\n", self.channel);
-        //     self.state_open = command.to_string();
-        //    interface.lock().await.log_info(
-        //         format!("VoxpowerInhibiter - enable channel: {}", self.state_open)
-        //     );
-        // }
     }
 }
 
