@@ -28,6 +28,8 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
 
+        println!("interface init!!!!!!!!!!!!");
+
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
 

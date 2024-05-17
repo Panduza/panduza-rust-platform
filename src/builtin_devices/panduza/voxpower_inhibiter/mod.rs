@@ -95,7 +95,7 @@ impl DeviceActions for VoxpowerInhibiter {
         //     itf_voxpower_inhibiter::build("channel_2", &serial_conf)
         // );
 
-        for n in 2..4 {    
+        for n in 2..10 {    
             list.push(
                 itf_voxpower_inhibiter::build(format!("channel_{}", n), n, &serial_conf)
             );

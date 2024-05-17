@@ -42,6 +42,7 @@ impl Manager {
 
         // Trace
         tracing::trace!("Link Manager Request link with {} subscriptions", requests.len());
+        println!("trace !!!!!!!!!!!");
         for request in requests.iter() {
             tracing::trace!("  - {}", request.topic());
         }
@@ -52,10 +53,13 @@ impl Manager {
 
 
         let mut filters = LinkedList::new();
+        println!("channel !!!!!!!!!!!");
 
         for request in requests {
+            println!("loop3 !!!!!!!!!!!");
 
             self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
+            println!("sub !!!!!!!!!!!");
 
             let filter = subscription::Filter::new(request);
 
