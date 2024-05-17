@@ -13,12 +13,12 @@ use crate::platform_error;
 
 
 lazy_static! {
-    static ref GATE : Mutex<Gate> 
-        = Mutex::new(Gate { instances: HashMap::new() });
+    static ref GATE : tokio::sync::Mutex<Gate> 
+        = tokio::sync::Mutex::new(Gate { instances: HashMap::new() });
 }
 
-pub fn get(config: &Config) -> Option<TtyConnector> {
-    let mut gate = GATE.lock().unwrap();
+pub async fn get(config: &Config) -> Option<TtyConnector> {
+    let mut gate = GATE.lock().await;
     gate.get(config)
 }
 
