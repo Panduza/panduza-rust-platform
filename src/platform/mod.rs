@@ -21,7 +21,7 @@ mod task_pool_loader;
 
 use services::{Services, AmServices};
 
-use crate::platform_error;
+use crate::platform_error_result;
 
 
 use self::services::boot::execute_service_boot;
@@ -40,12 +40,26 @@ pub type PlatformError = error::PlatformError;
 pub type PlatformTaskResult = Result<(), PlatformError>;
 pub type TaskResult = Result<(), PlatformError>;
 
+pub type FunctionResult = Result<(), PlatformError>;
+
 /// Macro to create a platform error
-/// 
+///
+#[macro_export]
+macro_rules! platform_error_result {
+    ($msg:expr, $parent:expr) => {
+        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), $parent))
+    };
+    ($msg:expr) => {
+        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), None))
+    };
+}
 #[macro_export]
 macro_rules! platform_error {
     ($msg:expr, $parent:expr) => {
-        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), $parent))
+        crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), $parent)
+    };
+    ($msg:expr) => {
+        crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), None)
     };
 }
 
@@ -246,7 +260,7 @@ impl Platform {
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
                         if execute_service_boot(services.clone()).await.is_err() {
-                            return platform_error!("Failed to boot", None);
+                            return platform_error_result!("Failed to boot", None);
                         }
                         // , devices.clone(), connection.clone()
 
@@ -283,7 +297,7 @@ impl Platform {
                     if services.lock().await.hunt_requested() {
 
                         if execute_service_hunt(services.clone(), devices.clone()).await.is_err() {
-                            return platform_error!("Failed to hunt", None);
+                            return platform_error_result!("Failed to hunt", None);
                         }
                     }
 
@@ -353,7 +367,7 @@ impl Platform {
                 return Platform::load_tree_string(services.clone(), &content).await;
             },
             Err(e) => {
-                return platform_error!(
+                return platform_error_result!(
                     format!("Failed to read {:?} file content: {}", tree_file_path, e), None)
             }
         }
@@ -374,7 +388,7 @@ impl Platform {
                 return Ok(());
             },
             Err(e) => {
-                return platform_error!(
+                return platform_error_result!(
                     format!("Failed to parse JSON content: {}", e), None)
             }
         }
@@ -428,7 +442,7 @@ impl Platform {
                         let result = devices_manager.lock().await.create_device(device_definition).await;
                         match result {
                             Err(e) => {
-                                return platform_error!(
+                                return platform_error_result!(
                                     format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap()), 
                                     Some(Box::new(e))
                                 );

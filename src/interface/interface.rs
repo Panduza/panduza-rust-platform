@@ -1,4 +1,8 @@
 use crate::platform::services::AmServices;
+use crate::platform::FunctionResult;
+use crate::platform::PlatformError;
+// use crate::platform_error_result;
+use crate::platform_error;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -238,10 +242,18 @@ impl Interface {
         att.as_mut().update_field_with_f64(field, value);
     }
 
-    pub fn update_attribute_with_bool(&mut self, attribute: &str, field: &str, value: bool) {
+    /// Update an attribute with a boolean value
+    ///
+    pub fn update_attribute_with_bool(&mut self, attribute: &str, field: &str, value: bool) -> FunctionResult {
+        // Trace
         self.logger.log_trace(format!("update_attribute_with_bool({}, {}, {})", attribute, field, value));
-        let att = self.attributes.get_mut(attribute).unwrap();
-        att.as_mut().update_field_with_bool(field, value);
+        // Action
+        self.attributes.get_mut(attribute)
+            .ok_or(platform_error!("Attribute not found"))
+            .and_then(|att| {
+                att.as_mut().update_field_with_bool(field, value);
+                Ok(())
+            })
     }
 
     pub fn update_attribute_with_string(&mut self, attribute: &str, field: &str, value: &String) {
