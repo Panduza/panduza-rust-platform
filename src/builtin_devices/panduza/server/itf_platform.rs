@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::{attribute::JsonAttribute, interface::{self, AmInterface}, subscription};
 use crate::interface::Builder as InterfaceBuilder;
 
+use crate::platform::FunctionResult as PlatformFunctionResult;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -77,7 +78,7 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
 
     /// Process a message
     ///
-    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) {
+    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) -> PlatformFunctionResult {
         // Common processing
         interface::basic::process(interface,msg).await;
         
@@ -110,6 +111,8 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
             }
             _ => {}
         }
+
+        Ok(())
 
     }
 

@@ -1,5 +1,5 @@
 use crate::platform::services::AmServices;
-use crate::platform::FunctionResult;
+use crate::platform::FunctionResult as PlatformFunctionResult;
 use crate::platform::PlatformError;
 // use crate::platform_error_result;
 use crate::platform_error;
@@ -244,15 +244,16 @@ impl Interface {
 
     /// Update an attribute with a boolean value
     ///
-    pub fn update_attribute_with_bool(&mut self, attribute: &str, field: &str, value: bool) -> FunctionResult {
+    pub fn update_attribute_with_bool(&mut self, attribute: &str, field: &str, value: bool) -> PlatformFunctionResult {
         // Trace
-        self.logger.log_trace(format!("update_attribute_with_bool({}, {}, {})", attribute, field, value));
+        self.logger.log_trace(format!("update_attribute_with_bool(att={}, field={}, value={})", attribute, field, value));
         // Action
         self.attributes.get_mut(attribute)
-            .ok_or(platform_error!("Attribute not found"))
+            .ok_or(
+                platform_error!(format!("Attribute ({:?}) not found", attribute))
+            )
             .and_then(|att| {
-                att.as_mut().update_field_with_bool(field, value);
-                Ok(())
+                att.as_mut().update_field_with_bool(field, value)
             })
     }
 

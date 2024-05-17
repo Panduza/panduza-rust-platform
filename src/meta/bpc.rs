@@ -10,6 +10,8 @@ use crate::platform::PlatformError;
 use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
+use crate::platform::FunctionResult as PlatformFunctionResult;
+
 pub struct BpcParams {
     pub voltage_min: f64,
     pub voltage_max: f64,
@@ -139,7 +141,7 @@ impl interface::fsm::States for BpcStates {
 
         // Init enable
         let enable_value = bpc_itf.actions.read_enable_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value);
+        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value).unwrap();
 
         // Init voltage
         interface.lock().await.update_attribute_with_f64("voltage", "min", bpc_itf.params.voltage_min );
@@ -210,7 +212,7 @@ impl BpcSubscriber {
             .unwrap();
 
         interface.lock().await
-            .update_attribute_with_bool("enable", "value", r_value);
+            .update_attribute_with_bool("enable", "value", r_value).unwrap();
     }
 
     /// 
@@ -266,7 +268,7 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
 
     /// Process a message
     ///
-    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) {
+    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) -> PlatformFunctionResult {
         // Common processing
         interface::basic::process(&interface, msg).await;
 
@@ -312,6 +314,8 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                 // not managed by the common level
             }
         }
+
+        Ok(())
     }
 
 

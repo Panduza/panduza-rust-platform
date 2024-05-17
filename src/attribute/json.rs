@@ -4,6 +4,9 @@ use serde_json::json;
 use super::AttributeInterface;
 // use super::FieldF64;
 
+use crate::platform::FunctionResult as PlatformFunctionResult;
+use crate::platform_error;
+
 pub struct JsonAttribute {
     // 
     name: String,
@@ -84,16 +87,24 @@ impl AttributeInterface for JsonAttribute {
         );
     }
 
-    fn update_field_with_bool(&mut self, field: &str, value: bool)
+    fn update_field_with_bool(&mut self, field: &str, value: bool) -> PlatformFunctionResult
     {
-        let n = self.name.clone();
-        let d = self.data.get_mut(n);
-        if d.is_none() {
-            return;
-        }
-        d.unwrap().as_object_mut().unwrap().insert(field.into(), 
-            serde_json::Value::Bool(value)
-        );
+        self.data.get_mut(self.name.clone())
+            .and_then(
+                |root_obj| root_obj.as_object_mut()
+            )
+            .and_then(
+                |att_obj| {
+                    att_obj.insert(field.into(), serde_json::Value::Bool(value));
+                    Some(()) // if insert return None, it is only to tell that the key did not exist before the insertion
+                }
+            )
+            .ok_or(
+                platform_error!(format!("Error updating att={} field={} value={}", self.name, field, value))
+            )
+            .and_then(
+                |_| Ok(())
+            )
     }
 
     fn update_field_with_string(&mut self, field: &str, value: &String) {
