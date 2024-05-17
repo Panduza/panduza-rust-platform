@@ -94,7 +94,7 @@ impl interface::fsm::States for RelayStates {
 
         // Init state
         let state_value = self.relay_interface.lock().await.actions.read_state_open(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bool("state", "value", state_value);
+        interface.lock().await.update_attribute_with_bool("state", "open", state_value);
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -141,7 +141,6 @@ impl RelaySubscriber {
     #[inline(always)]
     async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_bool().unwrap();
-        println!("hay2");
         self.relay_interface.lock().await
             .actions.write_state_open(&interface, requested_value).await;
 
@@ -150,8 +149,7 @@ impl RelaySubscriber {
             .unwrap();
 
         interface.lock().await
-            .update_attribute_with_bool("state", "value", r_value);
-        println!("hay3");
+            .update_attribute_with_bool("state", "open", r_value);
     }
 }
 
@@ -193,13 +191,12 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
 
                     for (attribute_name, fields) in o.iter() {
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
-                            if attribute_name == "state" && field_name == "value" {
+                            if attribute_name == "state" && field_name == "open" {
                                 self.process_state_open(&interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
                     interface.lock().await.publish_all_attributes().await;
-                    println!("hay");
 
 
                 },
