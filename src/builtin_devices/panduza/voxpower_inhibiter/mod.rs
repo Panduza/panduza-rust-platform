@@ -35,8 +35,6 @@ impl Hunter for DeviceHunter {
 
         let ports = tokio_serial::available_ports();
         for port in ports.unwrap() {
-            println!("{:?}", port);
-
             match port.port_type {
                 tokio_serial::SerialPortType::UsbPort(info) => {
                     if info.vid == VID && info.pid == PID {
@@ -87,15 +85,21 @@ impl DeviceActions for VoxpowerInhibiter {
         serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
-        list.push(
-            itf_voxpower_inhibiter::build("channel_6", &serial_conf)
-        );
+        // list.push(
+        //     itf_voxpower_inhibiter::build("channel_6", &serial_conf)
+        // );
+        // list.push(
+        //     itf_voxpower_inhibiter::build("channel_7", &serial_conf)
+        // );
+        // list.push(
+        //     itf_voxpower_inhibiter::build("channel_2", &serial_conf)
+        // );
 
-        // for n in 2..10 {    
-        //     list.push(
-        //         itf_voxpower_inhibiter::build(format!("channel_{}", n), &serial_conf)
-        //     );
-        // }
+        for n in 2..4 {    
+            list.push(
+                itf_voxpower_inhibiter::build(format!("channel_{}", n), n, &serial_conf)
+            );
+        }
 
         return Ok(list);
     }

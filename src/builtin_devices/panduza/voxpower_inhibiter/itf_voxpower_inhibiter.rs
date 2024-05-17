@@ -13,6 +13,7 @@ use crate::connector::serial::tty::Config as SerialConfig;
 /// Voxpower Inhibiter Channel Data
 /// 
 struct VoxpowerInhibiterActions {
+    id: u16,
     connector_tty: tty::TtyConnector,
     serial_config: SerialConfig,
     state_open: bool,
@@ -26,7 +27,6 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
-        // let self.channel = channel;
 
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
@@ -49,9 +49,13 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
             format!("VoxpowerInhibiter - read_state_open: {}", self.state_open)
         );
 
+        println!("{}", self.id);
+        let command = format!("S{}", self.id);
+        let command_bytes = command.as_bytes();
+
         let mut response_buf: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
-            b"S6",
+            command_bytes,
             &mut response_buf,
             self.time_lock_duration,
         ).await
@@ -79,9 +83,9 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     async fn write_state_open(&mut self, interface: &AmInterface, v: bool) {
         
         let command = if v {
-            format!("I6")
+            format!("I{}", self.id)
         } else {
-            format!("E6")
+            format!("E{}", self.id)
         };
 
         let _result = self.connector_tty.write(
@@ -99,16 +103,18 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
 }
 
 
-/// Interface to emulate a Bench Power Channel
+/// 
 /// 
 pub fn build<A: Into<String>>(
     name: A,
+    id: u16,
     serial_config: &SerialConfig
 ) -> InterfaceBuilder {
 
     return relay::build(
         name,
         Box::new(VoxpowerInhibiterActions {
+            id: id.clone(),
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
             state_open: false,
