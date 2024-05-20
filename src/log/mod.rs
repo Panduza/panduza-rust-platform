@@ -5,18 +5,7 @@ mod formatter_platform;
 
 use log_issue::init_fmt_subscriber_for_log_issue;
 
-use std::fs::File;
-use std::io;
-
-use tracing_subscriber::fmt::format::FmtSpan;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::Registry;
-
 use crate::log::formatter_platform::PlatformFormatter;
-use formatter_csv::FormatterCSV;
-use std::io::stdout;
-use std::io::Write;
-use tracing_subscriber::fmt::Layer;
 
 
 /// Define the fmt subscriber for the platform

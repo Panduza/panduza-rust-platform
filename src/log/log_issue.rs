@@ -1,17 +1,10 @@
-use std::fs::File;
-use std::io;
 
 use tracing_subscriber::fmt::format::Writer;
 use tracing_subscriber::fmt::time::FormatTime;
 
 use tracing_subscriber::fmt::format::FmtSpan;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::Registry;
 
 use chrono::Utc;
-use std::io::stdout;
-use std::io::Write;
-use tracing_subscriber::fmt::Layer;
 
 use super::formatter_csv::FormatterCSV;
 
