@@ -1,11 +1,14 @@
 use std::fs::File;
 use std::io;
 
+use tracing_subscriber::fmt::format::Writer;
+use tracing_subscriber::fmt::time::FormatTime;
+
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::Registry;
 
-
+use chrono::Utc;
 use std::io::stdout;
 use std::io::Write;
 use tracing_subscriber::fmt::Layer;
@@ -41,6 +44,16 @@ impl std::io::Write for LogIssueMultiWriter {
     }
 }
 
+
+struct MyFormatTime;
+
+impl FormatTime for MyFormatTime {
+    fn format_time(&self, w: &mut Writer<'_>) -> std::fmt::Result {
+        write!(w, "{} ", Utc::now().to_rfc3339())
+    }
+}
+
+
 /// Configuration for Github/Gitlab issue logger
 ///
 pub fn init_fmt_subscriber_for_log_issue()
@@ -48,6 +61,9 @@ pub fn init_fmt_subscriber_for_log_issue()
 
  
     let subscriber = tracing_subscriber::fmt()
+    //
+    .with_timer(MyFormatTime{})
+    //
     .with_max_level(tracing::Level::TRACE)
     // Display source code line numbers
     .with_line_number(false)
@@ -61,7 +77,7 @@ pub fn init_fmt_subscriber_for_log_issue()
     .event_format(FormatterCSV{})
     //
     .with_writer(||LogIssueMultiWriter::new())
-    // .and(stdout_writer)
+    
     //
     .finish();
 
