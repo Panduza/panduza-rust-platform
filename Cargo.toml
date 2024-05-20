@@ -71,6 +71,8 @@ tracing-core = { version = "0.1.32" }
 # Fmt subscriber
 tracing-subscriber = "0.3"
 
+tracing-appender = "0.2.3"
+
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
 
@@ -78,6 +80,7 @@ console-subscriber = { version="0.2.0", optional = true }
 
 # Enable tracing in stdout
 trac-fmt = [ ]
+log-issue = [ ]
 
 # Enable tracing in tokio console
 trac-console = [ "console-subscriber" ]

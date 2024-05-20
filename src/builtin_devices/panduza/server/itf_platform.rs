@@ -1,6 +1,6 @@
 
 use async_trait::async_trait;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use crate::{attribute::JsonAttribute, interface::{self, AmInterface}, subscription};
 use crate::interface::Builder as InterfaceBuilder;
@@ -149,6 +149,11 @@ impl interface::fsm::States for TestInterfaceStates {
         ii.update_attribute_with_json("devices", "hunting", 
                     ps.lock().await.get_device_store()
             );
+
+
+        ii.update_attribute_with_string("dtree", "name", &"pok".to_string());
+        ii.update_attribute_with_json("dtree", "content", &json!({ "a": 1 }));
+
         ii.publish_all_attributes().await;
 
 
