@@ -155,8 +155,8 @@ impl ConnectionInfo {
     fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, CiError> {
 
         // Get Host Section
-        let host = map_obj.get("host")
-            .ok_or(mandatory_field_missing_error("[host] section must be provided"))?;
+        let host = map_obj.get("broker")
+            .ok_or(mandatory_field_missing_error("[broker] section must be provided"))?;
 
         // Get Host Address
         let host_addr = host.get("addr")
@@ -181,17 +181,17 @@ impl ConnectionInfo {
             as u32;
 
         // Get Platform info section, if not platform info section 
-        let platform_info = map_obj.get("platform_info");
+        let platform_info = map_obj.get("platform");
 
         let platform_name: String;
-        let default_platform_name: String = "platform_name".to_string();
+        let default_platform_name: String = "panduza_platform".to_string();
 
         match platform_info {
             Some(value) => {
-                platform_name = value.get("platform_name")
+                platform_name = value.get("name")
                 .unwrap_or(&json!(default_platform_name))
                 .as_str()
-                .ok_or(content_bad_format_error("[platform_info.platform_name] must be a string"))?
+                .ok_or(content_bad_format_error("[platform.name] must be a string"))?
                 .to_string();
             },
             None => {
@@ -233,7 +233,7 @@ impl ConnectionInfo {
     pub fn save_to_file(&self) -> Result<(), std::io::Error> {
         // Create the JSON object
         let json_obj = json!({
-            "host": {
+            "broker": {
                 "addr": self.host_addr,
                 "port": self.host_port,
                 "retry": self.host_retry,
@@ -254,7 +254,7 @@ impl ConnectionInfo {
 #[test]
 fn build_from_json_value_ok() {
     let input = json!({
-        "host": {
+        "broker": {
             "addr": "192.168.1.1",
             "port": 5555,
         }
