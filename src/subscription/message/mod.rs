@@ -27,7 +27,6 @@ impl Message {
 
     /// Create a new connection status message
     pub fn new_connection_status(connected: bool) -> Message {
-        println!("!!! from connnection new_connection_status {:?}", connected);
         return Message::ConnectionStatus(ConnectionStatusMessage::new(connected));
     }
     

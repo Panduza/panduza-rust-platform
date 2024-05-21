@@ -140,7 +140,6 @@ impl Device {
 
         // create interfaces
         for builder in builders {
-            println!("loop !!!!!!!!!!!");
             self.interfaces.push(
                 interface::Runner::build(builder,
                     self.dev_name().clone(),
@@ -149,8 +148,6 @@ impl Device {
                     self.platform_services.clone()
                 ).await
             );
-            
-            println!("interface created !!!!!!!!!!!");
         }
 
         // Start the interfaces

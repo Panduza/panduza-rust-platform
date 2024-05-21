@@ -57,14 +57,13 @@ impl Manager {
         let mut filters = LinkedList::new();
 
         for request in requests {
-            println!("{}", request.topic());
-            // self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
+            self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
 
-            if self.is_pza_sub == false {
-                println!("{}", self.is_pza_sub);
-                self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
-                self.is_pza_sub = true;
-            }
+            // if self.is_pza_sub == false {
+            //     println!("{}", self.is_pza_sub);
+            //     self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
+            //     self.is_pza_sub = true;
+            // }
 
             let filter = subscription::Filter::new(request);
 

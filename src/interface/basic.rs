@@ -9,8 +9,6 @@ pub async fn process(interface: &AmInterface, msg: &subscription::Message) {
     match msg {
         subscription::Message::ConnectionStatus (status) => {
 
-
-            interface.lock().await.log_warn(format!("!!!!!!!!!!!!!!!!! {:?}", status.connected));
             if status.connected {
                 interface.lock().await.set_event_connection_up();
             }
