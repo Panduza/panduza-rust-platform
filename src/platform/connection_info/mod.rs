@@ -160,16 +160,16 @@ impl ConnectionInfo {
 
         // Get Host Address
         let host_addr = host.get("addr")
-            .ok_or(mandatory_field_missing_error("[host.addr] must be provided"))?
+            .ok_or(mandatory_field_missing_error("[broker.addr] must be provided"))?
             .as_str()
-            .ok_or(content_bad_format_error("[host.addr] must be a string"))?
+            .ok_or(content_bad_format_error("[broker.addr] must be a string"))?
             .to_string();
 
         // Get Host Port
         let host_port = host.get("port")
-            .ok_or(mandatory_field_missing_error("[host.port] must be provided"))?
+            .ok_or(mandatory_field_missing_error("[broker.port] must be provided"))?
             .as_u64()
-            .ok_or(content_bad_format_error("[host.port] must be a number"))?
+            .ok_or(content_bad_format_error("[broker.port] must be a number"))?
             as u16;
 
         // Get Host Retry
@@ -177,7 +177,7 @@ impl ConnectionInfo {
         let host_retry = host.get("retry")
             .unwrap_or(&json!(default_retry_value))
             .as_u64()
-            .ok_or(content_bad_format_error("[host.retry] must be a number"))?
+            .ok_or(content_bad_format_error("[broker.retry] must be a number"))?
             as u32;
 
         // Get Platform info section, if not platform info section 
