@@ -5,17 +5,17 @@ use tokio_serial::SerialStream;
 use tokio::time::{sleep, Duration};
 
 use tokio;
-use std::sync::Mutex;
 use lazy_static::lazy_static;
 
 
+
 lazy_static! {
-    static ref GATE : Mutex<Gate> 
-        = Mutex::new(Gate { instances: HashMap::new() });
+    static ref GATE : tokio::sync::Mutex<Gate> 
+        = tokio::sync::Mutex::new(Gate { instances: HashMap::new() });
 }
 
-pub fn get(config: &Config) -> Option<TtyConnector> {
-    let mut gate = GATE.lock().unwrap();
+pub async fn get(config: &Config) -> Option<TtyConnector> {
+    let mut gate = GATE.lock().await;
     gate.get(config)
 }
 
@@ -48,6 +48,23 @@ impl Config {
                 .map(|v| v.as_str().unwrap().to_string());
 
                 // .unwrap().to_string()
+
+        self.serial_baudrate =
+            settings.get("serial_baudrate")
+                .map(|v| v.as_u64().unwrap() as u32);
+
+        self.usb_vendor =
+            settings.get("usb_vendor")
+                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+
+        self.usb_model =
+            settings.get("usb_model")
+                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+
+        self.usb_serial =
+            settings.get("usb_serial")
+                .map(|v| v.as_str().unwrap().to_string());
+
     }
 }
 
@@ -64,18 +81,6 @@ impl Gate {
         // First try to get the key
         let key_string = Gate::generate_unique_key_from_config(config)?;
         let key= key_string.as_str();
-
-        // # Get the serial port name
-        // serial_port_name = None
-        // if "serial_port_name" in kwargs:
-        //     serial_port_name = kwargs["serial_port_name"]
-        // elif "usb_vendor" in kwargs:
-        //     # Get the serial port name using "usb_vendor"
-        //     serial_port_name = SerialPortFromUsbSetting(**kwargs)
-        //     kwargs["serial_port_name"] = serial_port_name
-    
-        // else:
-        //     raise Exception("no way to identify the serial port")
 
         // if !(self.instances.contains_key(&key)) {
         //     self.instances.get(&key) = String::new();
@@ -115,15 +120,37 @@ impl Gate {
         Some(instance.clone())
     }
 
-    /// The on this connector is the serial port name
+    /// Try to generate a unique key from the config
+    /// This key will be used to find back the tty connector
     ///
     fn generate_unique_key_from_config(config: &Config) -> Option<String> {
         // Check if the serial port name is provided
         if let Some(k) = config.serial_port_name.as_ref() {
             return Some(k.clone());
         }
+
+        // Check if the usb vendor and model are provided to find the key
+        if let Some(k) = tokio_serial::available_ports()
+            .and_then(|ports| {
+                for port in ports {
+                    match port.port_type {
+                        tokio_serial::SerialPortType::UsbPort(info) => {
+                            if info.vid == config.usb_vendor.unwrap() && info.pid == config.usb_model.unwrap() {
+                                return Ok(port.port_name);
+                            }
+                        },
+                        _ => {}
+                    }
+                }
+                Err(tokio_serial::Error::new(tokio_serial::ErrorKind::Unknown, "no port found"))
+            })
+            .ok()
+        {
+            return Some(k.clone());
+        }
+
         // Finally unable to generate a key with the config
-        None
+        return None;
     }
 
 }
@@ -221,11 +248,35 @@ impl TtyCore {
 
     async fn init(&mut self) {
 
+        // dirty fix, need to be improved
+        if self.serial_stream.is_some() {
+            return;
+        }
+
+        if self.config.serial_port_name.is_none() && self.config.usb_vendor.is_some() && self.config.usb_model.is_some() {
+
+            let ports = tokio_serial::available_ports().unwrap();
+            for port in ports {
+                match port.port_type {
+                    tokio_serial::SerialPortType::UsbPort(info) => {
+                        if info.vid == self.config.usb_vendor.unwrap() && info.pid == self.config.usb_model.unwrap(){
+                            self.config.serial_port_name = Some(port.port_name);
+                        }
+                    },
+                    _ => {}
+                }
+            }
+        } else {
+            tracing::trace!(class="Platform", "unknown serial_port_name and usb_vendor");
+        }
+
         let serial_builder = tokio_serial::new(
             self.config.serial_port_name.as_ref().unwrap()   ,
             self.config.serial_baudrate.unwrap()
+
         );
 
+        
 
         let pp = SerialStream::open(&serial_builder);
         let aa = pp.expect("pok");
