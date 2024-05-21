@@ -22,7 +22,7 @@ impl DeviceActions for TestDeviceActions {
     {
         let mut list = Vec::new();
         list.push(
-            itf_ping::new("platform")
+            itf_ping::new("ping_0")
         );
 
         return Ok(list);

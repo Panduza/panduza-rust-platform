@@ -1,4 +1,6 @@
 
+use std::str::FromStr;
+
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
@@ -13,8 +15,9 @@ use crate::platform::FunctionResult as PlatformFunctionResult;
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-struct PingInterfaceSubscriber;
+static mut debug_counter: u32 = 0;
 
+struct PingInterfaceSubscriber;
 
 impl PingInterfaceSubscriber {
 
@@ -23,9 +26,13 @@ impl PingInterfaceSubscriber {
     #[inline(always)]
     async fn process_devices_hunting(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
 
+        // unsafe { debug_counter += 1;
+        // println!("process_devices_hunting: {:?}", debug_counter);
+        // };
+
         interface.lock().await
             .update_attribute_with_string("mirror", "value", 
-            &field_data.to_string()
+                &field_data.as_str().unwrap().to_string()
             );
         interface.lock().await
             .publish_all_attributes().await;
@@ -57,7 +64,7 @@ impl interface::subscriber::Subscriber for PingInterfaceSubscriber {
                         let oo = serde_json::from_slice::<Value>(payload).unwrap();
                         let o = oo.as_object().unwrap();
     
-                        println!("PZA_CMDS_SET: {:?}", o);
+                        // println!("PZA_CMDS_SET: {:?}", o);
     
                         for (attribute_name, fields) in o.iter() {
                             for (field_name, field_data) in fields.as_object().unwrap().iter() {
