@@ -152,7 +152,7 @@ impl RelaySubscriber {
             .unwrap();
 
         interface.lock().await
-            .update_attribute_with_bool("state", "open", r_value);
+            .update_attribute_with_bool("state", "open", r_value)
 
     }
 }
