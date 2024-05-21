@@ -217,7 +217,17 @@ impl Platform {
         let ci = connection_info::ConnectionInfo::build_from_file().await.
             expect("connection.json not found");
        
-        let json_reply: String = format!("{{\"name\": \"{}\",\"version\": 1.0}}", ci.platform_name());;
+        let json_reply: String = format!("{{
+            \"platform\": {{
+                \"name\": \"{}\",
+                \"version\": 1.0
+            }},
+            \"broker\": {{
+                \"addr\": \"{}\",
+                \"port\": {}
+            }}
+        }}", ci.platform_name(), ci.host_addr(), ci.host_port());
+
 
         let mut buf = [0; 1024];
         let json_reply_bytes = json_reply.as_bytes();
