@@ -21,7 +21,9 @@ pub struct Manager {
     links: Vec<ConnectionHandle>,
 
     
-    new_links: Mutex<LinkedList<ConnectionHandle>>
+    new_links: Mutex<LinkedList<ConnectionHandle>>,
+
+    is_pza_sub: bool
 
 }
 
@@ -33,6 +35,7 @@ impl Manager {
             client: client,
             links: Vec::new(),
             new_links: Mutex::new( LinkedList::new() ),
+            is_pza_sub: false
         }
     }
 
@@ -42,7 +45,6 @@ impl Manager {
 
         // Trace
         tracing::trace!("Link Manager Request link with {} subscriptions", requests.len());
-        println!("trace !!!!!!!!!!!");
         for request in requests.iter() {
             tracing::trace!("  - {}", request.topic());
         }
@@ -53,13 +55,16 @@ impl Manager {
 
 
         let mut filters = LinkedList::new();
-        println!("channel !!!!!!!!!!!");
 
         for request in requests {
-            println!("loop3 !!!!!!!!!!!");
+            println!("{}", request.topic());
+            // self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
 
-            self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
-            println!("sub !!!!!!!!!!!");
+            if self.is_pza_sub == false {
+                println!("{}", self.is_pza_sub);
+                self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
+                self.is_pza_sub = true;
+            }
 
             let filter = subscription::Filter::new(request);
 
