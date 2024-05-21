@@ -53,12 +53,12 @@ pub struct Services {
     device_store: serde_json::Value,
 
     /// Panic cause, try to keep ip empty :)
-    panic_cause: String,
+    _panic_cause: String,
 
 
     connection_info: Option<ConnectionInfo>,
 
-    task_loader: TaskPoolLoader,
+    _task_loader: TaskPoolLoader,
 
 }
 pub type AmServices = Arc<Mutex<Services>>;
@@ -78,9 +78,9 @@ impl Services {
             tree_content: serde_json::Value::Null,
             hunt_in_progress: false,
             device_store: serde_json::Value::Null,
-            panic_cause: String::new(),
+            _panic_cause: String::new(),
             connection_info: None,
-            task_loader: task_loader
+            _task_loader: task_loader
         }));
     }
 
@@ -116,10 +116,10 @@ impl Services {
 
     /// Trigger a panic mode
     /// 
-    pub fn trigger_panic(&mut self, main_cause: &str) {
-        self.panic_cause = main_cause.to_string();
-        self.insert_request(Requests::PANIC);
-    }
+    // pub fn trigger_panic(&mut self, main_cause: &str) {
+    //     self._panic_cause = main_cause.to_string();
+    //     self.insert_request(Requests::PANIC);
+    // }
 
     /// Trigger a platform stop
     ///

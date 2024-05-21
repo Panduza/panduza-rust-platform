@@ -1,4 +1,6 @@
 
+use std::str::FromStr;
+
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
@@ -13,66 +15,37 @@ use crate::platform::FunctionResult as PlatformFunctionResult;
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-struct PlatformInterfaceSubscriber;
+static mut debug_counter: u32 = 0;
 
+struct PingInterfaceSubscriber;
 
-impl PlatformInterfaceSubscriber {
+impl PingInterfaceSubscriber {
 
     /// 
     /// 
     #[inline(always)]
     async fn process_devices_hunting(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_bool().unwrap();
-        // self.bpc_interface.lock().await
-        //     .actions.write_enable_value(&interface, requested_value).await;
 
-        if requested_value == true {
-            let platform_services = interface.lock().await
-            .platform_services();
+        // unsafe { debug_counter += 1;
+        // println!("process_devices_hunting: {:?}", debug_counter);
+        // };
 
-            platform_services.lock().await.start_hunting();
-
-            while platform_services.lock().await.is_hunt_in_progress() {
-                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-            }
-
-            interface.lock().await
-                .update_attribute_with_json("devices", "hunting", 
-                    platform_services.lock().await.get_device_store()
-                );
-            interface.lock().await
-                .publish_all_attributes().await;
-        }
-
+        interface.lock().await
+            .update_attribute_with_string("mirror", "value", 
+                &field_data.as_str().unwrap().to_string()
+            );
+        interface.lock().await
+            .publish_all_attributes().await;
+    
     }
-
-    /// 
-    /// 
-    #[inline(always)]
-    async fn process_dtree_content(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let obj = field_data.as_object().unwrap();
-
-        println!("process_dtree_content: {:?}", obj);
-
-        let platform_services = 
-            interface.lock().await.platform_services();
-
-        platform_services.lock().await
-            .set_tree_content(
-                serde_json::Value::Object(obj.clone()) );
-    }
-
-
 }
 
 
 #[async_trait]
-impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
+impl interface::subscriber::Subscriber for PingInterfaceSubscriber {
 
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
-            (0, "dtree".to_string()),
-            (1, "devices".to_string())
         ];
     }
 
@@ -91,15 +64,12 @@ impl interface::subscriber::Subscriber for PlatformInterfaceSubscriber {
                         let oo = serde_json::from_slice::<Value>(payload).unwrap();
                         let o = oo.as_object().unwrap();
     
-                        println!("PZA_CMDS_SET: {:?}", o);
+                        // println!("PZA_CMDS_SET: {:?}", o);
     
                         for (attribute_name, fields) in o.iter() {
                             for (field_name, field_data) in fields.as_object().unwrap().iter() {
-                                if attribute_name == "devices" && field_name == "hunting" {
+                                if attribute_name == "mirror" && field_name == "value" {
                                     self.process_devices_hunting(&interface, attribute_name, field_name, field_data).await;
-                                }
-                                else if attribute_name == "dtree" && field_name == "content" {
-                                    self.process_dtree_content(interface, attribute_name, field_name, field_data).await;
                                 }
                             }
                         }
@@ -140,19 +110,12 @@ impl interface::fsm::States for TestInterfaceStates {
     {
         interface::basic::interface_initializating(interface).await;
         
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("dtree", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("devices", true));
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("mirror", true));
 
 
         let mut ii = interface.lock().await;
-        let ps = ii.platform_services().clone();
-        ii.update_attribute_with_json("devices", "hunting", 
-                    ps.lock().await.get_device_store()
-            );
 
-
-        ii.update_attribute_with_string("dtree", "name", &"pok".to_string());
-        ii.update_attribute_with_json("dtree", "content", &json!({ "a": 1 }));
+        ii.update_attribute_with_string("mirror", "value", &"".to_string());
 
         ii.publish_all_attributes().await;
 
@@ -192,10 +155,10 @@ impl interface::fsm::States for TestInterfaceStates {
 pub fn new<A: Into<String>>(name: A) -> InterfaceBuilder {
     return InterfaceBuilder::new(
         name,
-        "platform",
+        "ping",
         "0.0",
         Box::new(TestInterfaceStates{}),
-        Box::new(PlatformInterfaceSubscriber{})
+        Box::new(PingInterfaceSubscriber{})
     );
 }
 

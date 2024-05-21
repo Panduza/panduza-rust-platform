@@ -1,5 +1,7 @@
 
 
+use crate::platform::FunctionResult as PlatformFunctionResult;
+
 use super::AttributeInterface;
 use super::JsonAttribute;
 
@@ -65,8 +67,8 @@ impl AttributeInterface for InfoAttribute {
         self.attr.update_field_with_f64(field, value);
     }
 
-    fn update_field_with_bool(&mut self, field: &str, value: bool) {
-        self.attr.update_field_with_bool(field, value);
+    fn update_field_with_bool(&mut self, field: &str, value: bool) -> PlatformFunctionResult {
+        self.attr.update_field_with_bool(field, value)
     }
 
     fn update_field_with_string(&mut self, field: &str, value: &String) {

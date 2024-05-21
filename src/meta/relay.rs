@@ -10,6 +10,7 @@ use crate::platform::PlatformError;
 use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
+use crate::platform::FunctionResult as PlatformFunctionResult;
 
 #[async_trait]
 pub trait RelayActions: Send + Sync {
@@ -94,7 +95,7 @@ impl interface::fsm::States for RelayStates {
 
         // Init state
         let state_value = self.relay_interface.lock().await.actions.read_state_open(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bool("state", "open", state_value);
+        interface.lock().await.update_attribute_with_bool("state", "open", state_value).unwrap();
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -139,7 +140,9 @@ impl RelaySubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
+    async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
+        -> PlatformFunctionResult
+    {
         let requested_value = field_data.as_bool().unwrap();
         self.relay_interface.lock().await
             .actions.write_state_open(&interface, requested_value).await;
@@ -150,6 +153,7 @@ impl RelaySubscriber {
 
         interface.lock().await
             .update_attribute_with_bool("state", "open", r_value);
+
     }
 }
 
@@ -169,7 +173,7 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
 
     /// Process a message
     ///
-    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) {
+    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) -> PlatformFunctionResult {
         // Common processing
         interface::basic::process(&interface, msg).await;
 
@@ -193,6 +197,7 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
                             if attribute_name == "state" && field_name == "open" {
                                 self.process_state_open(&interface, attribute_name, field_name, field_data).await;
+
                             }
                         }
                     }
@@ -209,6 +214,8 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
                 // not managed by the common level
             }
         }
+
+        Ok(())
     }
 
 

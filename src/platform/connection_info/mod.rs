@@ -7,8 +7,6 @@ use serde_json::Map as JsonMap;
 use serde_json::Value as JsonValue;
 use std::fs::File;
 
-mod tests;
-
 
 #[derive(Debug)]
 pub enum CiErrorType {
@@ -74,6 +72,8 @@ pub struct ConnectionInfo {
 
     // credential
     
+    // Platform info
+    platform_name: String,
 }
 
 impl ConnectionInfo {
@@ -86,6 +86,7 @@ impl ConnectionInfo {
             host_addr: "localhost".to_string(),
             host_port: 1883,
             host_retry: 1,
+            platform_name: "panduza_platform".to_string()
         }
     }
 
@@ -179,12 +180,32 @@ impl ConnectionInfo {
             .ok_or(content_bad_format_error("[host.retry] must be a number"))?
             as u32;
 
+        // Get Platform info section, if not platform info section 
+        let platform_info = map_obj.get("platform_info");
+
+        let platform_name: String;
+        let default_platform_name: String = "platform_name".to_string();
+
+        match platform_info {
+            Some(value) => {
+                platform_name = value.get("platform_name")
+                .unwrap_or(&json!(default_platform_name))
+                .as_str()
+                .ok_or(content_bad_format_error("[platform_info.platform_name] must be a string"))?
+                .to_string();
+            },
+            None => {
+                platform_name = default_platform_name
+            }
+        }
+
         Ok(
             Self {
                 file_path: ConnectionInfo::system_file_path().to_str().unwrap().to_string(),
                 host_addr: host_addr,
                 host_port: host_port,
                 host_retry: host_retry,
+                platform_name: platform_name
             }
         )
     }
@@ -193,6 +214,12 @@ impl ConnectionInfo {
     ///
     pub fn host_addr(&self) -> &String {
         &self.host_addr
+    }
+
+    ///
+    /// 
+    pub fn platform_name(&self) -> &String {
+        &self.platform_name
     }
 
     /// Getter Port
@@ -220,5 +247,41 @@ impl ConnectionInfo {
         Ok(())
     }
 
+}
+
+
+// ----------------------------------------------------------------------------
+#[test]
+fn build_from_json_value_ok() {
+    let input = json!({
+        "host": {
+            "addr": "192.168.1.1",
+            "port": 5555,
+        }
+    });
+    let output = ConnectionInfo::build_from_json_value(input);
+    assert_eq!(output.is_err(), false);
+    let ci = output.unwrap();
+    assert_eq!(ci.host_addr(), "192.168.1.1");
+    assert_eq!(ci.host_port(), 5555);
+}
+
+// ----------------------------------------------------------------------------
+#[test]
+fn build_from_json_value_fail_0() {
+    let input = JsonValue::Null;
+    let output = ConnectionInfo::build_from_json_value(input);
+    assert_eq!(output.is_err(), true);
+}
+
+// ----------------------------------------------------------------------------
+#[test]
+fn build_from_json_value_fail_1() {
+    let input = json!({
+        "hostname": "localhost",
+        "port": 1883
+    });
+    let output = ConnectionInfo::build_from_json_value(input);
+    assert_eq!(output.is_err(), true);
 }
 

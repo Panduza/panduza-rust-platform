@@ -1,7 +1,12 @@
+mod log_issue;
 mod hash_visitor;
-mod platform_formatter;
+mod formatter_csv;
+mod formatter_platform;
 
-use crate::log::platform_formatter::PlatformFormatter;
+use log_issue::init_fmt_subscriber_for_log_issue;
+
+use crate::log::formatter_platform::PlatformFormatter;
+
 
 /// Define the fmt subscriber for the platform
 /// 
@@ -32,6 +37,10 @@ fn init_fmt_subscriber()
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 
+
+
+
+
 /// Function to initiliaze tracing for the application
 /// 
 pub fn init()
@@ -39,13 +48,12 @@ pub fn init()
     if cfg!(feature = "trac-fmt") {
         init_fmt_subscriber();
     }
+    else if cfg!(feature = "log-issue") {
+        init_fmt_subscriber_for_log_issue();
+    }
     else if cfg!(feature = "trac-console") {
         #[cfg(feature = "trac-console")]
         console_subscriber::init();    
     }
 }
-
-    
-
-
 
