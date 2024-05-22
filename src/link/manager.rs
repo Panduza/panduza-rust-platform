@@ -22,9 +22,6 @@ pub struct Manager {
 
     
     new_links: Mutex<LinkedList<ConnectionHandle>>,
-
-    is_pza_sub: bool
-
 }
 
 impl Manager {
@@ -34,8 +31,7 @@ impl Manager {
         return Manager {
             client: client,
             links: Vec::new(),
-            new_links: Mutex::new( LinkedList::new() ),
-            is_pza_sub: false
+            new_links: Mutex::new( LinkedList::new() )
         }
     }
 
@@ -58,12 +54,6 @@ impl Manager {
 
         for request in requests {
             self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
-
-            // if self.is_pza_sub == false {
-            //     println!("{}", self.is_pza_sub);
-            //     self.client.subscribe(request.topic(), rumqttc::QoS::AtLeastOnce).await.unwrap();
-            //     self.is_pza_sub = true;
-            // }
 
             let filter = subscription::Filter::new(request);
 
