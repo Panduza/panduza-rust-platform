@@ -106,7 +106,7 @@ impl interface::fsm::States for RelayStates {
 
     async fn running(&self, interface: &AmInterface)
     {
-        println!("running");
+        // println!("running");
 
 
         interface::basic::wait_for_fsm_event(interface).await;

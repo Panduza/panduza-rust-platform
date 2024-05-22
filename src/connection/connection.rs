@@ -51,7 +51,7 @@ impl Connection {
 
         // Create the client and event loop
         let (client, eventloop) = 
-            AsyncClient::new(mqtt_options.clone(), 10);
+            AsyncClient::new(mqtt_options.clone(), 100);
 
         // Create Connection Object
         return Connection {

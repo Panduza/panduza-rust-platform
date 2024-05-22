@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use tracing_subscriber::fmt::format;
 use crate::platform::PlatformError;
 use crate::meta::relay;
 use crate::interface::AmInterface;
@@ -28,8 +27,6 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
 
-        println!("interface init!!!!!!!!!!!!");
-
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
 
@@ -51,7 +48,6 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
             format!("VoxpowerInhibiter - read_state_open: {}", self.state_open)
         );
 
-        println!("{}", self.id);
         let command = format!("S{}", self.id);
         let command_bytes = command.as_bytes();
 
@@ -65,7 +61,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let response_bytes = &response_buf[0..nb_of_bytes];
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-                println!("VoxpowerInhibiterActions - channel state: {:?}", response_string);
+                println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, response_string);
                 if response_string == "H" {
                     self.state_open = true;
                 } else {

@@ -53,9 +53,7 @@ impl Runner {
         }
 
         // Create the link with the connection
-        println!("connection !!!!!!!!!!!");
         let link = connection_link_manager.lock().await.request_link(requests).await.unwrap();
-        println!("create interface !!!!!!!!!!!");
         
         // Create the interface
         return Runner::new_am(

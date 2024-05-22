@@ -1,16 +1,10 @@
 use async_trait::async_trait;
 use serde_json::json;
-// use tokio::time::{sleep, Duration};
 
 use crate::platform::PlatformError;
-// use crate::subscription;
-use crate::interface::{self, Runner};
-// use crate::interface::AmInterface;
-// use crate::interface::AmRunner;
 use crate::device::{ Device, traits::DeviceActions, traits::Producer, traits::Hunter };
 
 use crate::interface::builder::Builder as InterfaceBuilder;
-struct PlatformInterfaceSubscriber;
 
 use crate::connector::serial::tty::Config as SerialConfig;
 
@@ -85,15 +79,6 @@ impl DeviceActions for VoxpowerInhibiter {
         serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
-        // list.push(
-        //     itf_voxpower_inhibiter::build("channel_6", &serial_conf)
-        // );
-        // list.push(
-        //     itf_voxpower_inhibiter::build("channel_7", &serial_conf)
-        // );
-        // list.push(
-        //     itf_voxpower_inhibiter::build("channel_2", &serial_conf)
-        // );
 
         for n in 2..10 {    
             list.push(
