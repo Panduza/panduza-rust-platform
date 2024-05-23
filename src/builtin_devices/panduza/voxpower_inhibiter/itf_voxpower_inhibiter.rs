@@ -7,6 +7,8 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 use crate::connector::serial::tty::{self, TtyConnector};
 use crate::connector::serial::tty::Config as SerialConfig;
 
+use std::time::SystemTime;
+
 
 
 /// Voxpower Inhibiter Channel Data
@@ -44,6 +46,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     /// Read the state value
     /// 
     async fn read_state_open(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
+
         interface.lock().await.log_info(
             format!("VoxpowerInhibiter - read_state_open: {}", self.state_open)
         );
@@ -52,22 +55,33 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         let command_bytes = command.as_bytes();
 
         let mut response_buf: &mut [u8] = &mut [0; 1024];
+        
+        let start = SystemTime::now();
+
         let _result = self.connector_tty.write_then_read(
             command_bytes,
             &mut response_buf,
             self.time_lock_duration,
         ).await
             .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
+        
+                let time_start = SystemTime::now();
+                // println!("nb of bytes: {:?}", nb_of_bytes);
                 let response_bytes = &response_buf[0..nb_of_bytes];
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-                println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, response_string);
+                // println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, response_string);
                 if response_string == "H" {
                     self.state_open = true;
                 } else {
                     self.state_open = false;
                 }
+        
+                let duration = time_start.elapsed();
+                println!("mini duration : {:?}", duration);
             });
+        
+        let dur = start.elapsed();
+        println!("read_state_open duration : {:?}", dur);
 
         interface.lock().await.log_info(
             format!("Voxpower Inhibiter - state_open: {}", self.state_open)
@@ -91,7 +105,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
             self.time_lock_duration
         ).await
             .map(|nb_of_bytes| {
-                println!("nb_of_bytes: {:?}", nb_of_bytes);
+                // println!("nb_of_bytes: {:?}", nb_of_bytes);
             });
         
         interface.lock().await.log_info(
