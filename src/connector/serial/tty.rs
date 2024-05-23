@@ -336,7 +336,13 @@ impl TtyCore {
 
 
         // let mut buf: &mut [u8] = &mut [0; 1024];
+        let time_start = SystemTime::now();
+        
         let pat = self.serial_stream.as_mut().unwrap().read(response).await;
+        
+        let duration = time_start.elapsed();
+        println!("write_then_read duration : {:?}", duration);
+
         match &pat {
             Ok(v) => {
                 let response_bytes = &response[0..*v];
@@ -351,8 +357,6 @@ impl TtyCore {
         // let n = p.unwrap();
         // println!("Read {} bytes", n);
 
-        // let duration = time_start.elapsed();
-        // println!("write_then_read duration : {:?}", duration);
         
 
     }
