@@ -269,10 +269,9 @@ impl Platform {
                     }
                 },
                 Err(e) => {
-                    println!("Local discovery failed");
+                    tracing::warn!("Local discovery error: {:?}", e);
                 }
             }
-            
         }
     }
 
