@@ -329,31 +329,13 @@ impl TtyCore {
     async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
         time_lock: Option<Duration>) 
             -> Result<usize> {
-        // let time_start = SystemTime::now();
 
 
         let _ = self.time_locked_write(command, time_lock).await;
 
 
         // let mut buf: &mut [u8] = &mut [0; 1024];
-        let time_start = SystemTime::now();
-        
-        let pat = self.serial_stream.as_mut().unwrap().read(response).await;
-        
-        let duration = time_start.elapsed();
-        println!("write_then_read duration : {:?}", duration);
-
-        match &pat {
-            Ok(v) => {
-                let response_bytes = &response[0..*v];
-                let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-                println!("{}", response_string);
-            },
-            Err(e) => {
-                println!("error");
-            }
-        }
-        return pat;
+        self.serial_stream.as_mut().unwrap().read(response).await
         // let n = p.unwrap();
         // println!("Read {} bytes", n);
 

@@ -55,7 +55,6 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         let command_bytes = command.as_bytes();
 
         let mut response_buf: &mut [u8] = &mut [0; 1024];
-        let time_start = SystemTime::now();
 
         let _result = self.connector_tty.write_then_read(
             command_bytes,
@@ -63,7 +62,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
             self.time_lock_duration,
         ).await
             .map(|nb_of_bytes| {
-                // println!("nb of bytes: {:?}", nb_of_bytes);
+                println!("nb of bytes: {:?}", nb_of_bytes);
                 let response_bytes = &response_buf[0..nb_of_bytes];
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
                 let state = response_string.split("\n").next().unwrap();
@@ -74,8 +73,6 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
                     self.state_open = false;
                 }
             });
-        let duration = time_start.elapsed();
-        println!("write_then_read duration : {:?}", duration);
 
         interface.lock().await.log_info(
             format!("Voxpower Inhibiter - state_open: {}", self.state_open)
