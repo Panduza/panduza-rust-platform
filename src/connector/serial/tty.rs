@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-use std::ops::Deref;
 use std::{collections::HashMap, sync::Arc};
 use tokio_serial::{self, SerialPortBuilder};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, Result};
@@ -8,8 +6,6 @@ use tokio::time::{sleep, Duration};
 
 use tokio;
 use lazy_static::lazy_static;
-
-use std::time::SystemTime;
 
 
 
