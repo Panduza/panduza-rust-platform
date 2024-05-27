@@ -234,32 +234,42 @@ impl Platform {
 
         loop {
             // Receive request and answer it 
-            // Error who didn't depend of the user so user unwrap or expect
-            let (nbr_bytes, src_addr) = socket.recv_from(&mut buf).await.expect("receive local discovery failed");
-            let filled_buf = &mut buf[..nbr_bytes];
+            // Error who didn't depend of the user so user unwrap or expects
+            // if message 
+            let result_recv = socket.recv_from(&mut buf).await;
+            match result_recv {
+                Ok(msg_content) => {
+                    let (nbr_bytes, src_addr) = msg_content;
 
-            // need to manage if conversion from utf8 fail (with log)
-            let buf_utf8 = std::str::from_utf8(&filled_buf);
-
-            match buf_utf8 {
-                Ok(buf) => {
-                    let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf);
-                    match json_content {
-                        Ok(content) => {
-                            if content["search"] != json!(true) {
-                                tracing::trace!(class="Platform", "Local discovery request message incorrect");
-                                continue;
+                    let filled_buf = &mut buf[..nbr_bytes];
+        
+                    // need to manage if conversion from utf8 fail (with log)
+                    let buf_utf8 = std::str::from_utf8(&filled_buf);
+        
+                    match buf_utf8 {
+                        Ok(buf) => {
+                            let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf);
+                            match json_content {
+                                Ok(content) => {
+                                    if content["search"] != json!(true) {
+                                        tracing::trace!(class="Platform", "Local discovery request message incorrect");
+                                        continue;
+                                    }
+                                    let _ = socket.send_to(json_reply_bytes, &src_addr).await;
+                                    tracing::trace!(class="Platform", "Local discovery reply send success");
+                                },
+                                Err(_e) => {
+                                    tracing::trace!(class="Platform", "Json request not correctly formatted");
+                                }
                             }
-                            let _ = socket.send_to(json_reply_bytes, &src_addr).await;
-                            tracing::trace!(class="Platform", "Local discovery reply send success");
                         },
                         Err(_e) => {
-                            tracing::trace!(class="Platform", "Json request not correctly formatted");
+                            tracing::trace!(class="Platform", "Request need to be send to UTF-8 format");
                         }
                     }
                 },
-                Err(_e) => {
-                    tracing::trace!(class="Platform", "Request need to be send to UTF-8 format");
+                Err(e) => {
+                    tracing::warn!("Local discovery error: {:?}", e);
                 }
             }
         }
