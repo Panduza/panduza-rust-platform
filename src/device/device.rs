@@ -69,8 +69,8 @@ impl Device {
         };
 
         // Info log
-        obj.log_info("Device created");
-
+         obj.log_info("Device created");
+        //println!("Device created");
         // Return the object
         return obj;
     }
@@ -123,7 +123,8 @@ impl Device {
         if self.started {
             return;
         }
-        self.log_info("Start Interfaces...");
+         self.log_info("Start Interfaces...");
+       // println!("Start Interfaces...");
 
         // Get the interface builders
         let r = self.actions.interface_builders(&self.settings);

@@ -19,7 +19,7 @@ pub async fn execute_service_boot(
     -> Result<(),  &'static str >
 {
     // log
-    tracing::info!(class="Platform", "Booting...");
+   // tracing::info!(class="Platform", "Booting...");
 
     // Load connection info
     execute_connection_info_loading_process(services.lock().await.deref_mut()).await

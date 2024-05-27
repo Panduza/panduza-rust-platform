@@ -114,7 +114,7 @@ impl Platform {
     /// 
     pub async fn work(&mut self) {
         // Info log
-        tracing::info!(class="Platform", "Platform Version ...");
+        // tracing::info!(class="Platform", "Platform Version ...");
 
         // Start the main service task directly
         // it acts as a idle task for the platform to avoid the platform to stop if no other task
@@ -156,6 +156,7 @@ impl Platform {
                 },
                 _ = self.end_of_all_tasks() => {
                     tracing::warn!(class="Platform", "All tasks completed, stop the platform");
+                    println!("plateform , All tasks completed, stop the plateform");
                     break;
                 }
             }
@@ -177,16 +178,19 @@ impl Platform {
                     match task_result {
                         Ok(_) => {
                             tracing::warn!("Task completed");
+                            println!("Task completed");
                         },
                         Err(e) => {
-                            tracing::error!("Task failed: {}", e);
+                            // tracing::error!("Task failed: {}", e);
+                            println!("Task failed : {}", e);
                             self.task_pool.abort_all();
 
                         }
                     }
                 },
                 Err(e) => {
-                    tracing::error!("Join failed: {}", e);
+                    // tracing::error!("Join failed: {}", e);
+                    println!("joint failed : {}", e);
                 }
             }
 
@@ -374,6 +378,11 @@ impl Platform {
     ///
     async fn load_tree_file(services: AmServices) -> Result<(), error::PlatformError> {
 
+        println!("Device factory initialization");
+        println!("rust version  : {version}", version="1.78");
+        println!("plateform version : {pzaVersion}", pzaVersion="0.0.1");
+        println!("system information : {OS} {version}", OS="ubuntu", version="20.04");
+
         // Get the tree file path
         let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
         match env::consts::OS {
@@ -388,8 +397,8 @@ impl Platform {
                 tracing::error!("Unsupported system!");
             }
         }
-        tracing::info!(class="Platform", "Loading tree file: {:?}", tree_file_path);
-
+        // tracing::info!(class="Platform", "Loading tree file: {:?}", tree_file_path);
+        println!("class=Platform, Loading tree file: {:?}", tree_file_path);
         // Try to read the file content
         let file_content = tokio::fs::read_to_string(&tree_file_path).await;
         match file_content {
@@ -411,8 +420,8 @@ impl Platform {
         match json_content {
             Ok(json) => {
                 // log
-                tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
-
+               // tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
+                println!(" # Tree Json content : \n ```  \n {} \n```", serde_json::to_string_pretty(&json).unwrap());
                 services.lock().await.set_tree_content(json);
 
                 return Ok(());

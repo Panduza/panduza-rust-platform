@@ -111,7 +111,7 @@ impl ConnectionInfo {
                 return unix_path;
             }
             _ => {
-                tracing::warn!("Unsupported system ({:?}) but try with unix path anyway !", env::consts::OS);
+                // tracing::warn!("Unsupported system ({:?}) but try with unix path anyway !", env::consts::OS);
                 return unix_path;
             }
         }

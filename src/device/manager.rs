@@ -61,20 +61,26 @@ impl Manager {
     ///
     pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<String, PlatformError> {
         // Debug log
-        tracing::debug!(class="Platform", " - Try to create device -\n{}", serde_json::to_string_pretty(&device_def).unwrap() );
+       // tracing::debug!(class="Platform", " - Try to create device -\n{}", serde_json::to_string_pretty(&device_def).unwrap() );
+        println!(" # Try to create device  : \n ``` \n {} \n``` ", serde_json::to_string_pretty(&device_def).unwrap());
 
+        tracing::info!(class="Factory", "# Device factory initialization");
+        tracing::info!(class="Factory", "List of producers:");
+        
         // Create the device
         let result = self.factory.create_device(device_def);
         match result {
             Err(e) => {
                 return platform_error_result!("Device not created", Some(Box::new(e)));
-            },
+            }
             Ok(device_object) => {
                 let name = device_object.dev_name().clone();
                 self.instances.insert(device_object.dev_name().clone(), device_object);
                 return Ok(name);
             }
         }
+
+
     }
 
 

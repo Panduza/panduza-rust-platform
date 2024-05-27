@@ -47,7 +47,7 @@ impl Connection {
     /// 
     pub fn new(mqtt_options: MqttOptions) -> Connection {
         // Info log
-        tracing::info!(class="Connection", cname=mqtt_options.client_id(), "Connection created");
+        // tracing::info!(class="Connection", cname=mqtt_options.client_id(), "Connection created");
 
         // Create the client and event loop
         let (client, eventloop) = 

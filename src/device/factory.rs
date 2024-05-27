@@ -46,9 +46,9 @@ impl Factory {
             platform_services: platform_services
         };
 
-        // Info log
-        tracing::info!(class="Factory", "# Device factory initialization");
-        tracing::info!(class="Factory", "List of producers:");
+
+        // tracing::info!(class="Factory", "# Device factory initialization");
+        // tracing::info!(class="Factory", "List of producers:");
 
         // Load builtin device producers
         builtin_devices::import_plugin_producers(&mut obj);
@@ -65,7 +65,7 @@ impl Factory {
     /// 
     pub fn add_producer(&mut self, device_ref: &str, producer: Box<dyn Producer>) {
         // Info log
-        tracing::info!(class="Factory", "  - {}", device_ref);
+       // tracing::info!(class="Factory", "  - {}", device_ref);
 
         // Append the producer
         self.producers.insert(device_ref.to_string(), producer);
@@ -75,7 +75,7 @@ impl Factory {
     /// 
     pub fn add_hunter(&mut self, hunter: Box<dyn Hunter>) {
         // Info log
-        tracing::info!(class="Factory", "  - new hunter");
+        //tracing::info!(class="Factory", "  - new hunter");
 
         // Append the producer
         self.hunters.push(hunter);
