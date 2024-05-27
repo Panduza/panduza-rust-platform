@@ -51,12 +51,11 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
             format!("VoxpowerInhibiter - read_state_open: {}", self.state_open)
         );
 
-        let command = format!("S{}", self.id);
+        let command = format!("S{}\n", self.id);
         let command_bytes = command.as_bytes();
 
         let mut response_buf: &mut [u8] = &mut [0; 1024];
-        
-        let start = SystemTime::now();
+        let time_start = SystemTime::now();
 
         let _result = self.connector_tty.write_then_read(
             command_bytes,
@@ -64,24 +63,19 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
             self.time_lock_duration,
         ).await
             .map(|nb_of_bytes| {
-        
-                let time_start = SystemTime::now();
                 // println!("nb of bytes: {:?}", nb_of_bytes);
                 let response_bytes = &response_buf[0..nb_of_bytes];
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-                // println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, response_string);
-                if response_string == "H" {
+                let state = response_string.split("\n").next().unwrap();
+                println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, state);
+                if state == "H" {
                     self.state_open = true;
                 } else {
                     self.state_open = false;
                 }
-        
-                let duration = time_start.elapsed();
-                println!("mini duration : {:?}", duration);
             });
-        
-        let dur = start.elapsed();
-        println!("read_state_open duration : {:?}", dur);
+        let duration = time_start.elapsed();
+        println!("write_then_read duration : {:?}", duration);
 
         interface.lock().await.log_info(
             format!("Voxpower Inhibiter - state_open: {}", self.state_open)
@@ -95,9 +89,9 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     async fn write_state_open(&mut self, interface: &AmInterface, v: bool) {
         
         let command = if v {
-            format!("I{}", self.id)
+            format!("I{}\n", self.id)
         } else {
-            format!("E{}", self.id)
+            format!("E{}\n", self.id)
         };
 
         let _result = self.connector_tty.write(

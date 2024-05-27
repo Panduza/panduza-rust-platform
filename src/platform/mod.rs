@@ -94,7 +94,7 @@ impl Platform {
 
         // Create the channel
         let (tx, rx) =
-            tokio::sync::mpsc::channel::<BoxFuture<'static, PlatformTaskResult>>(10);
+            tokio::sync::mpsc::channel::<BoxFuture<'static, PlatformTaskResult>>(100);
         
         let tl = TaskPoolLoader::new(tx);
 
