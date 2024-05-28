@@ -155,13 +155,12 @@ impl Platform {
                     tracing::debug!(class="Platform", "New task created ! [{:?}]", ah );
                 },
                 _ = self.end_of_all_tasks() => {
-                    tracing::warn!(class="Platform", "All tasks completed, stop the platform");
+                    //tracing::warn!(class="Platform", "All tasks completed, stop the platform");
                     println!("plateform , All tasks completed, stop the plateform");
                     break;
                 }
             }
         }
-
     }
 
     /// Wait for all tasks to complete
@@ -381,7 +380,7 @@ impl Platform {
         println!("Device factory initialization");
         println!("rust version  : {version}", version="1.78");
         println!("plateform version : {pzaVersion}", pzaVersion="0.0.1");
-        println!("system information : {OS} {version}", OS="ubuntu", version="20.04");
+        println!("system information : {OS} {version}", OS="ubuntu", version="22.04.1");
 
         // Get the tree file path
         let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
