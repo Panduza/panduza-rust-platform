@@ -2,6 +2,7 @@ use std::env;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::process::Command;
 
 use dirs;
 use futures::future::BoxFuture;
@@ -377,10 +378,18 @@ impl Platform {
     ///
     async fn load_tree_file(services: AmServices) -> Result<(), error::PlatformError> {
 
+        // get the rustc version
+        let output = Command::new("rustc")
+            .arg("--version")
+            .output()
+            .expect("failed to excecute command");
+        
+        let version = String::from_utf8_lossy(&output.stdout);
+
         println!("Device factory initialization");
-        println!("rust version  : {version}", version="1.78");
+        println!("rust version  : {version}", version=version.trim());
         println!("plateform version : {pzaVersion}", pzaVersion="0.0.1");
-        println!("system information : {OS} {version}", OS="ubuntu", version="22.04.1");
+        println!("system information : {OS} ", OS=env::consts::OS);
 
         // Get the tree file path
         let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
@@ -396,7 +405,7 @@ impl Platform {
                 tracing::error!("Unsupported system!");
             }
         }
-        // tracing::info!(class="Platform", "Loading tree file: {:?}", tree_file_path);
+        tracing::info!(class="Platform", "Loading tree file: {:?}", tree_file_path);
         println!("class=Platform, Loading tree file: {:?}", tree_file_path);
         // Try to read the file content
         let file_content = tokio::fs::read_to_string(&tree_file_path).await;
