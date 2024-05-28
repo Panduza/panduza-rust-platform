@@ -124,7 +124,6 @@ impl Device {
             return;
         }
          self.log_info("Start Interfaces...");
-       // println!("Start Interfaces...");
 
         // Get the interface builders
         let r = self.actions.interface_builders(&self.settings);

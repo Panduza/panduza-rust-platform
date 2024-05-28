@@ -47,8 +47,8 @@ impl Factory {
         };
 
 
-        // tracing::info!(class="Factory", "# Device factory initialization");
-        // tracing::info!(class="Factory", "List of producers:");
+        tracing::info!(class="Factory", "# Device factory initialization");
+        tracing::info!(class="Factory", "List of producers:");
 
         // Load builtin device producers
         builtin_devices::import_plugin_producers(&mut obj);
