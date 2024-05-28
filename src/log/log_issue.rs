@@ -78,11 +78,3 @@ pub fn init_fmt_subscriber_for_log_issue()
     // use that subscriber to process traces emitted after this point
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }
-
-
-/// Configuration for Github/Gitlab issue logger in mk format
-///
-pub fn init_fmt_subscriber_for_log_issue_mk()
-{
-    
-}
