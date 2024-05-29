@@ -63,9 +63,8 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let response_bytes = &response_buf[0..nb_of_bytes];
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-                let state = response_string.split("\n").next().unwrap();
-                println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, state);
-                if state == "H" {
+                println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, response_string);
+                if response_string == "H" {
                     self.state_open = true;
                 } else {
                     self.state_open = false;
