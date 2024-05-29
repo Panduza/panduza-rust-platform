@@ -6,7 +6,13 @@ use tracing_subscriber::fmt::format::FmtSpan;
 
 use chrono::Utc;
 
+use std::env;
+use std::process::Command;
 use super::formatter_csv::FormatterCSV;
+
+
+const VERSION: &str = env!("CARGO_PKG_VERSION"); 
+
 
 struct LogIssueMultiWriter {
     filea: tracing_appender::rolling::RollingFileAppender
@@ -44,6 +50,21 @@ impl FormatTime for MyFormatTime {
     fn format_time(&self, w: &mut Writer<'_>) -> std::fmt::Result {
         write!(w, "{} ", Utc::now().to_rfc3339())
     }
+}
+
+
+pub fn display_issue_body(){
+        // get the rustc version
+        let outputRust = Command::new("rustc")
+            .arg("--version")
+            .output()
+            .expect("failed to excecute command");
+        let rustVersion = String::from_utf8_lossy(&outputRust.stdout);
+
+        println!("rust version  : {version}", version=rustVersion.trim());
+        println!("plateform version : {pzaVersion}", pzaVersion=VERSION);
+        println!("system information : {OS} ", OS=env::consts::OS);
+
 }
 
 
