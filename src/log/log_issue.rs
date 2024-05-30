@@ -101,7 +101,7 @@ pub fn display_issue_body(){
     // println!("``` \n{:#?}\n ```", u);
     match env::consts::OS {
         "linux" => {
-            let path = "/etc/panduza/tree.json";
+            let path = PathBuf::from("/etc/panduza/tree.json");
         }
         "windows" => {
 
@@ -110,11 +110,12 @@ pub fn display_issue_body(){
             tracing::error!("Unsupported system!");
         }
     }
+
     let data = fs::read_to_string(path).expect("Unable to read file");
     let res = serde_json::to_string_pretty(&data);
     println!("``` \n{}\n ```",serde_json::to_string_pretty(&data).unwrap());
     
-    println!("- [ ] issue reproduced ");
+    println!("- [ ]  issue reproduced ");
     println!("- [ ] root cause found ");
     println!("- [ ] mpacts described (documentation/code/repos...)");
     println!("- [ ] fix implemented ? ");
