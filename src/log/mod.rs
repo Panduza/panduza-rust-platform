@@ -3,8 +3,8 @@ mod hash_visitor;
 mod formatter_csv;
 mod formatter_platform;
 
+use log_issue::display_issue_body;
 use log_issue::init_fmt_subscriber_for_log_issue;
-
 use crate::log::formatter_platform::PlatformFormatter;
 
 
@@ -49,6 +49,7 @@ pub fn init()
         init_fmt_subscriber();
     }
     else if cfg!(feature = "log-issue") {
+        display_issue_body();
         init_fmt_subscriber_for_log_issue();
     }
     else if cfg!(feature = "trac-console") {

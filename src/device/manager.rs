@@ -61,8 +61,7 @@ impl Manager {
     ///
     pub async fn create_device(&mut self, device_def: &serde_json::Value) -> Result<String, PlatformError> {
         // Debug log
-        tracing::debug!(class="Platform", " - Try to create device -\n{}", serde_json::to_string_pretty(&device_def).unwrap() );
-
+        tracing::debug!(class="Platform", " - Try to create device -\n{}", serde_json::to_string_pretty(&device_def).unwrap());
         // Create the device
         let result = self.factory.create_device(device_def);
         match result {

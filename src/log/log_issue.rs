@@ -6,7 +6,17 @@ use tracing_subscriber::fmt::format::FmtSpan;
 
 use chrono::Utc;
 
+use std::env;
+use std::process::Command;
 use super::formatter_csv::FormatterCSV;
+
+use std::path::PathBuf;
+use serde_json;
+use std::fs;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION"); 
+
+
 
 struct LogIssueMultiWriter {
     filea: tracing_appender::rolling::RollingFileAppender
@@ -46,6 +56,57 @@ impl FormatTime for MyFormatTime {
     }
 }
 
+
+pub fn display_issue_body(){
+
+
+    // get the rustc version
+    let outputRust = Command::new("rustc")
+        .arg("--version")
+        .output()
+        .expect("failed to excecute command");
+    let rustVersion = String::from_utf8_lossy(&outputRust.stdout);
+
+    println!("|system info| Version|");
+    println!("|------------|----------|");
+    println!("|rust version| {version}|", version=rustVersion.trim());
+    println!("|plateform version| {pzaVersion}|", pzaVersion=VERSION);
+    println!("|system information|{OS}|", OS=env::consts::OS);
+
+    let mut path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
+    match env::consts::OS {
+        "linux" => {
+            path = PathBuf::from("/etc/panduza/tree.json");
+        }
+        "windows" => {
+            path = PathBuf::from( "C:/Users/UF.../Panduza/");
+        }
+        _ => {
+            tracing::error!("Unsupported system!");
+        }
+    }
+
+    let data_to_parse = fs::read_to_string(path).expect("Unable to read file");
+    let json_content_init = serde_json::from_str::<serde_json::Value>(&data_to_parse);
+    match json_content_init{
+        Ok(json_init) => {
+            let res = serde_json::to_string_pretty(&json_init).unwrap();
+            println!("# device tree : ");
+            println!("``` \n{res}\n ```");
+        },
+        Err(e) => {
+            println!("failed to parse");
+        }
+    }
+
+    
+    println!("- [ ]  issue reproduced ");
+    println!("- [ ] root cause found ");
+    println!("- [ ] mpacts described (documentation/code/repos...)");
+    println!("- [ ] fix implemented ? ");
+
+
+}
 
 /// Configuration for Github/Gitlab issue logger
 ///
