@@ -411,9 +411,7 @@ impl Platform {
         match json_content {
             Ok(json) => {
                 // log
-                tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
-                println!("``` \n{}\n ```",serde_json::to_string_pretty(&json).unwrap());
-            
+                tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());            
                 services.lock().await.set_tree_content(json);
 
                 return Ok(());
