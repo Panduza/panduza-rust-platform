@@ -11,7 +11,24 @@ use std::process::Command;
 use super::formatter_csv::FormatterCSV;
 
 
+// use std::error::Error;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::Path;
+use std::path::PathBuf;
+use serde_json;
+
+
 const VERSION: &str = env!("CARGO_PKG_VERSION"); 
+
+// use serde::{Deserialize, Serialize};
+
+struct Tree {
+
+    r#ref: String,
+    name: String,
+    settings: String,
+}
 
 
 struct LogIssueMultiWriter {
@@ -54,19 +71,44 @@ impl FormatTime for MyFormatTime {
 
 
 pub fn display_issue_body(){
-        // get the rustc version
-        let outputRust = Command::new("rustc")
-            .arg("--version")
-            .output()
-            .expect("failed to excecute command");
-        let rustVersion = String::from_utf8_lossy(&outputRust.stdout);
 
-        println!("rust version  : {version}", version=rustVersion.trim());
-        println!("plateform version : {pzaVersion}", pzaVersion=VERSION);
-        println!("system information : {OS} ", OS=env::consts::OS);
+    // path of json tree
+    let path = "/etc/panduza/tree.json";
+
+    // get the rustc version
+    let outputRust = Command::new("rustc")
+        .arg("--version")
+        .output()
+        .expect("failed to excecute command");
+    let rustVersion = String::from_utf8_lossy(&outputRust.stdout);
+
+    println!("|system info| Version|");
+    println!("|------------|----------|");
+    println!("|rust version| {version}|", version=rustVersion.trim());
+    println!("|plateform version| {pzaVersion}|", pzaVersion=VERSION);
+    println!("|system information|{OS}|", OS=env::consts::OS);
+
+    let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
+    tree_file_path = PathBuf::from("/etc/panduza/tree.json");
+
+    // let file_content_init = tokio::fs::read_to_string(&tree_file_path);
+
+    // let file_path = "/etc/panduza/tree.json";
+    // let file = File::open(file_path).unwrap();
+    // let reader = BufReader::new(file);
+
+    //  let u = serde_json::from_str::<serde_json::Value>(&reader);
+    // println!("``` \n{:#?}\n ```", u);
+
 
 }
 
+// pub fn read_json_init(filename:String){
+//     let path: &Path=Path::new(&filename);
+//     let mut fData: String=String::new();
+//     let mut rfile :File=File::open(path).expect("file not found");
+//     rfile.read_to_string(&fData).expect("file can't be read");
+// }
 
 /// Configuration for Github/Gitlab issue logger
 ///
