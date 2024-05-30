@@ -17,7 +17,7 @@ use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
 use serde_json;
-
+use std::fs;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION"); 
 
@@ -88,8 +88,8 @@ pub fn display_issue_body(){
     println!("|plateform version| {pzaVersion}|", pzaVersion=VERSION);
     println!("|system information|{OS}|", OS=env::consts::OS);
 
-    let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
-    tree_file_path = PathBuf::from("/etc/panduza/tree.json");
+    // let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
+    // tree_file_path = PathBuf::from("/etc/panduza/tree.json");
 
     // let file_content_init = tokio::fs::read_to_string(&tree_file_path);
 
@@ -99,7 +99,25 @@ pub fn display_issue_body(){
 
     //  let u = serde_json::from_str::<serde_json::Value>(&reader);
     // println!("``` \n{:#?}\n ```", u);
+    match env::consts::OS {
+        "linux" => {
+            let path = "/etc/panduza/tree.json";
+        }
+        "windows" => {
 
+        }
+        _ => {
+            tracing::error!("Unsupported system!");
+        }
+    }
+    let data = fs::read_to_string(path).expect("Unable to read file");
+    let res = serde_json::to_string_pretty(&data);
+    println!("``` \n{}\n ```",serde_json::to_string_pretty(&data).unwrap());
+    
+    println!("- [ ] issue reproduced ");
+    println!("- [ ] root cause found ");
+    println!("- [ ] mpacts described (documentation/code/repos...)");
+    println!("- [ ] fix implemented ? ");
 
 }
 
