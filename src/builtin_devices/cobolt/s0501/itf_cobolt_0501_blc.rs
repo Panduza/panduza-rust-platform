@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use tracing_subscriber::fmt::format;
 use crate::platform::PlatformError;
-use crate::meta::bpc;
+use crate::meta::blc;
 use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
@@ -73,11 +72,6 @@ impl blc::BlcActions for S0501BlcActions {
                 }
                 return "no_regulation";
             });
-
-        // interface.lock().await.log_info(
-        //     format!("KA3005 - read_enable_value: {}", self.enable_value)
-        // );
-        // return Ok(self.enable_value);
     }
 
     /// Write the mode value
@@ -101,11 +95,6 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
             });
-
-        // interface.lock().await.log_info(
-        //     format!("KA3005 - write_enable_value: {}", self.enable_value)
-        // );
-        // self.enable_value = v;
     }
 
      /// Read the enable value
@@ -126,19 +115,12 @@ impl blc::BlcActions for S0501BlcActions {
                 println!("read enable value : {} | {}", value_i, self.enable_value);
             });
 
-        // interface.lock().await.log_info(
-        //     format!("KA3005 - read_enable_value: {}", self.enable_value)
-        // );
         return Ok(self.enable_value);
     }
 
     /// Write the enable value
     /// 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
-
-        // interface.lock().await.log_info(
-        //     format!("write enable : {}", v)
-        // );
 
         let command = format!("p{}\n", if v { 1 } else { 0 });
 
@@ -149,11 +131,6 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
             });
-
-        // interface.lock().await.log_info(
-        //     format!("KA3005 - write_enable_value: {}", self.enable_value)
-        // );
-        // self.enable_value = v;
     }
 
     /// Read the power value
@@ -170,11 +147,9 @@ impl blc::BlcActions for S0501BlcActions {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let power_b = &response[0..nb_of_bytes];
                 self.power_value = f32::from_utf8(power_b.to_vec()).unwrap();
+                println!(" read power : {}", self.power_value);
             });
 
-        // interface.lock().await.log_info(
-        //     format!("KA3005 - read_enable_value: {}", self.enable_value)
-        // );
         return Ok(self.power_value);
     }
 
@@ -195,31 +170,45 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
             });
-
-        // interface.lock().await.log_info(
-        //     format!("KA3005 - write_enable_value: {}", self.enable_value)
-        // );
-        // self.enable_value = v;
     }
 
     /// Read the current value
     /// 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
-        interface.lock().await.log_warn(
-            format!("NOT IMPLEMENTED KA3005 - read_current_value: {}", self.current_value)
-        );
+
+        let mut response: &mut [u8] = &mut [0; 1024];
+        let _result = self.connector_tty.write_then_read(
+            b"glc?",
+            &mut response,
+            self.time_lock_duration
+        ).await
+            .map(|nb_of_bytes| {
+                println!("nb of bytes: {:?}", nb_of_bytes);
+                let current_b = &response[0..nb_of_bytes];
+                self.current_value = f32::from_utf8(current_b.to_vec()).unwrap();
+                println!("read current : {}", self.current_value);
+            });
+
         return Ok(self.current_value);
     }
 
     /// Write the current value
     /// 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
-        interface.lock().await.log_warn(
-            format!("NOT IMPLEMENTED KA3005 - write_current_value: {}", v)
+        interface.lock().await.log_info(
+            format!("write current : {}", v)
         );
-        self.current_value = v;
-    }
 
+        let command = format!("slc {}\n", v);
+
+        let _result = self.connector_tty.write(
+            command.as_bytes(),
+            self.time_lock_duration
+        ).await
+            .map(|nb_of_bytes| {
+                println!("nb of bytes: {:?}", nb_of_bytes);
+            });
+    }
 }
 
 
@@ -231,22 +220,22 @@ pub fn build<A: Into<String>>(
     serial_config: &SerialConfig
 ) -> InterfaceBuilder {
 
-    return bpc::build(
+    return blc::build(
         name, 
-        bpc::BpcParams {
-            voltage_min: 0.0,
-            voltage_max: 30.0,
-            voltage_decimals: 2,
+        blc::BlcParams {
+            power_min: 0.0,
+            power_max: 0.3,
+            power_decimals: 3,
 
             current_min: 0.0,
-            current_max: 3.0,
-            current_decimals: 3,
+            current_max: 0.5,
+            current_decimals: 1,
         }, 
-        Box::new(Ka3005BpcActions {
+        Box::new(S0501BlcActions {
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
             enable_value: false,
-            voltage_value: 0.0,
+            power_value: 0.0,
             current_value: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
