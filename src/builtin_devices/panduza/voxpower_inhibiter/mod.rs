@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use crate::platform::PlatformError;
-use crate::device::{ Device, traits::DeviceActions, traits::Producer, traits::Hunter };
+use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
 
 use crate::interface::builder::Builder as InterfaceBuilder;
 

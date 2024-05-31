@@ -55,7 +55,12 @@ fn ask_user_about_default_connection_info_creation(services: &mut Services)
     if char == 'y' || char == 'Y' {
         services.generate_default_connection_info()
             .map_err(|e| {
+                println!("");
                 println!("Failed to create default connection info: {}", e.to_string());
+                println!("?");
+                println!("Check that you have the permission for creating the file");
+                println!("?");
+                println!("");
             })
             .expect("Failed to create default connection info");
         println!("Default connection info created !");
