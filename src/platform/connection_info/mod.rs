@@ -24,7 +24,7 @@ pub struct CiError {
 
     type_: CiErrorType,
 
-    message: String,
+    _message: String,
 }
 
 impl CiError {
@@ -32,13 +32,13 @@ impl CiError {
     fn new(type_: CiErrorType, message: &str) -> Self {
         Self {
             type_,
-            message: message.to_string(),
+            _message: message.to_string(),
         }
     }
 
-    pub fn message(&self) -> &str {
-        &self.message
-    }
+    // pub fn message(&self) -> &str {
+    //     &self.message
+    // }
 
     pub fn type_(&self) -> &CiErrorType {
         &self.type_
@@ -104,12 +104,9 @@ impl ConnectionInfo {
 
         // Return the file path depeding on the OS
         match env::consts::OS {
-            "windows" => {
-                return windows_path;
-            }
-            "unix" => {
-                return unix_path;
-            }
+            "windows" => { return windows_path; }
+            "unix"    => { return unix_path; }
+            "linux"   => { return unix_path; }
             _ => {
                 tracing::warn!("Unsupported system ({:?}) but try with unix path anyway !", env::consts::OS);
                 return unix_path;

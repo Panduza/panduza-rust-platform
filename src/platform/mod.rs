@@ -10,7 +10,7 @@ use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use tokio::net::UdpSocket;
+// use tokio::net::UdpSocket;
 use crate::device;
 use crate::connection;
 
@@ -18,11 +18,14 @@ mod connection_info;
 pub mod error;
 pub mod services;
 mod task_pool_loader;
+mod local_broker_discovery;
 
 use services::{Services, AmServices};
 
 use crate::platform_error_result;
 
+
+use local_broker_discovery::task as local_broker_discovery_task;
 
 use self::services::boot::execute_service_boot;
 use self::services::hunt::execute_service_hunt;
@@ -132,8 +135,9 @@ impl Platform {
         });
 
         // Start local discovery at the start of the application
+        let plbd_platform_services = self.services.clone();
         self.task_pool.spawn(
-            Platform::local_service_discovery_task()
+            local_broker_discovery_task(plbd_platform_services)
         );
 
         // Main loop
@@ -193,87 +197,7 @@ impl Platform {
         }
     }
 
-    /// Start the local service discovery 
-    ///
-    /// > COVER:PLATF_REQ_LSD_0000_00 - Service Port
-    /// > COVER:PLATF_REQ_LSD_0010_00 - Request Payload
-    /// > COVER:PLATF_REQ_LSD_0020_00 - Answer Payload
-    ///
-    pub async fn local_service_discovery_task() -> PlatformTaskResult {
 
-        // Get port and address of broker used 
-        // let broker_info_json = Platform::load_network_file_content().await;
-
-        // If panic send the message expected 
-        // start the connection
-        let socket = UdpSocket::bind("0.0.0.0:53035").await.expect("creation local discovery socket failed");
-        tracing::trace!(class="Platform", "Local discovery service start");
-
-        // Go look the platform_name in the connection.json
-
-        // The file connection.json is supposed already exist, because
-        // if he didn't exist at the start of the application he should 
-        // been created 
-        let ci = connection_info::ConnectionInfo::build_from_file().await.
-            expect("connection.json not found");
-       
-        let json_reply: String = format!("{{
-            \"platform\": {{
-                \"name\": \"{}\",
-                \"version\": 1.0
-            }},
-            \"broker\": {{
-                \"addr\": \"{}\",
-                \"port\": {}
-            }}
-        }}", ci.platform_name(), ci.host_addr(), ci.host_port());
-
-
-        let mut buf = [0; 1024];
-        let json_reply_bytes = json_reply.as_bytes();
-
-        loop {
-            // Receive request and answer it 
-            // Error who didn't depend of the user so user unwrap or expects
-            // if message 
-            let result_recv = socket.recv_from(&mut buf).await;
-            match result_recv {
-                Ok(msg_content) => {
-                    let (nbr_bytes, src_addr) = msg_content;
-
-                    let filled_buf = &mut buf[..nbr_bytes];
-        
-                    // need to manage if conversion from utf8 fail (with log)
-                    let buf_utf8 = std::str::from_utf8(&filled_buf);
-        
-                    match buf_utf8 {
-                        Ok(buf) => {
-                            let json_content: Result<serde_json::Value, serde_json::Error>  = serde_json::from_str(&buf);
-                            match json_content {
-                                Ok(content) => {
-                                    if content["search"] != json!(true) {
-                                        tracing::trace!(class="Platform", "Local discovery request message incorrect");
-                                        continue;
-                                    }
-                                    let _ = socket.send_to(json_reply_bytes, &src_addr).await;
-                                    tracing::trace!(class="Platform", "Local discovery reply send success");
-                                },
-                                Err(_e) => {
-                                    tracing::trace!(class="Platform", "Json request not correctly formatted");
-                                }
-                            }
-                        },
-                        Err(_e) => {
-                            tracing::trace!(class="Platform", "Request need to be send to UTF-8 format");
-                        }
-                    }
-                },
-                Err(e) => {
-                    tracing::warn!("Local discovery error: {:?}", e);
-                }
-            }
-        }
-    }
 
     /// Services task
     /// 
