@@ -1,4 +1,7 @@
+use std::mem::swap;
+
 use async_trait::async_trait;
+use bitflags::parser::from_str;
 use crate::platform::PlatformError;
 use crate::meta::blc;
 use crate::interface::AmInterface;
@@ -8,7 +11,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 // use crate::connector::serial::tty::Tty;
 use crate::connector::serial::tty::{self, TtyConnector};
 use crate::connector::serial::tty::Config as SerialConfig;
-// use crate::platform_error_result;
+use crate::platform_error_result;
 
 ///
 /// 
@@ -52,7 +55,7 @@ impl blc::BlcActions for S0501BlcActions {
 
     /// Read the mode value
     /// 
-    async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
+    async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
@@ -63,16 +66,20 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let mode_b = &response[0..nb_of_bytes];
-                println!("mode {}", mode_b);
-                let mode_i = u16::from_utf8(mode_b.to_vec()).unwrap();
+                println!("mode {:?}", mode_b);
+                let mode_i = String::from_utf8(mode_b.to_vec()).unwrap().parse::<u16>().unwrap();
                 println!("mode {}", mode_i);
                 if mode_i == 0 {
-                    return "constant_current";
+                    self.mode_value = "constant_current".to_string();
                 } else if mode_i == 1 {
-                    return "constant_power";
+                    self.mode_value =  "constant_power".to_string();
                 }
-                return "no_regulation";
+                self.mode_value =  "no_regulation".to_string();
             });
+        let mut mode_val = String::new();
+        swap(&mut mode_val, &mut self.mode_value);
+
+        return Ok(mode_val);
     }
 
     /// Write the mode value
@@ -83,10 +90,16 @@ impl blc::BlcActions for S0501BlcActions {
             format!("write enable : {}", v)
         );
 
+        // let command = match v {
+        //     "constant_current" => { format!("ci\n") },
+        //     "constant_power" => { format!("cp\n") }
+        // };
         let command = if v == "constant_current" {
             format!("ci\n")
         } else if v == "constant_power" {
             format!("cp\n")
+        } else {
+            return
         };
 
         let _result = self.connector_tty.write(
@@ -111,8 +124,11 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let value_b = &response[0..nb_of_bytes];
-                let value_i = u16::from_utf8(value_b.to_vec()).unwrap();
-                self.enable_value = value_i as bool;
+                let value_i = String::from_utf8(value_b.to_vec()).unwrap().parse::<u16>().unwrap();
+                self.enable_value = match value_i {
+                    0 => false,
+                    _ => true
+                };
                 println!("read enable value : {} | {}", value_i, self.enable_value);
             });
 
@@ -123,7 +139,7 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
 
-        let val_int = 0;
+        let mut val_int = 0;
         if v {
             val_int = 1;
         }
@@ -141,7 +157,7 @@ impl blc::BlcActions for S0501BlcActions {
                 println!("nb of bytes: {:?}", nb_of_bytes);
             });
         
-        let value_i = 5;
+        let mut value_i = 5;
         while value_i != val_int {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
@@ -152,7 +168,7 @@ impl blc::BlcActions for S0501BlcActions {
                 .map(|nb_of_bytes| {
                     // println!("nb of bytes: {:?}", nb_of_bytes);
                     let value_b = &response[0..nb_of_bytes];
-                    value_i = u16::from_utf8(value_b.to_vec()).unwrap();
+                    value_i = String::from_utf8(value_b.to_vec()).unwrap().parse::<u16>().unwrap();
                 });
         }
     }
@@ -170,7 +186,7 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let power_b = &response[0..nb_of_bytes];
-                self.power_value = f64::from_utf8(power_b.to_vec()).unwrap();
+                self.power_value = String::from_utf8(power_b.to_vec()).unwrap().parse::<f64>().unwrap();
                 println!(" read power : {}", self.power_value);
             });
 
@@ -209,7 +225,7 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let current_b = &response[0..nb_of_bytes];
-                self.current_value = f64::from_utf8(current_b.to_vec()).unwrap();
+                self.current_value = String::from_utf8(current_b.to_vec()).unwrap().parse::<f64>().unwrap();
                 println!("read current : {}", self.current_value);
             });
 
