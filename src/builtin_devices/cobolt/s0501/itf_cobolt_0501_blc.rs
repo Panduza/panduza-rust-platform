@@ -1,17 +1,14 @@
 use std::mem::swap;
 
 use async_trait::async_trait;
-use bitflags::parser::from_str;
 use crate::platform::PlatformError;
 use crate::meta::blc;
 use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 
-// use crate::connector::serial::tty::Tty;
 use crate::connector::serial::tty::{self, TtyConnector};
 use crate::connector::serial::tty::Config as SerialConfig;
-use crate::platform_error_result;
 
 ///
 /// 
@@ -69,12 +66,11 @@ impl blc::BlcActions for S0501BlcActions {
                 println!("mode {:?}", mode_b);
                 let mode_i = String::from_utf8(mode_b.to_vec()).unwrap().parse::<u16>().unwrap();
                 println!("mode {}", mode_i);
-                if mode_i == 0 {
-                    self.mode_value = "constant_current".to_string();
-                } else if mode_i == 1 {
-                    self.mode_value =  "constant_power".to_string();
-                }
-                self.mode_value =  "no_regulation".to_string();
+                self.mode_value = match mode_i {
+                    0 => "constant_current".to_string(),
+                    1 => "constant_power".to_string(),
+                    _ => "no_regulation".to_string()
+                };
             });
         let mut mode_val = String::new();
         swap(&mut mode_val, &mut self.mode_value);
@@ -90,16 +86,10 @@ impl blc::BlcActions for S0501BlcActions {
             format!("write enable : {}", v)
         );
 
-        // let command = match v {
-        //     "constant_current" => { format!("ci\n") },
-        //     "constant_power" => { format!("cp\n") }
-        // };
-        let command = if v == "constant_current" {
-            format!("ci\n")
-        } else if v == "constant_power" {
-            format!("cp\n")
-        } else {
-            return
+        let command = match v.as_str() {
+            "constant_current" => format!("ci\n"),
+            "constant_power" => format!("cp\n"),
+            _ => return
         };
 
         let _result = self.connector_tty.write(
@@ -139,10 +129,10 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
 
-        let mut val_int = 0;
-        if v {
-            val_int = 1;
-        }
+        let val_int = match v {
+            true => 1,
+            false => 0
+        };
 
         let command = format!("l{}\n", val_int);
         interface.lock().await.log_info(
