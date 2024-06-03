@@ -15,6 +15,7 @@ use crate::connector::serial::tty::Config as SerialConfig;
 struct S0501BlcActions {
     connector_tty: tty::TtyConnector,
     serial_config: SerialConfig,
+    mode_value: String,
     enable_value: bool,
     power_value: f64,
     current_value: f64,
@@ -122,7 +123,15 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
 
-        let command = format!("p{}\n", if v { 1 } else { 0 });
+        let val_int = 0;
+        if v {
+            val_int = 1;
+        }
+
+        let command = format!("l{}\n", val_int);
+        interface.lock().await.log_info(
+            format!("write enable value : {}", command)
+        );
 
         let _result = self.connector_tty.write(
             command.as_bytes(),
@@ -131,6 +140,21 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
             });
+        
+        let value_i = 5;
+        while value_i != val_int {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"l?",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    // println!("nb of bytes: {:?}", nb_of_bytes);
+                    let value_b = &response[0..nb_of_bytes];
+                    value_i = u16::from_utf8(value_b.to_vec()).unwrap();
+                });
+        }
     }
 
     /// Read the power value
@@ -146,7 +170,7 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let power_b = &response[0..nb_of_bytes];
-                self.power_value = f32::from_utf8(power_b.to_vec()).unwrap();
+                self.power_value = f64::from_utf8(power_b.to_vec()).unwrap();
                 println!(" read power : {}", self.power_value);
             });
 
@@ -185,7 +209,7 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
                 let current_b = &response[0..nb_of_bytes];
-                self.current_value = f32::from_utf8(current_b.to_vec()).unwrap();
+                self.current_value = f64::from_utf8(current_b.to_vec()).unwrap();
                 println!("read current : {}", self.current_value);
             });
 
@@ -234,6 +258,7 @@ pub fn build<A: Into<String>>(
         Box::new(S0501BlcActions {
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
+            mode_value: "no_regulation".to_string(),
             enable_value: false,
             power_value: 0.0,
             current_value: 0.0,
