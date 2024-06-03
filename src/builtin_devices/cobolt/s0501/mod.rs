@@ -85,7 +85,7 @@ impl DeviceActions for S0501 {
 
         let mut list = Vec::new();
         list.push(
-            itf_cobolt_0501_blc::build("channel", &serial_conf)
+            itf_cobolt_0501_blc::build("blc", &serial_conf)
         );
         return Ok(list);
     }
