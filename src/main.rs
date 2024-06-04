@@ -7,7 +7,7 @@
     path_statements,
     patterns_in_fns_without_body,
     unconditional_recursion,
-    // bad_style,
+    bad_style,
     // dead_code,
     // unused,
     // unused_allocation,
