@@ -13,57 +13,18 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 use crate::platform::FunctionResult as PlatformFunctionResult;
 
 pub struct ThermometerParams {
-    pub power_min: f64,
-    pub power_max: f64,
-    pub power_decimals: i32,
-
-    pub current_min: f64,
-    pub current_max: f64,
-    pub current_decimals: i32,
+    pub temperature_decimals: i32,
 }
 
 #[async_trait]
-pub trait BlcActions: Send + Sync {
+pub trait ThermometerActions: Send + Sync {
 
     /// Initialize the interface
     /// The connector initialization must be done here
     ///
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn read_mesured_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError>;
-
-    async fn write_mode_value(&mut self, interface: &AmInterface, v: String);
-
-    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
-
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
-
-    async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
-
-    async fn write_power_value(&mut self, interface: &AmInterface, v: f64);
-
-    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
-
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f64);
-
-
-// async def _PZA_DRV_BPC_read_voltage_decimals(self):
-//     """Must return the number of decimals supported for the voltage
-//     """
-//     raise NotImplementedError("Must be implemented !")
-
-// # ---
-
-
-// async def _PZA_DRV_BPC_current_value_min_max(self):
-//     """Must return the current range of the power supply
-//     """
-//     return {"min": 0, "max": 0 }
-
-// async def _PZA_DRV_BPC_read_current_decimals(self):
-//     """Must return the number of decimals supported for the amperage
-//     """
-//     raise NotImplementedError("Must be implemented !")
+    async fn read_temperature_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
 }
 
@@ -89,22 +50,22 @@ pub trait BlcActions: Send + Sync {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-struct BlcInterface {
+struct ThermometerInterface {
 
-    params: BlcParams,
-    actions: Box<dyn BlcActions>
+    params: ThermometerParams,
+    actions: Box<dyn ThermometerActions>
 }
-type AmBpcInterface = Arc<Mutex<BlcInterface>>;
+type AmThermometerInterface = Arc<Mutex<ThermometerInterface>>;
 
-impl BlcInterface {
-    fn new(params: BlcParams, actions: Box<dyn BlcActions>) -> BlcInterface {
-        return BlcInterface {
+impl ThermometerInterface {
+    fn new(params: ThermometerParams, actions: Box<dyn ThermometerActions>) -> ThermometerInterface {
+        return ThermometerInterface {
             params: params,
             actions: actions
         }
     }
-    fn new_am(params: BlcParams, actions: Box<dyn BlcActions>) -> AmBpcInterface {
-        return Arc::new(Mutex::new( BlcInterface::new(params, actions) ));
+    fn new_am(params: ThermometerParams, actions: Box<dyn ThermometerActions>) -> AmThermometerInterface {
+        return Arc::new(Mutex::new( ThermometerInterface::new(params, actions) ));
     }
 }
 
@@ -114,13 +75,13 @@ impl BlcInterface {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-struct BlcStates {
-    blc_interface: Arc<Mutex<BlcInterface>>
+struct ThermometerStates {
+    thermometer_interface: Arc<Mutex<ThermometerInterface>>
 }
 
 
 #[async_trait]
-impl interface::fsm::States for BlcStates {
+impl interface::fsm::States for ThermometerStates {
 
     /// Just wait for an fsm event for the connection
     ///
@@ -133,38 +94,18 @@ impl interface::fsm::States for BlcStates {
     ///
     async fn initializating(&self, interface: &AmInterface)
     {
-        let mut blc_itf = self.blc_interface.lock().await;
+        let mut thermometer_itf = self.thermometer_interface.lock().await;
 
         // Custom initialization slot
-        blc_itf.actions.initializating(&interface).await.unwrap();
+        thermometer_itf.actions.initializating(&interface).await.unwrap();
 
         // Register attributes
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("mode", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("power", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("temperature", true));
 
-        // Init mode
-        let mode_value = blc_itf.actions.read_mode_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_string("mode", "value", &mode_value);
-
-        // Init enable
-        let enable_value = blc_itf.actions.read_enable_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value).unwrap();
-
-        // Init power
-        interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
-        interface.lock().await.update_attribute_with_f64("power", "max", blc_itf.params.power_max );
-        interface.lock().await.update_attribute_with_f64("power", "value", 0.0);
-        interface.lock().await.update_attribute_with_f64("power", "decimals", blc_itf.params.power_decimals as f64);
-        interface.lock().await.update_attribute_with_f64("power", "polling_cycle", 0.0);
-
-        // Init current
-        interface.lock().await.update_attribute_with_f64("current", "min", blc_itf.params.current_min );
-        interface.lock().await.update_attribute_with_f64("current", "max", blc_itf.params.current_max );
-        interface.lock().await.update_attribute_with_f64("current", "value", 0.0);
-        interface.lock().await.update_attribute_with_f64("current", "decimals", blc_itf.params.current_decimals as f64);
-        interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
+        // Init mesured temperature
+        interface.lock().await.update_attribute_with_f64("temperature", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("temperature", "decimals", thermometer_itf.params.temperature_decimals as f64);
+        interface.lock().await.update_attribute_with_f64("temperature", "polling_cycle", 0.0);
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -198,75 +139,20 @@ impl interface::fsm::States for BlcStates {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-const ID_MODE: subscription::Id = 0;
-const ID_ENABLE: subscription::Id = 1;
-const ID_POWER: subscription::Id = 2;
-const ID_CURRENT: subscription::Id = 3;
+const ID_TEMPERATURE: subscription::Id = 0;
 
-struct BlcSubscriber {
-    blc_interface: Arc<Mutex<BlcInterface>>
+struct ThermometerSubscriber {
+    thermometer_interface: Arc<Mutex<ThermometerInterface>>
 }
 
-impl BlcSubscriber {
+impl ThermometerSubscriber {
 
     /// 
     /// 
     #[inline(always)]
-    async fn process_mode_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.to_string();
-        self.blc_interface.lock().await
-            .actions.write_mode_value(&interface, requested_value).await;
-
-        let r_value = self.blc_interface.lock().await
-            .actions.read_mode_value(&interface).await
-            .unwrap();
-
-        interface.lock().await
-            .update_attribute_with_string("mode", "value", &r_value);
-    }
-
-    /// 
-    /// 
-    #[inline(always)]
-    async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_bool().unwrap();
-        self.blc_interface.lock().await
-            .actions.write_enable_value(&interface, requested_value).await;
-
-        let r_value = self.blc_interface.lock().await
-            .actions.read_enable_value(&interface).await
-            .unwrap();
-
-        interface.lock().await
-            .update_attribute_with_bool("enable", "value", r_value).unwrap();
-    }
-
-    /// 
-    /// 
-    #[inline(always)]
-    async fn process_power_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_f64().unwrap();
-        self.blc_interface.lock().await
-            .actions.write_power_value(&interface, requested_value as f64).await;
-
-        let r_value = self.blc_interface.lock().await
-            .actions.read_power_value(&interface).await
-            .unwrap();
-
-        interface.lock().await
-            .update_attribute_with_f64("power", "value", r_value as f64);
-    }
-
-    /// 
-    /// 
-    #[inline(always)]
-    async fn process_current_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_f64().unwrap();
-        self.blc_interface.lock().await
-            .actions.write_current_value(&interface, requested_value as f64).await;
-
-        let r_value = self.blc_interface.lock().await
-            .actions.read_current_value(&interface).await
+    async fn process_temperature_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
+        let r_value = self.thermometer_interface.lock().await
+            .actions.read_temperature_value(&interface).await
             .unwrap();
 
         interface.lock().await
@@ -277,16 +163,13 @@ impl BlcSubscriber {
 }
 
 #[async_trait]
-impl interface::subscriber::Subscriber for BlcSubscriber {
+impl interface::subscriber::Subscriber for ThermometerSubscriber {
 
     /// Get the list of attributes names
     ///
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
-            (ID_MODE, "mode".to_string()),
-            (ID_ENABLE, "enable".to_string()),
-            (ID_POWER, "power".to_string()),
-            (ID_CURRENT, "current".to_string())
+            (ID_TEMPERATURE, "current".to_string())
         ];
     }
 
@@ -307,8 +190,8 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
 
                     // only when running state
 
-                    println!("BlcSubscriber::process: {:?}", msg.topic());
-                    println!("BlcSubscriber::process: {:?}", msg.payload());
+                    println!("ThermometerSubscriber::process: {:?}", msg.topic());
+                    println!("ThermometerSubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
                     let oo = serde_json::from_slice::<Value>(payload).unwrap();
@@ -317,17 +200,8 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
 
                     for (attribute_name, fields) in o.iter() {
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
-                            if attribute_name == "mode" && field_name == "value" {
-                                self.process_mode_value(&interface, attribute_name, field_name, field_data).await;
-                            }
-                            else if attribute_name == "enable" && field_name == "value" {
-                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
-                            }
-                            else if attribute_name == "power" && field_name == "value" {
-                                self.process_power_value(interface, attribute_name, field_name, field_data).await;
-                            }
-                            else if attribute_name == "current" && field_name == "value" {
-                                self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                            if attribute_name == "temperature" && field_name == "value" {
+                                self.process_temperature_value(&interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
@@ -357,22 +231,22 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-/// Build the meta interface for a Bench Power Channel
+/// Build the meta interface for a Thermometer Channel
 ///
 pub fn build<A: Into<String>>(
     name: A,
-    params: BlcParams,
-    actions: Box<dyn BlcActions>
+    params: ThermometerParams,
+    actions: Box<dyn ThermometerActions>
 ) -> InterfaceBuilder {
 
-    let c = BlcInterface::new_am(params, actions);
+    let c = ThermometerInterface::new_am(params, actions);
 
     return InterfaceBuilder::new(
         name,
-        "bpc",
+        "thermometer",
         "0.0",
-        Box::new(BlcStates{blc_interface: c.clone()}),
-        Box::new(BlcSubscriber{blc_interface: c.clone()})
+        Box::new(ThermometerStates{thermometer_interface: c.clone()}),
+        Box::new(ThermometerSubscriber{thermometer_interface: c.clone()})
     );
 }
 
