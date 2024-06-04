@@ -35,7 +35,7 @@ jobs:
     - name: Get platform tests
       uses: actions/checkout@v4
       with:
-        repository: 'git@github.com:Panduza/panduza-platform-tests-core.git'
+        repository: Panduza/panduza-platform-tests-core
 
     - name: Start Mosquitto
       uses: namoshek/mosquitto-github-action@v1
