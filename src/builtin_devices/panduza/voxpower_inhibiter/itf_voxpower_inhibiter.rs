@@ -25,7 +25,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
+    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
 
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
@@ -92,7 +92,7 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
             command.as_bytes(),
             self.time_lock_duration
         ).await
-            .map(|nb_of_bytes| {
+            .map(|_nb_of_bytes| {
                 // println!("nb_of_bytes: {:?}", nb_of_bytes);
             });
         

@@ -94,7 +94,7 @@ pub fn display_issue_body(){
             println!("# device tree : ");
             println!("``` \n{res}\n ```");
         },
-        Err(e) => {
+        Err(_) => {
             println!("failed to parse");
         }
     }
