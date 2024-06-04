@@ -29,7 +29,7 @@ impl blc::BlcActions for FakeBlcActions {
     /// 
     async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError> {
         interface.lock().await.log_info(
-            format!("FakeBpc - read_mode_value: {}", self.mode_value)
+            format!("FakeBlc - read_mode_value: {}", self.mode_value)
         );
 
         let mut mode_val = String::new();
@@ -39,7 +39,7 @@ impl blc::BlcActions for FakeBlcActions {
 
     async fn write_mode_value(&mut self, interface: &AmInterface, v: String) {
         interface.lock().await.log_info(
-            format!("FakeBpc - write_mode_value: {}", self.mode_value)
+            format!("FakeBlc - write_mode_value: {}", self.mode_value)
         );
         self.mode_value = v;
     }
@@ -48,14 +48,14 @@ impl blc::BlcActions for FakeBlcActions {
     /// 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
         interface.lock().await.log_info(
-            format!("FakeBpc - read_enable_value: {}", self.enable_value)
+            format!("FakeBlc - read_enable_value: {}", self.enable_value)
         );
         return Ok(self.enable_value);
     }
 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
         interface.lock().await.log_info(
-            format!("FakeBpc - write_enable_value: {}", self.enable_value)
+            format!("FakeBlc - write_enable_value: {}", self.enable_value)
         );
         self.enable_value = v;
     }
