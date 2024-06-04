@@ -160,11 +160,11 @@ impl Runner {
 
     /// Build the base topic of the interface
     ///
-    pub async fn get_topic(&self) -> String {
+    pub async fn _get_topic(&self) -> String {
         let core_lock = self.interface.lock().await;
         return format!("pza/{}/{}/{}",
-            core_lock.bench_name(),
-            core_lock.dev_name(),
+            core_lock._bench_name(),
+            core_lock._dev_name(),
             core_lock.name());
     }
 

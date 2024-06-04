@@ -117,13 +117,13 @@ impl Interface {
 
     /// Get the name of the device
     /// 
-    pub fn dev_name(&self) -> &String {
+    pub fn _dev_name(&self) -> &String {
         return &self.dev_name;
     }
 
     /// Get the name of the bench
     /// 
-    pub fn bench_name(&self) -> &String {
+    pub fn _bench_name(&self) -> &String {
         return &self.bench_name;
     }
 

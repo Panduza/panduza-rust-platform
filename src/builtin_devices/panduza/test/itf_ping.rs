@@ -15,7 +15,7 @@ use crate::platform::FunctionResult as PlatformFunctionResult;
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-static mut DEBUG_COUNTER: u32 = 0;
+// static mut DEBUG_COUNTER: u32 = 0;
 
 struct PingInterfaceSubscriber;
 
