@@ -30,12 +30,17 @@ jobs:
     needs: unit_tests
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+
+    - name: Clone platform
+      uses: actions/checkout@v4
+      with:
+        path: 'platform'
 
     - name: Clone platform tests
       uses: actions/checkout@v4
       with:
         repository: Panduza/panduza-platform-tests-core
+        path: 'tests'
 
     - name: Start Mosquitto
       uses: namoshek/mosquitto-github-action@v1
@@ -59,4 +64,6 @@ jobs:
 
     - name: Tests
       run: ls -la
-  
+
+    - name: Tests
+      run: ls -la $GITHUB_WORKSPACE
