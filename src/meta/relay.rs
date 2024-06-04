@@ -117,10 +117,10 @@ impl interface::fsm::States for RelayStates {
         println!("error");
     }
 
-    async fn cleaning(&self, _interface: &AmInterface)
-    {
-        println!("cleaning");
-    }
+    // async fn cleaning(&self, _interface: &AmInterface)
+    // {
+    //     println!("cleaning");
+    // }
 }
 
 // ----------------------------------------------------------------------------
