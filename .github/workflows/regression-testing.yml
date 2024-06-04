@@ -32,7 +32,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Get platform tests
+    - name: Clone platform tests
       uses: actions/checkout@v4
       with:
         repository: Panduza/panduza-platform-tests-core
@@ -47,4 +47,16 @@ jobs:
         # password-file: ${{ github.workspace}}/.ci/mosquitto.passwd
         container-name: 'mqtt'
 
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11.1
 
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install robotframework
+
+    - name: Tests
+      run: ls -la
+  
