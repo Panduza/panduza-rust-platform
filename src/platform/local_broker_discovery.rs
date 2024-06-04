@@ -16,7 +16,7 @@ pub async fn task(platform_services: AmServices) -> PlatformTaskResult {
     let mut connection_info: Option<ConnectionInfo> = None;
 
     // loop until connection info are filled
-    loop {
+    while connection_info.is_none() {
         if let Some(ci_ref) = platform_services.lock().await.connection_info() {
             connection_info = Some(ci_ref.clone());
             break;

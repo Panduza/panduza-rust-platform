@@ -44,7 +44,7 @@ impl Listener {
         let msg = self.link.rx().recv().await;
         match msg {
             Some(msg) => {
-                self.subscriber.process(&self.interface, &msg).await;
+                self.subscriber.process(&self.interface, &msg).await.unwrap();
             },
             None => {
                 // do nothing

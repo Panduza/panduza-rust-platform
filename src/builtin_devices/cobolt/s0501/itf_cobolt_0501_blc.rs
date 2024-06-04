@@ -52,7 +52,7 @@ impl blc::BlcActions for S0501BlcActions {
 
     /// Read the mode value
     /// 
-    async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError> {
+    async fn read_mode_value(&mut self, _interface: &AmInterface) -> Result<String, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
@@ -103,7 +103,7 @@ impl blc::BlcActions for S0501BlcActions {
 
      /// Read the enable value
     /// 
-    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
+    async fn read_enable_value(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
@@ -165,7 +165,7 @@ impl blc::BlcActions for S0501BlcActions {
 
     /// Read the power value
     /// 
-    async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+    async fn read_power_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
@@ -204,7 +204,7 @@ impl blc::BlcActions for S0501BlcActions {
 
     /// Read the current value
     /// 
-    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+    async fn read_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
