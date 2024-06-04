@@ -74,9 +74,9 @@ pub trait States : Send {
     /// 
     async fn error(&self, interface: &AmInterface);
 
-    /// The interface must be able to clean up all resources before being destroyed.
-    ///
-    async fn cleaning(&self, interface: &AmInterface);
+    // / The interface must be able to clean up all resources before being destroyed.
+    // /
+    // async fn cleaning(&self, interface: &AmInterface);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -122,15 +122,15 @@ impl Fsm {
         match state {
             State::Connecting => {
                 // Execute state
-                // self.states.connecting(&self.interface).await;
+                self.states.connecting(&self.interface).await;
 
                 // Manage transitions
-                // let evs = self.interface.lock().await.events().clone();
+                let evs = self.interface.lock().await.events().clone();
 
                 // If connection up, go to running state
-                // if evs.contains(Events::CONNECTION_UP) && !evs.contains(Events::ERROR) {
+                if evs.contains(Events::CONNECTION_UP) && !evs.contains(Events::ERROR) {
                     self.interface.lock().await.move_to_state(State::Initializating);
-                // }
+                }
             },
             State::Initializating => {
                 // Execute state

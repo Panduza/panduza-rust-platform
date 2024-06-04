@@ -15,7 +15,7 @@ use crate::platform::FunctionResult as PlatformFunctionResult;
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-static mut DEBUG_COUNTER: u32 = 0;
+// static mut DEBUG_COUNTER: u32 = 0;
 
 struct PingInterfaceSubscriber;
 
@@ -134,10 +134,10 @@ impl interface::fsm::States for TestInterfaceStates {
         println!("error");
     }
 
-    async fn cleaning(&self, _interface: &AmInterface)
-    {
-        println!("cleaning");
-    }
+    // async fn cleaning(&self, _interface: &AmInterface)
+    // {
+    //     println!("cleaning");
+    // }
 }
 
 

@@ -8,11 +8,11 @@
     patterns_in_fns_without_body,
     unconditional_recursion,
     bad_style,
-    // dead_code,
+    dead_code,
     // unused,
-    // unused_allocation,
-    // unused_comparisons,
-    // unused_parens,
+    unused_allocation,
+    unused_comparisons,
+    unused_parens,
 )]
 
 mod log;

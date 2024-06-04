@@ -37,9 +37,9 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
 
     /// Configuration of the interface
     /// 
-    async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
-        return Ok(());
-    }
+    // async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
+    //     return Ok(());
+    // }
 
     /// Read the state value
     /// 
