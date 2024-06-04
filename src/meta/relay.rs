@@ -20,7 +20,7 @@ pub trait RelayActions: Send + Sync {
     ///
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
+    // async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
     async fn read_state_open(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
 
