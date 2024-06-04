@@ -1,4 +1,4 @@
-use crate::{device::Factory as DeviceFactory, meta::thermometer};
+use crate::device::Factory as DeviceFactory;
 
 mod power_supply;
 mod thermometer;
