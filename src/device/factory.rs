@@ -149,7 +149,7 @@ impl Factory {
     {
         let actions = producer.produce();
         match actions {
-            Err(e) => {
+            Err(_) => {
                 return platform_error_result!("Fail to produce device actions", Some(Box::new(e)));
             },
             Ok(actions) => {

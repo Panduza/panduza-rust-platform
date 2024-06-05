@@ -36,7 +36,7 @@ pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
 
 /// Platform error type
 ///
-pub type PlatformError = error::PlatformError;
+pub type PlatformError = error::Error;
 
 /// Platform result type
 ///
@@ -50,19 +50,19 @@ pub type FunctionResult = Result<(), PlatformError>;
 #[macro_export]
 macro_rules! platform_error_result {
     ($msg:expr, $parent:expr) => {
-        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), $parent))
+        Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
     };
     ($msg:expr) => {
-        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), None))
+        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string()))
     };
 }
 #[macro_export]
 macro_rules! platform_error {
     ($msg:expr, $parent:expr) => {
-        crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), $parent)
+        crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string())
     };
     ($msg:expr) => {
-        crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string(), None)
+        crate::platform::error::Error::new(file!(), line!(), $msg.to_string())
     };
 }
 
@@ -213,7 +213,7 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        if execute_service_boot(services.clone()).await.is_err() {
+                        if ! execute_service_boot(services.clone()).await.is_err() {
                             return platform_error_result!("Failed to boot", None);
                         }
                         // , devices.clone(), connection.clone()
@@ -296,7 +296,7 @@ impl Platform {
 
     /// Load the tree file from system into service data
     ///
-    async fn load_tree_file(services: AmServices) -> Result<(), error::PlatformError> {
+    async fn load_tree_file(services: AmServices) -> Result<(), error::Error> {
 
         // Get the tree file path
         let mut tree_file_path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
@@ -329,7 +329,7 @@ impl Platform {
 
     /// Load a tree string into service data
     ///
-    async fn load_tree_string(services: AmServices, content: &String) -> Result<(), error::PlatformError> {
+    async fn load_tree_string(services: AmServices, content: &String) -> Result<(), error::Error> {
         // Parse the JSON content
         let json_content = serde_json::from_str::<serde_json::Value>(&content);
         match json_content {
@@ -394,7 +394,7 @@ impl Platform {
 
                         let result = devices_manager.lock().await.create_device(device_definition).await;
                         match result {
-                            Err(e) => {
+                            Err(_e) => {
                                 return platform_error_result!(
                                     format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap()), 
                                     Some(Box::new(e))
