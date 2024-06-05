@@ -62,10 +62,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install robotframework
 
-    - name: Start Platform
-      run: |
-        cd platform
-        cargo run --release
+    # - name: Start Platform
+    #   run: |
+    #     cd platform
+    #     cargo run --release
 
     - name: Tests
       run: ls -la $GITHUB_WORKSPACE
