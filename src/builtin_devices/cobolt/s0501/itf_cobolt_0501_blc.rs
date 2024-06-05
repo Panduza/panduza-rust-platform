@@ -7,8 +7,8 @@ use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 
-use crate::connector::serial::tty::{self, TtyConnector};
-use crate::connector::serial::tty::Config as SerialConfig;
+use panduza_connector::serial::tty::{self, TtyConnector};
+use panduza_connector::serial::tty::Config as SerialConfig;
 
 ///
 /// 

@@ -22,7 +22,7 @@ mod device;
 mod platform;
 mod interface;
 mod attribute;
-mod connector;
+// mod connector;
 mod connection;
 mod subscription;
 mod builtin_devices;

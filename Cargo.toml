@@ -79,6 +79,16 @@ tracing-appender = "0.2.3"
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
 
+[dependencies.panduza-connector]
+
+path = "lib/connector"
+
+[workspace]
+
+members = [
+    "lib/connector",
+]
+
 [features]
 
 # Enable tracing in stdout

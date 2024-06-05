@@ -899,6 +899,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
+name = "panduza-connector"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "serde_json",
+ "tokio",
+ "tokio-serial",
+ "tracing",
+ "tracing-core",
+]
+
+[[package]]
 name = "panduza-rust-platform"
 version = "0.1.0"
 dependencies = [
@@ -912,6 +924,7 @@ dependencies = [
  "futures",
  "hostname",
  "lazy_static",
+ "panduza-connector",
  "regex",
  "rumqttc",
  "serde_json",
