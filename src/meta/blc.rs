@@ -369,7 +369,7 @@ pub fn build<A: Into<String>>(
 
     return InterfaceBuilder::new(
         name,
-        "bpc",
+        "blc",
         "0.0",
         Box::new(BlcStates{blc_interface: c.clone()}),
         Box::new(BlcSubscriber{blc_interface: c.clone()})
