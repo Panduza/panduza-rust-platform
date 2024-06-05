@@ -249,6 +249,10 @@ impl ConnectionInfo {
 }
 
 
+// Serde (string -> data , data -> string)
+// File (import / export file, manage the system path)
+// ConnectionInfo => les data
+
 // ----------------------------------------------------------------------------
 #[test]
 fn build_from_json_value_ok() {
