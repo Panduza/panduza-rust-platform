@@ -26,7 +26,7 @@ impl TaskPoolLoader {
 
     /// Load a future into the task pool
     /// 
-    pub fn load(&mut self, future: Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>) -> Result<(), error::PlatformError>{
+    pub fn load(&mut self, future: Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>) -> Result<(), error::Error>{
         let r = self.task_pool_tx.try_send(future);
         match r {
             Ok(_) => {

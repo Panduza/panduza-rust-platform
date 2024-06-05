@@ -137,7 +137,7 @@ impl Runner {
         let interface_name = self.interface.lock().await.name().clone() ;
         task_loader.load(async move {
             loop {
-                if let Err(e) = listener.lock().await.run_once().await {
+                if let Err(_) = listener.lock().await.run_once().await {
                     return platform_error_result!(
                         format!("Interface {:?} Listen Task Error", interface_name)
                         , Some(Box::new(e))
