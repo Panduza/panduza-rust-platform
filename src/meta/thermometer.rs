@@ -156,7 +156,7 @@ impl ThermometerSubscriber {
             .unwrap();
 
         interface.lock().await
-            .update_attribute_with_f64("temperature", "value", r_value as f64);
+            .update_attribute_with_f64("mesure", "value", r_value as f64);
     }
 
 
@@ -169,7 +169,7 @@ impl interface::subscriber::Subscriber for ThermometerSubscriber {
     ///
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
-            (ID_MEASURE, "current".to_string())
+            (ID_MEASURE, "measure".to_string())
         ];
     }
 
