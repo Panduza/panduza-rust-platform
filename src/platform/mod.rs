@@ -36,6 +36,7 @@ pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
 
 /// Platform error type
 ///
+pub type Error = error::Error;
 pub type PlatformError = error::Error;
 
 /// Platform result type

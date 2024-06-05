@@ -8,8 +8,10 @@ use serde_json::Value as JsonValue;
 use std::fs::File;
 
 
+use crate::platform::Error as PlatformError;
+
 #[derive(Debug)]
-pub enum CiErrorType {
+pub enum ErrorType {
     // COVER:REQ_CONN_INFO_0030_00
     ContentBadFormat,
     // COVER:REQ_CONN_INFO_0040_00
@@ -18,21 +20,20 @@ pub enum CiErrorType {
     FileDoesNotExist,
 }
 
-
 #[derive(Debug)]
-pub struct CiError {
-
-    type_: CiErrorType,
-
-    _message: String,
+pub struct Error {
+    /// Type of the error
+    err_type: ErrorType,
+    /// Platform error message
+    plt_error: PlatformError,
 }
 
-impl CiError {
+impl Error {
 
-    fn new(type_: CiErrorType, message: &str) -> Self {
+    fn new(err_type: ErrorType, plt_error: PlatformError) -> Self {
         Self {
-            type_,
-            _message: message.to_string(),
+            err_type: err_type,
+            plt_error: plt_error
         }
     }
 
@@ -40,21 +41,20 @@ impl CiError {
     //     &self.message
     // }
 
-    pub fn type_(&self) -> &CiErrorType {
+    pub fn type_(&self) -> &ErrorType {
         &self.type_
     }
 }
 
 fn content_bad_format_error(message: &str) -> CiError {
-    CiError::new(CiErrorType::ContentBadFormat, message)
+    CiError::new(ErrorType::ContentBadFormat, message)
 }
 fn mandatory_field_missing_error(message: &str) -> CiError {
-    CiError::new(CiErrorType::MandatoryFieldMissing, message)
+    CiError::new(ErrorType::MandatoryFieldMissing, message)
 }
 fn file_does_not_exist_error(message: &str) -> CiError {
-    CiError::new(CiErrorType::FileDoesNotExist, message)
+    CiError::new(ErrorType::FileDoesNotExist, message)
 }
-
 
 /// This object is responsible of the connection information
 /// 
@@ -90,9 +90,9 @@ impl ConnectionInfo {
         }
     }
 
-    /// Give the system path of the connection.json file
+    /// Return the system path of the connection.json file
     ///
-    /// COVER:REQ_CONN_INFO_0010_00
+    /// COVER:PLATF_00001_00
     ///
     pub fn system_file_path() -> PathBuf {
         // Define the paths
@@ -115,6 +115,8 @@ impl ConnectionInfo {
     }
 
     /// Create a new ConnectionInfo object from a JSON file
+    /// 
+    /// COVER:PLATF_00002_00
     /// 
     pub async fn build_from_file() -> Result<Self, CiError> {
         // Get the file path
