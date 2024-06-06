@@ -9,6 +9,9 @@ use serde_json::Value as JsonValue;
 use crate::connection_info_error_content_bad_format;
 use crate::connection_info_error_mandatory_field_missing;
 
+
+const DEFAULT_PLATFORM_NAME: &str = "default_name";
+
 // ----------------------------------------------------------------------------
 
 // /// Serialize the info object into a JSON string
@@ -82,43 +85,78 @@ fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error>
         .ok_or(connection_info_error_content_bad_format!("[broker.port] must be a number"))?
         as u16;
 
-    // // Get Host Retry
-    // let default_retry_value: u32 = 1;
-    // let host_retry = broker.get("retry")
-    //     .unwrap_or(&json!(default_retry_value))
-    //     .as_u64()
-    //     .ok_or(connection_info_error_content_bad_format!("[broker.retry] must be a number"))?
-    //     as u32;
-
     // ---
 
-    // Get Platform info section, if not platform info section 
+    // Get Platform info section, if not platform info section
+    let default_platform_obj = json!(
+        {
+            "name": DEFAULT_PLATFORM_NAME
+        }
+    );
     let platform = map_obj.get("platform")
-        .or(Some(&json!({
-            "name": "default_name"
-        })))
+        .or(
+            Some(&default_platform_obj)
+        )
         .unwrap();
 
     // Get Platform Name
     let platform_name = platform.get("name")
-        .or(Some(&json!("default_name")))
+        .or(Some(&json!(DEFAULT_PLATFORM_NAME)))
+        .unwrap()
+        .as_str()
+        .or(Some(DEFAULT_PLATFORM_NAME))
+        .unwrap()
+        .to_string();
+
+    // ---
+
+    let credentials = map_obj.get("credentials");
+
+    let credentials_user = credentials
+        .and_then(
+            |c| c.get("user")
+                .and_then(|u| u.as_str())
+                .map(|u| u.to_string())
+        )
+        .or(None);
+
+    let credentials_pass = credentials
+        .and_then(
+            |c| c.get("pass")
+                .and_then(|u| u.as_str())
+                .map(|u| u.to_string())
+        )
+        .or(None);
+
+    // ---
+
+    // Get Services info section
+    let default_services_obj = json!(
+        {
+            "retry_delay": 1,
+            "enable_plbd": "false"
+        }
+    );
+    let services = map_obj.get("services")
+        .or(
+            Some(&default_services_obj)
+        )
         .unwrap();
 
+    // Get Services Retry Delay
+    let services_retry_delay = services.get("retry_delay")
+        .or(Some(&json!(1)))
+        .unwrap()
+        .as_u64()
+        .or(Some(1))
+        .unwrap() as u32;
 
-    let default_platform_name: String = "panduza_platform".to_string();
-
-    match platform_info {
-        Some(value) => {
-            platform_name = value.get("name")
-            .unwrap_or(&json!(default_platform_name))
-            .as_str()
-            .ok_or(connection_info_error_content_bad_format!("[platform.name] must be a string"))?
-            .to_string();
-        },
-        None => {
-            platform_name = default_platform_name
-        }
-    }
+    let services_enable_plbd = services.get("enable_plbd")
+        .or(Some(&json!(false)))
+        .unwrap()
+        .as_bool()
+        .or(Some(false))
+        .unwrap();
 
     // Return the Info object
     Ok(
@@ -126,11 +164,11 @@ fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error>
             file_path: system_file_path().to_str().unwrap().to_string(),
             broker_addr: broker_addr,
             broker_port: broker_port,
-            credentials_user: None,
-            credentials_pass: None,
+            credentials_user: credentials_user,
+            credentials_pass: credentials_pass,
             platform_name: platform_name,
-            services_retry_delay: host_retry,
-            services_enable_plbd: false,
+            services_retry_delay: services_retry_delay,
+            services_enable_plbd: services_enable_plbd,
         }
     )
 }
@@ -152,7 +190,7 @@ fn deserialize_ok_000() {
         },
         "services": {
             "retry_delay": 53,
-            "enable_plbd": false,
+            "enable_plbd": true,
         }
     });
     let output = deserialize(input.to_string().as_str());
@@ -160,11 +198,11 @@ fn deserialize_ok_000() {
     let ci = output.unwrap();
     assert_eq!(ci.broker_addr, "192.168.1.42");
     assert_eq!(ci.broker_port, 5555);
-    assert_eq!(ci.credentials_user, None);
-    assert_eq!(ci.credentials_pass, None);
+    assert_eq!(ci.credentials_user, Some("foo".to_string()));
+    assert_eq!(ci.credentials_pass, Some("xxxxxxxxxx".to_string()));
     assert_eq!(ci.platform_name, "test1");
     assert_eq!(ci.services_retry_delay, 53);
-    assert_eq!(ci.services_enable_plbd, false);
+    assert_eq!(ci.services_enable_plbd, true);
 }
 
 // // ----------------------------------------------------------------------------
