@@ -111,8 +111,11 @@ fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error>
             file_path: system_file_path().to_str().unwrap().to_string(),
             host_addr: host_addr,
             host_port: host_port,
-            host_retry: host_retry,
-            platform_name: platform_name
+            credentials_user: None,
+            credentials_pass: None,
+            platform_name: platform_name,
+            services_retry_delay: host_retry,
+            services_enable_plbd: false,
         }
     )
 }
@@ -122,15 +125,31 @@ fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error>
 fn deserialize_ok_000() {
     let input = json!({
         "broker": {
-            "addr": "192.168.1.1",
-            "port": 5555,
+            "addr": "192.168.1.42",
+            "port": 5555
+        },
+        "platform": {
+            "name": "test1"
+        },
+        "credentials": {
+            "user": "foo",
+            "pass": "xxxxxxxxxx"
+        },
+        "services": {
+            "retry_delay": 53,
+            "enable_plbd": false,
         }
     });
     let output = deserialize(input.to_string().as_str());
     assert_eq!(output.is_err(), false);
     let ci = output.unwrap();
-    assert_eq!(ci.host_addr, "192.168.1.1");
+    assert_eq!(ci.host_addr, "192.168.1.42");
     assert_eq!(ci.host_port, 5555);
+    assert_eq!(ci.credentials_user, None);
+    assert_eq!(ci.credentials_pass, None);
+    assert_eq!(ci.platform_name, "test1");
+    assert_eq!(ci.services_retry_delay, 53);
+    assert_eq!(ci.services_enable_plbd, false);
 }
 
 // // ----------------------------------------------------------------------------

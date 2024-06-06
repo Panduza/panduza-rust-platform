@@ -54,7 +54,7 @@ macro_rules! platform_error_result {
         Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
     };
     ($msg:expr) => {
-        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string()))
+        Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
     };
 }
 #[macro_export]

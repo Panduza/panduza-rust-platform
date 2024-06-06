@@ -30,8 +30,6 @@ macro_rules! error_file_does_not_exist {
 /// Return the system path of the connection.json file
 ///
 /// COVER:PLATF_00001_00
-/// 
-/// # TODO Maybe a more global module to manage system paths should be created
 ///
 pub fn system_file_path() -> PathBuf {
     // Define the paths

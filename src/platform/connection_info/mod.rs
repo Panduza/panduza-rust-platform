@@ -3,20 +3,18 @@ mod file;
 mod error;
 mod serde;
 
-// use std::env;
-// use std::io::Write;
-// use std::path::PathBuf;
-
-
-// use std::fs::File;
-
+use std::path::PathBuf;
 
 pub type Info = info::Info;
 pub type Error = error::Error;
 pub type ErrorType = error::ErrorType;
 
-pub fn deserialize(json_string: &str) -> Result<Info, Error> {
-    serde::deserialize(json_string)
+#[inline(always)]
+pub fn system_file_path() -> PathBuf {
+    file::system_file_path()
 }
 
-
+#[inline(always)]
+pub async fn import_file(file_path: PathBuf) -> Result<Info, Error> {
+    file::import_file(file_path).await
+}

@@ -12,12 +12,17 @@ pub struct Info {
     // broker info
     pub host_addr: String,
     pub host_port: u16,
-    pub host_retry: u32,
 
     // credential
-    
+    pub credentials_user: Option<String>,
+    pub credentials_pass: Option<String>,
+
     // Platform info
     pub platform_name: String,
+
+    // Services info
+    pub services_retry_delay: u32,
+    pub services_enable_plbd: bool,
 }
 
 impl Info {

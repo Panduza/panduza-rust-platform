@@ -1,35 +1,40 @@
 use std::io::{self, Read};
+use crate::platform::FunctionResult;
 use crate::platform::services::Services;
 
-// use crate::platform::connection_info::Info as ConnectionInfo;
+use crate::platform::connection_info::ErrorType;
+use crate::platform::connection_info::import_file;
+use crate::platform::connection_info::system_file_path;
+
+use crate::platform_error_result;
 
 // ------------------------------------------------------------------------------------------------
 
 /// Perform the connection info loading process
 ///
-pub async fn execute_connection_info_loading_process(_services: &mut Services)
-    -> Result<(),  &'static str >
+pub async fn execute_connection_info_loading_process(services: &mut Services)
+    -> FunctionResult
 {
-    // // Try to import connection info from the user file
-    // match ConnectionInfo::build_from_file().await {
-    //     // Set the connection info if build from file is ok
-    //     Ok(ci) => {
-    //         services.set_connection_info(ci);
-    //         Ok(())
-    //     },
-    //     // Else Manage errors and unperfect situations
-    //     Err(e) => {
-    //         match e.type_() {
-    //             connection_info::CiErrorType::FileDoesNotExist => {
-    //                 return ask_user_about_default_connection_info_creation(services)
-    //             },
-    //             _ => {
-    //                 Err("unmanaged error")
-    //             }
-    //         }
-    //     }
-    // }
-    Ok(())
+    // Get the system file path
+    let file_path = system_file_path();
+
+    // Try to import connection info from the system file
+    match import_file(file_path).await {
+        Ok(ci) => {
+            services.set_connection_info(ci);
+            Ok(())
+        },
+        Err(e) => {
+            match e.err_type {
+                ErrorType::FileDoesNotExist => {
+                    return ask_user_about_default_connection_info_creation(services)
+                },
+                _ => {
+                    platform_error_result!("unmanaged error")
+                }
+            }
+        }
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -38,7 +43,7 @@ pub async fn execute_connection_info_loading_process(_services: &mut Services)
 /// Stop the platform in case it does not work or the user does not want.
 ///
 fn ask_user_about_default_connection_info_creation(services: &mut Services)
-    -> Result<(),  &'static str >
+    -> FunctionResult
 {
     // Warning message
     println!("===========================================================");
@@ -83,7 +88,7 @@ fn ask_user_about_default_connection_info_creation(services: &mut Services)
         println!("!");
         println!("===========================================================");
         services.trigger_stop();
-        Err(err_message)
+        platform_error_result!(err_message)
     }
 }
 
