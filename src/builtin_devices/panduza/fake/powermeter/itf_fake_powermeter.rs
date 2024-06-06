@@ -9,7 +9,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 /// Fake Powermeter Channel Data
 /// 
 struct FakePowermeterActions {
-    mesure_value: f64,
+    measure_value: f64,
 }
 
 #[async_trait]
@@ -21,13 +21,13 @@ impl powermeter::PowermeterActions for FakePowermeterActions {
         return Ok(());
     }
 
-    /// Read the mesure value
+    /// Read the measure value
     /// 
-    async fn read_mesure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+    async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
         interface.lock().await.log_info(
-            format!("FakePowermeter - read_mesure_value: {}", self.mesure_value)
+            format!("FakePowermeter - read_measure_value: {}", self.measure_value)
         );
-        return Ok(self.mesure_value);
+        return Ok(self.measure_value);
     }
 }
 
@@ -42,10 +42,10 @@ pub fn build<A: Into<String>>(
     return powermeter::build(
         name, 
         powermeter::PowermeterParams {
-            mesure_decimals: 3
+            measure_decimals: 3
         },
         Box::new(FakePowermeterActions {
-            mesure_value: 0.0,
+            measure_value: 0.0,
             
         })
     )
