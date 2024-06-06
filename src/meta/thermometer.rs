@@ -150,7 +150,7 @@ impl ThermometerSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_temperature_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
+    async fn process_temperature_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, _field_data: &Value) {
         let r_value = self.thermometer_interface.lock().await
             .actions.read_temperature_value(&interface).await
             .unwrap();
