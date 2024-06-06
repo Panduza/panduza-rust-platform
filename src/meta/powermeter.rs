@@ -13,7 +13,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 use crate::platform::FunctionResult as PlatformFunctionResult;
 
 pub struct PowermeterParams {
-    pub mesure_decimals: i32,
+    pub measure_decimals: i32,
 }
 
 #[async_trait]
@@ -24,7 +24,7 @@ pub trait PowermeterActions: Send + Sync {
     ///
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn read_mesure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
+    async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
 }
 
@@ -100,12 +100,12 @@ impl interface::fsm::States for PowermeterStates {
         powermeter_itf.actions.initializating(&interface).await.unwrap();
 
         // Register attributes
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("mesure", true));
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("measure", true));
 
-        // Init mesure
-        interface.lock().await.update_attribute_with_f64("mesure", "value", 0.0);
-        interface.lock().await.update_attribute_with_f64("mesure", "decimals", powermeter_itf.params.mesure_decimals as f64);
-        interface.lock().await.update_attribute_with_f64("mesure", "polling_cycle", 0.0);
+        // Init measure
+        interface.lock().await.update_attribute_with_f64("measure", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("measure", "decimals", powermeter_itf.params.measure_decimals as f64);
+        interface.lock().await.update_attribute_with_f64("measure", "polling_cycle", 0.0);
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -139,7 +139,7 @@ impl interface::fsm::States for PowermeterStates {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-const ID_MESURE: subscription::Id = 0;
+const ID_MEASURE: subscription::Id = 0;
 
 struct PowermeterSubscriber {
     powermeter_interface: Arc<Mutex<PowermeterInterface>>
@@ -150,13 +150,13 @@ impl PowermeterSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_mesure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
+    async fn process_measure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let r_value = self.powermeter_interface.lock().await
-            .actions.read_mesure_value(&interface).await
+            .actions.read_measure_value(&interface).await
             .unwrap();
 
         interface.lock().await
-            .update_attribute_with_f64("mesure", "value", r_value as f64);
+            .update_attribute_with_f64("measure", "value", r_value as f64);
     }
 
 
@@ -169,7 +169,7 @@ impl interface::subscriber::Subscriber for PowermeterSubscriber {
     ///
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
-            (ID_MESURE, "mesure".to_string())
+            (ID_MEASURE, "measure".to_string())
         ];
     }
 
@@ -200,8 +200,8 @@ impl interface::subscriber::Subscriber for PowermeterSubscriber {
 
                     for (attribute_name, fields) in o.iter() {
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
-                            if attribute_name == "mesure" && field_name == "value" {
-                                self.process_mesure_value(&interface, attribute_name, field_name, field_data).await;
+                            if attribute_name == "measure" && field_name == "value" {
+                                self.process_measure_value(&interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
