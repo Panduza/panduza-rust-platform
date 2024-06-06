@@ -181,7 +181,7 @@ impl Services {
     /// Set the default connection info
     ///
     pub fn generate_default_connection_info(&mut self) -> Result<(), std::io::Error> {
-        // self.connection_info = Some(ConnectionInfo::default());
+        self.connection_info = Some(ConnectionInfo::default());
         // self.connection_info.as_ref().unwrap().save_to_file()
 
         Ok(())

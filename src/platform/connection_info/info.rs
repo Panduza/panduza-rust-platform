@@ -1,4 +1,4 @@
-// use super::file::system_file_path;
+use super::file::system_file_path;
 
 /// This object is responsible of the connection information
 /// 
@@ -27,16 +27,19 @@ pub struct Info {
 
 impl Info {
 
-    // / Create a new Info object with default values
-    // /
-    // pub fn default() -> Self {
-    //     Self {
-    //         file_path: system_file_path().to_str().unwrap().to_string(),
-    //         broker_addr: "localhost".to_string(),
-    //         broker_port: 1883,
-    //         host_retry: 1,
-    //         platform_name: "panduza_platform".to_string()
-    //     }
-    // }
+    /// Create a new Info object with default values
+    ///
+    pub fn default() -> Self {
+        Self {
+            file_path: system_file_path().to_str().unwrap().to_string(),
+            broker_addr: "localhost".to_string(),
+            broker_port: 1883,
+            credentials_user: None,
+            credentials_pass: None,
+            platform_name: "panduza_platform".to_string(),
+            services_retry_delay: 1,
+            services_enable_plbd: false,
+        }
+    }
 
 }

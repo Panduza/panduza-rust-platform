@@ -15,22 +15,22 @@ const DEFAULT_PLATFORM_NAME: &str = "default_name";
 // ----------------------------------------------------------------------------
 
 // /// Serialize the info object into a JSON string
-// /// 
-// pub fn serialize(&self) -> Result<(), std::io::Error> {
+// ///
+// pub fn serialize(info: Info) -> Result<String, Error> {
 //     // Create the JSON object
 //     let json_obj = json!({
 //         "broker": {
-//             "addr": self.broker_addr,
-//             "port": self.broker_port,
-//             "retry": self.host_retry,
+//             "addr": info.broker_addr,
+//             "port": info.broker_port,
 //         }
 //     });
+//     Ok(json_obj.to_string())
 
-//     // //  Write new file
-//     // let mut file = File::create(&self.file_path)?;
-//     // let json_string = json_obj.to_string();
-//     // file.write_all(json_string.as_bytes())?;
-//     // Ok(())
+// //     // //  Write new file
+// //     // let mut file = File::create(&self.file_path)?;
+// //     // let json_string = json_obj.to_string();
+// //     // file.write_all(json_string.as_bytes())?;
+// //     // Ok(())
 // }
 
 // ----------------------------------------------------------------------------
