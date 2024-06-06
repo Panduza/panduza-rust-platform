@@ -17,8 +17,8 @@ use crate::connection_info_error_mandatory_field_missing;
 //     // Create the JSON object
 //     let json_obj = json!({
 //         "broker": {
-//             "addr": self.host_addr,
-//             "port": self.host_port,
+//             "addr": self.broker_addr,
+//             "port": self.broker_port,
 //             "retry": self.host_retry,
 //         }
 //     });
@@ -60,36 +60,51 @@ fn parse_json_obj(json_obj: JsonValue) -> Result<Info, Error> {
 ///
 fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error> {
 
-    // Get Host Section
-    let host = map_obj.get("broker")
-        .ok_or(connection_info_error_mandatory_field_missing!("[broker] section must be provided"))?;
+    // ---
+
+    // Get Broker Section
+    let broker = map_obj.get("broker")
+        .ok_or(
+            connection_info_error_mandatory_field_missing!("[broker] section must be provided")
+        )?;
 
     // Get Host Address
-    let host_addr = host.get("addr")
+    let broker_addr = broker.get("addr")
         .ok_or(connection_info_error_mandatory_field_missing!("[broker.addr] must be provided"))?
         .as_str()
         .ok_or(connection_info_error_content_bad_format!("[broker.addr] must be a string"))?
         .to_string();
 
     // Get Host Port
-    let host_port = host.get("port")
+    let broker_port = broker.get("port")
         .ok_or(connection_info_error_mandatory_field_missing!("[broker.port] must be provided"))?
         .as_u64()
         .ok_or(connection_info_error_content_bad_format!("[broker.port] must be a number"))?
         as u16;
 
-    // Get Host Retry
-    let default_retry_value: u32 = 1;
-    let host_retry = host.get("retry")
-        .unwrap_or(&json!(default_retry_value))
-        .as_u64()
-        .ok_or(connection_info_error_content_bad_format!("[broker.retry] must be a number"))?
-        as u32;
+    // // Get Host Retry
+    // let default_retry_value: u32 = 1;
+    // let host_retry = broker.get("retry")
+    //     .unwrap_or(&json!(default_retry_value))
+    //     .as_u64()
+    //     .ok_or(connection_info_error_content_bad_format!("[broker.retry] must be a number"))?
+    //     as u32;
+
+    // ---
 
     // Get Platform info section, if not platform info section 
-    let platform_info = map_obj.get("platform");
+    let platform = map_obj.get("platform")
+        .or(Some(&json!({
+            "name": "default_name"
+        })))
+        .unwrap();
 
-    let platform_name: String;
+    // Get Platform Name
+    let platform_name = platform.get("name")
+        .or(Some(&json!("default_name")))
+        .unwrap();
+
+
     let default_platform_name: String = "panduza_platform".to_string();
 
     match platform_info {
@@ -109,8 +124,8 @@ fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error>
     Ok(
         Info {
             file_path: system_file_path().to_str().unwrap().to_string(),
-            host_addr: host_addr,
-            host_port: host_port,
+            broker_addr: broker_addr,
+            broker_port: broker_port,
             credentials_user: None,
             credentials_pass: None,
             platform_name: platform_name,
@@ -143,8 +158,8 @@ fn deserialize_ok_000() {
     let output = deserialize(input.to_string().as_str());
     assert_eq!(output.is_err(), false);
     let ci = output.unwrap();
-    assert_eq!(ci.host_addr, "192.168.1.42");
-    assert_eq!(ci.host_port, 5555);
+    assert_eq!(ci.broker_addr, "192.168.1.42");
+    assert_eq!(ci.broker_port, 5555);
     assert_eq!(ci.credentials_user, None);
     assert_eq!(ci.credentials_pass, None);
     assert_eq!(ci.platform_name, "test1");

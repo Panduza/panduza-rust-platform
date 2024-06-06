@@ -10,8 +10,8 @@ pub struct Info {
     pub file_path: String,
 
     // broker info
-    pub host_addr: String,
-    pub host_port: u16,
+    pub broker_addr: String,
+    pub broker_port: u16,
 
     // credential
     pub credentials_user: Option<String>,
@@ -32,8 +32,8 @@ impl Info {
     // pub fn default() -> Self {
     //     Self {
     //         file_path: system_file_path().to_str().unwrap().to_string(),
-    //         host_addr: "localhost".to_string(),
-    //         host_port: 1883,
+    //         broker_addr: "localhost".to_string(),
+    //         broker_port: 1883,
     //         host_retry: 1,
     //         platform_name: "panduza_platform".to_string()
     //     }

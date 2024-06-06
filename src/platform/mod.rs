@@ -289,7 +289,7 @@ impl Platform {
             .unwrap()
             .clone();
 
-        connection.lock().await.start_connection(&ci.host_addr, ci.host_port).await;
+        connection.lock().await.start_connection(&ci.broker_addr, ci.broker_port).await;
         devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
 
 

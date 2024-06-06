@@ -48,7 +48,7 @@ pub async fn task(platform_services: AmServices) -> PlatformTaskResult {
             \"addr\": \"{}\",
             \"port\": {}
         }}
-    }}", ci.platform_name, ci.host_addr, ci.host_port);
+    }}", ci.platform_name, ci.broker_addr, ci.broker_port);
 
 
     let mut buf = [0; 1024];
