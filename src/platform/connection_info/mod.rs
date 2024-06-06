@@ -1,21 +1,19 @@
+mod info;
+mod file;
+mod error;
+mod serde;
+
 use std::env;
 use std::io::Write;
 use std::path::PathBuf;
 
-use serde_json::json;
-use serde_json::Map as JsonMap;
-use serde_json::Value as JsonValue;
+
 use std::fs::File;
 
 
-use crate::platform::Error as PlatformError;
+pub type Info = info::Info;
+pub type Error = error::Error;
 
-
-
-
-// Serde (string -> data , data -> string)
-// File (import / export file, manage the system path)
-// ConnectionInfo => les data
 
 // ----------------------------------------------------------------------------
 #[test]
