@@ -156,7 +156,7 @@ impl ThermometerSubscriber {
             .unwrap();
 
         interface.lock().await
-            .update_attribute_with_f64("mesure", "value", r_value as f64);
+            .update_attribute_with_f64("measure", "value", r_value as f64);
     }
 
 
