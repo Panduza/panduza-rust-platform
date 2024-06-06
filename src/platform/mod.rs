@@ -213,7 +213,7 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        if ! execute_service_boot(services.clone()).await.is_err() {
+                        if execute_service_boot(services.clone()).await.is_err() {
                             return platform_error_result!("Failed to boot", None);
                         }
                         // , devices.clone(), connection.clone()
