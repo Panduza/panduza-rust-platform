@@ -15,7 +15,7 @@ use crate::platform::FunctionResult as PlatformFunctionResult;
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-static mut debug_counter: u32 = 0;
+// static mut DEBUG_COUNTER: u32 = 0;
 
 struct PingInterfaceSubscriber;
 
@@ -26,8 +26,8 @@ impl PingInterfaceSubscriber {
     #[inline(always)]
     async fn process_devices_hunting(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
 
-        // unsafe { debug_counter += 1;
-        // println!("process_devices_hunting: {:?}", debug_counter);
+        // unsafe { DEBUG_COUNTER += 1;
+        // println!("process_devices_hunting: {:?}", DEBUG_COUNTER);
         // };
 
         interface.lock().await
@@ -134,10 +134,10 @@ impl interface::fsm::States for TestInterfaceStates {
         println!("error");
     }
 
-    async fn cleaning(&self, _interface: &AmInterface)
-    {
-        println!("cleaning");
-    }
+    // async fn cleaning(&self, _interface: &AmInterface)
+    // {
+    //     println!("cleaning");
+    // }
 }
 
 

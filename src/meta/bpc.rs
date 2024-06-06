@@ -177,10 +177,10 @@ impl interface::fsm::States for BpcStates {
         println!("error");
     }
 
-    async fn cleaning(&self, _interface: &AmInterface)
-    {
-        println!("cleaning");
-    }
+    // async fn cleaning(&self, _interface: &AmInterface)
+    // {
+    //     println!("cleaning");
+    // }
 }
 
 // ----------------------------------------------------------------------------

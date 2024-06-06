@@ -1,0 +1,71 @@
+name: Regression Testing
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo build --verbose
+
+  unit_tests:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run unit tests
+      run: cargo test --verbose
+
+  acceptance_tests:
+    needs: unit_tests
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Clone platform
+      uses: actions/checkout@v4
+      with:
+        path: 'platform'
+
+    - name: Clone platform tests
+      uses: actions/checkout@v4
+      with:
+        repository: Panduza/panduza-platform-tests-core
+        path: 'tests'
+
+    - name: Start Mosquitto
+      uses: namoshek/mosquitto-github-action@v1
+      with:
+        version: '1.6'
+        ports: '1883:1883 8883:8883'
+        # certificates: ${{ github.workspace }}/.ci/tls-certificates
+        # config: ${{ github.workspace }}/.ci/mosquitto.conf
+        # password-file: ${{ github.workspace}}/.ci/mosquitto.passwd
+        container-name: 'mqtt'
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11.1
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install robotframework
+
+    # - name: Start Platform
+    #   run: |
+    #     cd platform
+    #     cargo run --release
+
+    - name: Tests
+      run: ls -la $GITHUB_WORKSPACE

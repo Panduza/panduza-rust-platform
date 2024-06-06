@@ -20,7 +20,7 @@ pub trait RelayActions: Send + Sync {
     ///
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
+    // async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
     async fn read_state_open(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
 
@@ -117,10 +117,10 @@ impl interface::fsm::States for RelayStates {
         println!("error");
     }
 
-    async fn cleaning(&self, _interface: &AmInterface)
-    {
-        println!("cleaning");
-    }
+    // async fn cleaning(&self, _interface: &AmInterface)
+    // {
+    //     println!("cleaning");
+    // }
 }
 
 // ----------------------------------------------------------------------------
@@ -196,7 +196,7 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
                     for (attribute_name, fields) in o.iter() {
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
                             if attribute_name == "state" && field_name == "open" {
-                                self.process_state_open(&interface, attribute_name, field_name, field_data).await;
+                                self.process_state_open(&interface, attribute_name, field_name, field_data).await.unwrap();
 
                             }
                         }

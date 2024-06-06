@@ -1,32 +1,26 @@
-use std::fmt;
-use std::error::Error;
+use std;
 
+/// Common Error type for the platform
+/// Just a simple error type that holds a message and it's location in sources
+///
 #[derive(Debug)]
-pub struct PlatformError {
-    pub message: String,
-    pub backtrace: Vec<String>,
+pub struct Error {
+    pub message: String
 }
 
-impl PlatformError {
-    pub fn new(file: &'static str, line: u32, message: String, source: Option<Box<PlatformError>>) -> Self {
+impl Error {
+    pub fn new(file: &'static str, line: u32, message: String) -> Self {
         let formated_message = format!("{}:{} - {}", file, line, message);
-        if let Some(source) = source {
-            let mut backtrace = source.backtrace.iter().map(|s| s.to_string()).collect::<Vec<String>>();
-            backtrace.push(source.message);
-            Self { message: formated_message, backtrace:backtrace }
-        }
-        else {
-            Self { message: formated_message, backtrace: vec![] }
-        }
+        Self { message: formated_message }
     }
 }
 
-impl fmt::Display for PlatformError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.message)
     }
 }
 
-impl Error for PlatformError {
+impl std::error::Error for Error {
 
 }

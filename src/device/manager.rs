@@ -65,7 +65,7 @@ impl Manager {
         // Create the device
         let result = self.factory.create_device(device_def);
         match result {
-            Err(e) => {
+            Err(_e) => {
                 return platform_error_result!("Device not created", Some(Box::new(e)));
             },
             Ok(device_object) => {

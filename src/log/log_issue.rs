@@ -61,15 +61,15 @@ pub fn display_issue_body(){
 
 
     // get the rustc version
-    let outputRust = Command::new("rustc")
+    let output_rust = Command::new("rustc")
         .arg("--version")
         .output()
         .expect("failed to excecute command");
-    let rustVersion = String::from_utf8_lossy(&outputRust.stdout);
+    let rust_version = String::from_utf8_lossy(&output_rust.stdout);
 
     println!("|system info| Version|");
     println!("|------------|----------|");
-    println!("|rust version| {version}|", version=rustVersion.trim());
+    println!("|rust version| {version}|", version=rust_version.trim());
     println!("|plateform version| {pzaVersion}|", pzaVersion=VERSION);
     println!("|system information|{OS}|", OS=env::consts::OS);
 
@@ -94,7 +94,7 @@ pub fn display_issue_body(){
             println!("# device tree : ");
             println!("``` \n{res}\n ```");
         },
-        Err(e) => {
+        Err(_) => {
             println!("failed to parse");
         }
     }
