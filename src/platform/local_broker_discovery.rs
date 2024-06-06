@@ -3,7 +3,7 @@ use tokio::net::UdpSocket;
 
 use super::PlatformTaskResult;
 use super::services::AmServices;
-use super::connection_info::ConnectionInfo;
+use super::connection_info::Info as ConnectionInfo;
 
 /// Start the task for Panduza Local Broker Discovery (PLBD)
 ///
@@ -48,7 +48,7 @@ pub async fn task(platform_services: AmServices) -> PlatformTaskResult {
             \"addr\": \"{}\",
             \"port\": {}
         }}
-    }}", ci.platform_name(), ci.host_addr(), ci.host_port());
+    }}", ci.platform_name, ci.host_addr, ci.host_port);
 
 
     let mut buf = [0; 1024];

@@ -1,32 +1,35 @@
 use std::io::{self, Read};
-use crate::platform::{connection_info::{self, ConnectionInfo}, services::Services};
+use crate::platform::services::Services;
+
+// use crate::platform::connection_info::Info as ConnectionInfo;
 
 // ------------------------------------------------------------------------------------------------
 
 /// Perform the connection info loading process
 ///
-pub async fn execute_connection_info_loading_process(services: &mut Services)
+pub async fn execute_connection_info_loading_process(_services: &mut Services)
     -> Result<(),  &'static str >
 {
-    // Try to import connection info from the user file
-    match ConnectionInfo::build_from_file().await {
-        // Set the connection info if build from file is ok
-        Ok(ci) => {
-            services.set_connection_info(ci);
-            Ok(())
-        },
-        // Else Manage errors and unperfect situations
-        Err(e) => {
-            match e.type_() {
-                connection_info::CiErrorType::FileDoesNotExist => {
-                    return ask_user_about_default_connection_info_creation(services)
-                },
-                _ => {
-                    Err("unmanaged error")
-                }
-            }
-        }
-    }
+    // // Try to import connection info from the user file
+    // match ConnectionInfo::build_from_file().await {
+    //     // Set the connection info if build from file is ok
+    //     Ok(ci) => {
+    //         services.set_connection_info(ci);
+    //         Ok(())
+    //     },
+    //     // Else Manage errors and unperfect situations
+    //     Err(e) => {
+    //         match e.type_() {
+    //             connection_info::CiErrorType::FileDoesNotExist => {
+    //                 return ask_user_about_default_connection_info_creation(services)
+    //             },
+    //             _ => {
+    //                 Err("unmanaged error")
+    //             }
+    //         }
+    //     }
+    // }
+    Ok(())
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -42,7 +45,7 @@ fn ask_user_about_default_connection_info_creation(services: &mut Services)
     println!("!");
     println!("!");
     println!("!");
-    println!("No configuration file found ! ({})", ConnectionInfo::system_file_path().to_str().unwrap());
+    // println!("No configuration file found ! ({})", ConnectionInfo::system_file_path().to_str().unwrap());
     println!("Do you want to create one with default settings ? [N/y]");
 
     // Get input from user

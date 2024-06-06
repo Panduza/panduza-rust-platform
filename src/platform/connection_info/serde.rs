@@ -1,64 +1,81 @@
 use super::Info;
+use super::error::Error;
+use super::file::system_file_path;
 
 use serde_json::json;
 use serde_json::Map as JsonMap;
 use serde_json::Value as JsonValue;
 
-/// Serialize the info object into a JSON string
-/// 
-pub fn serialize(&self) -> Result<(), std::io::Error> {
-    // Create the JSON object
-    let json_obj = json!({
-        "broker": {
-            "addr": self.host_addr,
-            "port": self.host_port,
-            "retry": self.host_retry,
-        }
-    });
+use crate::connection_info_error_content_bad_format;
+use crate::connection_info_error_mandatory_field_missing;
 
-    // //  Write new file
-    // let mut file = File::create(&self.file_path)?;
-    // let json_string = json_obj.to_string();
-    // file.write_all(json_string.as_bytes())?;
-    // Ok(())
-}
+// ----------------------------------------------------------------------------
 
+// /// Serialize the info object into a JSON string
+// /// 
+// pub fn serialize(&self) -> Result<(), std::io::Error> {
+//     // Create the JSON object
+//     let json_obj = json!({
+//         "broker": {
+//             "addr": self.host_addr,
+//             "port": self.host_port,
+//             "retry": self.host_retry,
+//         }
+//     });
+
+//     // //  Write new file
+//     // let mut file = File::create(&self.file_path)?;
+//     // let json_string = json_obj.to_string();
+//     // file.write_all(json_string.as_bytes())?;
+//     // Ok(())
+// }
+
+// ----------------------------------------------------------------------------
+
+/// Deserialize a JSON string into a Info object
 ///
-///  
-pub fn deserialize(json_string: &str) -> Result<Self, CiError> {
+pub fn deserialize(json_string: &str) -> Result<Info, Error> {
     serde_json::from_str(json_string)
-        .map_err(|e| content_bad_format_error(e.to_string().as_str()))
-        .and_then(Info::build_from_json_value)
+        .map_err(
+            |e| connection_info_error_content_bad_format!(e.to_string().as_str())
+        )
+        .and_then(
+            parse_json_obj
+        )
 }
 
 /// Create a new Info object from a JSON value
 ///
-fn build_from_json_value(json_obj: JsonValue) -> Result<Self, CiError> {
+fn parse_json_obj(json_obj: JsonValue) -> Result<Info, Error> {
     json_obj.as_object()
-        .ok_or(content_bad_format_error( "Except a JSON object at file root"))
-        .and_then(Info::build_from_map_object)
+        .ok_or(
+            connection_info_error_content_bad_format!("Except a JSON object at file root")
+        )
+        .and_then(
+            parse_map_object
+        )
 }
 
 /// Create a new Info object from a JSON map object
 ///
-fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, CiError> {
+fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error> {
 
     // Get Host Section
     let host = map_obj.get("broker")
-        .ok_or(mandatory_field_missing_error("[broker] section must be provided"))?;
+        .ok_or(connection_info_error_mandatory_field_missing!("[broker] section must be provided"))?;
 
     // Get Host Address
     let host_addr = host.get("addr")
-        .ok_or(mandatory_field_missing_error("[broker.addr] must be provided"))?
+        .ok_or(connection_info_error_mandatory_field_missing!("[broker.addr] must be provided"))?
         .as_str()
-        .ok_or(content_bad_format_error("[broker.addr] must be a string"))?
+        .ok_or(connection_info_error_content_bad_format!("[broker.addr] must be a string"))?
         .to_string();
 
     // Get Host Port
     let host_port = host.get("port")
-        .ok_or(mandatory_field_missing_error("[broker.port] must be provided"))?
+        .ok_or(connection_info_error_mandatory_field_missing!("[broker.port] must be provided"))?
         .as_u64()
-        .ok_or(content_bad_format_error("[broker.port] must be a number"))?
+        .ok_or(connection_info_error_content_bad_format!("[broker.port] must be a number"))?
         as u16;
 
     // Get Host Retry
@@ -66,7 +83,7 @@ fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, C
     let host_retry = host.get("retry")
         .unwrap_or(&json!(default_retry_value))
         .as_u64()
-        .ok_or(content_bad_format_error("[broker.retry] must be a number"))?
+        .ok_or(connection_info_error_content_bad_format!("[broker.retry] must be a number"))?
         as u32;
 
     // Get Platform info section, if not platform info section 
@@ -80,7 +97,7 @@ fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, C
             platform_name = value.get("name")
             .unwrap_or(&json!(default_platform_name))
             .as_str()
-            .ok_or(content_bad_format_error("[platform.name] must be a string"))?
+            .ok_or(connection_info_error_content_bad_format!("[platform.name] must be a string"))?
             .to_string();
         },
         None => {
@@ -88,9 +105,10 @@ fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, C
         }
     }
 
+    // Return the Info object
     Ok(
-        Self {
-            file_path: Info::system_file_path().to_str().unwrap().to_string(),
+        Info {
+            file_path: system_file_path().to_str().unwrap().to_string(),
             host_addr: host_addr,
             host_port: host_port,
             host_retry: host_retry,
@@ -98,4 +116,39 @@ fn build_from_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Self, C
         }
     )
 }
+
+// ----------------------------------------------------------------------------
+#[test]
+fn deserialize_ok_000() {
+    let input = json!({
+        "broker": {
+            "addr": "192.168.1.1",
+            "port": 5555,
+        }
+    });
+    let output = deserialize(input.to_string().as_str());
+    assert_eq!(output.is_err(), false);
+    let ci = output.unwrap();
+    assert_eq!(ci.host_addr, "192.168.1.1");
+    assert_eq!(ci.host_port, 5555);
+}
+
+// // ----------------------------------------------------------------------------
+// #[test]
+// fn build_from_json_value_fail_0() {
+//     let input = JsonValue::Null;
+//     let output = ConnectionInfo::build_from_json_value(input);
+//     assert_eq!(output.is_err(), true);
+// }
+
+// // ----------------------------------------------------------------------------
+// #[test]
+// fn build_from_json_value_fail_1() {
+//     let input = json!({
+//         "hostname": "localhost",
+//         "port": 1883
+//     });
+//     let output = ConnectionInfo::build_from_json_value(input);
+//     assert_eq!(output.is_err(), true);
+// }
 

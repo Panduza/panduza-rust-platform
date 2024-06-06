@@ -1,4 +1,4 @@
-use crate::platform::Error as PlfError;
+use crate::platform::Error as PlatformError;
 
 #[derive(Debug)]
 pub enum ErrorType {
@@ -10,16 +10,17 @@ pub enum ErrorType {
     FileDoesNotExist,
 }
 
+/// Error for connection info crate
 #[derive(Debug)]
 pub struct Error {
     /// Type of the error
-    err_type: ErrorType,
+    pub err_type: ErrorType,
     /// Platform error message
-    plt_error: PlfError,
+    pub plt_error: PlatformError,
 }
 
 impl Error {
-    pub fn new(err_type: ErrorType, plt_error: PlfError) -> Self {
+    pub fn new(err_type: ErrorType, plt_error: PlatformError) -> Self {
         Self {
             err_type: err_type,
             plt_error: plt_error
@@ -27,6 +28,25 @@ impl Error {
     }
 }
 
+#[macro_export]
+macro_rules! connection_info_error_content_bad_format {
+    ($msg:expr) => {
+        Error::new (
+            crate::platform::connection_info::error::ErrorType::ContentBadFormat,
+            crate::platform::Error::new(file!(), line!(), $msg.to_string())
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! connection_info_error_mandatory_field_missing {
+    ($msg:expr) => {
+        Error::new (
+            crate::platform::connection_info::error::ErrorType::MandatoryFieldMissing,
+            crate::platform::Error::new(file!(), line!(), $msg.to_string())
+        )
+    };
+}
 
 // fn mandatory_field_missing_error(message: &str) -> CiError {
 //     CiError::new(ErrorType::MandatoryFieldMissing, message)
