@@ -18,10 +18,17 @@ pub async fn execute_connection_info_loading_process(services: &mut Services)
     // Get the system file path
     let file_path = system_file_path();
 
+    // PLATF_00003_00 - display path
+    println!("** Connection info file path: {:?}", file_path);
+
     // Try to import connection info from the system file
     match import_file(file_path).await {
         Ok(ci) => {
             services.set_connection_info(ci);
+
+            // PLATF_00003_00 - display info
+            // println!("** Connection info file path: {:?}", file_path);
+
             Ok(())
         },
         Err(e) => {
