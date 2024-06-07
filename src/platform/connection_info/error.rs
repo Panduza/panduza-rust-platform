@@ -1,5 +1,10 @@
 use crate::platform::Error as PlatformError;
 
+// ---
+// Documentation
+// https://panduza.github.io/panduza-doc/docs/50_platform/architecture/connection_info/
+// ---
+
 #[derive(Debug)]
 pub enum ErrorType {
     // COVER:REQ_CONN_INFO_0030_00

@@ -11,6 +11,11 @@ use crate::platform_error;
 use crate::connection_info_content_bad_format_error;
 use crate::connection_info_file_does_not_exist_error_result;
 
+// ---
+// Documentation
+// https://panduza.github.io/panduza-doc/docs/50_platform/architecture/connection_info/
+// ---
+
 /// Return the system path of the connection.json file
 ///
 /// COVER:PLATF_00001_00 - File System Paths

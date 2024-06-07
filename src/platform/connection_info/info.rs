@@ -1,5 +1,10 @@
 use super::file::system_file_path;
 
+// ---
+// Documentation
+// https://panduza.github.io/panduza-doc/docs/50_platform/architecture/connection_info/
+// ---
+
 /// This object is responsible of the connection information
 /// 
 /// It must manage the data but also the file used to store them

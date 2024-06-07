@@ -6,6 +6,11 @@ mod serde;
 use std::path::PathBuf;
 use super::FunctionResult;
 
+// ---
+// Documentation
+// https://panduza.github.io/panduza-doc/docs/50_platform/architecture/connection_info/
+// ---
+
 pub type Info = info::Info;
 pub type Error = error::Error;
 pub type ErrorType = error::ErrorType;

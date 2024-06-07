@@ -9,6 +9,11 @@ use serde_json::Value as JsonValue;
 use crate::connection_info_content_bad_format_error;
 use crate::connection_info_mandatory_field_missing_error;
 
+// ---
+// Documentation
+// https://panduza.github.io/panduza-doc/docs/50_platform/architecture/connection_info/
+// ---
+
 const DEFAULT_PLATFORM_NAME: &str = "default_name";
 
 // ----------------------------------------------------------------------------
