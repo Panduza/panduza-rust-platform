@@ -46,25 +46,6 @@ pub trait BlcActions: Send + Sync {
 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64);
 
-
-// async def _PZA_DRV_BPC_read_voltage_decimals(self):
-//     """Must return the number of decimals supported for the voltage
-//     """
-//     raise NotImplementedError("Must be implemented !")
-
-// # ---
-
-
-// async def _PZA_DRV_BPC_current_value_min_max(self):
-//     """Must return the current range of the power supply
-//     """
-//     return {"min": 0, "max": 0 }
-
-// async def _PZA_DRV_BPC_read_current_decimals(self):
-//     """Must return the number of decimals supported for the amperage
-//     """
-//     raise NotImplementedError("Must be implemented !")
-
 }
 
 // ----------------------------------------------------------------------------
@@ -94,7 +75,7 @@ struct BlcInterface {
     params: BlcParams,
     actions: Box<dyn BlcActions>
 }
-type AmBpcInterface = Arc<Mutex<BlcInterface>>;
+type AmBlcInterface = Arc<Mutex<BlcInterface>>;
 
 impl BlcInterface {
     fn new(params: BlcParams, actions: Box<dyn BlcActions>) -> BlcInterface {
@@ -103,7 +84,7 @@ impl BlcInterface {
             actions: actions
         }
     }
-    fn new_am(params: BlcParams, actions: Box<dyn BlcActions>) -> AmBpcInterface {
+    fn new_am(params: BlcParams, actions: Box<dyn BlcActions>) -> AmBlcInterface {
         return Arc::new(Mutex::new( BlcInterface::new(params, actions) ));
     }
 }
@@ -213,7 +194,7 @@ impl BlcSubscriber {
     /// 
     #[inline(always)]
     async fn process_mode_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.to_string();
+        let requested_value = field_data.as_str().unwrap().to_string();
         self.blc_interface.lock().await
             .actions.write_mode_value(&interface, requested_value).await;
 
@@ -369,7 +350,7 @@ pub fn build<A: Into<String>>(
 
     return InterfaceBuilder::new(
         name,
-        "bpc",
+        "blc",
         "0.0",
         Box::new(BlcStates{blc_interface: c.clone()}),
         Box::new(BlcSubscriber{blc_interface: c.clone()})
