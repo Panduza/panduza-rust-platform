@@ -24,6 +24,7 @@ pub trait AttributeInterface : Send + Sync {
     fn update_field_with_bool(&mut self, field: &str, value: bool) -> PlatformFunctionResult;
     fn update_field_with_string(&mut self, field: &str, value: &String);
     fn update_field_with_json(&mut self, field: &str, value: &serde_json::Value);
+    fn update_field_with_bytes(&mut self, field: &str, value: &[u8]);
 }
 
 

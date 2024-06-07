@@ -261,9 +261,15 @@ impl Interface {
         let att = self.attributes.get_mut(attribute).unwrap();
         att.as_mut().update_field_with_string(field, value);
     }
+
     pub fn update_attribute_with_json(&mut self, attribute: &str, field: &str, value: &serde_json::Value) {
         let att = self.attributes.get_mut(attribute).unwrap();
         att.as_mut().update_field_with_json(field, value);
+    }
+
+    pub fn update_attribute_with_bytes(&mut self, attribute: &str, field: &str, value: &[u8]) {
+        let att = self.attributes.get_mut(attribute).unwrap();
+        att.as_mut().update_field_with_bytes(field, value);
     }
 
     pub fn platform_services(&self) -> AmServices {

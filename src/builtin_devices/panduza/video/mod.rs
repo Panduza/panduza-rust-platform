@@ -42,7 +42,7 @@ impl Producer for DeviceProducer {
 
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
-        return Ok(Box::new(FakeBlc{}));
+        return Ok(Box::new(Video{}));
     }
 
 }
