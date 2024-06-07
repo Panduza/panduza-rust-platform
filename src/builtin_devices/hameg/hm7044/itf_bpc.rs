@@ -67,7 +67,7 @@ impl Hm7044BpcActions {
         }
     }
 
-    async fn get_self_status(&mut self) -> Result<(f64, f64, bool), PlatformError> {
+    async fn get_status(&mut self) -> Result<(f64, f64, bool), PlatformError> {
 
         let sss = self.send_cmd_read_answer(b"READ\r").await?;
         let v_a_e: Vec<&str> = sss.split(';').collect();
@@ -107,7 +107,7 @@ impl Hm7044BpcActions {
         return Ok((voltage, current, enable));
     }
 
-    async fn select_self_channel(&mut self) -> Result<(), PlatformError>{
+    async fn select_channel(&mut self) -> Result<(), PlatformError>{
 
         return self.send_cmd_expect_answer(
             format!("SEL {}\r", (self.channel as usize) + 1).as_bytes(),
@@ -176,7 +176,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
         // Debug
         // println!("read_enable_value");
 
-        return match self.get_self_status().await {
+        return match self.get_status().await {
             Ok((_voltage, _current, enable)) => Ok(enable),
             Err(e) => Err(e)
         };
@@ -189,7 +189,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
         // Debug
         // println!("write_enable_value");
 
-        let result = self.select_self_channel().await;
+        let result = self.select_channel().await;
 
         if result.is_ok() {
             let _ = self.set_on_off(v).await;
@@ -203,7 +203,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
         // Debug
         // println!("read_voltage_value");
 
-        return match self.get_self_status().await {
+        return match self.get_status().await {
             Ok((voltage, _current, _enable)) => Ok(voltage),
             Err(e) => Err(e)
         };
@@ -214,7 +214,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
         // Debug
         // println!("write_voltage_value");
 
-        let result = self.select_self_channel().await;
+        let result = self.select_channel().await;
 
         if result.is_ok() {
             let _ = self.set_voltage(v).await;
@@ -226,7 +226,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
         // Debug
         // println!("read_current_value");
 
-        return match self.get_self_status().await {
+        return match self.get_status().await {
             Ok((_voltage, current, _enable)) => Ok(current),
             Err(e) => Err(e)
         };
@@ -237,7 +237,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
         // Debug
         // println!("write_current_value");
 
-        let result = self.select_self_channel().await;
+        let result = self.select_channel().await;
 
         if result.is_ok() {
             let _ = self.set_current(v).await;
