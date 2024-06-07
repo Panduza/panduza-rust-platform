@@ -1,8 +1,8 @@
-// use async_trait::async_trait;
+use async_trait::async_trait;
 use serde_json::json;
 
 use crate::platform::PlatformError;
-use crate::device::{ traits::DeviceActions, traits::Producer };//, traits::Hunter };
+use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
 
 use crate::interface::builder::Builder as InterfaceBuilder;
 
@@ -18,53 +18,53 @@ mod itf_pm100a_powermeter;
 static VID: u16 = 0x1313;
 static PID: u16 = 0x8079;
 
-// pub struct DeviceHunter;
+pub struct DeviceHunter;
 
 
-// #[async_trait]
-// impl Hunter for DeviceHunter {
+#[async_trait]
+impl Hunter for DeviceHunter {
 
-//     async fn hunt(&self) -> Option<Vec<serde_json::Value>> {
+    async fn hunt(&self) -> Option<Vec<serde_json::Value>> {
 
-//         let mut bag = Vec::new();
+        let mut bag = Vec::new();
 
-//         println!("DeviceHunter::hunt");
+        println!("DeviceHunter::hunt");
 
-//         let ports = tokio_serial::available_ports();
-//         for port in ports.unwrap() {
-//             println!("{:?}", port);
+        let ports = tokio_serial::available_ports();
+        for port in ports.unwrap() {
+            println!("{:?}", port);
 
-//             match port.port_type {
-//                 tokio_serial::SerialPortType::UsbPort(info) => {
-//                     if info.vid == VID && info.pid == PID {
-//                         println!("Found device");
+            match port.port_type {
+                tokio_serial::SerialPortType::UsbPort(info) => {
+                    if info.vid == VID && info.pid == PID {
+                        println!("Found device");
 
-//                         bag.push(json!(
-//                             {
-//                                 "name": "Korad KA3005",
-//                                 "ref": "korad.ka3005",
-//                                 "settings": {
-//                                     "usb_vendor": format!("{:04x}", info.vid),
-//                                     "usb_model": format!("{:04x}", info.pid),
-//                                     "usb_serial": info.serial_number,
-//                                 }
-//                             }
-//                         ))
-//                     }
-//                 },
-//                 _ => {}
-//             }
-//         }
+                        bag.push(json!(
+                            {
+                                "name": "Thorlabs PM100A",
+                                "ref": "thorlabs.pm100a",
+                                "settings": {
+                                    "usb_vendor": format!("{:04x}", info.vid),
+                                    "usb_model": format!("{:04x}", info.pid),
+                                    "usb_serial": info.serial_number,
+                                }
+                            }
+                        ))
+                    }
+                },
+                _ => {}
+            }
+        }
 
-//         if bag.is_empty() {
-//             return None;
-//         }
-//         else {
-//             return Some(bag);
-//         }
-//     }
+        if bag.is_empty() {
+            return None;
+        }
+        else {
+            return Some(bag);
+        }
+    }
 
-// }
+}
 
 struct PM100A;
 
