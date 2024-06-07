@@ -194,7 +194,7 @@ impl BlcSubscriber {
     /// 
     #[inline(always)]
     async fn process_mode_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.to_string();
+        let requested_value = field_data.as_str().unwrap().to_string();
         self.blc_interface.lock().await
             .actions.write_mode_value(&interface, requested_value).await;
 
