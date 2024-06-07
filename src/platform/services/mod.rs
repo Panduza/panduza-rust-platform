@@ -6,6 +6,9 @@ use tokio::sync::Notify;
 use std::cmp::PartialEq;
 
 
+use crate::platform::connection_info::export_file;
+
+
 pub mod boot;
 pub mod hunt;
 
@@ -182,7 +185,8 @@ impl Services {
     ///
     pub fn generate_default_connection_info(&mut self) -> Result<(), std::io::Error> {
         self.connection_info = Some(ConnectionInfo::default());
-        // self.connection_info.as_ref().unwrap().save_to_file()
+        
+        export_file(self.connection_info.as_ref().unwrap()).unwrap();
 
         Ok(())
     }

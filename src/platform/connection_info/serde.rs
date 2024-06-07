@@ -9,7 +9,6 @@ use serde_json::Value as JsonValue;
 use crate::connection_info_content_bad_format_error;
 use crate::connection_info_mandatory_field_missing_error;
 
-
 const DEFAULT_PLATFORM_NAME: &str = "default_name";
 
 // ----------------------------------------------------------------------------
@@ -17,6 +16,7 @@ const DEFAULT_PLATFORM_NAME: &str = "default_name";
 /// Serialize the info object into a JSON string
 ///
 pub fn serialize(info: &Info) -> Result<String, crate::platform::Error> {
+
     // Create the JSON object
     let json_obj = json!({
         "broker": {

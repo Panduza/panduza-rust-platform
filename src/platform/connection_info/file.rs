@@ -56,7 +56,7 @@ pub async fn import_file(file_path: PathBuf) -> Result<Info, Error> {
 ///
 /// COVER:PLATF_00002_00 - File is JSON
 ///
-pub async fn export_file(info: &Info) -> FunctionResult {
+pub fn export_file(info: &Info) -> FunctionResult {
 
     //  Write new file
     let mut file = std::fs::File::create(&info.file_path)

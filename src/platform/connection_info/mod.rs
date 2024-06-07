@@ -4,6 +4,7 @@ mod error;
 mod serde;
 
 use std::path::PathBuf;
+use super::FunctionResult;
 
 pub type Info = info::Info;
 pub type Error = error::Error;
@@ -17,4 +18,9 @@ pub fn system_file_path() -> PathBuf {
 #[inline(always)]
 pub async fn import_file(file_path: PathBuf) -> Result<Info, Error> {
     file::import_file(file_path).await
+}
+
+#[inline(always)]
+pub fn export_file(info: &Info) -> FunctionResult {
+    file::export_file(info)
 }
