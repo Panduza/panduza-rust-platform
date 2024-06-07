@@ -57,7 +57,7 @@ fn ask_user_about_default_connection_info_creation(services: &mut Services)
     println!("!");
     println!("!");
     println!("!");
-    // println!("No configuration file found ! ({})", ConnectionInfo::system_file_path().to_str().unwrap());
+    println!("No configuration file found ! ({})", system_file_path().to_str().unwrap());
     println!("Do you want to create one with default settings ? [N/y]");
 
     // Get input from user

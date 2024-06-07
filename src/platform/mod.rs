@@ -202,7 +202,9 @@ impl Platform {
 
     /// Services task
     /// 
-    async fn services_task(services: AmServices, devices: device::AmManager, connection: connection::AmManager) -> PlatformTaskResult {
+    async fn services_task(services: AmServices, devices: device::AmManager, connection: connection::AmManager)
+        -> PlatformTaskResult
+    {
         let requests_change_notifier = services.lock().await.get_requests_change_notifier();
         loop {
             // Wait for an event
@@ -214,10 +216,8 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        if ! execute_service_boot(services.clone()).await.is_err() {
-                            return platform_error_result!("Failed to boot", None);
-                        }
-                        // , devices.clone(), connection.clone()
+
+                        execute_service_boot(services.clone()).await?;
 
                         // Load the tree file
                         if let Err(e) = Platform::load_tree_file(services.clone()).await

@@ -16,21 +16,26 @@ const DEFAULT_PLATFORM_NAME: &str = "default_name";
 /// Serialize the info object into a JSON string
 ///
 pub fn serialize(info: &Info) -> Result<String, crate::platform::Error> {
-
-    // Create the JSON object
-    let json_obj = json!({
-        "broker": {
-            "addr": info.broker_addr,
-            "port": info.broker_port,
-        }
-    });
-    Ok(json_obj.to_string())
-
-// //     // //  Write new file
-// //     // let mut file = File::create(&self.file_path)?;
-// //     // let json_string = json_obj.to_string();
-// //     // file.write_all(json_string.as_bytes())?;
-// //     // Ok(())
+    Ok(
+        json!({
+            "broker": {
+                "addr": info.broker_addr,
+                "port": info.broker_port,
+            },
+            "platform": {
+                "name": info.platform_name
+            },
+            "credentials": {
+                "user": info.credentials_user,
+                "pass": info.credentials_pass
+            },
+            "services": {
+                "retry_delay": info.services_retry_delay,
+                "enable_plbd": info.services_enable_plbd
+            }
+        })
+        .to_string()
+    )
 }
 
 // ----------------------------------------------------------------------------
