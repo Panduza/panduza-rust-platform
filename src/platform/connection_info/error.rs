@@ -29,7 +29,7 @@ impl Error {
 }
 
 #[macro_export]
-macro_rules! connection_info_error_content_bad_format {
+macro_rules! connection_info_content_bad_format_error {
     ($msg:expr) => {
         Error::new (
             crate::platform::connection_info::error::ErrorType::ContentBadFormat,
@@ -39,7 +39,7 @@ macro_rules! connection_info_error_content_bad_format {
 }
 
 #[macro_export]
-macro_rules! connection_info_error_mandatory_field_missing {
+macro_rules! connection_info_mandatory_field_missing_error {
     ($msg:expr) => {
         Error::new (
             crate::platform::connection_info::error::ErrorType::MandatoryFieldMissing,
@@ -48,9 +48,16 @@ macro_rules! connection_info_error_mandatory_field_missing {
     };
 }
 
-// fn mandatory_field_missing_error(message: &str) -> CiError {
-//     CiError::new(ErrorType::MandatoryFieldMissing, message)
-// }
-// fn file_does_not_exist_error(message: &str) -> CiError {
-//     CiError::new(ErrorType::FileDoesNotExist, message)
-// }
+#[macro_export]
+macro_rules! connection_info_file_does_not_exist_error_result {
+    ($msg:expr) => {
+        Err(
+            Error::new (
+                crate::platform::connection_info::error::ErrorType::FileDoesNotExist,
+                crate::platform::Error::new(file!(), line!(), $msg.to_string())
+            )
+        )
+    };
+}
+
+

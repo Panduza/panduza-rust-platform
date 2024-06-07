@@ -1,35 +1,19 @@
 use std::env;
+use std::io::Write;
 use std::path::PathBuf;
 
-use super::serde;
 use super::Info;
 use super::Error;
-use super::error::ErrorType;
+use super::serde;
+use crate::platform::FunctionResult;
 
-
-use crate::platform::Error as PlfError;
-
-use crate::connection_info_error_content_bad_format;
-
-
-
-/// Create a new Error object for a file does not exist error
-/// 
-macro_rules! error_file_does_not_exist {
-    ($msg:expr) => {
-        Err(Error::new(
-            ErrorType::FileDoesNotExist,
-            PlfError::new(file!(), line!(), $msg.to_string())
-            )
-        )
-    };
-}
-
-
+use crate::platform_error;
+use crate::connection_info_content_bad_format_error;
+use crate::connection_info_file_does_not_exist_error_result;
 
 /// Return the system path of the connection.json file
 ///
-/// COVER:PLATF_00001_00
+/// COVER:PLATF_00001_00 - File System Paths
 ///
 pub fn system_file_path() -> PathBuf {
     // Define the paths
@@ -52,18 +36,38 @@ pub fn system_file_path() -> PathBuf {
 }
 
 /// Create a new Info object from a JSON file
-/// 
-/// COVER:PLATF_00002_00
-/// 
+///
+/// COVER:PLATF_00002_00 - File is JSON
+///
 pub async fn import_file(file_path: PathBuf) -> Result<Info, Error> {
 
     // Check if the file exists
     if !file_path.exists() {
-        return error_file_does_not_exist!(file_path.to_str().unwrap());
+        return connection_info_file_does_not_exist_error_result!(file_path.to_str().unwrap());
     }
 
     // Try to read the file content
     tokio::fs::read_to_string(&file_path).await
-        .map_err(|e| connection_info_error_content_bad_format!(e.to_string().as_str()) )
+        .map_err(|e| connection_info_content_bad_format_error!(e.to_string().as_str()) )
         .and_then(|v| serde::deserialize(v.as_str()) )
+}
+
+/// Create a new Info file from a info data
+///
+/// COVER:PLATF_00002_00 - File is JSON
+///
+pub async fn export_file(info: &Info) -> FunctionResult {
+
+    //  Write new file
+    let mut file = std::fs::File::create(&info.file_path)
+        .map_err(|e| platform_error!(e.to_string()) )?;
+
+    // Create the JSON string
+    let json_string = serde::serialize(info)?;
+
+    // Write file
+    file.write_all(json_string.as_bytes())
+        .map_err(|e| platform_error!(e.to_string()) )?;
+
+    Ok(())
 }

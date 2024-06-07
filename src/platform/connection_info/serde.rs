@@ -6,32 +6,32 @@ use serde_json::json;
 use serde_json::Map as JsonMap;
 use serde_json::Value as JsonValue;
 
-use crate::connection_info_error_content_bad_format;
-use crate::connection_info_error_mandatory_field_missing;
+use crate::connection_info_content_bad_format_error;
+use crate::connection_info_mandatory_field_missing_error;
 
 
 const DEFAULT_PLATFORM_NAME: &str = "default_name";
 
 // ----------------------------------------------------------------------------
 
-// /// Serialize the info object into a JSON string
-// ///
-// pub fn serialize(info: Info) -> Result<String, Error> {
-//     // Create the JSON object
-//     let json_obj = json!({
-//         "broker": {
-//             "addr": info.broker_addr,
-//             "port": info.broker_port,
-//         }
-//     });
-//     Ok(json_obj.to_string())
+/// Serialize the info object into a JSON string
+///
+pub fn serialize(info: &Info) -> Result<String, crate::platform::Error> {
+    // Create the JSON object
+    let json_obj = json!({
+        "broker": {
+            "addr": info.broker_addr,
+            "port": info.broker_port,
+        }
+    });
+    Ok(json_obj.to_string())
 
 // //     // //  Write new file
 // //     // let mut file = File::create(&self.file_path)?;
 // //     // let json_string = json_obj.to_string();
 // //     // file.write_all(json_string.as_bytes())?;
 // //     // Ok(())
-// }
+}
 
 // ----------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@ const DEFAULT_PLATFORM_NAME: &str = "default_name";
 pub fn deserialize(json_string: &str) -> Result<Info, Error> {
     serde_json::from_str(json_string)
         .map_err(
-            |e| connection_info_error_content_bad_format!(e.to_string().as_str())
+            |e| connection_info_content_bad_format_error!(e.to_string().as_str())
         )
         .and_then(
             parse_json_obj
@@ -52,7 +52,7 @@ pub fn deserialize(json_string: &str) -> Result<Info, Error> {
 fn parse_json_obj(json_obj: JsonValue) -> Result<Info, Error> {
     json_obj.as_object()
         .ok_or(
-            connection_info_error_content_bad_format!("Except a JSON object at file root")
+            connection_info_content_bad_format_error!("Except a JSON object at file root")
         )
         .and_then(
             parse_map_object
@@ -68,21 +68,21 @@ fn parse_map_object(map_obj: &JsonMap<String, JsonValue>) -> Result<Info, Error>
     // Get Broker Section
     let broker = map_obj.get("broker")
         .ok_or(
-            connection_info_error_mandatory_field_missing!("[broker] section must be provided")
+            connection_info_mandatory_field_missing_error!("[broker] section must be provided")
         )?;
 
     // Get Host Address
     let broker_addr = broker.get("addr")
-        .ok_or(connection_info_error_mandatory_field_missing!("[broker.addr] must be provided"))?
+        .ok_or(connection_info_mandatory_field_missing_error!("[broker.addr] must be provided"))?
         .as_str()
-        .ok_or(connection_info_error_content_bad_format!("[broker.addr] must be a string"))?
+        .ok_or(connection_info_content_bad_format_error!("[broker.addr] must be a string"))?
         .to_string();
 
     // Get Host Port
     let broker_port = broker.get("port")
-        .ok_or(connection_info_error_mandatory_field_missing!("[broker.port] must be provided"))?
+        .ok_or(connection_info_mandatory_field_missing_error!("[broker.port] must be provided"))?
         .as_u64()
-        .ok_or(connection_info_error_content_bad_format!("[broker.port] must be a number"))?
+        .ok_or(connection_info_content_bad_format_error!("[broker.port] must be a number"))?
         as u16;
 
     // ---
