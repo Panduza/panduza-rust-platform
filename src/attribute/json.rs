@@ -127,5 +127,15 @@ impl AttributeInterface for JsonAttribute {
         d.unwrap().as_object_mut().unwrap().insert(field.into(), value.clone());
     }
 
+    fn update_field_with_bytes(&mut self, field: &str, value: &[u8]) {
+        let n = self.name.clone();
+        let d = self.data.get_mut(n);
+        if d.is_none() {
+            return;
+        }
+        // let value_as_bytes = serde_json::Number::fr(value as &[u8]).unwrap();
+        d.unwrap().as_object_mut().unwrap().insert(field.into(), 
+            serde_json::Value::);
+    }
 }
 

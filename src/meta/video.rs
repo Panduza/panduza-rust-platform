@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
+use nokhwa::Camera;
 
 use crate::attribute::JsonAttribute;
 use crate::interface::AmInterface;
@@ -18,11 +19,16 @@ pub trait VideoActions: Send + Sync {
     /// Initialize the interface
     /// The connector initialization must be done here
     ///
+
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
+    // async fn camera_choice(&mut self, interface: &AmInterface, index: u32) ->  Option<Arc<tokio::sync::Mutex<Camera>>>;
     
-    async fn read_frame(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
+    async fn read_frame_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
+
+    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
+
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
 }
 
 // ----------------------------------------------------------------------------
@@ -44,21 +50,18 @@ pub trait VideoActions: Send + Sync {
 // ----------------------------------------------------------------------------
 
 struct VideoInterface {
-
-    params: VideoParams,
     actions: Box<dyn VideoActions>
 }
 type AmVideoInterface = Arc<Mutex<VideoInterface>>;
 
 impl VideoInterface {
-    fn new(params: VideoParams, actions: Box<dyn VideoActions>) -> VideoInterface {
+    fn new(actions: Box<dyn VideoActions>) -> VideoInterface {
         return VideoInterface {
-            params: params,
             actions: actions
         }
     }
-    fn new_am(params: VideoParams, actions: Box<dyn VideoActions>) -> AmVideoInterface {
-        return Arc::new(Mutex::new( VideoInterface::new(params, actions) ));
+    fn new_am(actions: Box<dyn VideoActions>) -> AmVideoInterface {
+        return Arc::new(Mutex::new( VideoInterface::new(actions) ));
     }
 }
 
@@ -70,7 +73,7 @@ impl VideoInterface {
 // ----------------------------------------------------------------------------
 
 struct VideoStates {
-    relay_interface: Arc<Mutex<VideoInterface>>
+    video_interface: Arc<Mutex<VideoInterface>>
 }
 
 
@@ -88,15 +91,28 @@ impl interface::fsm::States for VideoStates {
     ///
     async fn initializating(&self, interface: &AmInterface)
     {
+
+        let mut video_itf = self.video_interface.lock().await;
+
         // Custom initialization slot
-        self.relay_interface.lock().await.actions.initializating(&interface).await.unwrap();
+        video_itf.actions.initializating(&interface).await.unwrap();
+        // self.video_interface.lock().await.actions.initializating(&interface).await.unwrap();
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("frame", true));
+        interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
 
-        // Init state
-        let state_value = self.relay_interface.lock().await.actions.read_state_open(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_f64("frame", "value", state_value).unwrap();
+        // Init frame
+        // let state_value = self.video_interface.lock().await.actions.read_state_open(&interface).await.unwrap();
+        // interface.lock().await.update_attribute_with_f64("frame", "value", state_value).unwrap();
+        
+        // update attribute with byte type
+        let frame_value = video_itf.actions.read_frame_value(&interface).await.unwrap();
+        interface.lock().await.update_attribute_with_bytes("frame", "value", frame_value).unwrap();
+
+        // Init enable
+        let enable_value = video_itf.actions.read_enable_value(&interface).await.unwrap();
+        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value).unwrap();
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -133,7 +149,7 @@ impl interface::fsm::States for VideoStates {
 const ID_STATE: subscription::Id = 0;
 
 struct VideoSubscriber {
-    relay_interface: Arc<Mutex<VideoInterface>>
+    video_interface: Arc<Mutex<VideoInterface>>
 }
 
 impl VideoSubscriber {
@@ -141,19 +157,30 @@ impl VideoSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_frame_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
-        -> PlatformFunctionResult
-    {
+    async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
+        let requested_value = field_data.as_bool().unwrap();
+        self.video_interface.lock().await
+            .actions.write_enable_value(&interface, requested_value).await;
+
+        let r_value = self.video_interface.lock().await
+            .actions.read_enable_value(&interface).await
+            .unwrap();
+
+        interface.lock().await
+            .update_attribute_with_bool("enable", "value", r_value).unwrap();
+    }
+
+    /// 
+    /// 
+    #[inline(always)]
+    async fn process_frame_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         // Here field_data is bytes type 
         let requested_value = field_data.as_array().unwrap();
 
-
         // let requested_value = field_data.as_bool().unwrap();
-        self.relay_interface.lock().await
-            .actions.write_state_open(&interface, requested_value).await;
 
-        let r_value = self.relay_interface.lock().await
-            .actions.read_state_open(&interface).await
+        let r_value = self.video_interface.lock().await
+            .actions.read_frame_value(&interface).await
             .unwrap();
         
         // update attribute with bytes array
@@ -202,9 +229,11 @@ impl interface::subscriber::Subscriber for VideoSubscriber {
 
                     for (attribute_name, fields) in o.iter() {
                         for (field_name, field_data) in fields.as_object().unwrap().iter() {
+                            if attribute_name == "enable" && field_name == "value" {
+                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                            }
                             if attribute_name == "frame" && field_name == "value" {
-                                self.process_state_open(&interface, attribute_name, field_name, field_data).await;
-
+                                self.process_frame_value(&interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
@@ -247,8 +276,8 @@ pub fn build<A: Into<String>>(
         name,
         "video",
         "0.0",
-        Box::new(VideoStates{relay_interface: c.clone()}),
-        Box::new(VideoSubscriber{relay_interface: c.clone()})
+        Box::new(VideoStates{video_interface: c.clone()}),
+        Box::new(VideoSubscriber{video_interface: c.clone()})
     );
 }
 
