@@ -1,4 +1,6 @@
 use async_trait::async_trait;
+use rust_usbtmc;
+use rust_usbtmc::instrument::Instrument;
 use crate::platform::PlatformError;
 use crate::meta::powermeter;
 use crate::interface::AmInterface;
@@ -10,11 +12,17 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 // use crate::connector::serial::tty::Config as SerialConfig;
 // use crate::platform_error_result;
 
+
+static VID: u16 = 0x1313;
+static PID: u16 = 0x8079;
+
+
 ///
 /// 
 struct PM100APowermeterActions {
     // connector_tty: tty::TtyConnector,
     // serial_config: SerialConfig,
+    instrument: Instrument,
     measure_value: f64,
     // time_lock_duration: Option<tokio::time::Duration>,
 }
@@ -28,8 +36,12 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
 
         // self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         // self.connector_tty.init().await;
+        self.instrument = Instrument::new(VID, PID);
 
         println!("yooooo!");
+        // println!("Ask: {}", self.instrument.ask("*IDN?").unwrap());
+        self.measure_value = self.instrument.read().unwrap().parse::<f64>().unwrap();
+        println!("measure {}", self.measure_value);
 
         return Ok(());
     }
@@ -38,26 +50,18 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
     /// 
     async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        // let mut response: &mut [u8] = &mut [0; 1024];
-        // let _result = self.connector_tty.read(
-        //     b"STATUS?",
-        //     &mut response,
-        //     self.time_lock_duration
-        // ).await
-        //     .map(|c| {
-        //         println!("c: {:?}", c);
-        //         let pp = &response[0..c];
-        //         if (pp[0] & (1 << 6)) == 0 {
-        //             self.measure_value = false;
-        //         } else {
-        //             self.measure_value = true;
-        //         }
-        //     });
+        self.measure_value = self.instrument.read().unwrap().parse::<f64>().unwrap();
+        println!("measure {}", self.measure_value);
 
-        interface.lock().await.log_warn(
-            format!("NOT IMPLEMENTED PM100A - read_measure_value: {}", self.measure_value)
+        interface.lock().await.log_info(
+            format!("PM100A - read_measure_value: {}", self.measure_value)
         );
         return Ok(self.measure_value);
+
+        // interface.lock().await.log_warn(
+        //     format!("NOT IMPLEMENTED PM100A - read_measure_value: {}", self.measure_value)
+        // );
+        // return Ok(self.measure_value);
     }
 }
 
@@ -78,6 +82,7 @@ pub fn build<A: Into<String>>(
         Box::new(PM100APowermeterActions {
             // connector_tty: TtyConnector::new(None),
             // serial_config: serial_config.clone(),
+            instrument: Instrument::new(0, 0),
             measure_value: 0.0,
             // time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
