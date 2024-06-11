@@ -4,6 +4,7 @@ use crate::platform::FunctionResult as PlatformFunctionResult;
 
 use super::AttributeInterface;
 use super::JsonAttribute;
+use super::MqttPayload;
 
 
 /// Info attribute structure
@@ -47,7 +48,7 @@ impl AttributeInterface for InfoAttribute {
         return self.attr.retain();
     }
 
-    fn to_mqtt_payload(&self) -> String {
+    fn to_mqtt_payload(&self) -> MqttPayload {
         return self.attr.to_mqtt_payload();
     }
 
@@ -77,6 +78,10 @@ impl AttributeInterface for InfoAttribute {
     
     fn update_field_with_json(&mut self, field: &str, value: &serde_json::Value) {
         self.attr.update_field_with_json(field, value);
+    }
+
+    fn update_field_with_bytes(&mut self, value: &Vec<u8>) {
+        self.attr.update_field_with_bytes(value)
     }
 }
 

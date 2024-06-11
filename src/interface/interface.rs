@@ -1,3 +1,4 @@
+use crate::attribute::MqttPayload;
 use crate::platform::services::AmServices;
 use crate::platform::FunctionResult as PlatformFunctionResult;
 // use crate::platform::PlatformError;
@@ -193,7 +194,7 @@ impl Interface {
 
     /// Get the base topic
     ///
-    pub async fn publish(&self, topic: &str, payload: &str, retain: bool) {
+    pub async fn publish(&self, topic: &str, payload: &MqttPayload, retain: bool) {
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
     }
 
@@ -267,9 +268,9 @@ impl Interface {
         att.as_mut().update_field_with_json(field, value);
     }
 
-    pub fn update_attribute_with_bytes(&mut self, attribute: &str, field: &str, value: &[u8]) {
+    pub fn update_attribute_with_bytes(&mut self, attribute: &str, value: &Vec<u8>) {
         let att = self.attributes.get_mut(attribute).unwrap();
-        att.as_mut().update_field_with_bytes(field, value);
+        att.as_mut().update_field_with_bytes(value);
     }
 
     pub fn platform_services(&self) -> AmServices {

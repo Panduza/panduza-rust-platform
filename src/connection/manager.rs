@@ -49,6 +49,7 @@ impl Manager {
         // Set default options
         let mut mqtt_options = MqttOptions::new(id, host, port);
         mqtt_options.set_keep_alive(Duration::from_secs(60));
+        mqtt_options.set_max_packet_size(1000000000, 100000000);
 
         // Create connection Object
         self.connection = Some(Arc::new(Mutex::new(Connection::new(mqtt_options))));

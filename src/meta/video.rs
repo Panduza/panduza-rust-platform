@@ -3,9 +3,8 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
-use nokhwa::Camera;
 
-use crate::attribute::JsonAttribute;
+use crate::attribute::{JsonAttribute, RawAttribute};
 use crate::interface::AmInterface;
 use crate::platform::PlatformError;
 use crate::{interface, subscription};
@@ -21,10 +20,8 @@ pub trait VideoActions: Send + Sync {
     ///
 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
-
-    // async fn camera_choice(&mut self, interface: &AmInterface, index: u32) ->  Option<Arc<tokio::sync::Mutex<Camera>>>;
     
-    async fn read_frame_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
+    async fn read_frame_value(&mut self, interface: &AmInterface) -> Result<&Vec<u8>, PlatformError>;
 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
 
@@ -99,7 +96,7 @@ impl interface::fsm::States for VideoStates {
         // self.video_interface.lock().await.actions.initializating(&interface).await.unwrap();
 
         // Register attributes
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("frame", true));
+        interface.lock().await.register_attribute(RawAttribute::new_boxed("frame", true));
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
 
         // Init frame
@@ -108,7 +105,7 @@ impl interface::fsm::States for VideoStates {
         
         // update attribute with byte type
         let frame_value = video_itf.actions.read_frame_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bytes("frame", "value", frame_value).unwrap();
+        interface.lock().await.update_attribute_with_bytes("frame", frame_value);
 
         // Init enable
         let enable_value = video_itf.actions.read_enable_value(&interface).await.unwrap();
@@ -123,10 +120,47 @@ impl interface::fsm::States for VideoStates {
 
     async fn running(&self, interface: &AmInterface)
     {
-        // println!("running");
+        let mut video_itf = self.video_interface.lock().await;
+        
+        // Send video
+
+        loop {
+            // println!("pif");
 
 
-        interface::basic::wait_for_fsm_event(interface).await;
+            // // Init camera object 
+            // // first camera found in the list
+            // let index = CameraIndex::Index(0); 
+            // // request the absolute highest resolution CameraFormat that can be decoded to RGB.
+            // let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
+            // // make the camera
+            // // let mut camera = Camera::new(index, requested).unwrap();
+
+            // let mut camera = Camera::new(index, requested).unwrap();
+
+            // // println!("Camera found \n");
+            
+            // // _interface.lock().await.log_info(
+            // //     format!("Find camera")
+            // // );
+            // // self.camera = self.camera_choice(0);
+
+            // // let frame = camera.lock().await.frame().unwrap();
+            // let frame = camera.frame().unwrap();
+            // self.frame_value = frame.buffer().to_vec();
+            // // let frame_value = frame.buffer();
+
+            
+            let frame_value = video_itf.actions.read_frame_value(&interface).await.unwrap();
+            // println!("paf");
+            interface.lock().await.update_attribute_with_bytes("frame", frame_value);
+
+            // println!("argggg");
+            
+            interface.lock().await.publish_all_attributes().await;
+        }
+
+        // interface::basic::wait_for_fsm_event(interface).await;
     }
 
     async fn error(&self, _interface: &AmInterface)
@@ -173,20 +207,18 @@ impl VideoSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_frame_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        // Here field_data is bytes type 
-        let requested_value = field_data.as_array().unwrap();
+    async fn process_frame_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str) {
+        
+        let mut video_interface = self.video_interface.lock().await;
 
-        // let requested_value = field_data.as_bool().unwrap();
-
-        let r_value = self.video_interface.lock().await
+        let r_value = video_interface
             .actions.read_frame_value(&interface).await
             .unwrap();
         
         // update attribute with bytes array
 
         interface.lock().await
-            .update_attribute_with_f64("frame", "value", r_value)
+            .update_attribute_with_bytes("frame", r_value)
 
     }
 }
@@ -232,8 +264,8 @@ impl interface::subscriber::Subscriber for VideoSubscriber {
                             if attribute_name == "enable" && field_name == "value" {
                                 self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
                             }
-                            if attribute_name == "frame" && field_name == "value" {
-                                self.process_frame_value(&interface, attribute_name, field_name, field_data).await;
+                            if attribute_name == "frame" {
+                                self.process_frame_value(&interface, attribute_name, field_name).await;
                             }
                         }
                     }
