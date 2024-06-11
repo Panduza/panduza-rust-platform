@@ -196,6 +196,7 @@ impl Interface {
     ///
     pub async fn publish(&self, topic: &str, payload: &MqttPayload, retain: bool) {
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+        println!("publish done");
     }
 
     // -- ATTRIBUTES --
@@ -225,6 +226,7 @@ impl Interface {
     }
 
     pub async fn publish_all_attributes(&self) {
+        println!("publish to done");
         for (_, attribute) in self.attributes.iter() {
             self.publish_attribute(attribute.name()).await;
         }
