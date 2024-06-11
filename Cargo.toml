@@ -83,6 +83,14 @@ tracing-appender = "0.2.3"
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
 
+# nokhwa = { path = "lib/nokhwa", features = ["input-native", "output-wgpu"] }
+
+# [workspace]
+
+# members = [
+#    "lib/nokhwa"
+#]
+
 [features]
 
 # Enable tracing in stdout
