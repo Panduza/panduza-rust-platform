@@ -75,36 +75,35 @@ struct VideoStates {
 
 ///
 ///
-// async fn send_video(interface: AmInterface) {
+async fn send_video(interface: AmInterface) {
     
-//     // let mut video_itf = self.video_interface.lock().await;
+    // let mut video_itf = self.video_interface.lock().await;
 
-//     // Init camera object 
-//     // first camera found in the list
-//     let index = CameraIndex::Index(0); 
-//     // request the absolute highest resolution CameraFormat that can be decoded to RGB.
-//     let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
-//     // make the camera
-//     let mut camera = Camera::new(index, requested).unwrap();
+    // Init camera object 
+    // first camera found in the list
+    let index = CameraIndex::Index(0); 
+    // request the absolute highest resolution CameraFormat that can be decoded to RGB.
+    let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
+    // make the camera
+    let mut camera = Camera::new(index, requested).unwrap();
 
-//     // Send video
-//     loop {  
-//         println!("Starting sending video");
-//         // Go look for the next frame
-//         let frame = camera.frame().unwrap();
-//         let frame_value = frame.buffer().to_vec();
-//         // let frame_value = frame.buffer();
+    // Send video
+    loop {  
+        // Go look for the next frame
+        let frame = camera.frame().unwrap();
+        let frame_value = frame.buffer().to_vec();
+        // let frame_value = frame.buffer();
 
-//         // Go look there the frame then send it ourself
+        // Go look there the frame then send it ourself
 
         
-//         // Change the value of 
-//         interface.lock().await.update_attribute_with_bytes("frame", &frame_value);
+        // Change the value of 
+        interface.lock().await.update_attribute_with_bytes("frame", &frame_value);
 
-//         // There is only one attribute frame
-//         interface.lock().await.publish_all_attributes().await;
-//     }
-// }
+        // There is only one attribute frame
+        interface.lock().await.publish_all_attributes().await;
+    }
+}
 
 #[async_trait]
 impl interface::fsm::States for VideoStates {
@@ -141,22 +140,28 @@ impl interface::fsm::States for VideoStates {
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
 
+        // Create a new Tokio runtime
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        let interface_cloned = interface.clone();
+        
+        std::thread::spawn(move || {
+            rt.block_on(async {
+                let local_set = tokio::task::LocalSet::new();
+                local_set.run_until(async {
+                    let handle = tokio::task::spawn_local(send_video(interface_cloned));
+                    handle.await.unwrap();
+                }).await;
+            });
+        });
+
+
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
     }
 
     async fn running(&self, interface: &AmInterface)
     {
-        // let local_set = tokio::task::LocalSet::new();
-
-        
-
-        // local_set.run_until(async {
-        //     println!("arggg");
-        //     let handle = tokio::task::spawn_local(send_video(interface.clone()));
-        //     handle.await.unwrap();
-        // });
-        
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
