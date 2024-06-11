@@ -18,8 +18,7 @@ struct VideoActions {
     //camera: Camera,
     // camera: Box<Camera>,
     // camera: <dyn CaptureBackendTrait + Sync>,
-    frame_value: Vec<u8>,
-    enable_value: bool
+    frame_value: Vec<u8>
 }
 
 #[async_trait]
@@ -49,24 +48,6 @@ impl video::VideoActions for VideoActions {
         // // );
         // // self.camera = self.camera_choice(0);
         return Ok(());
-    }
-
-    /// Read the enable value
-    /// 
-    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
-        interface.lock().await.log_info(
-            format!("Video - read_enable_value: {}", self.enable_value)
-        );
-        return Ok(self.enable_value);
-    }
-
-    /// Write the enable value
-    /// 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
-        interface.lock().await.log_info(
-            format!("Video - write_enable_value: {}", self.enable_value)
-        );
-        self.enable_value = v;
     }
 
     /// Read the frame value
@@ -133,8 +114,7 @@ pub fn build<A: Into<String>>(
         name, 
         Box::new(VideoActions {
             // camera: None,
-            frame_value: vec,
-            enable_value: false
+            frame_value: vec
         })
     );
 }

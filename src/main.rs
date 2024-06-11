@@ -9,7 +9,7 @@
     unconditional_recursion,
     bad_style,
     dead_code,
-    unused,
+    // unused,
     unused_allocation,
     unused_comparisons,
     unused_parens,

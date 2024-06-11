@@ -4,13 +4,17 @@ use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
 
-use crate::attribute::{JsonAttribute, RawAttribute};
+use crate::attribute::RawAttribute;
 use crate::interface::AmInterface;
 use crate::platform::PlatformError;
 use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 use crate::platform::FunctionResult as PlatformFunctionResult;
+
+use nokhwa::utils::{CameraIndex, RequestedFormat, RequestedFormatType};
+use nokhwa::Camera;
+use nokhwa_core::pixel_format::RgbFormat;
 
 #[async_trait]
 pub trait VideoActions: Send + Sync {
@@ -22,10 +26,6 @@ pub trait VideoActions: Send + Sync {
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
     
     async fn read_frame_value(&mut self, interface: &AmInterface) -> Result<&Vec<u8>, PlatformError>;
-
-    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
-
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
 }
 
 // ----------------------------------------------------------------------------
@@ -73,6 +73,38 @@ struct VideoStates {
     video_interface: Arc<Mutex<VideoInterface>>
 }
 
+///
+///
+// async fn send_video(interface: AmInterface) {
+    
+//     // let mut video_itf = self.video_interface.lock().await;
+
+//     // Init camera object 
+//     // first camera found in the list
+//     let index = CameraIndex::Index(0); 
+//     // request the absolute highest resolution CameraFormat that can be decoded to RGB.
+//     let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
+//     // make the camera
+//     let mut camera = Camera::new(index, requested).unwrap();
+
+//     // Send video
+//     loop {  
+//         println!("Starting sending video");
+//         // Go look for the next frame
+//         let frame = camera.frame().unwrap();
+//         let frame_value = frame.buffer().to_vec();
+//         // let frame_value = frame.buffer();
+
+//         // Go look there the frame then send it ourself
+
+        
+//         // Change the value of 
+//         interface.lock().await.update_attribute_with_bytes("frame", &frame_value);
+
+//         // There is only one attribute frame
+//         interface.lock().await.publish_all_attributes().await;
+//     }
+// }
 
 #[async_trait]
 impl interface::fsm::States for VideoStates {
@@ -97,7 +129,6 @@ impl interface::fsm::States for VideoStates {
 
         // Register attributes
         interface.lock().await.register_attribute(RawAttribute::new_boxed("frame", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
 
         // Init frame
         // let state_value = self.video_interface.lock().await.actions.read_state_open(&interface).await.unwrap();
@@ -106,10 +137,6 @@ impl interface::fsm::States for VideoStates {
         // update attribute with byte type
         let frame_value = video_itf.actions.read_frame_value(&interface).await.unwrap();
         interface.lock().await.update_attribute_with_bytes("frame", frame_value);
-
-        // Init enable
-        let enable_value = video_itf.actions.read_enable_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value).unwrap();
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -120,47 +147,17 @@ impl interface::fsm::States for VideoStates {
 
     async fn running(&self, interface: &AmInterface)
     {
-        let mut video_itf = self.video_interface.lock().await;
+        // let local_set = tokio::task::LocalSet::new();
+
         
-        // Send video
 
-        loop {
-            // println!("pif");
-
-
-            // // Init camera object 
-            // // first camera found in the list
-            // let index = CameraIndex::Index(0); 
-            // // request the absolute highest resolution CameraFormat that can be decoded to RGB.
-            // let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
-            // // make the camera
-            // // let mut camera = Camera::new(index, requested).unwrap();
-
-            // let mut camera = Camera::new(index, requested).unwrap();
-
-            // // println!("Camera found \n");
-            
-            // // _interface.lock().await.log_info(
-            // //     format!("Find camera")
-            // // );
-            // // self.camera = self.camera_choice(0);
-
-            // // let frame = camera.lock().await.frame().unwrap();
-            // let frame = camera.frame().unwrap();
-            // self.frame_value = frame.buffer().to_vec();
-            // // let frame_value = frame.buffer();
-
-            
-            let frame_value = video_itf.actions.read_frame_value(&interface).await.unwrap();
-            // println!("paf");
-            interface.lock().await.update_attribute_with_bytes("frame", frame_value);
-
-            // println!("argggg");
-            
-            interface.lock().await.publish_all_attributes().await;
-        }
-
-        // interface::basic::wait_for_fsm_event(interface).await;
+        // local_set.run_until(async {
+        //     println!("arggg");
+        //     let handle = tokio::task::spawn_local(send_video(interface.clone()));
+        //     handle.await.unwrap();
+        // });
+        
+        interface::basic::wait_for_fsm_event(interface).await;
     }
 
     async fn error(&self, _interface: &AmInterface)
@@ -187,22 +184,6 @@ struct VideoSubscriber {
 }
 
 impl VideoSubscriber {
-
-    /// 
-    /// 
-    #[inline(always)]
-    async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_bool().unwrap();
-        self.video_interface.lock().await
-            .actions.write_enable_value(&interface, requested_value).await;
-
-        let r_value = self.video_interface.lock().await
-            .actions.read_enable_value(&interface).await
-            .unwrap();
-
-        interface.lock().await
-            .update_attribute_with_bool("enable", "value", r_value).unwrap();
-    }
 
     /// 
     /// 
@@ -260,12 +241,9 @@ impl interface::subscriber::Subscriber for VideoSubscriber {
 
 
                     for (attribute_name, fields) in o.iter() {
-                        for (field_name, field_data) in fields.as_object().unwrap().iter() {
-                            if attribute_name == "enable" && field_name == "value" {
-                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
-                            }
+                        for field in fields.as_object().unwrap().iter() {
                             if attribute_name == "frame" {
-                                self.process_frame_value(&interface, attribute_name, field_name).await;
+                                self.process_frame_value(&interface, attribute_name, field.0).await;
                             }
                         }
                     }
