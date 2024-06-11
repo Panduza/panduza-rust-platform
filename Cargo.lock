@@ -1417,7 +1417,7 @@ dependencies = [
  "nokhwa-bindings-linux",
  "nokhwa-bindings-macos",
  "nokhwa-bindings-windows",
- "nokhwa-core 0.1.2",
+ "nokhwa-core",
  "paste",
  "thiserror",
  "wgpu",
@@ -1427,7 +1427,7 @@ dependencies = [
 name = "nokhwa-bindings-linux"
 version = "0.1.0"
 dependencies = [
- "nokhwa-core 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nokhwa-core",
  "v4l",
  "v4l2-sys-mit",
 ]
@@ -1441,7 +1441,7 @@ dependencies = [
  "core-media-sys",
  "core-video-sys",
  "flume 0.10.14",
- "nokhwa-core 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nokhwa-core",
  "objc",
  "once_cell",
 ]
@@ -1450,7 +1450,7 @@ dependencies = [
 name = "nokhwa-bindings-windows"
 version = "0.4.0"
 dependencies = [
- "nokhwa-core 0.1.2",
+ "nokhwa-core",
  "once_cell",
  "windows 0.43.0",
 ]
@@ -1464,17 +1464,6 @@ dependencies = [
  "mozjpeg",
  "thiserror",
  "wgpu",
-]
-
-[[package]]
-name = "nokhwa-core"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb9b0e58413cb1b6d041d802be0e921368f3c72525b7ea720089c8aa140d6d49"
-dependencies = [
- "bytes",
- "image",
- "thiserror",
 ]
 
 [[package]]
@@ -1593,7 +1582,7 @@ dependencies = [
  "hostname",
  "lazy_static",
  "nokhwa",
- "nokhwa-core 0.1.2",
+ "nokhwa-core",
  "regex",
  "rumqttc",
  "serde_json",

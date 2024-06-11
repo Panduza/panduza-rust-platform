@@ -26,7 +26,8 @@ license = "Apache-2.0"
 repository = "https://github.com/l1npengtul/nokhwa"
 
 [dependencies.nokhwa-core]
-version = "0.1.0"
+# version = "0.1.0"
+path = "../nokhwa-core-0.1.2"
 
 [target."cfg(any(target_os=\"macos\",target_os=\"ios\"))".dependencies.block]
 version = "0.1"

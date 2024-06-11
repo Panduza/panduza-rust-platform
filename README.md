@@ -36,3 +36,7 @@ tracing = { version = "0.1", features = [
 ]}
 ```
 
+# Linux video install :
+
+sudo apt-get install libv4l-dev
+sudo apt-get install libclang-dev
