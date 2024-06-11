@@ -708,9 +708,9 @@ dependencies = [
 
 [[package]]
 name = "libusb1-sys"
-version = "0.5.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e22e89d08bbe6816c6c5d446203b859eba35b8fa94bf1b7edb2f6d25d43f023f"
+checksum = "da050ade7ac4ff1ba5379af847a10a10a8e284181e060105bf8d86960ce9ce0f"
 dependencies = [
  "cc",
  "libc",
@@ -926,7 +926,7 @@ dependencies = [
  "lazy_static",
  "regex",
  "rumqttc",
- "rust-usbtmc",
+ "rusb",
  "serde_json",
  "tokio",
  "tokio-serial",
@@ -1194,22 +1194,12 @@ dependencies = [
 
 [[package]]
 name = "rusb"
-version = "0.8.1"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9a5084628cc5be77b1c750b3e5ee0cc519d2f2491b3f06b78b3aac3328b00ad"
+checksum = "ab9f9ff05b63a786553a4c02943b74b34a988448671001e9a27e2f0565cc05a4"
 dependencies = [
  "libc",
  "libusb1-sys",
-]
-
-[[package]]
-name = "rust-usbtmc"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "603c7ea81f60b0c227ff3735001935d5773b9c54cd3720ee90a0f4840ede191f"
-dependencies = [
- "byteorder",
- "rusb",
 ]
 
 [[package]]
