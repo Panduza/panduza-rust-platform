@@ -85,6 +85,11 @@ tracing-appender = "0.2.3"
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
 
+# Video converting h264
+# ffmpeg-next = "5.0"
+
+# x264 = "0.3"
+
 [features]
 
 # Enable tracing in stdout
