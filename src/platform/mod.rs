@@ -36,6 +36,7 @@ pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
 
 /// Platform error type
 ///
+pub type Error = error::Error;
 pub type PlatformError = error::Error;
 
 /// Platform result type
@@ -53,7 +54,7 @@ macro_rules! platform_error_result {
         Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
     };
     ($msg:expr) => {
-        Err(crate::platform::PlatformError::new(file!(), line!(), $msg.to_string()))
+        Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
     };
 }
 #[macro_export]
@@ -200,8 +201,10 @@ impl Platform {
 
 
     /// Services task
-    ///
-    async fn services_task(services: AmServices, devices: device::AmManager, connection: connection::AmManager) -> PlatformTaskResult {
+    /// 
+    async fn services_task(services: AmServices, devices: device::AmManager, connection: connection::AmManager)
+        -> PlatformTaskResult
+    {
         let requests_change_notifier = services.lock().await.get_requests_change_notifier();
         loop {
             // Wait for an event
@@ -213,10 +216,8 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        if execute_service_boot(services.clone()).await.is_err() {
-                            return platform_error_result!("Failed to boot", None);
-                        }
-                        // , devices.clone(), connection.clone()
+
+                        execute_service_boot(services.clone()).await?;
 
                         // Load the tree file
                         if let Err(e) = Platform::load_tree_file(services.clone()).await
@@ -288,7 +289,7 @@ impl Platform {
             .unwrap()
             .clone();
 
-        connection.lock().await.start_connection(&ci.host_addr(), ci.host_port()).await;
+        connection.lock().await.start_connection(&ci.broker_addr, ci.broker_port).await;
         devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
 
 

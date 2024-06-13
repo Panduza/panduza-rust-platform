@@ -1,28 +1,43 @@
 use std::io::{self, Read};
-use crate::platform::{connection_info::{self, ConnectionInfo}, services::Services};
+use crate::platform::FunctionResult;
+use crate::platform::services::Services;
+
+use crate::platform::connection_info::ErrorType;
+use crate::platform::connection_info::import_file;
+use crate::platform::connection_info::system_file_path;
+
+use crate::platform_error_result;
 
 // ------------------------------------------------------------------------------------------------
 
 /// Perform the connection info loading process
 ///
 pub async fn execute_connection_info_loading_process(services: &mut Services)
-    -> Result<(),  &'static str >
+    -> FunctionResult
 {
-    // Try to import connection info from the user file
-    match ConnectionInfo::build_from_file().await {
-        // Set the connection info if build from file is ok
+    // Get the system file path
+    let file_path = system_file_path();
+
+    // PLATF_00003_00 - display path
+    println!("** Connection info file path: {:?}", file_path);
+
+    // Try to import connection info from the system file
+    match import_file(file_path).await {
         Ok(ci) => {
             services.set_connection_info(ci);
+
+            // PLATF_00003_00 - display info
+            // println!("** Connection info file path: {:?}", file_path);
+
             Ok(())
         },
-        // Else Manage errors and unperfect situations
         Err(e) => {
-            match e.type_() {
-                connection_info::CiErrorType::FileDoesNotExist => {
+            match e.err_type {
+                ErrorType::FileDoesNotExist => {
                     return ask_user_about_default_connection_info_creation(services)
                 },
                 _ => {
-                    Err("unmanaged error")
+                    platform_error_result!("unmanaged error")
                 }
             }
         }
@@ -35,14 +50,14 @@ pub async fn execute_connection_info_loading_process(services: &mut Services)
 /// Stop the platform in case it does not work or the user does not want.
 ///
 fn ask_user_about_default_connection_info_creation(services: &mut Services)
-    -> Result<(),  &'static str >
+    -> FunctionResult
 {
     // Warning message
     println!("===========================================================");
     println!("!");
     println!("!");
     println!("!");
-    println!("No configuration file found ! ({})", ConnectionInfo::system_file_path().to_str().unwrap());
+    println!("No configuration file found ! ({})", system_file_path().to_str().unwrap());
     println!("Do you want to create one with default settings ? [N/y]");
 
     // Get input from user
@@ -80,7 +95,7 @@ fn ask_user_about_default_connection_info_creation(services: &mut Services)
         println!("!");
         println!("===========================================================");
         services.trigger_stop();
-        Err(err_message)
+        platform_error_result!(err_message)
     }
 }
 
