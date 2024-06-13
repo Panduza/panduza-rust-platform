@@ -4,9 +4,11 @@ use std::ops::DerefMut;
 
 use super::AmServices;
 
+use crate::platform::FunctionResult;
 mod connection_info_loading_process;
 
 use connection_info_loading_process::execute_connection_info_loading_process;
+
 
 
 /// 
@@ -16,7 +18,7 @@ pub async fn execute_service_boot(
     // devices: device::AmManager,
     // connection: connection::AmManager
 )
-    -> Result<(),  &'static str >
+    -> FunctionResult
 {
     // log
     tracing::info!(class="Platform", "Booting...");
