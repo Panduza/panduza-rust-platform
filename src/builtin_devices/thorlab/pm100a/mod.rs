@@ -8,6 +8,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 
 
 // use crate::connector::serial::tty::Config as SerialConfig;
+use crate::connector::serial::usbtmc::Config as SerialConfig;
 
 // use tokio_serial;
 
@@ -78,17 +79,15 @@ impl DeviceActions for PM100A {
         println!("PM100A::interface_builders");
         println!("{}", device_settings);
 
-        // let mut serial_conf = SerialConfig::new();
-        // serial_conf.import_from_json_settings(device_settings);
+        let mut serial_conf = SerialConfig::new();
+        serial_conf.import_from_json_settings(device_settings);
 
-        // let mut serial_conf = 
-
-        // serial_conf.serial_baudrate = Some(9600);
+        serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
         list.push(
-            // itf_pm100a_powermeter::build("channel", &serial_conf)
-            itf_pm100a_powermeter::build("channel")
+            itf_pm100a_powermeter::build("channel", &serial_conf)
+            // itf_pm100a_powermeter::build("channel")
         );
         return Ok(list);
     }
