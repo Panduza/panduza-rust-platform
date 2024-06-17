@@ -3,14 +3,8 @@ use serde_json::json;
 
 use crate::platform::PlatformError;
 use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
-
 use crate::interface::builder::Builder as InterfaceBuilder;
-
-
-// use crate::connector::serial::tty::Config as SerialConfig;
-use crate::connector::serial::usbtmc::Config as SerialConfig;
-
-// use tokio_serial;
+use crate::connector::usb::usbtmc::Config as SerialConfig;
 
 mod itf_pm100a_powermeter;
 
@@ -82,7 +76,7 @@ impl DeviceActions for PM100A {
         let mut serial_conf = SerialConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
-        serial_conf.serial_baudrate = Some(9600);
+        // serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
         list.push(

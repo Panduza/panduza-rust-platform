@@ -1,3 +1,5 @@
+// use std::result;
+
 use async_trait::async_trait;
 // use rusb;
 // use std::time::Duration;
@@ -12,7 +14,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 // use crate::connector::serial::tty::Tty;
 // use crate::connector::serial::tty::{self, TtyConnector};
 // use crate::connector::serial::tty::Config as SerialConfig;
-use crate::connector::serial::usbtmc::{self, Config as SerialConfig};
+use crate::connector::usb::usbtmc::{self, Config as SerialConfig, UsbtmcConnector};
 // use crate::platform_error_result;
 
 
@@ -25,9 +27,7 @@ use crate::connector::serial::usbtmc::{self, Config as SerialConfig};
 struct PM100APowermeterActions {
     connector_usbtmc: usbtmc::UsbtmcConnector,
     serial_config: SerialConfig,
-    // instrument: Instrument,
     measure_value: f64,
-    time_lock_duration: Option<tokio::time::Duration>,
 }
 
 #[async_trait]
@@ -39,7 +39,8 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
         self.connector_usbtmc = usbtmc::get(&self.serial_config).await.unwrap();
         self.connector_usbtmc.init().await;
 
-        let result = self.connector_usbtmc.write_then_read()
+        let result = self.connector_usbtmc.ask("*IDN?".to_string()).await;
+        println!("PM100A - initializing: {}", result);
        
         return Ok(());
     }
@@ -47,6 +48,10 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
     /// Read the measure value
     /// 
     async fn read_measure_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+        let result = self.connector_usbtmc.ask("READ?".to_string()).await;
+        self.measure_value = result.parse::<f64>().expect("bad measure");
+
+        println!("PM100A - read measure value: {}", self.measure_value);
 
         return Ok(self.measure_value);
     }
@@ -67,11 +72,9 @@ pub fn build<A: Into<String>>(
             measure_decimals: 5,
         }, 
         Box::new(PM100APowermeterActions {
-            // connector_tty: TtyConnector::new(None),
+            connector_usbtmc: UsbtmcConnector::new(None),
             serial_config: serial_config.clone(),
-            // instrument: Instrument::new(0, 0),
             measure_value: 0.0,
-            time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
     )
 }

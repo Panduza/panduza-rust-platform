@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
+use tokio::time;
 
 use crate::attribute::JsonAttribute;
 use crate::interface::AmInterface;
@@ -35,14 +36,21 @@ pub trait PowermeterActions: Send + Sync {
 // ----------------------------------------------------------------------------
 
 
-// pub struct EnableAttribute {
-//     attr: JsonAttribute,
-// }
+async fn update_measure(duration_between_measures: u64, interface: AmInterface, powermeter_state: Arc<Mutex<PowermeterInterface>>) {
+    let mut interval = time::interval(time::Duration::from_millis(duration_between_measures));
+    loop {
+        let r_value = powermeter_state.lock().await
+            .actions.read_measure_value(&interface).await
+            .unwrap();
 
-// pub struct F32ValueAttribute {
-//     attr: JsonAttribute,
-// }
+        interface.lock().await
+            .update_attribute_with_f64("measure", "value", r_value as f64);
+        
+        interface.lock().await.publish_all_attributes().await;
 
+        interval.tick().await;
+    }
+}
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
@@ -90,6 +98,7 @@ impl interface::fsm::States for PowermeterStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
+
     /// Initialize the interface
     ///
     async fn initializating(&self, interface: &AmInterface)
@@ -109,6 +118,11 @@ impl interface::fsm::States for PowermeterStates {
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
+        
+        let powermeter_interface = Arc::clone(&(self.powermeter_interface));
+        let interface_cloned = Arc::clone(&interface);
+
+        tokio::spawn(update_measure(100, interface_cloned, powermeter_interface));
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
@@ -126,11 +140,6 @@ impl interface::fsm::States for PowermeterStates {
     {
         println!("error");
     }
-
-    // async fn cleaning(&self, _interface: &AmInterface)
-    // {
-    //     println!("cleaning");
-    // }
 }
 
 // ----------------------------------------------------------------------------
@@ -186,7 +195,6 @@ impl interface::subscriber::Subscriber for PowermeterSubscriber {
             subscription::Message::Mqtt(msg) => {
                 match msg.id() {
                 subscription::ID_PZA_CMDS_SET => {
-                    // interface.lock().await.publish_info().await;
 
                     // only when running state
 
