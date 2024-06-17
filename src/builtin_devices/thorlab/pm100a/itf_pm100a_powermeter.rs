@@ -35,23 +35,28 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
+    async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
         self.connector_usbtmc = usbtmc::get(&self.serial_config).await.unwrap();
         self.connector_usbtmc.init().await;
 
         let result = self.connector_usbtmc.ask("*IDN?".to_string()).await;
-        println!("PM100A - initializing: {}", result);
+
+        interface.lock().await.log_info(
+            format!("PM100A - initializing: {}", result)
+        );
        
         return Ok(());
     }
 
     /// Read the measure value
     /// 
-    async fn read_measure_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+    async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
         let result = self.connector_usbtmc.ask("READ?".to_string()).await;
         self.measure_value = result.parse::<f64>().expect("bad measure");
 
-        println!("PM100A - read measure value: {}", self.measure_value);
+        interface.lock().await.log_info(
+            format!("PM100A - read measure value: {}", self.measure_value)
+        );
 
         return Ok(self.measure_value);
     }

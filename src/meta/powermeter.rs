@@ -122,7 +122,7 @@ impl interface::fsm::States for PowermeterStates {
         let powermeter_interface = Arc::clone(&(self.powermeter_interface));
         let interface_cloned = Arc::clone(&interface);
 
-        tokio::spawn(update_measure(100, interface_cloned, powermeter_interface));
+        tokio::spawn(update_measure(1000, interface_cloned, powermeter_interface));
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
