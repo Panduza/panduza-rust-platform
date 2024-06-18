@@ -4,8 +4,8 @@ use crate::meta::bpc;
 use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
-use crate::connector::serial::tty::{self, TtyConnector};
-use crate::connector::serial::tty::Config as SerialConfig;
+use panduza_connectors::serial::tty::{self, TtyConnector};
+use panduza_connectors::serial::tty::Config as SerialConfig;
 use crate::platform_error_result;
 
 use regex::Regex;

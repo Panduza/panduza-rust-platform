@@ -11,10 +11,10 @@ use crate::interface::AmInterface;
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 
-// use crate::connector::serial::tty::Tty;
-// use crate::connector::serial::tty::{self, TtyConnector};
-// use crate::connector::serial::tty::Config as SerialConfig;
-use crate::connector::usb::usbtmc::{self, Config as SerialConfig, UsbtmcConnector};
+// use panduza_connectors::serial::tty::Tty;
+// use panduza_connectors::serial::tty::{self, TtyConnector};
+// use panduza_connectors::serial::tty::Config as SerialConfig;
+use panduza_connectors::usb::usbtmc::{self, Config as SerialConfig, UsbtmcConnector};
 // use crate::platform_error_result;
 
 
