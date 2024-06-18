@@ -6,7 +6,7 @@ use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
 
 use crate::interface::builder::Builder as InterfaceBuilder;
 
-use crate::connector::serial::tty::Config as SerialConfig;
+use panduza_connectors::serial::tty::Config as SerialConfig;
 
 mod itf_voxpower_inhibiter;
 

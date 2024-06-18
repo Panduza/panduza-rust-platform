@@ -4,7 +4,7 @@ use serde_json::json;
 use crate::platform::PlatformError;
 use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
 use crate::interface::builder::Builder as InterfaceBuilder;
-use crate::connector::usb::usbtmc::Config as SerialConfig;
+use panduza_connectors::usb::usbtmc::Config as SerialConfig;
 
 mod itf_pm100a_powermeter;
 

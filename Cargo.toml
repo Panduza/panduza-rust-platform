@@ -3,15 +3,22 @@ name = "panduza-rust-platform"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+
+members = [
+    "lib/connectors"
+]
+
 
 [dependencies]
+
+
+panduza-connectors = { path = "lib/connectors" }
 
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
 
-#
-tokio-serial = "5.4.1"
 
 # 
 dirs = "3.0.2"
@@ -41,8 +48,12 @@ bitflags = "2.5.0"
 hostname = "0.3.1"
 
 chrono = "0.4"
-# 
-lazy_static = "1.4.0"
+
+
+# SHOULD BE REMOVED, ALL THOSE INTERACTION SHOULD BE IN CONNECTORS
+tokio-serial = "5.4.1"
+
+
 
 # backtrace = "0.3.61"
 
@@ -79,14 +90,6 @@ tracing-appender = "0.2.3"
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
 
-#
-nusb = "0.1.9"
-
-#
-usbtmc-message = { git = "https://github.com/Panduza/pza-rust-usbtmc-message", tag="0.0.0" }
-
-#
-futures-lite = "2.3.0"
 
 [features]
 
