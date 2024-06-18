@@ -1,3 +1,5 @@
 [package]
 name = "plugins-std-serial"
 
+# [dependencies]
+# panduza-rust-platform.workspace = true
