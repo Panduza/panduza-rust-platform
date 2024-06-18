@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use serde_json::json;
 
-use crate::platform::PlatformError;
-use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
+use panduza_core::Error as PlatformError;
+use panduza_core::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
 
-use crate::interface::builder::Builder as InterfaceBuilder;
+use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 use panduza_connectors::serial::tty::Config as SerialConfig;
 

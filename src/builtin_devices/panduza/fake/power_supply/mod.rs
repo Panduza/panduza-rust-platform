@@ -1,11 +1,11 @@
 
 use serde_json::json;
 
-use crate::platform::PlatformError;
-// use crate::interface;
-use crate::device::{ traits::DeviceActions, traits::Producer };
+use panduza_core::Error as PlatformError;
+// use panduza_core::interface;
+use panduza_core::device::{ traits::DeviceActions, traits::Producer };
 
-use crate::interface::builder::Builder as InterfaceBuilder;
+use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
 mod itf_fake_bpc;

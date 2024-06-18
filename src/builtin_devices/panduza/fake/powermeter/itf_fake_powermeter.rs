@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::platform::PlatformError;
-use crate::meta::powermeter;
-use crate::interface::AmInterface;
-use crate::interface::builder::Builder as InterfaceBuilder;
+use panduza_core::Error as PlatformError;
+use panduza_core::meta::powermeter;
+use panduza_core::interface::AmInterface;
+use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
 /// Fake Powermeter Channel Data

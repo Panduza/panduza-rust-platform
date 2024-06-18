@@ -16,7 +16,7 @@ edition = "2021"
 
 [dependencies]
 
-
+panduza-core = { path = "lib/core" }
 panduza-connectors = { path = "lib/connectors" }
 
 

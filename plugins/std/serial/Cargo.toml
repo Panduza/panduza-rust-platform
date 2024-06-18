@@ -1,5 +1,6 @@
 [package]
 name = "plugins-std-serial"
+edition = "2021"
 
 # [dependencies]
 # panduza-rust-platform.workspace = true

@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-use crate::platform::PlatformError;
-use crate::meta::bpc;
-use crate::interface::AmInterface;
-use crate::interface::builder::Builder as InterfaceBuilder;
+use panduza_core::Error as PlatformError;
+use panduza_core::meta::bpc;
+use panduza_core::interface::AmInterface;
+use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 use panduza_connectors::serial::tty::{self, TtyConnector};
 use panduza_connectors::serial::tty::Config as SerialConfig;
-use crate::platform_error_result;
+use panduza_core::platform_error_result;
 
 use regex::Regex;
 
