@@ -1,7 +1,7 @@
 
 use serde_json::json;
 
-use super::AttributeInterface;
+use super::{AttributeInterface, MqttPayload};
 // use super::FieldF64;
 
 use crate::platform::FunctionResult as PlatformFunctionResult;
@@ -58,8 +58,8 @@ impl AttributeInterface for JsonAttribute {
         return &self.retain;
     }
     
-    fn to_mqtt_payload(&self) -> String {
-        return self.data.to_string();
+    fn to_mqtt_payload(&self) -> MqttPayload {
+        return MqttPayload::Json(self.data.to_string());
     }
     
     fn from_mqtt_payload(&mut self, _payload: &str) {
@@ -118,6 +118,18 @@ impl AttributeInterface for JsonAttribute {
         );
     }
 
+    fn update_field_with_bytes(&mut self, _value: &Vec<u8>) {
+        // let n = self.name.clone();
+        // let d = self.data.get_mut(n);
+        // if d.is_none() || field.is_empty() || value.is_empty() {
+        //     return;
+        // }
+        
+        // let value_as_bytes = serde_json::Number::fr(value as &[u8]).unwrap();
+        // d.unwrap().as_object_mut().unwrap().insert(field.into(), 
+        //     serde_json::Value::Object(value));
+    }
+
     fn update_field_with_json(&mut self, field: &str, value: &serde_json::Value) {
         let n = self.name.clone();
         let d = self.data.get_mut(n);
@@ -126,6 +138,5 @@ impl AttributeInterface for JsonAttribute {
         }
         d.unwrap().as_object_mut().unwrap().insert(field.into(), value.clone());
     }
-
 }
 
