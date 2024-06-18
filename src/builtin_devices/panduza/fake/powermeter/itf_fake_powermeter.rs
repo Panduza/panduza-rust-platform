@@ -27,6 +27,7 @@ impl powermeter::PowermeterActions for FakePowermeterActions {
         interface.lock().await.log_info(
             format!("FakePowermeter - read_measure_value: {}", self.measure_value)
         );
+        self.measure_value += 0.001;
         return Ok(self.measure_value);
     }
 }

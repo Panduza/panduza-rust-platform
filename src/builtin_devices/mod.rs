@@ -4,6 +4,7 @@ mod cobolt;
 mod hameg;
 mod korad;
 mod panduza;
+mod thorlab;
 
 pub fn import_plugin_producers(factory: &mut DeviceFactory)
 {
@@ -11,4 +12,5 @@ pub fn import_plugin_producers(factory: &mut DeviceFactory)
     hameg::import_plugin_producers(factory);
     korad::import_plugin_producers(factory);
     panduza::import_plugin_producers(factory);
+    thorlab::import_plugin_producers(factory);
 }

@@ -79,6 +79,15 @@ tracing-appender = "0.2.3"
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
 
+#
+nusb = "0.1.9"
+
+#
+usbtmc-message = { git = "https://github.com/Panduza/pza-rust-usbtmc-message", tag="0.0.0" }
+
+#
+futures-lite = "2.3.0"
+
 [features]
 
 # Enable tracing in stdout
