@@ -3,16 +3,21 @@ use serde_json::json;
 
 use crate::platform::PlatformError;
 use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
+
 use crate::interface::builder::Builder as InterfaceBuilder;
+
+
+// use panduza_connectors::serial::tty::Config as SerialConfig;
 use panduza_connectors::usb::usbtmc::Config as UsbtmcConfig;
 
-mod itf_pm100a_powermeter;
+use tokio_serial;
+
+mod itf_lbx_488_blc;
 
 
 
-static VID: u16 = 0x1313;
-static PID: u16 = 0x8079;
-// serial number = P1006194
+static VID: u16 = 0x0000;
+static PID: u16 = 0x90d9;
 
 pub struct DeviceHunter;
 
@@ -37,8 +42,8 @@ impl Hunter for DeviceHunter {
 
                         bag.push(json!(
                             {
-                                "name": "Thorlabs PM100A",
-                                "ref": "thorlabs.pm100a",
+                                "name": "Oxxius LBX_488",
+                                "ref": "oxxius.lbx_488",
                                 "settings": {
                                     "usb_vendor": format!("{:04x}", info.vid),
                                     "usb_model": format!("{:04x}", info.pid),
@@ -62,16 +67,16 @@ impl Hunter for DeviceHunter {
 
 }
 
-struct PM100A;
+struct LBX488;
 
-impl DeviceActions for PM100A {
+impl DeviceActions for LBX488 {
 
     /// Create the interfaces
     fn interface_builders(&self, device_settings: &serde_json::Value) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
 
-        println!("PM100A::interface_builders");
+        println!("S0501::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = UsbtmcConfig::new();
@@ -81,8 +86,7 @@ impl DeviceActions for PM100A {
 
         let mut list = Vec::new();
         list.push(
-            itf_pm100a_powermeter::build("channel", &serial_conf)
-            // itf_pm100a_powermeter::build("channel")
+            itf_lbx_488_blc::build("blc", &serial_conf)
         );
         return Ok(list);
     }
@@ -94,6 +98,13 @@ impl DeviceActions for PM100A {
 pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
+
+    // fn manufacturer(&self) -> String {
+    //     return "korad".to_string();
+    // }
+    // fn model(&self) -> String {
+    //     return "KA3005".to_string();
+    // }
 
     fn settings_props(&self) -> serde_json::Value {
         return json!([
@@ -122,7 +133,7 @@ impl Producer for DeviceProducer {
 
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
-        return Ok(Box::new(PM100A{}));
+        return Ok(Box::new(LBX488{}));
     }
 
 }
