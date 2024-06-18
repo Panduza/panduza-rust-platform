@@ -1,0 +1,51 @@
+[package]
+name = "panduza-connectors"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+
+
+# Main async framework for the platform
+tokio = { version = "1", features = ["full", "tracing"] }
+
+
+#
+tokio-serial = "5.4.1"
+
+
+# Json serialization & deserialization
+serde_json = "1.0.114"
+
+#
+nusb = "0.1.9"
+
+#
+usbtmc-message = { git = "https://github.com/Panduza/pza-rust-usbtmc-message", tag="0.0.0" }
+
+#
+futures-lite = "2.3.0"
+
+# 
+lazy_static = "1.4.0"
+
+
+
+# Trace instrumentation at disabled levels will be skipped and will not even be present
+# in the resulting binary unless the verbosity level is specified dynamically.
+# This level is configured separately for release and debug builds.
+tracing = { version = "0.1", features = [
+    # "max_level_off",
+    # "max_level_error",
+    # "max_level_warn",
+    # "max_level_info",
+    "max_level_debug",
+    # "max_level_trace",
+    # "release_max_level_off",
+    # "release_max_level_error",
+    # "release_max_level_warn",
+    "release_max_level_info",
+    # "release_max_level_debug",
+    # "release_max_level_trace"
+]}

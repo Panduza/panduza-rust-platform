@@ -3,20 +3,15 @@ use serde_json::json;
 
 use crate::platform::PlatformError;
 use crate::device::{ traits::DeviceActions, traits::Producer, traits::Hunter };
-
 use crate::interface::builder::Builder as InterfaceBuilder;
+use panduza_connectors::usb::usbtmc::Config as SerialConfig;
 
-
-use panduza_connectors::serial::tty::Config as SerialConfig;
-
-use tokio_serial;
-
-mod itf_cobolt_0501_blc;
+mod itf_pm100a_powermeter;
 
 
 
-static VID: u16 = 0x25dc;
-static PID: u16 = 0x0006;
+static VID: u16 = 0x1313;
+static PID: u16 = 0x8079;
 
 pub struct DeviceHunter;
 
@@ -41,8 +36,8 @@ impl Hunter for DeviceHunter {
 
                         bag.push(json!(
                             {
-                                "name": "Cobolt S0501",
-                                "ref": "cobolt.s0501",
+                                "name": "Thorlabs PM100A",
+                                "ref": "thorlabs.pm100a",
                                 "settings": {
                                     "usb_vendor": format!("{:04x}", info.vid),
                                     "usb_model": format!("{:04x}", info.pid),
@@ -66,26 +61,27 @@ impl Hunter for DeviceHunter {
 
 }
 
-struct S0501;
+struct PM100A;
 
-impl DeviceActions for S0501 {
+impl DeviceActions for PM100A {
 
     /// Create the interfaces
     fn interface_builders(&self, device_settings: &serde_json::Value) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
 
-        println!("S0501::interface_builders");
+        println!("PM100A::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = SerialConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
-        serial_conf.serial_baudrate = Some(9600);
+        // serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
         list.push(
-            itf_cobolt_0501_blc::build("blc", &serial_conf)
+            itf_pm100a_powermeter::build("channel", &serial_conf)
+            // itf_pm100a_powermeter::build("channel")
         );
         return Ok(list);
     }
@@ -97,13 +93,6 @@ impl DeviceActions for S0501 {
 pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
-
-    // fn manufacturer(&self) -> String {
-    //     return "korad".to_string();
-    // }
-    // fn model(&self) -> String {
-    //     return "KA3005".to_string();
-    // }
 
     fn settings_props(&self) -> serde_json::Value {
         return json!([
@@ -121,18 +110,18 @@ impl Producer for DeviceProducer {
                 "name": "usb_serial",
                 "type": "string",
                 "default": ""
-            },
-            {
-                "name": "serial_port_name",
-                "type": "string",
-                "default": ""
             }
+            // {
+            //     "name": "serial_port_name",
+            //     "type": "string",
+            //     "default": ""
+            // }
         ]);
     }
 
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
-        return Ok(Box::new(S0501{}));
+        return Ok(Box::new(PM100A{}));
     }
 
 }

@@ -36,6 +36,7 @@ pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
 
 /// Platform error type
 ///
+pub type Error = error::Error;
 pub type PlatformError = error::Error;
 
 /// Platform result type
@@ -53,13 +54,13 @@ macro_rules! platform_error_result {
         Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
     };
     ($msg:expr) => {
-        Err(crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string()))
+        Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
     };
 }
 #[macro_export]
 macro_rules! platform_error {
     ($msg:expr, $parent:expr) => {
-        crate::platform::error::PlatformError::new(file!(), line!(), $msg.to_string())
+        crate::platform::PlatformError::new(file!(), line!(), $msg.to_string())
     };
     ($msg:expr) => {
         crate::platform::error::Error::new(file!(), line!(), $msg.to_string())
@@ -67,7 +68,7 @@ macro_rules! platform_error {
 }
 
 /// Platform main object
-/// 
+///
 pub struct Platform
 {
     /// Task pool to manage all tasks
@@ -92,13 +93,13 @@ pub struct Platform
 impl Platform {
 
     /// Create a new instance of the Platform
-    /// 
+    ///
     pub fn new(name: &str) -> Platform {
 
         // Create the channel
         let (tx, rx) =
             tokio::sync::mpsc::channel::<BoxFuture<'static, PlatformTaskResult>>(100);
-        
+
         let tl = TaskPoolLoader::new(tx);
 
         let srvs = Services::new(tl.clone());
@@ -114,7 +115,7 @@ impl Platform {
     }
 
     /// Main platform run loop
-    /// 
+    ///
     pub async fn work(&mut self) {
         // Info log
         tracing::info!(class="Platform", "Platform Version ...");
@@ -168,7 +169,7 @@ impl Platform {
     }
 
     /// Wait for all tasks to complete
-    /// 
+    ///
     async fn end_of_all_tasks( &mut self) {
         while let Some(join_result) = self.task_pool.join_next().await {
 
@@ -201,7 +202,9 @@ impl Platform {
 
     /// Services task
     /// 
-    async fn services_task(services: AmServices, devices: device::AmManager, connection: connection::AmManager) -> PlatformTaskResult {
+    async fn services_task(services: AmServices, devices: device::AmManager, connection: connection::AmManager)
+        -> PlatformTaskResult
+    {
         let requests_change_notifier = services.lock().await.get_requests_change_notifier();
         loop {
             // Wait for an event
@@ -213,10 +216,8 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- BOOT ---
                     if services.lock().await.booting_requested() {
-                        if execute_service_boot(services.clone()).await.is_err() {
-                            return platform_error_result!("Failed to boot", None);
-                        }
-                        // , devices.clone(), connection.clone()
+
+                        execute_service_boot(services.clone()).await?;
 
                         // Load the tree file
                         if let Err(e) = Platform::load_tree_file(services.clone()).await
@@ -231,7 +232,7 @@ impl Platform {
                         // log
                         tracing::info!(class="Platform", "Boot Success!");
                     }
-                    
+
                     // --------------------------------------------------------
                     // --- RELOAD ---
                     if services.lock().await.reload_tree_requested() {
@@ -242,7 +243,7 @@ impl Platform {
                             services.clone(), devices.clone(), connection.clone()).await {
                             tracing::error!(class="Platform", "Failed to reload tree: {}", e);
                         }
-                        
+
                         tracing::info!(class="Platform", "Reloading Success!");
                     }
 
@@ -259,7 +260,7 @@ impl Platform {
                     // --- STOP ---
                     if services.lock().await.stop_requested() {
 
-                        
+
                         return Ok(());
                     }
 
@@ -271,7 +272,7 @@ impl Platform {
 
 
     /// Start the broker connection
-    /// 
+    ///
     async fn start_broker_connection(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
 
 
@@ -288,7 +289,7 @@ impl Platform {
             .unwrap()
             .clone();
 
-        connection.lock().await.start_connection(&ci.host_addr(), ci.host_port()).await;
+        connection.lock().await.start_connection(&ci.broker_addr, ci.broker_port).await;
         devices.lock().await.set_connection_link_manager(connection.lock().await.connection().unwrap().lock().await.link_manager());
 
 
@@ -335,7 +336,7 @@ impl Platform {
         match json_content {
             Ok(json) => {
                 // log
-                tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());            
+                tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
                 services.lock().await.set_tree_content(json);
 
                 return Ok(());
@@ -373,10 +374,10 @@ impl Platform {
     }
 
     /// Reload tree inside platform configuration
-    /// 
+    ///
     async fn reload_tree(
-        services: AmServices, 
-        devices_manager: device::AmManager, 
+        services: AmServices,
+        devices_manager: device::AmManager,
         connections_manager: connection::AmManager) -> Result<(), PlatformError>
     {
 
@@ -396,14 +397,14 @@ impl Platform {
                         match result {
                             Err(_e) => {
                                 return platform_error_result!(
-                                    format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap()), 
+                                    format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap()),
                                     Some(Box::new(e))
                                 );
                             },
                             Ok(new_device_name) => {
                                 let mut d = devices_manager.lock().await;
                                 let mut _c = connections_manager.lock().await;
-                        
+
                                 let _server_device = d.get_device(new_device_name).unwrap();
                                 let _connection = _c.connection().unwrap();
                                 // server_device.set_default_connection(default_connection.clone()).await;
