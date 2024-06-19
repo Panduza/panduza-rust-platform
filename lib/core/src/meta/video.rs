@@ -83,15 +83,14 @@ async fn send_video(interface: AmInterface) {
 
     // Init camera object 
     // first camera found in the list
-    let index = CameraIndex::Index(0); 
+    let index = CameraIndex::Index(1); 
 
     // request the absolute highest resolution CameraFormat that can be decoded to RGB.
     // let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
 
     // closest of 30fps, 1280x720
-    let format = CameraFormat::new_from( 1280, 720, FrameFormat::MJPEG, 30);
+    let format = CameraFormat::new_from( 1280, 720, FrameFormat::NV12, 30);
     let requested: RequestedFormat<'_> = RequestedFormat::new::<RgbFormat>(RequestedFormatType::Closest(format));
-
 
     // try to get the first camera found (if any camera return a error)
     let result_camera = Camera::new(index, requested);
@@ -103,28 +102,37 @@ async fn send_video(interface: AmInterface) {
         Ok(mut camera) => {
             // Send video
             loop {  
-                println!("Before");
-                // Get next frame
+                // Get next frame (open the stream if it didn't have been done before)
+            
                 let frame = camera.frame().unwrap();
                 // let frame_value = frame.buffer().to_vec();
 
-                // Encode to h264 
+                // Encode to h264 using Mjpeg with cpu
 
                 // Convert the frame to RGBImage
                 // let rgb_image = image::RgbImage::from_raw(1280, 720, frame.buffer().to_vec()).unwrap();
-                let rgb_image = mjpeg_to_rgb(frame.buffer());
+                // let rgb_image = mjpeg_to_rgb(frame.buffer());
 
-                let width = rgb_image.width() as usize;
-                let height = rgb_image.height() as usize;
-                let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
+                // let width = rgb_image.width() as usize;
+                // let height = rgb_image.height() as usize;
+                // let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
                 
-                // Convert RGB image to YUV
-                // let yuv_buffer = rgb_to_yuv(&rgb_image);
-                let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
+                // // Convert RGB image to YUV
+                // // let yuv_buffer = rgb_to_yuv(&rgb_image);
+                // let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
+
+
+                // Encode to h264 using NV12 (YUV)
+                
+                let yuv_buffer = YUVBuffer::from_vec(frame.buffer().to_vec(), 1280, 720);
 
                 // Encode the frame
                 let encoded_frame = encoder.encode(&yuv_buffer).unwrap();
+
+                // TO DO : here get directly the frame encode with camera to h264
                 
+                
+
                 // Change frame value and send it on the broker
                 interface.lock().await.update_attribute_with_bytes("frame", &encoded_frame.to_vec());
                 interface.lock().await.publish_all_attributes().await;
