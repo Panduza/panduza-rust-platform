@@ -101,6 +101,10 @@ console-subscriber = { version="0.2.0", optional = true }
 
 # x264 = "0.3"
 
+image = "0.24"
+jpeg-decoder = "0.2.1"
+openh264 = "0.6.0"
+
 [features]
 
 # Enable tracing in stdout
