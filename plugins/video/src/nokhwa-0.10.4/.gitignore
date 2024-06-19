@@ -1,0 +1,14 @@
+/target
+Cargo.lock
+
+.idea
+nokhwa.iml
+.vs
+
+.vscode
+
+/pkg
+
+target
+
+.DS_STORE

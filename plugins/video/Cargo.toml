@@ -1,0 +1,7 @@
+[package]
+name = "plugins-video"
+edition = "2021"
+
+[dependencies]
+
+panduza-core = { path = "../../lib/core" }
