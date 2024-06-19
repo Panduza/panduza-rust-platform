@@ -15,6 +15,10 @@ use nokhwa::utils::{CameraIndex, RequestedFormat, RequestedFormatType, CameraFor
 use nokhwa::Camera;
 use nokhwa_core::pixel_format::RgbFormat;
 
+use openh264::encoder::Encoder;
+use openh264::formats::{YUVBuffer, RgbSliceU8};
+use jpeg_decoder::Decoder;
+
 #[async_trait]
 pub trait VideoActions: Send + Sync {
 
@@ -60,6 +64,17 @@ struct VideoStates {
     video_interface: Arc<Mutex<VideoInterface>>
 }
 
+// Transform frame mjpeg to RGB
+fn mjpeg_to_rgb(mjpeg_data: &[u8]) -> image::RgbImage {
+    let mut decoder = Decoder::new(mjpeg_data);
+    let pixels = decoder.decode().expect("Failed to decode MJPEG frame");
+    let metadata = decoder.info().expect("Failed to get MJPEG metadata");
+    let width = metadata.width as u32;
+    let height = metadata.height as u32;
+    let rgb_image: image::RgbImage = image::ImageBuffer::from_raw(width, height, pixels).expect("Failed to create RGB image from raw data");
+    rgb_image
+}
+
 ///
 /// Send video stream on the broker frame by frame
 async fn send_video(interface: AmInterface) {
@@ -79,19 +94,38 @@ async fn send_video(interface: AmInterface) {
 
     // try to get the first camera found (if any camera return a error)
     let result_camera = Camera::new(index, requested);
-    
+
+    // Initialize the encoder  
+    let mut encoder = Encoder::new().unwrap();
+
     match result_camera {
         Ok(mut camera) => {
             // Send video
             loop {  
+                println!("Before");
                 // Get next frame
                 let frame = camera.frame().unwrap();
-                let frame_value = frame.buffer().to_vec();
+                // let frame_value = frame.buffer().to_vec();
 
-                // TO DO : Encode to h264 
+                // Encode to h264 
+
+                // Convert the frame to RGBImage
+                // let rgb_image = image::RgbImage::from_raw(1280, 720, frame.buffer().to_vec()).unwrap();
+                let rgb_image = mjpeg_to_rgb(frame.buffer());
+
+                let width = rgb_image.width() as usize;
+                let height = rgb_image.height() as usize;
+                let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
+                
+                // Convert RGB image to YUV
+                // let yuv_buffer = rgb_to_yuv(&rgb_image);
+                let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
+
+                // Encode the frame
+                let encoded_frame = encoder.encode(&yuv_buffer).unwrap();
                 
                 // Change frame value and send it on the broker
-                interface.lock().await.update_attribute_with_bytes("frame", &frame_value);
+                interface.lock().await.update_attribute_with_bytes("frame", &encoded_frame.to_vec());
                 interface.lock().await.publish_all_attributes().await;
             }
         },
