@@ -5,7 +5,7 @@ use super::{AttributeInterface, MqttPayload};
 // use super::FieldF64;
 
 use crate::FunctionResult as PlatformFunctionResult;
-use crate::platform_error;
+use crate::__platform_error;
 
 pub struct JsonAttribute {
     // 
@@ -100,7 +100,7 @@ impl AttributeInterface for JsonAttribute {
                 }
             )
             .ok_or(
-                platform_error!(format!("Error updating att={} field={} value={}", self.name, field, value))
+                __platform_error!(format!("Error updating att={} field={} value={}", self.name, field, value))
             )
             .and_then(
                 |_| Ok(())

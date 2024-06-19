@@ -22,7 +22,7 @@ mod local_broker_discovery;
 
 use services::{Services, AmServices};
 
-use crate::platform_error_result;
+use crate::__platform_error_result;
 
 
 use local_broker_discovery::task as local_broker_discovery_task;
@@ -34,38 +34,11 @@ use self::services::hunt::execute_service_hunt;
 
 pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
 
-// /// Platform error type
-// ///
-// pub type Error = error::Error;
-// pub type PlatformError = error::Error;
 
 /// Platform result type
 ///
 pub type PlatformTaskResult = crate::TaskResult;
-// pub type TaskResult = Result<(), PlatformError>;
 
-// pub type FunctionResult = Result<(), PlatformError>;
-
-// /// Macro to create a platform error
-// ///
-// #[macro_export]
-// macro_rules! platform_error_result {
-//     ($msg:expr, $parent:expr) => {
-//         Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
-//     };
-//     ($msg:expr) => {
-//         Err(crate::platform::error::Error::new(file!(), line!(), $msg.to_string()))
-//     };
-// }
-// #[macro_export]
-// macro_rules! platform_error {
-//     ($msg:expr, $parent:expr) => {
-//         crate::platform::PlatformError::new(file!(), line!(), $msg.to_string())
-//     };
-//     ($msg:expr) => {
-//         crate::platform::error::Error::new(file!(), line!(), $msg.to_string())
-//     };
-// }
 
 /// Platform main object
 ///
@@ -252,7 +225,7 @@ impl Platform {
                     if services.lock().await.hunt_requested() {
 
                         if execute_service_hunt(services.clone(), devices.clone()).await.is_err() {
-                            return platform_error_result!("Failed to hunt", None);
+                            return __platform_error_result!("Failed to hunt");
                         }
                     }
 
@@ -322,8 +295,8 @@ impl Platform {
                 return Platform::load_tree_string(services.clone(), &content).await;
             },
             Err(e) => {
-                return platform_error_result!(
-                    format!("Failed to read {:?} file content: {}", tree_file_path, e), None)
+                return __platform_error_result!(
+                    format!("Failed to read {:?} file content: {}", tree_file_path, e))
             }
         }
     }
@@ -342,8 +315,8 @@ impl Platform {
                 return Ok(());
             },
             Err(e) => {
-                return platform_error_result!(
-                    format!("Failed to parse JSON content: {}", e), None)
+                return __platform_error_result!(
+                    format!("Failed to parse JSON content: {}", e))
             }
         }
     }
@@ -396,9 +369,8 @@ impl Platform {
                         let result = devices_manager.lock().await.create_device(device_definition).await;
                         match result {
                             Err(_e) => {
-                                return platform_error_result!(
-                                    format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap()),
-                                    Some(Box::new(e))
+                                return __platform_error_result!(
+                                    format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap())
                                 );
                             },
                             Ok(new_device_name) => {
@@ -428,6 +400,11 @@ impl Platform {
         Ok(())
     }
 
+
+
+    pub fn devices(&self) -> &device::AmManager {
+        return &self.devices;
+    }
 
 
 }

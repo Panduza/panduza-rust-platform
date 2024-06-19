@@ -7,7 +7,7 @@ use super::Error;
 use super::serde;
 use crate::FunctionResult;
 
-use crate::platform_error;
+use crate::__platform_error;
 use crate::connection_info_content_bad_format_error;
 use crate::connection_info_file_does_not_exist_error_result;
 
@@ -65,14 +65,14 @@ pub fn export_file(info: &Info) -> FunctionResult {
 
     //  Write new file
     let mut file = std::fs::File::create(&info.file_path)
-        .map_err(|e| platform_error!(e.to_string()) )?;
+        .map_err(|e| __platform_error!(e.to_string()) )?;
 
     // Create the JSON string
     let json_string = serde::serialize(info)?;
 
     // Write file
     file.write_all(json_string.as_bytes())
-        .map_err(|e| platform_error!(e.to_string()) )?;
+        .map_err(|e| __platform_error!(e.to_string()) )?;
 
     Ok(())
 }

@@ -6,7 +6,7 @@ use crate::platform::connection_info::ErrorType;
 use crate::platform::connection_info::import_file;
 use crate::platform::connection_info::system_file_path;
 
-use crate::platform_error_result;
+use crate::__platform_error_result;
 
 // ------------------------------------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ pub async fn execute_connection_info_loading_process(services: &mut Services)
                     return ask_user_about_default_connection_info_creation(services)
                 },
                 _ => {
-                    platform_error_result!("unmanaged error")
+                    __platform_error_result!("unmanaged error")
                 }
             }
         }
@@ -95,7 +95,7 @@ fn ask_user_about_default_connection_info_creation(services: &mut Services)
         println!("!");
         println!("===========================================================");
         services.trigger_stop();
-        platform_error_result!(err_message)
+        __platform_error_result!(err_message)
     }
 }
 

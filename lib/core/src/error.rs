@@ -24,3 +24,21 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
 
 }
+
+/// Macro to create a platform Error
+///
+#[macro_export]
+macro_rules! __platform_error {
+    ($msg:expr) => {
+        crate::error::Error::new(file!(), line!(), $msg.to_string())
+    };
+}
+
+/// Macro to create a platform Err Result
+///
+#[macro_export]
+macro_rules! __platform_error_result {
+    ($msg:expr) => {
+        Err(crate::error::Error::new(file!(), line!(), $msg.to_string()))
+    };
+}

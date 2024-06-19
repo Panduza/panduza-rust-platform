@@ -2,8 +2,8 @@ use crate::attribute::MqttPayload;
 use crate::platform::services::AmServices;
 use crate::FunctionResult as PlatformFunctionResult;
 // use crate::platform::PlatformError;
-// use crate::platform_error_result;
-use crate::platform_error;
+// use crate::__platform_error_result;
+use crate::__platform_error;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -251,7 +251,7 @@ impl Interface {
         // Action
         self.attributes.get_mut(attribute)
             .ok_or(
-                platform_error!(format!("Attribute ({:?}) not found", attribute))
+                __platform_error!(format!("Attribute ({:?}) not found", attribute))
             )
             .and_then(|att| {
                 att.as_mut().update_field_with_bool(field, value)

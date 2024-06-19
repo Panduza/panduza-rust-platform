@@ -8,7 +8,7 @@ use crate::platform::TaskPoolLoader;
 
 use crate::Error as PlatformError;
 
-use crate::platform_error_result;
+use crate::__platform_error_result;
 
 use super::traits::Hunter;
 use super::{factory::Factory, device::Device};
@@ -17,7 +17,7 @@ use super::{factory::Factory, device::Device};
 /// 
 pub struct Manager {
     // Device factory
-    factory: Factory,
+    pub factory: Factory,
 
     // Lits of device instances
     instances: HashMap<String, Device>,
@@ -69,7 +69,7 @@ impl Manager {
         let result = self.factory.create_device(device_def);
         match result {
             Err(_e) => {
-                return platform_error_result!("Device not created", Some(Box::new(e)));
+                return __platform_error_result!("Device not created");
             },
             Ok(device_object) => {
                 let name = device_object.dev_name().clone();

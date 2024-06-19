@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use futures::Future;
 
-use super::platform_error_result;
+use super::__platform_error_result;
 use super::PlatformTaskResult;
 
 /// Task pool loader
@@ -32,8 +32,8 @@ impl TaskPoolLoader {
                 return Ok(());
             },
             Err(e) => {
-                return platform_error_result!(
-                    format!("Failed to send task to task pool: {}", e), None);
+                return __platform_error_result!(
+                    format!("Failed to send task to task pool: {}", e));
             }
         }
     }

@@ -2,10 +2,10 @@
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
-use crate::{attribute::JsonAttribute, interface::{self, AmInterface}, subscription};
+use panduza_core::{attribute::JsonAttribute, interface::{self, AmInterface}, subscription};
 use panduza_core::interface::Builder as InterfaceBuilder;
 
-use crate::platform::FunctionResult as PlatformFunctionResult;
+use panduza_core::FunctionResult as PlatformFunctionResult;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------

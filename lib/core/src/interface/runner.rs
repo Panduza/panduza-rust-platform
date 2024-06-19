@@ -3,7 +3,7 @@ use std::sync::Arc;
 use futures::FutureExt;
 use tokio::sync::Mutex;
 
-use crate::{link::{self}, platform::TaskPoolLoader, platform_error_result, subscription};
+use crate::{link::{self}, platform::TaskPoolLoader, __platform_error_result, subscription};
 
 use super::{fsm::{self, Fsm}, listener::Listener, subscriber::Subscriber, AmInterface, Interface};
 
@@ -138,9 +138,8 @@ impl Runner {
         task_loader.load(async move {
             loop {
                 if let Err(_) = listener.lock().await.run_once().await {
-                    return platform_error_result!(
+                    return __platform_error_result!(
                         format!("Interface {:?} Listen Task Error", interface_name)
-                        , Some(Box::new(e))
                     );
                 }
             }

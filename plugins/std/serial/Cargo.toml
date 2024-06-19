@@ -2,5 +2,8 @@
 name = "plugins-std-serial"
 edition = "2021"
 
-# [dependencies]
-# panduza-rust-platform.workspace = true
+[dependencies]
+
+panduza-core = { path = "../../../lib/core" }
+
+

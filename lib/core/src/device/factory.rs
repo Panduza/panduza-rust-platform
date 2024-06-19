@@ -1,7 +1,6 @@
-use std::collections::HashMap;
 use std::vec;
+use std::collections::HashMap;
 
-// use serde_json::json;
 
 use super::Device;
 
@@ -11,10 +10,9 @@ use crate::device::traits::Producer;
 
 use crate::device::traits::Hunter;
 
-use crate::platform_error_result;
+use crate::__platform_error_result;
 use crate::Error as PlatformError;
 
-// use crate::builtin_devices;
 
 /// Factory to create devices from a configuration json
 /// 
@@ -39,7 +37,7 @@ impl Factory {
     /// 
     pub fn new(platform_services: crate::platform::services::AmServices) -> Factory {
         // New object
-        let mut obj = Factory {
+        let obj = Factory {
             producers: HashMap::new(),
             hunters: Vec::new(),
             connection_link_manager: None,
@@ -51,7 +49,6 @@ impl Factory {
         tracing::info!(class="Factory", "List of producers:");
 
         // Load builtin device producers
-        // builtin_devices::import_plugin_producers(&mut obj);
         return obj;
     }
 
@@ -89,11 +86,11 @@ impl Factory {
         // Error if not found or badly formated
         let dev_name_opt = device_def.get("name");
         if dev_name_opt.is_none() {
-            return platform_error_result!("Device definition does not have a 'name'", None);
+            return __platform_error_result!("Device definition does not have a 'name'");
         }
         let dev_name_str = dev_name_opt.unwrap().as_str();
         if dev_name_str.is_none() {
-            return platform_error_result!("Device definition 'name' is not a string", None);
+            return __platform_error_result!("Device definition 'name' is not a string");
         }
         let dev_name = String::from(dev_name_str.unwrap());
 
@@ -101,11 +98,11 @@ impl Factory {
         // Error if not found or badly formated
         let ref_opt = device_def.get("ref");
         if ref_opt.is_none() {
-            return platform_error_result!("Device definition does not have a 'ref'", None);
+            return __platform_error_result!("Device definition does not have a 'ref'");
         }
         let ref_str = ref_opt.unwrap().as_str();
         if ref_str.is_none() {
-            return platform_error_result!("Device definition 'ref' is not a string", None);
+            return __platform_error_result!("Device definition 'ref' is not a string");
         }
         let ref_string = String::from(ref_str.unwrap());
 
@@ -132,7 +129,7 @@ impl Factory {
         match producer {
             None => {
                 let error_text = format!("Producer not found for {}", device_ref);
-                return platform_error_result!(error_text , None);
+                return __platform_error_result!(error_text);
             },
             Some(producer) => {
                 return Self::produce_device(dev_name, bench_name, producer, self.connection_link_manager.as_ref().unwrap(), settings
@@ -150,7 +147,7 @@ impl Factory {
         let actions = producer.produce();
         match actions {
             Err(_) => {
-                return platform_error_result!("Fail to produce device actions", Some(Box::new(e)));
+                return __platform_error_result!("Fail to produce device actions");
             },
             Ok(actions) => {
                 return Ok(Device::new(dev_name, bench_name, settings, actions, connection_link_manager.clone()
