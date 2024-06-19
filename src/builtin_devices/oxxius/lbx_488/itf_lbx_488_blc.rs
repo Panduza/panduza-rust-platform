@@ -7,14 +7,22 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 
 // use panduza_connectors::serial::tty::{self, TtyConnector};
 // use panduza_connectors::serial::tty::Config as SerialConfig;
-use panduza_connectors::usb::usbtmc::{self, UsbtmcConnector};
-use panduza_connectors::usb::usbtmc::Config as UsbtmcConfig;
+use panduza_connectors::usb::usb::{self, UsbConnector};
+use panduza_connectors::usb::usb::Config as UsbConfig;
+
+/// 
+/// 
+async fn ask(mut connector_usb: UsbConnector, command: &[u8]) -> String {
+    // let cmd =
+    connector_usb.write(command).await;
+    connector_usb.read().await
+}
 
 ///
 /// 
 struct LBX488BlcActions {
-    connector_usbtmc: usbtmc::UsbtmcConnector,
-    serial_config: UsbtmcConfig,
+    connector_usb: usb::UsbConnector,
+    serial_config: UsbConfig,
     mode_value: String,
     enable_value: bool,
     power_value: f64,
@@ -29,10 +37,11 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
 
-        self.connector_usbtmc = usbtmc::get(&self.serial_config).await.unwrap();
-        self.connector_usbtmc.init().await;
+        self.connector_usb = usb::get(&self.serial_config).await.unwrap();
+        self.connector_usb.init().await;
 
-        let result = self.connector_usbtmc.ask("?HID".to_string()).await;
+        let result = ask(self.connector_usb.clone(), "?HID".as_bytes()).await;
+        // let result = self.connector_usb.ask("?HID".to_string()).await;
 
         interface.lock().await.log_info(
             format!("LBX_488 - initializing: {}", result)
@@ -84,12 +93,14 @@ impl blc::BlcActions for LBX488BlcActions {
         // swap(&mut mode_val, &mut self.mode_value);
         self.mode_value = "no_regulation".to_string();
 
-        let acc = self.connector_usbtmc.ask("?ACC".to_string()).await;
+        let acc = ask(self.connector_usb.clone(), "?ACC".as_bytes()).await;
+        // let acc = self.connector_usb.ask("?ACC".to_string()).await;
         if acc == "1\x00" {
             self.mode_value = "constant_current".to_string();
         }
         
-        let apc = self.connector_usbtmc.ask("?APC".to_string()).await;
+        let apc = ask(self.connector_usb.clone(), "?APC".as_bytes()).await;
+        // let apc = self.connector_usb.ask("?APC".to_string()).await;
         if apc == "1\x00" {
             self.mode_value = "constant_current".to_string();
         }
@@ -115,7 +126,8 @@ impl blc::BlcActions for LBX488BlcActions {
             _ => return
         };
 
-        self.connector_usbtmc.ask(command).await;
+        ask(self.connector_usb.clone(), command.as_bytes()).await;
+        // self.connector_usb.ask(command).await;
 
 
         // let _result = self.connector_tty.write(
@@ -148,7 +160,8 @@ impl blc::BlcActions for LBX488BlcActions {
         //         println!("read enable value : {} | {}", value_i, self.enable_value);
         //     });
 
-        let emission = self.connector_usbtmc.ask("?L".to_string()).await;
+        let emission = ask(self.connector_usb.clone(), "?L".as_bytes()).await;
+        // let emission = self.connector_usb.ask("?L".to_string()).await;
         if emission == "1\x00" {
             self.enable_value = true;
         } else {
@@ -169,7 +182,8 @@ impl blc::BlcActions for LBX488BlcActions {
 
         let command = format!("L {}", val_int);
 
-        let status = self.connector_usbtmc.ask(command).await;
+        let status = ask(self.connector_usb.clone(), command.as_bytes()).await;
+        // let status = self.connector_usb.ask(command).await;
         
         interface.lock().await.log_info(
             format!("write enable value : {}", status)
@@ -177,7 +191,8 @@ impl blc::BlcActions for LBX488BlcActions {
 
         let mut value_i = 5;
         while value_i != val_int {
-            value_i = if self.connector_usbtmc.ask("?L".to_string()).await == "1\00" {
+            value_i = if ask(self.connector_usb.clone(), "?L".as_bytes()).await == "1\00" {
+            // value_i = if self.connector_usb.ask("?L".to_string()).await == "1\00" {
                 1
             } else {
                 0
@@ -224,7 +239,8 @@ impl blc::BlcActions for LBX488BlcActions {
         //         self.power_value = String::from_utf8(power_b.to_vec()).unwrap().parse::<f64>().unwrap();
         //         println!(" read power : {}", self.power_value);
         //     });
-        let response = self.connector_usbtmc.ask("?SP".to_string()).await;
+        let response = ask(self.connector_usb.clone(), "?SP".as_bytes()).await;
+        // let response = self.connector_usb.ask("?SP".to_string()).await;
         let response_float = response.parse::<f64>().unwrap();
         self.power_value = response_float * 0.001;
 
@@ -246,7 +262,8 @@ impl blc::BlcActions for LBX488BlcActions {
         let val_mw = v * 1000.0;
         let command = format!("PW {}", val_mw);
 
-        self.connector_usbtmc.ask(command).await;
+        ask(self.connector_usb.clone(), command.as_bytes()).await;
+        // self.connector_usb.ask(command).await;
 
         // let _result = self.connector_tty.write(
         //     command.as_bytes(),
@@ -273,7 +290,8 @@ impl blc::BlcActions for LBX488BlcActions {
         //         self.current_value = String::from_utf8(current_b.to_vec()).unwrap().parse::<f64>().unwrap();
         //         println!("read current : {}", self.current_value);
         //     });
-        let response = self.connector_usbtmc.ask("?SC".to_string()).await;
+        let response = ask(self.connector_usb.clone(), "?SC".as_bytes()).await;
+        // let response = self.connector_usb.ask("?SC".to_string()).await;
         let response_float = response.parse::<f64>().unwrap();
         self.current_value = response_float * 0.001;
 
@@ -294,7 +312,8 @@ impl blc::BlcActions for LBX488BlcActions {
         let val_ma = v * 1000.0;
         let command = format!("CM {}", val_ma);
 
-        self.connector_usbtmc.ask(command).await;
+        ask(self.connector_usb.clone(), command.as_bytes()).await;
+        // self.connector_usb.ask(command).await;
 
         // let _result = self.connector_tty.write(
         //     command.as_bytes(),
@@ -312,7 +331,7 @@ impl blc::BlcActions for LBX488BlcActions {
 /// 
 pub fn build<A: Into<String>>(
     name: A,
-    serial_config: &UsbtmcConfig
+    serial_config: &UsbConfig
 ) -> InterfaceBuilder {
 
     return blc::build(
@@ -327,7 +346,7 @@ pub fn build<A: Into<String>>(
             current_decimals: 3,
         }, 
         Box::new(LBX488BlcActions {
-            connector_usbtmc: UsbtmcConnector::new(None),
+            connector_usb: UsbConnector::new(None),
             serial_config: serial_config.clone(),
             mode_value: "no_regulation".to_string(),
             enable_value: false,

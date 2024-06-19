@@ -8,7 +8,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 
 
 // use panduza_connectors::serial::tty::Config as SerialConfig;
-use panduza_connectors::usb::usbtmc::Config as UsbtmcConfig;
+use panduza_connectors::usb::usb::Config as UsbConfig;
 
 use tokio_serial;
 
@@ -79,7 +79,7 @@ impl DeviceActions for LBX488 {
         println!("S0501::interface_builders");
         println!("{}", device_settings);
 
-        let mut serial_conf = UsbtmcConfig::new();
+        let mut serial_conf = UsbConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
         // serial_conf.serial_baudrate = Some(9600);
