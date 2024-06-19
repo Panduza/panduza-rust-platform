@@ -4,17 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 
-[workspace]
-
-members = [
-    "lib/connectors"
-]
-
-
 [dependencies]
 
-
+panduza-core = { path = "lib/core" }
 panduza-connectors = { path = "lib/connectors" }
+
+
+plugins-std-serial = { path = "plugins/std/serial" }
+
 
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }

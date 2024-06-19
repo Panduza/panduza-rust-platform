@@ -16,17 +16,12 @@
 )]
 
 mod log;
-mod link;
-mod meta;
-mod device;
-mod platform;
-mod interface;
-mod attribute;
-mod connection;
-mod subscription;
 mod builtin_devices;
 
-use crate::platform::Platform;
+use panduza_core::platform::Platform;
+
+
+
 
 #[tokio::main]
 async fn main() {
@@ -34,6 +29,20 @@ async fn main() {
     log::init();
 
     // Create platform runner
-    let _ = Platform::new("test-platform").work().await;
+    let mut platform = Platform::new("test-platform");
+
+
+    // Load plugins section
+    {
+        let mut devices = platform.devices().lock().await;
+        let factory = &mut devices.factory;
+
+        builtin_devices::import_plugin_producers(factory);
+
+        plugins_std_serial::import_plugin_producers(factory);
+    }
+    
+    
+    platform.work().await;
 }
 

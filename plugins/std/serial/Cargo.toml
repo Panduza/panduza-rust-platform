@@ -1,0 +1,9 @@
+[package]
+name = "plugins-std-serial"
+edition = "2021"
+
+[dependencies]
+
+panduza-core = { path = "../../../lib/core" }
+
+

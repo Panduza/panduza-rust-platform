@@ -1,4 +1,4 @@
-use crate::device::Factory as DeviceFactory;
+use panduza_core::device::Factory as DeviceFactory;
 
 mod s0501;
 
