@@ -1,5 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
-use nusb::Interface;
+use nusb::{transfer::Direction, Interface};
 
 use tokio;
 use lazy_static::lazy_static;
@@ -36,13 +36,19 @@ impl Config {
 
     pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
 
-        self.usb_vendor =
+        let usb_vendor_str = 
             settings.get("usb_vendor")
-                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+                .map(|v| v.as_str().unwrap());
+
+        self.usb_vendor =
+            Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
+
+        let usb_model_str = 
+            settings.get("usb_model")
+                .map(|v| v.as_str().unwrap());
 
         self.usb_model =
-            settings.get("usb_model")
-                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+            Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
 
         self.usb_serial =
             settings.get("usb_serial")
@@ -137,7 +143,6 @@ impl UsbConnector {
 
 
     pub async fn write(&mut self, command: &[u8]) {
-            // -> String {
         self.core
             .as_ref()
             .unwrap()
@@ -179,7 +184,7 @@ impl UsbCore {
 
         let devices = nusb::list_devices()
             .unwrap()
-            .find(|d| d.vendor_id() == 0x1313 && d.product_id() == 0x8079)//format!("{:04x}", self.config.usb_vendor.unwrap()).parse::<u16>().unwrap() && d.product_id() == format!("{:04x}", self.config.usb_model.unwrap()).parse::<u16>().unwrap())
+            .find(|d| d.vendor_id() == self._config.usb_vendor.unwrap() && d.product_id() == self._config.usb_model.unwrap())
             .expect("device is not connected");
 
         let device = devices.open().unwrap();
@@ -189,40 +194,36 @@ impl UsbCore {
 
 
     async fn write(&mut self, command: &[u8]) {
-            // -> String {
-
-        // // Create a sequencer with a max_sequence_length of 64 (depend on your device)
-        // let mut sequencer = Sequencer::new(64);
-
-        // // Create a message sequence from a command
-        // let sequence = sequencer.command_to_message_sequence(command);
-
-        // let cmd_bytes = command.as_bytes();
         
-        // Send the command on the usb
-        block_on(self.interface.as_ref().unwrap().bulk_out(0x02, command.to_vec()))
-            .into_result()
-            .unwrap();
-
-        // for i in 0..cmd_vec.len() {
-        //     let message = cmd_vec[i];
-        //     // SEND TO USB
-        //     block_on(self.interface.as_ref().unwrap().bulk_out(0x02, message.to_vec()))
-        //         .into_result()
-        //         .unwrap();
-            
-        // }
+        for interface_descriptor in self.interface.as_ref().unwrap().descriptors() {
+            for endpoint in interface_descriptor.endpoints() {
+                if endpoint.direction() == Direction::Out {
+                    // Send the command on the usb
+                    block_on(self.interface.as_ref().unwrap().bulk_out(endpoint.address(), command.to_vec()))
+                        .into_result()
+                        .unwrap();
+                }
+            }
+        }
     }
 
 
     async fn read(&mut self) 
         -> String {
-        
-        let response = nusb::transfer::RequestBuffer::new(64 as usize);
-        let data = block_on(self.interface.as_ref().unwrap().bulk_in(0x82, response)).into_result().unwrap();
 
-        
-        let msg = String::from_utf8(data).unwrap();
+        let mut msg = String::new();
+
+        for interface_descriptor in self.interface.as_ref().unwrap().descriptors() {
+            for endpoint in interface_descriptor.endpoints() {
+                if endpoint.direction() == Direction::In {
+                    let response = nusb::transfer::RequestBuffer::new(32 as usize);
+                    let data = block_on(self.interface.as_ref().unwrap().bulk_in(endpoint.address(), response)).into_result().unwrap();
+                    
+                    msg = String::from_utf8(data).unwrap();
+                }
+            }
+        }
+
         msg
     }
 

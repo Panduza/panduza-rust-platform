@@ -8,14 +8,6 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 use panduza_connectors::usb::usb::{self, UsbConnector};
 use panduza_connectors::usb::usb::Config as UsbConfig;
 
-/// 
-/// 
-async fn ask(mut connector_usb: UsbConnector, command: &[u8]) -> String {
-    // let cmd =
-    connector_usb.write(command).await;
-    connector_usb.read().await
-}
-
 ///
 /// 
 struct LBX488BlcActions {
@@ -25,6 +17,17 @@ struct LBX488BlcActions {
     enable_value: bool,
     power_value: f64,
     current_value: f64,
+}
+
+impl LBX488BlcActions {
+    async fn ask(&mut self, command: &[u8]) -> String {
+        let mut cmd = vec![0; 32];
+        cmd[..command.len()].copy_from_slice(command);
+
+        self.connector_usb.write(cmd.as_ref()).await;
+        let res = self.connector_usb.read().await;
+        res
+    }
 }
 
 #[async_trait]
@@ -37,8 +40,7 @@ impl blc::BlcActions for LBX488BlcActions {
         self.connector_usb = usb::get(&self.serial_config).await.unwrap();
         self.connector_usb.init().await;
 
-        let result = ask(self.connector_usb.clone(), "?HID".as_bytes()).await;
-        // let result = self.connector_usb.ask("?HID".to_string()).await;
+        let result = self.ask("?HID".as_bytes()).await;
 
         interface.lock().await.log_info(
             format!("LBX_488 - initializing: {}", result)
@@ -54,19 +56,15 @@ impl blc::BlcActions for LBX488BlcActions {
 
         self.mode_value = "no_regulation".to_string();
 
-        let acc = ask(self.connector_usb.clone(), "?ACC".as_bytes()).await;
+        let acc = self.ask("?ACC".as_bytes()).await;
         if acc == "1\x00" {
             self.mode_value = "constant_current".to_string();
         }
         
-        let apc = ask(self.connector_usb.clone(), "?APC".as_bytes()).await;
+        let apc = self.ask("?APC".as_bytes()).await;
         if apc == "1\x00" {
-            self.mode_value = "constant_current".to_string();
+            self.mode_value = "constant_power".to_string();
         }
-
-        // interface.lock().await.log_info(
-        //     format!("PM100A - read measure value: {}", self.measure_value)
-        // );
 
         return Ok(self.mode_value.clone());
     }
@@ -85,14 +83,14 @@ impl blc::BlcActions for LBX488BlcActions {
             _ => return
         };
 
-        ask(self.connector_usb.clone(), command.as_bytes()).await;
+        self.ask(command.as_bytes()).await;
     }
 
      /// Read the enable value
     /// 
     async fn read_enable_value(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
 
-        let emission = ask(self.connector_usb.clone(), "?L".as_bytes()).await;
+        let emission = self.ask("?L".as_bytes()).await;
         if emission == "1\x00" {
             self.enable_value = true;
         } else {
@@ -113,32 +111,25 @@ impl blc::BlcActions for LBX488BlcActions {
 
         let command = format!("L {}", val_int);
 
-        let status = ask(self.connector_usb.clone(), command.as_bytes()).await;
+        let status = self.ask(command.as_bytes()).await;
         
         interface.lock().await.log_info(
             format!("write enable value : {}", status)
         );
-
-        let mut value_i = 5;
-        while value_i != val_int {
-            value_i = if ask(self.connector_usb.clone(), "?L".as_bytes()).await == "1\00" {
-                1
-            } else {
-                0
-            };
-        }
     }
 
     /// Read the power value
     /// 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response = ask(self.connector_usb.clone(), "?SP".as_bytes()).await;
+        let response = self.ask("?SP".as_bytes()).await
+            .trim_end_matches("\0")
+            .to_string();
         let response_float = response.parse::<f64>().unwrap();
         self.power_value = response_float * 0.001;
 
         interface.lock().await.log_info(
-            format!("write power : {}", self.power_value)
+            format!("read power : {}", response_float)
         );
 
         return Ok(self.power_value);
@@ -147,27 +138,32 @@ impl blc::BlcActions for LBX488BlcActions {
     /// Write the power value
     /// 
     async fn write_power_value(&mut self, interface: &AmInterface, v: f64) {
-        
+
+        let val_mw = ((v * 1000.0) * 100.0).round() / 100.0;
+        let command = format!("PM {}", val_mw);
+
         interface.lock().await.log_info(
-            format!("write power : {}", v)
+            format!("write power : {}", val_mw)
         );
 
-        let val_mw = v * 1000.0;
-        let command = format!("PW {}", val_mw);
-
-        ask(self.connector_usb.clone(), command.as_bytes()).await;
+        self.ask(command.as_bytes()).await;
     }
 
     /// Read the current value
     /// 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response = ask(self.connector_usb.clone(), "?SC".as_bytes()).await;
+        let response = self.ask("?SC".as_bytes()).await
+            .trim_end_matches("\0")
+            .to_string();
+
         let response_float = response.parse::<f64>().unwrap();
         self.current_value = response_float * 0.001;
 
+        
+
         interface.lock().await.log_info(
-            format!("write power : {}", self.current_value)
+            format!("read current : {}", response_float)
         );
 
         return Ok(self.current_value);
@@ -176,14 +172,15 @@ impl blc::BlcActions for LBX488BlcActions {
     /// Write the current value
     /// 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
-        interface.lock().await.log_info(
-            format!("write current : {}", v)
-        );
 
-        let val_ma = v * 1000.0;
+        let val_ma = ((v * 1000.0) * 100.0).round() / 100.0;
         let command = format!("CM {}", val_ma);
 
-        ask(self.connector_usb.clone(), command.as_bytes()).await;
+        interface.lock().await.log_info(
+            format!("write current : {}", val_ma)
+        );
+
+        self.ask(command.as_bytes()).await;
     }
 }
 
@@ -200,17 +197,17 @@ pub fn build<A: Into<String>>(
         name, 
         blc::BlcParams {
             power_min: 0.0,
-            power_max: 0.3,
+            power_max: 0.04,
             power_decimals: 3,
 
             current_min: 0.0,
-            current_max: 0.5,
+            current_max: 0.0978,
             current_decimals: 3,
         }, 
         Box::new(LBX488BlcActions {
             connector_usb: UsbConnector::new(None),
             serial_config: serial_config.clone(),
-            mode_value: "no_regulation".to_string(),
+            mode_value: "constant_power".to_string(),
             enable_value: false,
             power_value: 0.0,
             current_value: 0.0,
