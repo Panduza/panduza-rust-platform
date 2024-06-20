@@ -16,7 +16,7 @@ mod itf_lbx_488_blc;
 
 
 
-static VID: u16 = 0x0000;
+static VID: u16 = 0x0403;
 static PID: u16 = 0x90d9;
 
 pub struct DeviceHunter;
