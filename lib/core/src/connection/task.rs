@@ -59,6 +59,7 @@ pub async fn task(connection: ThreadSafeConnection) -> TaskResult {
         }
 
         // If the connection is not connected, try to reconnect
+        tokio::time::sleep(std::time::Duration::from_secs(20)).await;
         logger.log_warn("Connection event loop ended, trying to reconnect");
         is_connected.store(false, Ordering::Relaxed);
         link_manager.lock().await.send_to_all(subscription::Message::new_connection_status(false)).await;

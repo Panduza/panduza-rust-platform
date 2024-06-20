@@ -1,6 +1,7 @@
-use std::{fmt, thread};
+use std::fmt;
+// use std::thread;
 use colored::Colorize;
-use regex::Regex;
+// use regex::Regex;
 use tracing_core::{Event, Subscriber};
 use tracing_subscriber::fmt::{
     format::{self, FormatEvent, FormatFields},
@@ -72,13 +73,13 @@ where
             let metadata = event.metadata();
 
             // Print thread id
-            let thread_id = thread::current().id();
-            let thread_id_string = format!("{:?}", thread_id);
+            // let thread_id = thread::current().id();
+            // let thread_id_string = format!("{:?}", thread_id);
             // println!("{}", thread_id_string);
-            let re = Regex::new(r"ThreadId\((\d+)\)").unwrap();
-            let caps = re.captures(&thread_id_string).unwrap();
-            let id_number = &caps[1];
-            write!(&mut writer, "-{}-", id_number )?;
+            // let re = Regex::new(r"ThreadId\((\d+)\)").unwrap();
+            // let caps = re.captures(&thread_id_string).unwrap();
+            // let id_number = &caps[1];
+            // write!(&mut writer, "-{}-", id_number )?;
 
             // Display class
             let class_opt = visitor.entries().get("class");

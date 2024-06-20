@@ -32,7 +32,8 @@ async fn main() {
 
     // see docs of config crate to know more
     let config = config::Config::builder()
-        // .add_source(config::File::with_name("rumqttd.toml"))
+        .add_source(config::File::with_name("rumqttd.toml"))
+        // .set_default("id", 0).unwrap()
         .build()
         .unwrap();
 
