@@ -20,7 +20,8 @@ mod builtin_devices;
 
 use panduza_core::platform::Platform;
 
-
+use rumqttd::Config;
+use rumqttd::Broker;
 
 
 #[tokio::main]
@@ -28,8 +29,23 @@ async fn main() {
     // Init tracing subscribers
     log::init();
 
+
+    // see docs of config crate to know more
+    let config = config::Config::builder()
+        // .add_source(config::File::with_name("rumqttd.toml"))
+        .build()
+        .unwrap();
+
+    // this is where we deserialize it into Config
+    let rumqttd_config: Config = config.try_deserialize().unwrap();
+    let mut broker = Broker::new(rumqttd_config);
+
+
     // Create platform runner
     let mut platform = Platform::new("test-platform");
+    std::thread::spawn(move || {
+        broker.start().unwrap();
+    });
 
 
     // Load plugins section
