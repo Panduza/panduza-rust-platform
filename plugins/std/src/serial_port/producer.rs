@@ -1,11 +1,17 @@
 use serde_json;
+use serde_json::json;
 use panduza_core::device::traits::{DeviceActions, Producer};
 
 use super::device::SerialPort;
 
-// use super::Ka3005;
 
 pub struct DeviceProducer;
+
+impl DeviceProducer {
+    pub fn new_boxed() -> Box<dyn Producer> {
+        return Box::new(DeviceProducer{});
+    }
+}
 
 impl Producer for DeviceProducer {
 
@@ -17,29 +23,28 @@ impl Producer for DeviceProducer {
     // }
 
     fn settings_props(&self) -> serde_json::Value {
-        return serde_json::Value::Null;
-    //     return json!([
-    //         {
-    //             "name": "usb_vendor",
-    //             "type": "string",
-    //             "default": format!("{:04x}", VID)
-    //         },
-    //         {
-    //             "name": "usb_model",
-    //             "type": "string",
-    //             "default": format!("{:04x}", PID)
-    //         },
-    //         {
-    //             "name": "usb_serial",
-    //             "type": "string",
-    //             "default": ""
-    //         },
-    //         {
-    //             "name": "serial_port_name",
-    //             "type": "string",
-    //             "default": ""
-    //         }
-    //     ]);
+        return json!([
+            {
+                "name": "usb_vendor",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "usb_model",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "usb_serial",
+                "type": "string",
+                "default": ""
+            },
+            {
+                "name": "serial_port_name",
+                "type": "string",
+                "default": ""
+            }
+        ]);
     }
 
 
