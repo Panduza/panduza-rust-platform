@@ -54,12 +54,14 @@ impl serial::SerialActions for SerialPortActions {
         Ok(String::from(""))
     }
 
-    async fn write_data(&mut self, interface: &AmInterface, v: String) {
 
+    async fn write_data(&mut self, interface: &AmInterface, v: &Vec<u8>) {
+        let i = interface.lock().await;
+        let logger = i.clone_logger();
+        logger.log_info(format!("SerialActions - write_data: {:?}", v));
+        
+        self.connector_tty.write(&v, None).await.unwrap();
     }
-
-
-
 
 }
 

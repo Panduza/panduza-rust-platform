@@ -35,7 +35,7 @@ pub trait SerialActions: Send + Sync {
 
     async fn read_data(&mut self, interface: &AmInterface) -> Result<String, PlatformError>;
 
-    async fn write_data(&mut self, interface: &AmInterface, v: String);
+    async fn write_data(&mut self, interface: &AmInterface, v: &Vec<u8>);
 
 }
 
@@ -158,9 +158,9 @@ impl interface::fsm::States for BlcStates {
 // ----------------------------------------------------------------------------
 
 const ID_MODE: subscription::Id = 0;
-const ID_ENABLE: subscription::Id = 1;
-const ID_POWER: subscription::Id = 2;
-const ID_CURRENT: subscription::Id = 3;
+// const ID_ENABLE: subscription::Id = 1;
+// const ID_POWER: subscription::Id = 2;
+// const ID_CURRENT: subscription::Id = 3;
 
 struct BlcSubscriber {
     blc_interface: Arc<Mutex<SerialInterface>>
@@ -243,9 +243,9 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
             (ID_MODE, "mode".to_string()),
-            (ID_ENABLE, "enable".to_string()),
-            (ID_POWER, "power".to_string()),
-            (ID_CURRENT, "current".to_string())
+            // (ID_ENABLE, "enable".to_string()),
+            // (ID_POWER, "power".to_string()),
+            // (ID_CURRENT, "current".to_string())
         ];
     }
 

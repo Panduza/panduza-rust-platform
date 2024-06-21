@@ -36,6 +36,11 @@ impl Logger {
     // }
 
     #[inline]
+    pub fn log_info<A: Into<String>>(&self, text: A) {
+        tracing::info!(class=CLASS_NAME, bname=self.bname, dname=self.dname, iname=self.iname, "{}", text.into());
+    }
+
+    #[inline]
     pub fn log_trace<A: Into<String>>(&self, text: A) {
         tracing::trace!(class=CLASS_NAME, bname=self.bname, dname=self.dname, iname=self.iname, "{}", text.into());
     }
