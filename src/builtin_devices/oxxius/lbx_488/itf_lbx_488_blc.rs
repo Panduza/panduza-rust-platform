@@ -20,6 +20,9 @@ struct LBX488BlcActions {
 }
 
 impl LBX488BlcActions {
+
+    /// Wrapper to format the commands
+    /// 
     async fn ask(&mut self, command: &[u8]) -> String {
         let mut cmd = vec![0; 32];
         cmd[..command.len()].copy_from_slice(command);
@@ -186,7 +189,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
 
 
-/// Interface to emulate a Bench Power Channel
+/// Interface
 /// 
 pub fn build<A: Into<String>>(
     name: A,
