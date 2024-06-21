@@ -111,10 +111,12 @@ where
                             );
                             write!(&mut writer, "{}", f.bright_cyan() )?;
                         },
-                        _ => {}
+                        _ => { }
                     }
                 },
-                None => {}
+                None => {
+                    write!(&mut writer, "{}", "[BROKER] ".to_string() )?;
+                }
             }
 
             // Level

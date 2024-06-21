@@ -30,10 +30,32 @@ async fn main() {
     log::init();
 
 
+
+    let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
+    router.insert("id".to_string(), config::Value::new(None, 0));
+    router.insert("max_connections".to_string(), config::Value::new(None, 10010));
+    router.insert("max_outgoing_packet_count".to_string(), config::Value::new(None, 200));
+    router.insert("max_segment_size".to_string(), config::Value::new(None, 104857600));
+    router.insert("max_segment_count".to_string(), config::Value::new(None, 10));
+
+
+    let mut server_connections: std::collections::HashMap<String, config::Value> = config::Map::new();
+    server_connections.insert("connection_timeout_ms".to_string(), config::Value::new(None, 60000));
+    server_connections.insert("max_payload_size".to_string(), config::Value::new(None, 20480));
+    server_connections.insert("max_inflight_count".to_string(), config::Value::new(None, 10000));
+    server_connections.insert("dynamic_filters".to_string(), config::Value::new(None, true));
+
+    let mut server: std::collections::HashMap<String, config::Value> = config::Map::new();
+    server.insert("name".to_string(), config::Value::new(None, "v4-1"));
+    server.insert("listen".to_string(), config::Value::new(None, "0.0.0.0:1883"));
+    server.insert("next_connection_delay_ms".to_string(), config::Value::new(None, 1));
+    server.insert("connections".to_string(), config::Value::new(None, server_connections));
+
     // see docs of config crate to know more
     let config = config::Config::builder()
-        .add_source(config::File::with_name("rumqttd.toml"))
-        // .set_default("id", 0).unwrap()
+        .set_default("id", 0).unwrap()
+        .set_default("router", router).unwrap()
+        .set_default("v4.1", server).unwrap()
         .build()
         .unwrap();
 

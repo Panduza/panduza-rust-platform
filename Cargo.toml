@@ -24,7 +24,8 @@ dirs = "3.0.2"
 rumqttc = "0.24.0"
 
 
-rumqttd = { git = "https://github.com/bytebeamio/rumqtt", ref = "main" }
+# rumqttd = { git = "https://github.com/bytebeamio/rumqtt", ref = "main" }
+rumqttd = { git = "https://github.com/Panduza/rumqtt", branch = "pza_tests" }
 config = "0.14.0"
 
 # Async trait support
@@ -76,8 +77,8 @@ tracing = { version = "0.1", features = [
     # "max_level_error",
     # "max_level_warn",
     # "max_level_info",
-    # "max_level_debug",
-    "max_level_trace",
+    "max_level_debug",
+    # "max_level_trace",
     # "release_max_level_off",
     # "release_max_level_error",
     # "release_max_level_warn",
