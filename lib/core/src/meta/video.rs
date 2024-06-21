@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
+use std::time::SystemTime;
 
 use async_trait::async_trait;
 use tokio::sync::Mutex;
@@ -101,11 +102,28 @@ async fn send_video(interface: AmInterface) {
     // Initialize the encoder  
     let mut encoder = Encoder::new().unwrap();
 
+    let mut sys_time = SystemTime::now();
+    let mut frame_transmited = 0;
+
     match result_camera {
         Ok(mut camera) => {
             if cfg!(windows) {
                  // Send video
                 loop {  
+                    // every second show the number of frame send 
+                    // match SystemTime::now().duration_since(sys_time) {
+                    //     Ok(value) => {
+                    //         if (value.as_millis() > 1000) {
+                    //             println!("frame transmited : {}", frame_transmited);
+                    //             sys_time = SystemTime::now();
+                    //             frame_transmited = 0;
+                    //         }
+                    //     },
+                    //     Err(e) => {
+                    //         println!("error : {}", e);
+                    //     }
+                    // }
+
                     // Get next frame (open the stream if it didn't have been done before)
                 
                     let frame = camera.frame().unwrap();
@@ -115,22 +133,23 @@ async fn send_video(interface: AmInterface) {
 
                     // Convert the frame to RGBImage
                     // let rgb_image = image::RgbImage::from_raw(1280, 720, frame.buffer().to_vec()).unwrap();
-                    // let rgb_image = mjpeg_to_rgb(frame.buffer());
+                    let rgb_image = mjpeg_to_rgb(frame.buffer());
 
-                    // let width = rgb_image.width() as usize;
-                    // let height = rgb_image.height() as usize;
-                    // let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
+                    let width = rgb_image.width() as usize;
+                    let height = rgb_image.height() as usize;
+                    let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
                     
-                    // // Convert RGB image to YUV
-                    // // let yuv_buffer = rgb_to_yuv(&rgb_image);
-                    // let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
+                    // Convert RGB image to YUV
+                    // let yuv_buffer = rgb_to_yuv(&rgb_image);
+                    let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
+                    let encoded_frame: openh264::encoder::EncodedBitStream = encoder.encode(&yuv_buffer).unwrap();
 
 
                     // Encode to h264 using NV12 (YUV)
                     
                     // let yuv_buffer = YUVBuffer::from_vec(frame.buffer().to_vec(), 1280, 720);
 
-                    // // Encode the frame
+                    // Encode the frame
                     // let encoded_frame: openh264::encoder::EncodedBitStream = encoder.encode(&yuv_buffer).unwrap();
                     // let frame_bytes: &[u8] = &encoded_frame.to_vec();
 
@@ -142,10 +161,24 @@ async fn send_video(interface: AmInterface) {
                     // TO DO : here get directly the frame encode with camera to h264
                     
                     // return;
+                
+                    // save as file 
+
+                    // let frame_bytes: &[u8] = &encoded_frame.to_vec();
+                    // let mut file = File::create("proute.h264").unwrap();
+                    // file.write_all(frame_bytes).unwrap();
+                    // return;
+
+
 
                     // Change frame value and send it on the broker
-                    interface.lock().await.update_attribute_with_bytes("frame", &frame_value);
+                    interface.lock().await.update_attribute_with_bytes("frame", &encoded_frame.to_vec());
                     interface.lock().await.publish_all_attributes().await;
+                    frame_transmited += 1;
+                    if (frame_transmited >= 10) {
+                        println!("paf");
+                        frame_transmited = 0;
+                    }
                 }
             } 
         },
