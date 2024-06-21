@@ -40,6 +40,7 @@ impl Config {
             settings.get("usb_vendor")
                 .map(|v| v.as_str().unwrap());
 
+        // get VID hexadecimal value
         self.usb_vendor =
             Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
 
@@ -47,6 +48,7 @@ impl Config {
             settings.get("usb_model")
                 .map(|v| v.as_str().unwrap());
 
+        // get PID hexadecimal value
         self.usb_model =
             Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
 
@@ -182,6 +184,8 @@ impl UsbCore {
 
     async fn init(&mut self) {
 
+        // Open device with to provided VID and PID
+        // TODO find the device with the serial number
         let devices = nusb::list_devices()
             .unwrap()
             .find(|d| d.vendor_id() == self._config.usb_vendor.unwrap() && d.product_id() == self._config.usb_model.unwrap())
@@ -195,6 +199,7 @@ impl UsbCore {
 
     async fn write(&mut self, command: &[u8]) {
         
+        // find the Bulk Out endpoint to send the message
         for interface_descriptor in self.interface.as_ref().unwrap().descriptors() {
             for endpoint in interface_descriptor.endpoints() {
                 if endpoint.direction() == Direction::Out {
@@ -213,6 +218,7 @@ impl UsbCore {
 
         let mut msg = String::new();
 
+        // find the Bulk In endpoint to receive the message
         for interface_descriptor in self.interface.as_ref().unwrap().descriptors() {
             for endpoint in interface_descriptor.endpoints() {
                 if endpoint.direction() == Direction::In {
