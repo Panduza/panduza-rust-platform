@@ -2263,7 +2263,7 @@ dependencies = [
  "nokhwa-core",
  "panduza-connectors",
  "panduza-core",
- "plugins-std",
+ "plugin-std",
  "regex",
  "rumqttc",
  "rumqttd",
@@ -2423,7 +2423,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
-name = "plugins-std"
+name = "plugin-std"
 version = "0.0.0"
 dependencies = [
  "panduza-core",

@@ -1,5 +1,5 @@
 [package]
-name = "plugins-std"
+name = "plugin-std"
 edition = "2021"
 
 [dependencies]

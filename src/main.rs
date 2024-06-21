@@ -78,7 +78,7 @@ async fn main() {
 
         builtin_devices::import_plugin_producers(factory);
 
-        plugins_std::import_plugin_producers(factory);
+        plugin_std::import_plugin_producers(factory);
     }
     
     

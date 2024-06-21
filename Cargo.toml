@@ -10,7 +10,7 @@ panduza-core = { path = "lib/core" }
 panduza-connectors = { path = "lib/connectors" }
 
 
-plugins-std = { path = "plugins/std" }
+plugin-std = { path = "plugins/std" }
 
 
 # Main async framework for the platform
