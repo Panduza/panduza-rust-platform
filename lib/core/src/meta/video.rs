@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Write;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -89,7 +91,8 @@ async fn send_video(interface: AmInterface) {
     // let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
 
     // closest of 30fps, 1280x720
-    let format = CameraFormat::new_from( 1280, 720, FrameFormat::NV12, 30);
+    // let format = CameraFormat::new_from( 1280, 720, FrameFormat::NV12, 30);
+    let format = CameraFormat::new_from( 1280, 720, FrameFormat::MJPEG, 30);
     let requested: RequestedFormat<'_> = RequestedFormat::new::<RgbFormat>(RequestedFormatType::Closest(format));
 
     // try to get the first camera found (if any camera return a error)
@@ -100,43 +103,51 @@ async fn send_video(interface: AmInterface) {
 
     match result_camera {
         Ok(mut camera) => {
-            // Send video
-            loop {  
-                // Get next frame (open the stream if it didn't have been done before)
-            
-                let frame = camera.frame().unwrap();
-                // let frame_value = frame.buffer().to_vec();
-
-                // Encode to h264 using Mjpeg with cpu
-
-                // Convert the frame to RGBImage
-                // let rgb_image = image::RgbImage::from_raw(1280, 720, frame.buffer().to_vec()).unwrap();
-                // let rgb_image = mjpeg_to_rgb(frame.buffer());
-
-                // let width = rgb_image.width() as usize;
-                // let height = rgb_image.height() as usize;
-                // let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
+            if cfg!(windows) {
+                 // Send video
+                loop {  
+                    // Get next frame (open the stream if it didn't have been done before)
                 
-                // // Convert RGB image to YUV
-                // // let yuv_buffer = rgb_to_yuv(&rgb_image);
-                // let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
+                    let frame = camera.frame().unwrap();
+                    let frame_value = frame.buffer().to_vec();
+
+                    // Encode to h264 using Mjpeg with cpu
+
+                    // Convert the frame to RGBImage
+                    // let rgb_image = image::RgbImage::from_raw(1280, 720, frame.buffer().to_vec()).unwrap();
+                    // let rgb_image = mjpeg_to_rgb(frame.buffer());
+
+                    // let width = rgb_image.width() as usize;
+                    // let height = rgb_image.height() as usize;
+                    // let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
+                    
+                    // // Convert RGB image to YUV
+                    // // let yuv_buffer = rgb_to_yuv(&rgb_image);
+                    // let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
 
 
-                // Encode to h264 using NV12 (YUV)
-                
-                let yuv_buffer = YUVBuffer::from_vec(frame.buffer().to_vec(), 1280, 720);
+                    // Encode to h264 using NV12 (YUV)
+                    
+                    // let yuv_buffer = YUVBuffer::from_vec(frame.buffer().to_vec(), 1280, 720);
 
-                // Encode the frame
-                let encoded_frame = encoder.encode(&yuv_buffer).unwrap();
+                    // // Encode the frame
+                    // let encoded_frame: openh264::encoder::EncodedBitStream = encoder.encode(&yuv_buffer).unwrap();
+                    // let frame_bytes: &[u8] = &encoded_frame.to_vec();
 
-                // TO DO : here get directly the frame encode with camera to h264
-                
-                
+                    // let frame_bytes: &[u8] = &frame.buffer().to_vec();
 
-                // Change frame value and send it on the broker
-                interface.lock().await.update_attribute_with_bytes("frame", &encoded_frame.to_vec());
-                interface.lock().await.publish_all_attributes().await;
-            }
+                    // let mut file = File::create("proute.yuv").unwrap();
+                    // file.write_all(frame_bytes).unwrap();
+
+                    // TO DO : here get directly the frame encode with camera to h264
+                    
+                    // return;
+
+                    // Change frame value and send it on the broker
+                    interface.lock().await.update_attribute_with_bytes("frame", &frame_value);
+                    interface.lock().await.publish_all_attributes().await;
+                }
+            } 
         },
         Err(e) => {
             interface.lock().await.log_warn(

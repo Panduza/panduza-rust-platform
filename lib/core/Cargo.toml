@@ -89,3 +89,4 @@ nokhwa-core = { path = "../../plugins/video/src/nokhwa-core-0.1.2" }
 image = "0.24"
 jpeg-decoder = "0.2.1"
 openh264 = "0.6.0"
+# h264_webcam_stream = "0.1.0"
