@@ -1,0 +1,11 @@
+[package]
+name = "plugins-std"
+edition = "2021"
+
+[dependencies]
+
+# The panduza core library
+panduza-core = { path = "../../lib/core" }
+
+# Json serialization & deserialization
+serde_json = "1.0.114"
