@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::io::Write;
 use std::sync::Arc;
 use std::time::SystemTime;
 
@@ -15,13 +13,19 @@ use crate::Error as PlatformError;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
-use nokhwa::utils::{CameraIndex, RequestedFormat, RequestedFormatType, CameraFormat, FrameFormat};
-use nokhwa::Camera;
-use nokhwa_core::pixel_format::RgbFormat;
+// use nokhwa::utils::{CameraIndex, RequestedFormat, RequestedFormatType, CameraFormat, FrameFormat};
+// use nokhwa::Camera;
+// use nokhwa_core::pixel_format::RgbFormat;
 
-use openh264::encoder::Encoder;
-use openh264::formats::{YUVBuffer, RgbSliceU8};
-use jpeg_decoder::Decoder;
+// use openh264::encoder::Encoder;
+// use openh264::formats::{YUVBuffer, RgbSliceU8};
+// use jpeg_decoder::Decoder;
+
+use windows::core::Interface;
+use windows::Win32::Media::MediaFoundation::*;
+use windows::Win32::System::Com::*;
+use windows::Win32::Foundation::*;
+
 
 #[async_trait]
 pub trait VideoActions: Send + Sync {
@@ -68,130 +72,167 @@ struct VideoStates {
     video_interface: Arc<Mutex<VideoInterface>>
 }
 
-// Transform frame mjpeg to RGB
-fn mjpeg_to_rgb(mjpeg_data: &[u8]) -> image::RgbImage {
-    let mut decoder = Decoder::new(mjpeg_data);
-    let pixels = decoder.decode().expect("Failed to decode MJPEG frame");
-    let metadata = decoder.info().expect("Failed to get MJPEG metadata");
-    let width = metadata.width as u32;
-    let height = metadata.height as u32;
-    let rgb_image: image::RgbImage = image::ImageBuffer::from_raw(width, height, pixels).expect("Failed to create RGB image from raw data");
-    rgb_image
+
+async unsafe fn extract_sample_data(sample: &IMFSample) -> Vec<u8> {
+    // Get the buffer count
+    let buffer_count = sample.GetBufferCount().unwrap();
+
+    // match hr {
+    //     Ok(v) => {
+    //         // println!("");
+    //     },
+    //     Err(e) => {
+    //         println!("error getting buffer count from sample");
+    //     }
+    // }
+
+    // Iterate through each buffer to extract data
+    let mut total_data: Vec<u8> = Vec::new();
+    for i in 0..buffer_count {
+        // let mut buffer: Option<IMFMediaBuffer> = None;
+        let mut buffer = sample.GetBufferByIndex(i).unwrap();
+
+        // Lock the buffer to access its data
+        let mut buffer_data = std::ptr::null_mut();
+        let mut max_length = 0;
+        let mut current_length = 0;
+        let hr = buffer.Lock(&mut buffer_data, 
+            Some(&mut max_length), Some(&mut current_length));
+        // if hr != S_OK {
+        //     return Err(windows::Error::HRESULT(hr).into());
+        // }
+
+        // Convert the locked buffer data into Vec<u8>
+        let data_slice = std::slice::from_raw_parts(buffer_data as *const u8, current_length as usize);
+        total_data.extend_from_slice(data_slice);
+
+        // Unlock the buffer
+        buffer.Unlock();
+    }
+
+    return total_data;
 }
+
+async unsafe fn capture_video_frames(reader: &IMFSourceReader, interface: AmInterface) {
+    loop {
+        let mut flags: u32 = 0;
+        let mut sample: Option<IMFSample> = None;
+        let mut timestamp = 0;
+        
+        // Read a sample from the video stream
+        let hr = reader.ReadSample(
+            MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32,
+            0,
+            None,
+            Some(&mut flags),
+            Some(&mut timestamp),
+            Some(&mut sample),
+        );
+
+        // Check HRESULT for success or end of stream (end of stream is never supposed happened)
+        match hr {
+            Ok(v) => {
+                // Process the video sample (e.g., encode, save, or display it)
+                if let Some(sample) = sample {
+                    // If there's a sample, extract data from it
+                    let buffer = extract_sample_data(&sample).await;
+                    // println!("Captured a video sample at timestamp: {}", timestamp);
+                    // println!("Sample data length: {}", buffer.len());
+                    // interface.lock().await.update_attribute_with_bytes("frame", &buffer.to_vec());
+                    // interface.lock().await.publish_all_attributes().await;
+                    
+                } else {
+                    // Handle case when sample is None
+                    println!("Sample is None");
+                    // Vec::new() // or any other handling for empty sample case
+                }
+                
+            },
+            Err(e) => {
+                println!("Error reading video sample: {:?}", e);
+            }
+        }
+    }
+}
+
+async unsafe fn configure_video_capture(interface: AmInterface) {
+    // Create attributes for device enumeration
+    let mut attributes: Option<IMFAttributes> = None;
+    MFCreateAttributes(&mut attributes, 1).unwrap();
+    let attributes = attributes.unwrap();
+    attributes.SetGUID(&MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, 
+        &MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID).unwrap();
+
+    // Enumerate devices
+    let mut devices_ptr: *mut Option<IMFActivate> = std::ptr::null_mut();
+    let mut count: u32 = 0;
+    MFEnumDeviceSources(&attributes, &mut devices_ptr, &mut count).unwrap();
+
+    if count == 0 {
+        panic!("No video capture devices found.");
+    }
+
+    // Retrieve the first device
+    let devices = std::slice::from_raw_parts(devices_ptr, count as usize);
+    let device = devices[0].as_ref().unwrap();
+
+    // Activate the first device
+    let source: IMFMediaSource = device.ActivateObject().unwrap();
+
+    // Create a source reader from the media source
+    let reader: IMFSourceReader = MFCreateSourceReaderFromMediaSource(&source, None).unwrap();
+
+    // Set the media type for the first video stream (usually stream 0)
+    let media_type: IMFMediaType = MFCreateMediaType().unwrap();
+    media_type.SetGUID(&MF_MT_MAJOR_TYPE, &MFMediaType_Video).unwrap();
+    media_type.SetGUID(&MF_MT_SUBTYPE, &MFVideoFormat_H264).unwrap();
+
+    // Set other necessary attributes of media type
+    // Example: Set frame size and frame rate if required
+    // media_type.SetUINT32(&MF_MT_FRAME_SIZE, width | (height << 16))?;
+    // media_type.SetUINT32(&MF_MT_FRAME_RATE, numerator | (denominator << 32))?;_FIRST_VIDEO_STREAM.0 as u32, None, &media_type).unwrap();
+
+    // Set the media type on the reader
+    let hr = reader.SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32, None, &media_type);
+    match hr {
+        Ok(v) => {
+            println!("Success creating camera");
+        },
+        Err(e) => {
+            println!("error creating camera : {:?}", e);
+        }
+    }
+
+    // Capture video frames
+    capture_video_frames(&reader, interface).await;
+
+    // Clean up
+    reader.Flush(MF_SOURCE_READER_FIRST_VIDEO_STREAM.0 as u32).unwrap();
+    source.Shutdown().unwrap();
+}
+
 
 ///
 /// Send video stream on the broker frame by frame
 async fn send_video(interface: AmInterface) {
-    
-
-    // Init camera object 
-    // first camera found in the list
-    let index = CameraIndex::Index(1); 
-
-    // request the absolute highest resolution CameraFormat that can be decoded to RGB.
-    // let requested = RequestedFormat::new::<RgbFormat>(RequestedFormatType::AbsoluteHighestFrameRate);
-
-    // closest of 30fps, 1280x720
-    // let format = CameraFormat::new_from( 1280, 720, FrameFormat::NV12, 30);
-    let format = CameraFormat::new_from( 1280, 720, FrameFormat::MJPEG, 30);
-    let requested: RequestedFormat<'_> = RequestedFormat::new::<RgbFormat>(RequestedFormatType::Closest(format));
-
-    // try to get the first camera found (if any camera return a error)
-    let result_camera = Camera::new(index, requested);
-
-    // Initialize the encoder  
-    let mut encoder = Encoder::new().unwrap();
-
-    let mut sys_time = SystemTime::now();
-    let mut frame_transmited = 0;
-
-    match result_camera {
-        Ok(mut camera) => {
-            if cfg!(windows) {
-                 // Send video
-                loop {  
-                    // every second show the number of frame send 
-                    // match SystemTime::now().duration_since(sys_time) {
-                    //     Ok(value) => {
-                    //         if (value.as_millis() > 1000) {
-                    //             println!("frame transmited : {}", frame_transmited);
-                    //             sys_time = SystemTime::now();
-                    //             frame_transmited = 0;
-                    //         }
-                    //     },
-                    //     Err(e) => {
-                    //         println!("error : {}", e);
-                    //     }
-                    // }
-
-                    // Get next frame (open the stream if it didn't have been done before)
-                
-                    let frame = camera.frame().unwrap();
-                    let frame_value = frame.buffer().to_vec();
-
-                    // Encode to h264 using Mjpeg with cpu
-
-                    // Convert the frame to RGBImage
-                    // let rgb_image = image::RgbImage::from_raw(1280, 720, frame.buffer().to_vec()).unwrap();
-                    let rgb_image = mjpeg_to_rgb(frame.buffer());
-
-                    let width = rgb_image.width() as usize;
-                    let height = rgb_image.height() as usize;
-                    let rgb_slice = RgbSliceU8::new(rgb_image.as_raw(), (width, height));
-                    
-                    // Convert RGB image to YUV
-                    // let yuv_buffer = rgb_to_yuv(&rgb_image);
-                    let yuv_buffer = YUVBuffer::from_rgb_source(rgb_slice);
-                    let encoded_frame: openh264::encoder::EncodedBitStream = encoder.encode(&yuv_buffer).unwrap();
-
-
-                    // Encode to h264 using NV12 (YUV)
-                    
-                    // let yuv_buffer = YUVBuffer::from_vec(frame.buffer().to_vec(), 1280, 720);
-
-                    // Encode the frame
-                    // let encoded_frame: openh264::encoder::EncodedBitStream = encoder.encode(&yuv_buffer).unwrap();
-                    // let frame_bytes: &[u8] = &encoded_frame.to_vec();
-
-                    // let frame_bytes: &[u8] = &frame.buffer().to_vec();
-
-                    // let mut file = File::create("proute.yuv").unwrap();
-                    // file.write_all(frame_bytes).unwrap();
-
-                    // TO DO : here get directly the frame encode with camera to h264
-                    
-                    // return;
-                
-                    // save as file 
-
-                    // let frame_bytes: &[u8] = &encoded_frame.to_vec();
-                    // let mut file = File::create("proute.h264").unwrap();
-                    // file.write_all(frame_bytes).unwrap();
-                    // return;
-
-
-
-                    // Change frame value and send it on the broker
-                    interface.lock().await.update_attribute_with_bytes("frame", &encoded_frame.to_vec());
-                    interface.lock().await.publish_all_attributes().await;
-                    frame_transmited += 1;
-                    if (frame_transmited >= 10) {
-                        println!("paf");
-                        frame_transmited = 0;
-                    }
-                }
-            } 
-        },
-        Err(e) => {
-            interface.lock().await.log_warn(
-                format!("Failed to find camera {}", e)
-            );
-        }
-    }
 
     // TO DO : Here we should ask to user which camera he wants to use 
+    unsafe {
+        // Initialize COM
+        CoInitializeEx(None, COINIT_MULTITHREADED);
 
-    
+        // Initialize Media Foundation
+        let _ = MFStartup(MF_VERSION, MFSTARTUP_LITE).unwrap();
+
+        // Configure the video capture and encoding pipeline
+        let _ = configure_video_capture(interface).await;
+
+        // Shutdown Media Foundation
+        unsafe { MFShutdown().unwrap() };
+
+        // Uninitialize COM
+        CoUninitialize();
+    }    
 }
 
 #[async_trait]
