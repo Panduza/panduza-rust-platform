@@ -118,7 +118,7 @@ impl AttributeInterface for JsonAttribute {
         );
     }
 
-    fn update_field_with_bytes(&mut self, _value: &Vec<u8>) {
+    fn push_byte_stream(&mut self, _value: &Vec<u8>) {
         // let n = self.name.clone();
         // let d = self.data.get_mut(n);
         // if d.is_none() || field.is_empty() || value.is_empty() {

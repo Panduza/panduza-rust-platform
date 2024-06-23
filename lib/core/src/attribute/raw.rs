@@ -81,7 +81,7 @@ impl AttributeInterface for RawAttribute {
         
     }
 
-    fn update_field_with_bytes(&mut self, value: &Vec<u8>) {
+    fn push_byte_stream(&mut self, value: &Vec<u8>) {
         self.data = value.to_vec();
     }
 

@@ -1,0 +1,16 @@
+[package]
+name = "plugin-std"
+edition = "2021"
+
+[dependencies]
+
+# The panduza core library
+panduza-core = { path = "../../lib/core" }
+# The panduza connectors library
+panduza-connectors = { path = "../../lib/connectors" }
+# Main async framework for the platform
+tokio = { version = "1", features = ["full", "tracing"] }
+# Json serialization & deserialization
+serde_json = "1.0.114"
+# Async trait support
+async-trait = "0.1.77"

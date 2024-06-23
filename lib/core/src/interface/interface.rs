@@ -270,7 +270,7 @@ impl Interface {
 
     pub fn update_attribute_with_bytes(&mut self, attribute: &str, value: &Vec<u8>) {
         let att = self.attributes.get_mut(attribute).unwrap();
-        att.as_mut().update_field_with_bytes(value);
+        att.as_mut().push_byte_stream(value);
     }
 
     pub fn platform_services(&self) -> AmServices {
@@ -311,5 +311,12 @@ impl Interface {
     //     tracing::trace!(class="Interface", bname=self.bench_name, dname=self.dev_name, iname=self.name, 
     //         "{}", text.into());
     // }
+
+
+    /// Clone the logger of the interface
+    /// 
+    pub fn clone_logger(&self) -> Logger {
+        return self.logger.clone();
+    }
 
 }

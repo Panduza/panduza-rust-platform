@@ -80,8 +80,8 @@ impl AttributeInterface for InfoAttribute {
         self.attr.update_field_with_json(field, value);
     }
 
-    fn update_field_with_bytes(&mut self, value: &Vec<u8>) {
-        self.attr.update_field_with_bytes(value)
+    fn push_byte_stream(&mut self, value: &Vec<u8>) {
+        self.attr.push_byte_stream(value)
     }
 }
 
