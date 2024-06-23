@@ -11,6 +11,7 @@ panduza-connectors = { path = "lib/connectors" }
 
 
 plugin-std = { path = "plugins/std" }
+plugin-fake = { path = "plugins/fake" }
 
 
 # Main async framework for the platform
