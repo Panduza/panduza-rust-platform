@@ -1,6 +1,7 @@
 use panduza_core::device::traits::DeviceActions;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
+use super::itf_registers;
 
 pub struct RegisterMap;
 impl DeviceActions for RegisterMap {
@@ -25,9 +26,9 @@ impl DeviceActions for RegisterMap {
         // serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
-        // list.push(
-        //     itf_bpc::build("channel", &serial_conf)
-        // );
+        list.push(
+            itf_registers::build("map")
+        );
         return Ok(list);
     }
 }

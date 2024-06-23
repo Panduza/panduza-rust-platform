@@ -16,16 +16,14 @@ use crate::Error as PlatformError;
 use crate::FunctionResult as PlatformFunctionResult;
 
 pub struct RegistersParams {
-    pub power_min: u64,
-    pub power_max: f64,
-    pub power_decimals: i32,
-
-
+    pub base_address: u64,
+    pub register_size: u32,
+    pub number_of_register: u32
 }
 
 pub struct RegistersDatas {
-
-    // pub
+    pub values: Vec<u64>,
+    pub timestamps: Vec<u64>,
 }
 
 #[async_trait]
@@ -36,9 +34,9 @@ pub trait RegistersActions: Send + Sync {
     ///
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn read_data(&mut self, interface: &AmInterface) -> Result<String, PlatformError>;
+    async fn read(&mut self, interface: &AmInterface, index:u32, size:u32) -> Result<String, PlatformError>;
 
-    async fn write_data(&mut self, interface: &AmInterface, v: &Vec<u8>);
+    async fn write(&mut self, interface: &AmInterface, index:u32, v: &Vec<u64>);
 
 }
 
@@ -50,23 +48,23 @@ pub trait RegistersActions: Send + Sync {
 
 struct RegistersInterface {
 
-    // params: BlcParams,
+    params: RegistersParams,
     actions: Box<dyn RegistersActions>
 }
 type AmBlcInterface = Arc<Mutex<RegistersInterface>>;
 
 impl RegistersInterface {
-    // params: BlcParams, 
-    fn new(actions: Box<dyn RegistersActions>) -> RegistersInterface {
+     
+    fn new(params: RegistersParams, actions: Box<dyn RegistersActions>) -> RegistersInterface {
         return RegistersInterface {
-            // params: params,
+            params: params,
             actions: actions
         }
     }
-    // params: BlcParams, 
-    fn new_am(actions: Box<dyn RegistersActions>) -> AmBlcInterface {
-        // params, 
-        return Arc::new(Mutex::new( RegistersInterface::new(actions) ));
+    
+    fn new_am(params: RegistersParams, actions: Box<dyn RegistersActions>) -> AmBlcInterface {
+        
+        return Arc::new(Mutex::new( RegistersInterface::new(params, actions) ));
     }
 }
 
@@ -80,7 +78,7 @@ impl RegistersInterface {
 // Here is the implementation of the states for the registers interface
 
 struct BlcStates {
-    blc_interface: Arc<Mutex<RegistersInterface>>
+    reg_interface: Arc<Mutex<RegistersInterface>>
 }
 
 #[async_trait]
@@ -97,7 +95,7 @@ impl interface::fsm::States for BlcStates {
     ///
     async fn initializating(&self, interface: &AmInterface)
     {
-        let mut blc_itf = self.blc_interface.lock().await;
+        let mut blc_itf = self.reg_interface.lock().await;
 
         // Custom initialization slot
         blc_itf.actions.initializating(&interface).await.unwrap();
@@ -168,7 +166,7 @@ const ID_MODE: subscription::Id = 0;
 // const ID_CURRENT: subscription::Id = 3;
 
 struct BlcSubscriber {
-    blc_interface: Arc<Mutex<RegistersInterface>>
+    reg_interface: Arc<Mutex<RegistersInterface>>
 }
 
 impl BlcSubscriber {
@@ -178,10 +176,10 @@ impl BlcSubscriber {
     // #[inline(always)]
     // async fn process_mode_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
     //     let requested_value = field_data.as_str().unwrap().to_string();
-    //     self.blc_interface.lock().await
+    //     self.reg_interface.lock().await
     //         .actions.write_mode_value(&interface, requested_value).await;
 
-    //     let r_value = self.blc_interface.lock().await
+    //     let r_value = self.reg_interface.lock().await
     //         .actions.read_mode_value(&interface).await
     //         .unwrap();
 
@@ -194,10 +192,10 @@ impl BlcSubscriber {
     // #[inline(always)]
     // async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
     //     let requested_value = field_data.as_bool().unwrap();
-    //     self.blc_interface.lock().await
+    //     self.reg_interface.lock().await
     //         .actions.write_enable_value(&interface, requested_value).await;
 
-    //     let r_value = self.blc_interface.lock().await
+    //     let r_value = self.reg_interface.lock().await
     //         .actions.read_enable_value(&interface).await
     //         .unwrap();
 
@@ -210,10 +208,10 @@ impl BlcSubscriber {
     // #[inline(always)]
     // async fn process_power_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
     //     let requested_value = field_data.as_f64().unwrap();
-    //     self.blc_interface.lock().await
+    //     self.reg_interface.lock().await
     //         .actions.write_power_value(&interface, requested_value as f64).await;
 
-    //     let r_value = self.blc_interface.lock().await
+    //     let r_value = self.reg_interface.lock().await
     //         .actions.read_power_value(&interface).await
     //         .unwrap();
 
@@ -226,10 +224,10 @@ impl BlcSubscriber {
     // #[inline(always)]
     // async fn process_current_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
     //     let requested_value = field_data.as_f64().unwrap();
-    //     self.blc_interface.lock().await
+    //     self.reg_interface.lock().await
     //         .actions.write_current_value(&interface, requested_value as f64).await;
 
-    //     let r_value = self.blc_interface.lock().await
+    //     let r_value = self.reg_interface.lock().await
     //         .actions.read_current_value(&interface).await
     //         .unwrap();
 
@@ -325,19 +323,19 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
 ///
 pub fn build<A: Into<String>>(
     name: A,
-    // params: BlcParams,
+    params: RegistersParams,
     actions: Box<dyn RegistersActions>
 ) -> InterfaceBuilder {
 
     // params,
-    let c = RegistersInterface::new_am(actions);
+    let c = RegistersInterface::new_am(params, actions);
 
     return InterfaceBuilder::new(
         name,
-        "serial",
-        "0.0",
-        Box::new(BlcStates{blc_interface: c.clone()}),
-        Box::new(BlcSubscriber{blc_interface: c.clone()})
+        "registers",
+        "0",
+        Box::new(BlcStates{reg_interface: c.clone()}),
+        Box::new(BlcSubscriber{reg_interface: c.clone()})
     );
 }
 
