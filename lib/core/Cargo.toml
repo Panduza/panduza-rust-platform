@@ -91,3 +91,6 @@ jpeg-decoder = "0.2.1"
 openh264 = "0.6.0"
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = {version = "0.57", features = ["Win32_Foundation", "Win32_System_Com", "Win32_Media_MediaFoundation"]}
+
+[target.'cfg(target_os = "linux")'.dependencies]
+h264_webcam_stream = "0.1.0"

@@ -26,6 +26,8 @@ use windows::Win32::Media::MediaFoundation::*;
 use windows::Win32::System::Com::*;
 use windows::Win32::Foundation::*;
 
+use h264_webcam_stream::*;
+
 
 #[async_trait]
 pub trait VideoActions: Send + Sync {
@@ -216,23 +218,48 @@ async unsafe fn configure_video_capture(interface: AmInterface) {
 /// Send video stream on the broker frame by frame
 async fn send_video(interface: AmInterface) {
 
-    // TO DO : Here we should ask to user which camera he wants to use 
-    unsafe {
-        // Initialize COM
-        CoInitializeEx(None, COINIT_MULTITHREADED);
+    if cfg!(target_os = "windows") {
+        // TO DO : Here we should ask to user which camera he wants to use 
+        unsafe {
+            // Initialize COM
+            CoInitializeEx(None, COINIT_MULTITHREADED);
 
-        // Initialize Media Foundation
-        let _ = MFStartup(MF_VERSION, MFSTARTUP_LITE).unwrap();
+            // Initialize Media Foundation
+            let _ = MFStartup(MF_VERSION, MFSTARTUP_LITE).unwrap();
 
-        // Configure the video capture and encoding pipeline
-        let _ = configure_video_capture(interface).await;
+            // Configure the video capture and encoding pipeline
+            let _ = configure_video_capture(interface).await;
 
-        // Shutdown Media Foundation
-        unsafe { MFShutdown().unwrap() };
+            // Shutdown Media Foundation
+            unsafe { MFShutdown().unwrap() };
 
-        // Uninitialize COM
-        CoUninitialize();
-    }    
+            // Uninitialize COM
+            CoUninitialize();
+        }    
+    } else if cfg!(target_os = "linux") {
+        // let device_path = Path::new("/dev/video0");
+        let max_fps = 60;
+
+        let devices: Vec<_> = h264_webcam_stream::list_devices()
+            .into_iter()
+            .collect();
+
+        println!("Video devices: {:?}", devices);
+    
+        // let mut device = h264_webcam_stream::get_device(&device_path).unwrap();
+        let mut stream = h264_webcam_stream::stream(devices[0], max_fps).unwrap();
+    
+        // let mut f = std::fs::File::create("./test.h264")?;
+        
+        loop {
+            let (h264_bytes, _) = stream.next(false).unwrap();
+            // Record the h264 video to a file
+            // f.write_all(&h264_bytes[..])?;
+            interface.lock().await.update_attribute_with_bytes("frame", &h264_bytes);
+            interface.lock().await.publish_all_attributes().await;
+        }
+    }
+    
 }
 
 #[async_trait]
