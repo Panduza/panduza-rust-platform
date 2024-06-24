@@ -48,7 +48,7 @@ impl Runner {
             subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("{}/cmds/set", topic) )
         ];
         for att_name in att_names {
-            let request = subscription::Request::new( att_name.0, &format!("{}/{}", topic, att_name.1) );
+            let request = subscription::Request::new( att_name.0, &format!("{}/cmds/{}", topic, att_name.1) );
             requests.push(request);
         }
 

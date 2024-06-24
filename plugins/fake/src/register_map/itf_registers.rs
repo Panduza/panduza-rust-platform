@@ -42,7 +42,7 @@ impl registers::RegistersActions for RegisterMapActions {
 
     async fn write(&mut self, interface: &AmInterface, index:u32, v: &Vec<u64>)
     {
-
+        println!("RegisterMapActions - write: {:?}", v);
     }
 
 

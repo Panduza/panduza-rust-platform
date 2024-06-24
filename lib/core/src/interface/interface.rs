@@ -1,3 +1,4 @@
+use crate::attribute::Attribute;
 use crate::attribute::MqttPayload;
 use crate::platform::services::AmServices;
 use crate::FunctionResult as PlatformFunctionResult;
@@ -19,6 +20,7 @@ use crate::interface::fsm::Events;
 
 use crate::attribute::InfoAttribute;
 use crate::attribute::AttributeInterface;
+use crate::attribute::ThreadSafeAttribute;
 
 use super::logger::Logger;
 
@@ -53,6 +55,8 @@ pub struct Interface {
 
     // -- ATTRIBUTES --
     attributes: HashMap<String, Box<dyn AttributeInterface>>,
+
+    map_of_attributes: HashMap<String, ThreadSafeAttribute>,
 
     //
     platform_services: AmServices,
@@ -89,6 +93,7 @@ impl Interface {
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
             attributes: HashMap::new(),
+            map_of_attributes: HashMap::new(),
             platform_services: platform_services,
             logger: Logger::new(string_bench_name.clone(), string_dev_name.clone(), string_name.clone())
         };
@@ -198,7 +203,23 @@ impl Interface {
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
     }
 
+
     // -- ATTRIBUTES --
+
+    pub fn create_attribute(&mut self, attribute: Attribute) -> ThreadSafeAttribute {
+        self.log_debug(
+            format!("Create attribute {:?}", attribute.name())
+        );
+
+        let name = attribute.name().clone();
+        let ts_att = crate::attribute::pack_attribute_as_thread_safe(attribute);
+
+        self.map_of_attributes.insert(name, ts_att.clone());
+
+        ts_att.clone()
+    }
+
+
 
     /// Register a new attribute
     /// 

@@ -7,9 +7,10 @@ use tokio::sync::Mutex;
 // use crate::attribute::JsonAttribute;
 use crate::interface::AmInterface;
 
-use crate::{interface, subscription};
+use crate::{attribute, interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
+// use crate::attribute::
 
 use crate::Error as PlatformError;
 
@@ -95,10 +96,21 @@ impl interface::fsm::States for BlcStates {
     ///
     async fn initializating(&self, interface: &AmInterface)
     {
-        let mut blc_itf = self.reg_interface.lock().await;
+        let mut registers_itf = self.reg_interface.lock().await;
 
         // Custom initialization slot
-        blc_itf.actions.initializating(&interface).await.unwrap();
+        registers_itf.actions.initializating(&interface).await.unwrap();
+
+
+        let map =
+            interface.lock().await.create_attribute(
+                attribute::Attribute::A3(attribute::A3::new("map"))
+            );
+        
+
+
+        
+        
 
         // // Register attributes
         // interface.lock().await.register_attribute(JsonAttribute::new_boxed("mode", true));
@@ -107,25 +119,25 @@ impl interface::fsm::States for BlcStates {
         // interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
 
         // // Init mode
-        // let mode_value = blc_itf.actions.read_mode_value(&interface).await.unwrap();
+        // let mode_value = registers_itf.actions.read_mode_value(&interface).await.unwrap();
         // interface.lock().await.update_attribute_with_string("mode", "value", &mode_value);
 
         // // Init enable
-        // let enable_value = blc_itf.actions.read_enable_value(&interface).await.unwrap();
+        // let enable_value = registers_itf.actions.read_enable_value(&interface).await.unwrap();
         // interface.lock().await.update_attribute_with_bool("enable", "value", enable_value).unwrap();
 
         // // Init power
-        // interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
-        // interface.lock().await.update_attribute_with_f64("power", "max", blc_itf.params.power_max );
+        // interface.lock().await.update_attribute_with_f64("power", "min", registers_itf.params.power_min );
+        // interface.lock().await.update_attribute_with_f64("power", "max", registers_itf.params.power_max );
         // interface.lock().await.update_attribute_with_f64("power", "value", 0.0);
-        // interface.lock().await.update_attribute_with_f64("power", "decimals", blc_itf.params.power_decimals as f64);
+        // interface.lock().await.update_attribute_with_f64("power", "decimals", registers_itf.params.power_decimals as f64);
         // interface.lock().await.update_attribute_with_f64("power", "polling_cycle", 0.0);
 
         // // Init current
-        // interface.lock().await.update_attribute_with_f64("current", "min", blc_itf.params.current_min );
-        // interface.lock().await.update_attribute_with_f64("current", "max", blc_itf.params.current_max );
+        // interface.lock().await.update_attribute_with_f64("current", "min", registers_itf.params.current_min );
+        // interface.lock().await.update_attribute_with_f64("current", "max", registers_itf.params.current_max );
         // interface.lock().await.update_attribute_with_f64("current", "value", 0.0);
-        // interface.lock().await.update_attribute_with_f64("current", "decimals", blc_itf.params.current_decimals as f64);
+        // interface.lock().await.update_attribute_with_f64("current", "decimals", registers_itf.params.current_decimals as f64);
         // interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
 
         // // Publish all attributes for start
@@ -160,16 +172,16 @@ impl interface::fsm::States for BlcStates {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-const ID_MODE: subscription::Id = 0;
+const ID_COMMANDS: subscription::Id = 0;
 // const ID_ENABLE: subscription::Id = 1;
 // const ID_POWER: subscription::Id = 2;
 // const ID_CURRENT: subscription::Id = 3;
 
-struct BlcSubscriber {
-    reg_interface: Arc<Mutex<RegistersInterface>>
+struct RegistersSubscriber {
+    registers_interface: Arc<Mutex<RegistersInterface>>
 }
 
-impl BlcSubscriber {
+impl RegistersSubscriber {
 
     // /// 
     // /// 
@@ -239,16 +251,13 @@ impl BlcSubscriber {
 }
 
 #[async_trait]
-impl interface::subscriber::Subscriber for BlcSubscriber {
+impl interface::subscriber::Subscriber for RegistersSubscriber {
 
     /// Get the list of attributes names
     ///
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
         return vec![
-            (ID_MODE, "mode".to_string()),
-            // (ID_ENABLE, "enable".to_string()),
-            // (ID_POWER, "power".to_string()),
-            // (ID_CURRENT, "current".to_string())
+            (ID_COMMANDS, "commands".to_string()),
         ];
     }
 
@@ -257,20 +266,23 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
 
     /// Process a message
     ///
-    async fn process(&self, interface: &AmInterface, msg: &subscription::Message) -> PlatformFunctionResult {
+    async fn process(&self, generic_interface: &AmInterface, msg: &subscription::Message) -> PlatformFunctionResult {
         // Common processing
-        interface::basic::process(&interface, msg).await;
+        interface::basic::process(&generic_interface, msg).await;
 
         match msg {
             subscription::Message::Mqtt(msg) => {
+
+                println!("!!!!!!!!!!!   RegistersSubscriber::process: {:?}", msg.topic());
+
                 match msg.id() {
                 subscription::ID_PZA_CMDS_SET => {
                     // interface.lock().await.publish_info().await;
 
                     // only when running state
 
-                    println!("BlcSubscriber::process: {:?}", msg.topic());
-                    println!("BlcSubscriber::process: {:?}", msg.payload());
+                    println!("RegistersSubscriber::process: {:?}", msg.topic());
+                    println!("RegistersSubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
                     let oo = serde_json::from_slice::<Value>(payload).unwrap();
@@ -297,9 +309,30 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
 
 
                 },
-                    _ => {
-                        // not managed by the common level
+                ID_COMMANDS => {
+                    println!("command !!! {:?}", msg.payload());
+                    let payload = msg.payload();
+                    let oo = serde_json::from_slice::<Value>(payload).unwrap();
+                    let o = oo.as_object().unwrap();
+                    println!("command !!! {:?}", o);
+
+                    if o.get("cmd").unwrap().as_str().unwrap() == "w" {
+                        let index = o.get("index").unwrap().as_u64().unwrap() as u32;
+                        let values = o.get("values").unwrap().as_array().unwrap();
+
+                        println!("command !!! {:?}", values);
+
+
+                        let values_u64: Vec<u64> = values.iter().map(|v| v.as_u64().unwrap()).collect();
+                        self.registers_interface.lock().await.actions.write(&generic_interface, index, &values_u64).await;
                     }
+                    else if o.get("cmd").unwrap().as_str().unwrap() == "r" {
+
+                    }
+                }
+                _ => {
+                    // not managed by the common level
+                }
                 }
             }
             _ => {
@@ -335,7 +368,7 @@ pub fn build<A: Into<String>>(
         "registers",
         "0",
         Box::new(BlcStates{reg_interface: c.clone()}),
-        Box::new(BlcSubscriber{reg_interface: c.clone()})
+        Box::new(RegistersSubscriber{registers_interface: c.clone()})
     );
 }
 

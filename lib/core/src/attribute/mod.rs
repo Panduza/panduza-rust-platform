@@ -1,4 +1,6 @@
 
+mod a3;
+
 mod json;
 mod info;
 mod raw;
@@ -8,6 +10,35 @@ pub type InfoAttribute = info::InfoAttribute;
 pub type RawAttribute = raw::RawAttribute;
 
 use crate::FunctionResult as PlatformFunctionResult;
+
+pub type A3 = a3::A3;
+
+
+#[derive(Clone, Debug)]
+pub enum Attribute {
+    A3(a3::A3),
+}
+
+/// Thread safe connection object
+pub type ThreadSafeAttribute = std::sync::Arc<
+                                    tokio::sync::Mutex<
+                                        Attribute
+                                    >
+                                >;
+
+pub fn pack_attribute_as_thread_safe(attr: Attribute) -> ThreadSafeAttribute {
+    return std::sync::Arc::new(tokio::sync::Mutex::new(attr));
+}
+
+impl Attribute {
+    pub fn name(&self) -> String {
+        match self {
+            Attribute::A3(attr) => attr.name()
+        }
+    }
+}
+
+
 
 // Enum to mqtt payload, String format json or byte array
 pub enum MqttPayload {
