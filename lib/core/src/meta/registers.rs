@@ -23,7 +23,7 @@ pub struct RegistersParams {
     pub number_of_register: u32
 }
 
-pub struct RegistersDatas {
+pub struct RegistersData {
     pub values: Vec<u64>,
     pub timestamps: Vec<u64>,
 }
@@ -79,12 +79,12 @@ impl RegistersInterface {
 // Interface is based on a finite state machine
 // Here is the implementation of the states for the registers interface
 
-struct BlcStates {
+struct RegistersStates {
     reg_interface: Arc<Mutex<RegistersInterface>>
 }
 
 #[async_trait]
-impl interface::fsm::States for BlcStates {
+impl interface::fsm::States for RegistersStates {
 
     /// Just wait for an fsm event for the connection
     ///
@@ -375,7 +375,7 @@ pub fn build<A: Into<String>>(
         name,
         "registers",
         "0",
-        Box::new(BlcStates{reg_interface: c.clone()}),
+        Box::new(RegistersStates{reg_interface: c.clone()}),
         Box::new(RegistersSubscriber{registers_interface: c.clone()})
     );
 }
