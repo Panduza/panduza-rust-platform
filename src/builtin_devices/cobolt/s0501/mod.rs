@@ -81,7 +81,7 @@ impl DeviceActions for S0501 {
         let mut serial_conf = SerialConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
-        serial_conf.serial_baudrate = Some(9600);
+        serial_conf.serial_baudrate = Some(115200);
 
         let mut list = Vec::new();
         list.push(
