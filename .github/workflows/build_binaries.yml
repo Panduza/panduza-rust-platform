@@ -21,17 +21,11 @@ jobs:
               run: cargo --version
             
             - name: Try to Build
-              run: cargo build --verbose
+              run: cargo build --verbose --release
             
-            - name: Upload windows binaries debug
-              uses: actions/upload-artifact@v4
-              with:
-                name: windows_binaries_debug
-                path: target/debug
-
+            # Release version is supposed to have a faster runtime than debug
             - name: Upload windows binaries release
               uses: actions/upload-artifact@v4
               with:
-                  name: windows_binaries_debug
+                  name: windows_binaries
                   path: target/release
-                
