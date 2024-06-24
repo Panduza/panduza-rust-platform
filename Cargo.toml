@@ -11,7 +11,7 @@ panduza-connectors = { path = "lib/connectors" }
 
 
 plugins-std-serial = { path = "plugins/std/serial" }
-# plugins-video = { path = "plugins/video"}
+plugins-video = { path = "plugins/video"}
 
 
 # Main async framework for the platform
