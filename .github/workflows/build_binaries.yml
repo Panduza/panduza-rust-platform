@@ -4,7 +4,7 @@ name: build_binaries
 
 on:
     push:
-        branches: [ "main", "118-precompiler-les-binaires-platforme" ]
+        branches: [ "main" ]
     pull_request:
         branches: [ "main" ]
     
