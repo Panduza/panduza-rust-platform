@@ -200,9 +200,15 @@ impl Interface {
     /// Get the base topic
     ///
     pub async fn publish(&self, topic: &str, payload: &MqttPayload, retain: bool) {
-        self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
-    }
+        self.log_debug(
+            format!("publish attribute {:?} {:?}", topic, retain)
+        );
 
+        // HERE the rumqtt copy the payload inside its own buffer
+        // It is ok for small payloads but not for big ones, there will be work here for streams
+        self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+
+    }
 
     // -- ATTRIBUTES --
 
@@ -245,10 +251,27 @@ impl Interface {
             , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
     }
 
+    pub async fn publish_attribute_bis(&self, name: &str) {
+        let attribute = 
+            self.map_of_attributes.get(name).unwrap().lock().await;
+        self.publish(
+            format!("{}/{}", self.topic_atts, name).as_str()
+            , &MqttPayload::Bytes(attribute.to_vec().clone()), attribute.retain()).await;
+    }
+
     pub async fn publish_all_attributes(&self) {
         for (_, attribute) in self.attributes.iter() {
             self.publish_attribute(attribute.name()).await;
         }
+
+        for (_, attribute) in self.map_of_attributes.iter() {
+            println!("---------------------");
+            let namme = attribute.lock().await.name();            
+            println!("pok {:?}", namme);
+            self.publish_attribute_bis(namme.as_str()).await;
+            println!("--------------------- end ");
+        }
+
     }
 
     /// Publish the info

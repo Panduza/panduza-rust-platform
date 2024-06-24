@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
 
+use crate::attribute::Attribute;
 // use crate::attribute::JsonAttribute;
 use crate::interface::AmInterface;
 
@@ -102,11 +103,18 @@ impl interface::fsm::States for BlcStates {
         registers_itf.actions.initializating(&interface).await.unwrap();
 
 
-        let map =
-            interface.lock().await.create_attribute(
-                attribute::Attribute::A3(attribute::A3::new("map"))
-            );
-        
+        {        
+            let map =
+                interface.lock().await.create_attribute(
+                    attribute::Attribute::A3(attribute::A3::new("map"))
+                );
+            
+
+            let Attribute::A3(aarrr) = &mut *map.lock().await;
+            aarrr.set_payload(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+            
+        }
+            
 
 
         
@@ -140,8 +148,8 @@ impl interface::fsm::States for BlcStates {
         // interface.lock().await.update_attribute_with_f64("current", "decimals", registers_itf.params.current_decimals as f64);
         // interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
 
-        // // Publish all attributes for start
-        // interface.lock().await.publish_all_attributes().await;
+        // Publish all attributes for start
+        interface.lock().await.publish_all_attributes().await;
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();

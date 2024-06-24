@@ -36,6 +36,18 @@ impl Attribute {
             Attribute::A3(attr) => attr.name()
         }
     }
+
+    pub fn to_vec(&self) -> &Vec<u8> {
+        match self {
+            Attribute::A3(attr) => attr.to_vec()
+        }
+    }
+
+    pub fn retain(&self) -> bool {
+        match self {
+            Attribute::A3(_) => true
+        }
+    }
 }
 
 
