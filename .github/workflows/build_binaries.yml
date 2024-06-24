@@ -1,0 +1,37 @@
+# create binary on windows 
+
+name: build_binaries
+
+on:
+    push:
+        branches: [ "main", "118-precompiler-les-binaires-platforme" ]
+    pull_request:
+        branches: [ "main" ]
+    
+jobs:
+
+    # ---------------------------------------------------------------------------
+    build_windows:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout project
+              uses: actions/checkout@v4
+
+            - name: Display cargo version
+              run: cargo --version
+            
+            - name: Try to Build
+              run: cargo build --verbose
+            
+            - name: Upload windows binaries debug
+              uses: actions/upload-artifact@v4
+              with:
+                name: windows_binaries_debug
+                path: target/debug
+
+            - name: Upload windows binaries release
+              uses: actions/upload-artifact@v4
+              with:
+                  name: windows_binaries_debug
+                  path: target/release
+                
