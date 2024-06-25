@@ -28,6 +28,15 @@ pub struct RegistersData {
     pub timestamps: Vec<u64>,
 }
 
+impl RegistersData {
+    pub fn new(capacity: usize) -> RegistersData {
+        RegistersData {
+            values: Vec::with_capacity(capacity),
+            timestamps: Vec::with_capacity(capacity)
+        }
+    }
+}
+
 #[async_trait]
 pub trait RegistersActions: Send + Sync {
 
@@ -51,6 +60,7 @@ pub trait RegistersActions: Send + Sync {
 struct RegistersInterface {
 
     params: RegistersParams,
+    data: RegistersData,
     actions: Box<dyn RegistersActions>
 }
 type AmBlcInterface = Arc<Mutex<RegistersInterface>>;
@@ -58,8 +68,11 @@ type AmBlcInterface = Arc<Mutex<RegistersInterface>>;
 impl RegistersInterface {
      
     fn new(params: RegistersParams, actions: Box<dyn RegistersActions>) -> RegistersInterface {
+        
+        let size = params.number_of_register as usize;
         return RegistersInterface {
             params: params,
+            data: RegistersData::new(size),
             actions: actions
         }
     }
