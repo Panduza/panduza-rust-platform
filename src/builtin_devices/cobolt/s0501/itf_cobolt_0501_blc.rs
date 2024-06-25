@@ -1,11 +1,8 @@
-use std::mem::swap;
-
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
 use panduza_core::meta::blc;
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
-
 
 use panduza_connectors::serial::tty::{self, TtyConnector};
 use panduza_connectors::serial::tty::Config as SerialConfig;
@@ -32,19 +29,17 @@ impl blc::BlcActions for S0501BlcActions {
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
 
-        println!("yooooo!");
-
-        // let mut response: &mut [u8] = &mut [0; 1024];
-        // let _result = self.connector_tty.write_then_read(
-        //     b"*IDN?",
-        //     &mut response,
-        //     self.time_lock_duration
-        // ).await
-        //     .map(|c| {
-        //         let pp = &response[0..c];
-        //         let sss = String::from_utf8(pp.to_vec()).unwrap();
-        //         println!("Ka3005BpcActions - initializating: {:?}", sss);
-        //     });
+        let mut response: &mut [u8] = &mut [0; 1024];
+        let _result = self.connector_tty.write_then_read(
+            b"?\r",
+            &mut response,
+            self.time_lock_duration
+        ).await
+            .map(|nb_of_bytes| {
+                let response_bytes = &response[0..nb_of_bytes];
+                let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
+                println!("S0501BlcActions - initializating: {}", response_string);
+            });
 
 
         return Ok(());
@@ -52,30 +47,32 @@ impl blc::BlcActions for S0501BlcActions {
 
     /// Read the mode value
     /// 
-    async fn read_mode_value(&mut self, _interface: &AmInterface) -> Result<String, PlatformError> {
+    async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
-            b"gam?",
+            b"gam?\r",
             &mut response,
             self.time_lock_duration
         ).await
             .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
                 let mode_b = &response[0..nb_of_bytes];
-                println!("mode {:?}", mode_b);
-                let mode_i = String::from_utf8(mode_b.to_vec()).unwrap().parse::<u16>().unwrap();
-                println!("mode {}", mode_i);
+
+                let mode_i = String::from_utf8(mode_b.to_vec()).unwrap()
+                    .trim().to_string() // Remove \r\n form the message before parsing
+                    .parse::<u16>().unwrap();
+
                 self.mode_value = match mode_i {
                     0 => "constant_current".to_string(),
                     1 => "constant_power".to_string(),
                     _ => "no_regulation".to_string()
                 };
             });
-        let mut mode_val = String::new();
-        swap(&mut mode_val, &mut self.mode_value);
 
-        return Ok(mode_val);
+        interface.lock().await.log_info(
+            format!("read mode value : {}", self.mode_value.clone())
+        );
+        return Ok(self.mode_value.clone());
     }
 
     /// Write the mode value
@@ -83,12 +80,12 @@ impl blc::BlcActions for S0501BlcActions {
     async fn write_mode_value(&mut self, interface: &AmInterface, v: String) {
 
         interface.lock().await.log_info(
-            format!("write enable : {}", v)
+            format!("write mode value : {}", v)
         );
 
         let command = match v.as_str() {
-            "constant_current" => format!("ci\n"),
-            "constant_power" => format!("cp\n"),
+            "constant_current" => format!("ci\r"),
+            "constant_power" => format!("cp\r"),
             _ => return
         };
 
@@ -96,31 +93,61 @@ impl blc::BlcActions for S0501BlcActions {
             command.as_bytes(),
             self.time_lock_duration
         ).await
-            .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
+            .map(|_nb_of_bytes| {
             });
+        
+        // Clean the buffer from previous values
+        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
+        println!("val_int {}", ok_val);
+
+        while ok_val != "OK".to_string() {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"gam?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let value_b = &response[0..nb_of_bytes];
+                    let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    for val in values.split("\r\n") {
+                        match val {
+                            "OK" => { ok_val = "OK".to_string() }
+                            _ => { continue; }
+                        }
+                    };
+                });
+        }
     }
 
      /// Read the enable value
     /// 
-    async fn read_enable_value(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
+    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
+
         let _result = self.connector_tty.write_then_read(
-            b"l?",
+            b"l?\r",
             &mut response,
             self.time_lock_duration
         ).await
             .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
                 let value_b = &response[0..nb_of_bytes];
-                let value_i = String::from_utf8(value_b.to_vec()).unwrap().parse::<u16>().unwrap();
+
+                let value_i = String::from_utf8(value_b.to_vec()).unwrap()
+                    .trim().to_string() // Remove \r\n form the message before parsing
+                    .parse::<u16>().unwrap();
+
                 self.enable_value = match value_i {
                     0 => false,
                     _ => true
                 };
-                println!("read enable value : {} | {}", value_i, self.enable_value);
             });
+
+        interface.lock().await.log_info(
+            format!("read enable value : {}", self.enable_value)
+        );
 
         return Ok(self.enable_value);
     }
@@ -134,9 +161,10 @@ impl blc::BlcActions for S0501BlcActions {
             false => 0
         };
 
-        let command = format!("l{}\n", val_int);
+        let command = format!("l{}\r", val_int);
+
         interface.lock().await.log_info(
-            format!("write enable value : {}", command)
+            format!("write enable value : {}", v)
         );
 
         let _result = self.connector_tty.write(
@@ -147,38 +175,53 @@ impl blc::BlcActions for S0501BlcActions {
                 println!("nb of bytes: {:?}", nb_of_bytes);
             });
         
-        let mut value_i = 5;
-        while value_i != val_int {
+        // Clean the buffer from previous values
+        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
+        println!("val_int {}", ok_val);
+
+        while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
-                b"l?",
+                b"l?\r",
                 &mut response,
                 self.time_lock_duration
             ).await
                 .map(|nb_of_bytes| {
-                    // println!("nb of bytes: {:?}", nb_of_bytes);
                     let value_b = &response[0..nb_of_bytes];
-                    value_i = String::from_utf8(value_b.to_vec()).unwrap().parse::<u16>().unwrap();
+                    let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    // If multiple messages are flushed at once, splits the result to check every messages
+                    for val in values.split("\r\n") {
+                        match val {
+                            "OK" => { ok_val = "OK".to_string() }
+                            _ => { continue; }
+                        }
+                    };
                 });
         }
     }
 
     /// Read the power value
     /// 
-    async fn read_power_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+    async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
-            b"p?",
+            b"p?\r",
             &mut response,
             self.time_lock_duration
         ).await
             .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
                 let power_b = &response[0..nb_of_bytes];
-                self.power_value = String::from_utf8(power_b.to_vec()).unwrap().parse::<f64>().unwrap();
-                println!(" read power : {}", self.power_value);
+                
+                self.power_value = String::from_utf8(power_b.to_vec()).unwrap()
+                    .trim().to_string() // Remove \r\n form the message before parsing
+                    .parse::<f64>().unwrap();
             });
+
+        interface.lock().await.log_info(
+            format!("read power : {}", self.power_value)
+        );
 
         return Ok(self.power_value);
     }
@@ -191,33 +234,62 @@ impl blc::BlcActions for S0501BlcActions {
             format!("write power : {}", v)
         );
 
-        let command = format!("p {}\n", v);
+        let command = format!("p {}\r", v);
 
         let _result = self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await
-            .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
+            .map(|_nb_of_bytes| {
             });
+
+        // Clean the buffer from previous values
+        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
+        println!("val_int {}", ok_val);
+
+        while ok_val != "OK".to_string() {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"p?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let value_b = &response[0..nb_of_bytes];
+                    let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    // If multiple messages are flushed at once, splits the result to check every messages
+                    for val in values.split("\r\n") {
+                        match val {
+                            "OK" => { ok_val = "OK".to_string() }
+                            _ => { continue; }
+                        }
+                    };
+                });
+        }
     }
 
     /// Read the current value
     /// 
-    async fn read_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
-            b"glc?",
+            b"glc?\r",
             &mut response,
             self.time_lock_duration
         ).await
             .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
                 let current_b = &response[0..nb_of_bytes];
-                self.current_value = String::from_utf8(current_b.to_vec()).unwrap().parse::<f64>().unwrap();
-                println!("read current : {}", self.current_value);
+
+                self.current_value = String::from_utf8(current_b.to_vec()).unwrap()
+                    .trim().to_string() // Remove \r\n form the message before parsing
+                    .parse::<f64>().unwrap();
             });
+
+        interface.lock().await.log_info(
+            format!("read current : {}", self.current_value)
+        );
 
         return Ok(self.current_value);
     }
@@ -229,15 +301,39 @@ impl blc::BlcActions for S0501BlcActions {
             format!("write current : {}", v)
         );
 
-        let command = format!("slc {}\n", v);
+        let command = format!("slc {}\r", v);
 
         let _result = self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await
-            .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
+            .map(|_nb_of_bytes| {
             });
+
+        // Clean the buffer from previous values
+        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
+        println!("val_int {}", ok_val);
+
+        while ok_val != "OK".to_string() {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"glc?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let value_b = &response[0..nb_of_bytes];
+                    let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    // If multiple messages are flushed at once, splits the result to check every messages
+                    for val in values.split("\r\n") {
+                        match val {
+                            "OK" => { ok_val = "OK".to_string() }
+                            _ => { continue; }
+                        }
+                    };
+                });
+        }
     }
 }
 
@@ -264,7 +360,7 @@ pub fn build<A: Into<String>>(
         Box::new(S0501BlcActions {
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
-            mode_value: "no_regulation".to_string(),
+            mode_value: "constant_power".to_string(),
             enable_value: false,
             power_value: 0.0,
             current_value: 0.0,
@@ -272,4 +368,3 @@ pub fn build<A: Into<String>>(
         })
     )
 }
-

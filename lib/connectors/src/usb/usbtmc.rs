@@ -37,13 +37,29 @@ impl Config {
 
     pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
 
-        self.usb_vendor =
+        let usb_vendor_str = 
             settings.get("usb_vendor")
-                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+                .map(|v| v.as_str().unwrap());
 
-        self.usb_model =
+        // get VID hexadecimal value
+        self.usb_vendor =
+            Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
+
+        let usb_model_str = 
             settings.get("usb_model")
-                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+                .map(|v| v.as_str().unwrap());
+
+        // get PID hexadecimal value
+        self.usb_model =
+            Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
+            
+        // self.usb_vendor =
+        //     settings.get("usb_vendor")
+        //         .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+
+        // self.usb_model =
+        //     settings.get("usb_model")
+        //         .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
 
         self.usb_serial =
             settings.get("usb_serial")

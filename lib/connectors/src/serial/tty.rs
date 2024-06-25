@@ -53,13 +53,21 @@ impl Config {
             settings.get("serial_baudrate")
                 .map(|v| v.as_u64().unwrap() as u32);
 
-        self.usb_vendor =
-            settings.get("usb_vendor")
-                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+        let usb_vendor_str = 
+        settings.get("usb_vendor")
+            .map(|v| v.as_str().unwrap());
 
-        self.usb_model =
+        // get VID hexadecimal value
+        self.usb_vendor =
+            Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
+
+        let usb_model_str = 
             settings.get("usb_model")
-                .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
+                .map(|v| v.as_str().unwrap());
+
+        // get PID hexadecimal value
+        self.usb_model =
+            Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
 
         self.usb_serial =
             settings.get("usb_serial")
