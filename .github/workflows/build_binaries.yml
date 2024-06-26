@@ -1,0 +1,31 @@
+# create binary on windows 
+
+name: build_binaries
+
+on:
+    push:
+        branches: [ "main" ]
+    pull_request:
+        branches: [ "main" ]
+    
+jobs:
+
+    # ---------------------------------------------------------------------------
+    build_windows:
+        runs-on: windows-latest
+        steps:
+            - name: Checkout project
+              uses: actions/checkout@v4
+
+            - name: Display cargo version
+              run: cargo --version
+            
+            - name: Try to Build
+              run: cargo build --verbose --release
+            
+            # Release version is supposed to have a faster runtime than debug
+            - name: Upload windows binaries release
+              uses: actions/upload-artifact@v4
+              with:
+                  name: windows_binaries
+                  path: target/release
