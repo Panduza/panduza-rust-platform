@@ -97,8 +97,7 @@ impl blc::BlcActions for S0501BlcActions {
             });
         
         // Clean the buffer from previous values
-        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
-        println!("val_int {}", ok_val);
+        let mut ok_val = String::new();
 
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
@@ -176,8 +175,7 @@ impl blc::BlcActions for S0501BlcActions {
             });
         
         // Clean the buffer from previous values
-        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
-        println!("val_int {}", ok_val);
+        let mut ok_val = String::new();
 
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
@@ -195,6 +193,30 @@ impl blc::BlcActions for S0501BlcActions {
                         match val {
                             "OK" => { ok_val = "OK".to_string() }
                             _ => { continue; }
+                        }
+                    };
+                });
+        }
+
+        // The laser has an intertia to change to from OFF to ON so waits until it actually change state
+        let mut value_i: u16 = 5; // The returned value is 0 or 1 so 5 is sure to be out of range
+
+        while value_i != val_int {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"l?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let value_b = &response[0..nb_of_bytes];
+                    let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    // If multiple messages are flushed at once, splits the result to check every messages
+                    for val in values.split("\r\n") {
+                        match val.parse::<u16>() {
+                            Ok(u) => { value_i = u }
+                            Err(_e) => { continue; }
                         }
                     };
                 });
@@ -244,8 +266,7 @@ impl blc::BlcActions for S0501BlcActions {
             });
 
         // Clean the buffer from previous values
-        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
-        println!("val_int {}", ok_val);
+        let mut ok_val = String::new();
 
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
@@ -311,8 +332,7 @@ impl blc::BlcActions for S0501BlcActions {
             });
 
         // Clean the buffer from previous values
-        let mut ok_val = String::new(); // The returned value is 0 or 1 so 5 is sure to be out of range
-        println!("val_int {}", ok_val);
+        let mut ok_val = String::new();
 
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
