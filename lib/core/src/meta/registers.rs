@@ -129,11 +129,23 @@ impl interface::fsm::States for RegistersStates {
                 }
                 _ => {}
             }
-            
         }
             
 
-
+        {        
+            let settings =
+                interface.lock().await.create_attribute(
+                    attribute::Attribute::A1(attribute::A1::new("settings"))
+                );
+        
+            let mut settings_obj = settings.lock().await;
+            match &mut *settings_obj {
+                attribute::Attribute::A1(aarrr) => {
+                    aarrr.update_field("mode", "auto");
+                }
+                _ => {}
+            }
+        }
         
         
 
