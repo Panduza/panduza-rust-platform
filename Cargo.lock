@@ -2247,6 +2247,7 @@ dependencies = [
  "nokhwa-core",
  "regex",
  "rumqttc",
+ "serde",
  "serde_json",
  "tokio",
  "tokio-serial",

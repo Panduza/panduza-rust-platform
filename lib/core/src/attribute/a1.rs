@@ -1,13 +1,22 @@
-
-
-
+use serde_json::json;
+use serde::Serialize;
 
 #[derive(Clone, Debug)]
 pub struct A1 {
     // Attribute Name
     name: String,
 
-    payload: Vec<u8>
+    
+    retain: bool,
+
+    // 
+    data: serde_json::Value,
+
+    // 
+    orign: serde_json::Value,
+
+
+    vec_data: Vec<u8>,
 }
 
 impl A1 {
@@ -15,7 +24,10 @@ impl A1 {
     pub fn new<A: Into<String>>(name: A) -> A1 {
         A1 {
             name: name.into(),
-            payload: vec![]
+            retain: true,
+            data: json!({}),
+            orign: serde_json::Value::Null,
+            vec_data: vec![],
         }
     }
 
@@ -23,12 +35,25 @@ impl A1 {
         self.name.clone()
     }
 
-    pub fn set_payload(&mut self, payload: Vec<u8>) {
-        self.payload = payload;
+    
+    pub fn retain(&self) -> &bool {
+        return &self.retain;
+    }
+    
+
+    pub fn update_field<T>(&mut self, field: &str, value: T)
+    where
+        T: Serialize
+    {
+        self.data[field] = serde_json::to_value(value).unwrap();
     }
     
     pub fn to_vec(&self) -> &Vec<u8> {
-        &self.payload
+        // &self.payload
+
+        // &self.data.to_string().as_bytes().to_vec()
+
+        &self.vec_data
     }
 
 }

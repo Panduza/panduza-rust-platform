@@ -11,13 +11,15 @@ pub type RawAttribute = raw::RawAttribute;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
+
+pub type A1 = a1::A1;
 pub type A3 = a3::A3;
 
 
 #[derive(Clone, Debug)]
 pub enum Attribute {
     // A0,
-    // A1,
+    A1(a1::A1),
     A3(a3::A3),
 }
 
@@ -35,18 +37,21 @@ pub fn pack_attribute_as_thread_safe(attr: Attribute) -> ThreadSafeAttribute {
 impl Attribute {
     pub fn name(&self) -> String {
         match self {
+            Attribute::A1(attr) => attr.name(),
             Attribute::A3(attr) => attr.name()
         }
     }
 
     pub fn to_vec(&self) -> &Vec<u8> {
         match self {
+            Attribute::A1(attr) => attr.to_vec(),
             Attribute::A3(attr) => attr.to_vec()
         }
     }
 
     pub fn retain(&self) -> bool {
         match self {
+            Attribute::A1(attr) => *attr.retain(),
             Attribute::A3(_) => true
         }
     }

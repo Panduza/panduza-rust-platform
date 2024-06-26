@@ -122,9 +122,13 @@ impl interface::fsm::States for RegistersStates {
                     attribute::Attribute::A3(attribute::A3::new("map"))
                 );
             
-
-            let Attribute::A3(aarrr) = &mut *map.lock().await;
-            aarrr.set_payload(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+            let mut map_obj = map.lock().await;
+            match &mut *map_obj {
+                attribute::Attribute::A3(aarrr) => {
+                    aarrr.set_payload(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+                }
+                _ => {}
+            }
             
         }
             
