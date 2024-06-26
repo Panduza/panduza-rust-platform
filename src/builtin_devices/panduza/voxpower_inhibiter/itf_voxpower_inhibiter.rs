@@ -65,9 +65,9 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
                 println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, response_string);
                 if response_string == "H" {
-                    self.state_open = true;
-                } else {
                     self.state_open = false;
+                } else {
+                    self.state_open = true;
                 }
             });
 
@@ -83,9 +83,9 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
     async fn write_state_open(&mut self, interface: &AmInterface, v: bool) {
         
         let command = if v {
-            format!("I{}\n", self.id)
-        } else {
             format!("E{}\n", self.id)
+        } else {
+            format!("I{}\n", self.id)
         };
 
         let _result = self.connector_tty.write(
@@ -117,7 +117,7 @@ pub fn build<A: Into<String>>(
             id: id.clone(),
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
-            state_open: false,
+            state_open: true,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
     )
