@@ -46,13 +46,10 @@ impl A1 {
         T: Serialize
     {
         self.data[field] = serde_json::to_value(value).unwrap();
+        self.vec_data = serde_json::to_vec(&self.data).unwrap();
     }
     
     pub fn to_vec(&self) -> &Vec<u8> {
-        // &self.payload
-
-        // &self.data.to_string().as_bytes().to_vec()
-
         &self.vec_data
     }
 

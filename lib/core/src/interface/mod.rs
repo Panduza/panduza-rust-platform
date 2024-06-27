@@ -17,4 +17,5 @@ pub type AmRunner = runner::AmRunner;
 pub type Interface = interface::Interface;
 pub type AmInterface = interface::AmInterface;
 
+pub type ThreadSafeInterface = interface::AmInterface;
 
