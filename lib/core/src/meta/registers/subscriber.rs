@@ -111,7 +111,7 @@ impl InterfaceSubscriber for MetaSubscriber {
                     println!("command !!! {:?}", o);
 
                     if o.get("cmd").unwrap().as_str().unwrap() == "w" {
-                        let index = o.get("index").unwrap().as_u64().unwrap() as u32;
+                        let index = o.get("index").unwrap().as_u64().unwrap() as usize;
                         let values = o.get("values").unwrap().as_array().unwrap();
 
                         println!("command !!! {:?}", values);

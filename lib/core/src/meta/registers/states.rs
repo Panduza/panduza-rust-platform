@@ -2,7 +2,7 @@
 use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use crate::{attribute, subscription};
+use crate::attribute;
 
 
 use crate::interface::ThreadSafeInterface;
@@ -13,9 +13,8 @@ use super::interface::MetaInterface;
 
 use crate::interface::basic::wait_for_fsm_event;
 
-// Interface is based on a finite state machine
-// Here is the implementation of the states for the registers interface
-
+/// Interfaces are based on a finite state machine
+/// Here is the implementation of the states for this meta interface
 pub struct MetaStates {
     pub meta_interface: Arc<Mutex<MetaInterface>>
 }
@@ -23,24 +22,25 @@ pub struct MetaStates {
 #[async_trait]
 impl InterfaceStates for MetaStates {
 
-
-
-
-    /// Just wait for an fsm event for the connection
+    // ------------------------------------------------------------------------
+    /// Just wait for the connection fsm event
     ///
     async fn connecting(&self, interface: &ThreadSafeInterface)
     {
         wait_for_fsm_event(interface).await;
     }
 
+    // ------------------------------------------------------------------------
     /// Initialize the interface
     ///
     async fn initializating(&self, interface: &ThreadSafeInterface)
     {
-        let mut registers_itf = self.meta_interface.lock().await;
+        let mut meta_interface_locked = self.meta_interface.lock().await;
+
+        
 
         // Custom initialization slot
-        registers_itf.actions.initializating(&interface).await.unwrap();
+        meta_interface_locked.actions.initializating(&interface).await.unwrap();
 
 
         {        
@@ -52,7 +52,7 @@ impl InterfaceStates for MetaStates {
             let mut map_obj = map.lock().await;
             match &mut *map_obj {
                 attribute::Attribute::A3(a) => {
-                    a.set_payload(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+                    a.set_payload( meta_interface_locked.to_payload() );
                 }
                 _ => {}
             }

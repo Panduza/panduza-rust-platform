@@ -22,6 +22,8 @@ pub mod settings;
 pub mod interface;
 pub mod subscriber;
 
+
+pub type RegisterSize = settings::RegisterSize;
 pub type RegistersSettings = settings::MetaSettings;
 
 pub type RegistersStates = states::MetaStates;
@@ -37,9 +39,9 @@ pub trait RegistersActions: Send + Sync {
     ///
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
 
-    async fn read(&mut self, interface: &AmInterface, index:u32, size:u32) -> Result<String, PlatformError>;
+    async fn read(&mut self, interface: &AmInterface, index:usize, size:usize) -> Result<Vec<u64>, String>;
 
-    async fn write(&mut self, interface: &AmInterface, index:u32, v: &Vec<u64>);
+    async fn write(&mut self, interface: &AmInterface, index:usize, v: &Vec<u64>);
 
 }
 

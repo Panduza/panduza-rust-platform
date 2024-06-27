@@ -1,14 +1,16 @@
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
 use panduza_core::meta::registers;
-use panduza_core::interface::AmInterface;
+use panduza_core::interface::ThreadSafeInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
+use serde_json::Error;
 
 
 ///
 /// 
 struct RegisterMapActions {
 
+    pub fake_values: Vec<u64>,
 }
 
 #[async_trait]
@@ -16,31 +18,24 @@ impl registers::RegistersActions for RegisterMapActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
-
-
-        // let mut response: &mut [u8] = &mut [0; 1024];
-        // let _result = self.connector_tty.write_then_read(
-        //     b"*IDN?",
-        //     &mut response,
-        //     self.time_lock_duration
-        // ).await
-        //     .map(|c| {
-        //         let pp = &response[0..c];
-        //         let sss = String::from_utf8(pp.to_vec()).unwrap();
-        //         println!("RegistersActions - initializating: {:?}", sss);
-        //     });
-
-
+    async fn initializating(&mut self, _:&ThreadSafeInterface) -> Result<(), PlatformError> {
         return Ok(());
     }
     
-    async fn read(&mut self, interface: &AmInterface, index:u32, size:u32) -> Result<String, PlatformError>
+    async fn read(&mut self, interface: &ThreadSafeInterface, index:usize, size:usize) -> Result<Vec<u64>, String>
     {
-        Ok(String::from(""))
+        if let Some(sub_vec) = self.fake_values.get(index..index+size) {
+            // Étape 4: Utiliser sub_vec ici
+            println!("Sous-vecteur: {:?}", sub_vec);
+            Ok(sub_vec.to_vec())
+        } else {
+            // Gérer l'erreur si la plage est invalide
+            println!("Plage invalide");
+            Err("invalid".to_string())
+        }
     }
 
-    async fn write(&mut self, interface: &AmInterface, index:u32, v: &Vec<u64>)
+    async fn write(&mut self, interface: &ThreadSafeInterface, index:usize, v: &Vec<u64>)
     {
         println!("RegisterMapActions - write: {:?}", v);
     }
@@ -56,14 +51,17 @@ pub fn build<A: Into<String>>(
     name: A
 ) -> InterfaceBuilder {
 
+    let fake_size = 10;
+
     return registers::build(
         name, 
-        registers::RegistersParams {
+        registers::RegistersSettings {
             base_address: 0x0000,
-            register_size: 32,
-            number_of_register: 10
+            register_size: registers::RegisterSize::_32bits,
+            number_of_register: fake_size
         }, 
         Box::new(RegisterMapActions {
+            fake_values: vec![0; fake_size]
             // enable_value: false,
             // voltage_value: 0.0,
             // current_value: 0.0,
