@@ -73,7 +73,7 @@ pub fn display_issue_body(){
     println!("|plateform version| {pzaVersion}|", pzaVersion=VERSION);
     println!("|system information|{OS}|", OS=env::consts::OS);
 
-    let mut path = PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join("tree.json");
+    let mut path = PathBuf::from(dirs::public_dir().unwrap()).join("panduza").join("tree.json");
     match env::consts::OS {
         "linux" => {
             path = PathBuf::from("/etc/panduza/tree.json");
