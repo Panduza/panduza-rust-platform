@@ -11,6 +11,7 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_connectors::usb::usb::Config as UsbConfig;
 
 mod itf_lbx_488_blc;
+mod itf_lbx_488_thermometer;
 
 
 
@@ -86,6 +87,11 @@ impl DeviceActions for LBX488 {
         list.push(
             itf_lbx_488_blc::build("blc", &serial_conf)
         );
+
+        list.push(
+            itf_lbx_488_thermometer::build("thermometer", &serial_conf)
+        );
+
         return Ok(list);
     }
 }
