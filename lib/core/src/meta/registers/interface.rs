@@ -1,5 +1,8 @@
 use std::sync::Arc;
+use bytes::Bytes;
 use tokio::sync::Mutex;
+
+use std::collections::LinkedList;
 
 use crate::attribute;
 use crate::attribute::ThreadSafeAttribute;
@@ -10,6 +13,12 @@ use super::settings::MetaSettings;
 
 use serde_json::json;
 
+
+pub struct CyclicOperation {
+    pub interval: u64,
+    pub payload: Bytes
+}
+
 /// Meta Interface
 /// 
 pub struct MetaInterface {
@@ -17,6 +26,8 @@ pub struct MetaInterface {
     pub values: Vec<u64>,
     pub timestamps: Vec<u64>,
     pub actions: Box<dyn RegistersActions>,
+
+    pub cyclic_operations: Arc<Mutex<LinkedList<CyclicOperation>>>,
 
     pub attribute_map: ThreadSafeAttribute,
     pub attribute_settings: ThreadSafeAttribute
@@ -33,6 +44,7 @@ impl MetaInterface {
             values: vec![0; map_size],
             timestamps: vec![0; map_size],
             actions: actions,
+            cyclic_operations: Arc::new( Mutex::new(LinkedList::new()) ),
             attribute_map: pack_attribute_as_thread_safe(
                 attribute::Attribute::A3(attribute::A3::new("map"))
             ),

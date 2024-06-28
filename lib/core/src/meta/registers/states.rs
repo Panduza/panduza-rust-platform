@@ -5,6 +5,8 @@ use tokio::sync::Mutex;
 use crate::attribute;
 
 
+use futures::FutureExt;
+
 use crate::interface::ThreadSafeInterface;
 
 use crate::interface::fsm::States as InterfaceStates;
@@ -75,6 +77,17 @@ impl InterfaceStates for MetaStates {
         
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
+
+
+        let mut loader = interface.lock().await.platform_services.lock().await.task_loader.clone();
+        loader.load( async move {
+            loop {
+                // sleep(Duration::from_millis(1000)).await;
+                // values.lock().await[1] += 1;
+            }
+            // Ok(())
+        }.boxed()).unwrap();
+
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();

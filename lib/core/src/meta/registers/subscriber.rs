@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::{attribute, subscription};
+use crate::{attribute, interface, subscription};
 
 use serde_json::Value;
 
@@ -14,6 +14,8 @@ use crate::interface::subscriber::Subscriber as InterfaceSubscriber;
 use crate::FunctionResult as PlatformFunctionResult;
 
 use crate::interface::basic::process as basic_process;
+
+use super::interface::CyclicOperation;
 
 const ID_COMMANDS: subscription::Id = 0;
 // const ID_ENABLE: subscription::Id = 1;
@@ -148,6 +150,19 @@ impl InterfaceSubscriber for MetaSubscriber {
                     else if o.get("cmd").unwrap().as_str().unwrap() == "r" {
                         let index = o.get("index").unwrap().as_u64().unwrap() as usize;
                         let size = o.get("size").unwrap().as_u64().unwrap() as usize;
+
+                        let repeat_opt = o.get("repeat");
+                        if repeat_opt.is_some() {
+                            let repeat = repeat_opt.unwrap().as_u64().unwrap();
+                            
+                            self.meta_interface.lock().await.cyclic_operations.lock().await.push_back(
+                                CyclicOperation {
+                                    interval: repeat,
+                                    payload: payload.clone()
+                                }
+                            );
+                        }
+
 
                         // read data back
                         let r_values = self.meta_interface.lock().await.actions.read(&generic_interface, index, size).await.unwrap();
