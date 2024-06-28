@@ -73,6 +73,7 @@ impl DeviceActions for VoxpowerInhibiter {
         println!("Voxpower Inhibiter::interface_builders");
         println!("{}", device_settings);
 
+        // Get the serial settings from the tree.json
         let mut serial_conf = SerialConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
@@ -80,7 +81,8 @@ impl DeviceActions for VoxpowerInhibiter {
 
         let mut list = Vec::new();
 
-        for n in 2..10 {    
+        // Create 8 interfaces for the 8 channels of the Voxpower
+        for n in 1..9 {    
             list.push(
                 itf_voxpower_inhibiter::build(format!("channel_{}", n), n, &serial_conf)
             );
