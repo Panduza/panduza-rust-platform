@@ -60,9 +60,10 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
 
                 // Pin state High = channel inhibited (OFF)
                 // Pin state Low = channel enabled (ON)
-                self.enable_value = match response_string.as_str() {
-                    "H" => false,
-                    _ => true
+                self.enable_value = if response_string == "H" {
+                    false
+                } else {
+                    true
                 };
             });
 
