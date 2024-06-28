@@ -59,7 +59,7 @@ pub struct Interface {
     map_of_attributes: HashMap<String, ThreadSafeAttribute>,
 
     //
-    platform_services: AmServices,
+    pub platform_services: AmServices,
 
     // -- LOGS --
     logger: Logger
@@ -211,6 +211,22 @@ impl Interface {
     }
 
     // -- ATTRIBUTES --
+
+
+
+    pub async fn add_attribute(&mut self, attribute: ThreadSafeAttribute) {
+
+        let name = attribute.lock().await.name().clone();
+
+        self.log_debug(
+            format!("Create attribute {:?}", name)
+        );
+
+        self.map_of_attributes.insert(name, attribute);
+
+    }
+
+
 
     pub fn create_attribute(&mut self, attribute: Attribute) -> ThreadSafeAttribute {
         self.log_debug(

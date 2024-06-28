@@ -80,7 +80,7 @@ impl InterfaceSubscriber for MetaSubscriber {
 
                     let payload = msg.payload();
                     let oo = serde_json::from_slice::<Value>(payload).unwrap();
-                    let o = oo.as_object().unwrap();
+                    // let o = oo.as_object().unwrap();
 
 
                     // for (attribute_name, fields) in o.iter() {
@@ -116,12 +116,62 @@ impl InterfaceSubscriber for MetaSubscriber {
 
                         println!("command !!! {:?}", values);
 
-
+                        // write data
                         let values_u64: Vec<u64> = values.iter().map(|v| v.as_u64().unwrap()).collect();
                         self.meta_interface.lock().await.actions.write(&generic_interface, index, &values_u64).await;
+
+                        // read data back
+                        let r_values = self.meta_interface.lock().await.actions.read(&generic_interface, index, values_u64.len()).await.unwrap();
+                        println!("r_vals !!! {:?}", r_values);
+                        
+                        // update the attribute
+                        {
+                            let mut meta_interface_locked = self.meta_interface.lock().await;
+                        
+                            meta_interface_locked.values.splice(index..index+values_u64.len(), r_values.iter().cloned());
+
+                        
+                            let mut att_map = meta_interface_locked.attribute_map.lock().await;
+                            match &mut *att_map {
+                                attribute::Attribute::A3(a) => {
+                                    a.set_payload( meta_interface_locked.to_payload() );
+                                }
+                                _ => {}
+                            }
+                        }
+                                        
+                        // Publish all attributes for start
+                        generic_interface.lock().await.publish_all_attributes().await;
+
+                        
                     }
                     else if o.get("cmd").unwrap().as_str().unwrap() == "r" {
+                        let index = o.get("index").unwrap().as_u64().unwrap() as usize;
+                        let size = o.get("size").unwrap().as_u64().unwrap() as usize;
 
+                        // read data back
+                        let r_values = self.meta_interface.lock().await.actions.read(&generic_interface, index, size).await.unwrap();
+                        println!("r_vals !!! {:?}", r_values);
+                        
+                        // update the attribute
+                        {
+                            let mut meta_interface_locked = self.meta_interface.lock().await;
+                        
+                            meta_interface_locked.values.splice(index..index+size, r_values.iter().cloned());
+
+                        
+                            let mut att_map = meta_interface_locked.attribute_map.lock().await;
+                            match &mut *att_map {
+                                attribute::Attribute::A3(a) => {
+                                    a.set_payload( meta_interface_locked.to_payload() );
+                                }
+                                _ => {}
+                            }
+                        }
+                                        
+                        // Publish all attributes for start
+                        generic_interface.lock().await.publish_all_attributes().await;
+                        
                     }
                 }
                 _ => {

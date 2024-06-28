@@ -1,14 +1,9 @@
-use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
-use tokio::sync::Mutex;
 
-use crate::attribute::Attribute;
 // use crate::attribute::JsonAttribute;
 use crate::interface::AmInterface;
 
-use crate::{attribute, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 // use crate::attribute::

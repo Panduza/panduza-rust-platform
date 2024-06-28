@@ -43,14 +43,13 @@ impl InterfaceStates for MetaStates {
         meta_interface_locked.actions.initializating(&interface).await.unwrap();
 
 
-        {        
-            let map =
-                interface.lock().await.create_attribute(
-                    attribute::Attribute::A3(attribute::A3::new("map"))
-                );
-            
-            let mut map_obj = map.lock().await;
-            match &mut *map_obj {
+        {
+            interface.lock().await.add_attribute(
+                meta_interface_locked.attribute_map.clone()
+            ).await;
+        
+            let mut att_map = meta_interface_locked.attribute_map.lock().await;
+            match &mut *att_map {
                 attribute::Attribute::A3(a) => {
                     a.set_payload( meta_interface_locked.to_payload() );
                 }
@@ -58,14 +57,12 @@ impl InterfaceStates for MetaStates {
             }
         }
             
+        {
+            interface.lock().await.add_attribute(
+                meta_interface_locked.attribute_settings.clone()
+            ).await;
 
-        {        
-            let settings =
-                interface.lock().await.create_attribute(
-                    attribute::Attribute::A1(attribute::A1::new("settings"))
-                );
-        
-            let mut settings_obj = settings.lock().await;
+            let mut settings_obj = meta_interface_locked.attribute_settings.lock().await;
             match &mut *settings_obj {
                 attribute::Attribute::A1(a) => {
                     a.update_field("base_address", 0);

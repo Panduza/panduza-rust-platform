@@ -1,5 +1,10 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+use crate::attribute;
+use crate::attribute::ThreadSafeAttribute;
+use crate::attribute::pack_attribute_as_thread_safe;
+
 use super::RegistersActions;
 use super::settings::MetaSettings;
 
@@ -11,7 +16,10 @@ pub struct MetaInterface {
     pub settings: MetaSettings,
     pub values: Vec<u64>,
     pub timestamps: Vec<u64>,
-    pub actions: Box<dyn RegistersActions>
+    pub actions: Box<dyn RegistersActions>,
+
+    pub attribute_map: ThreadSafeAttribute,
+    pub attribute_settings: ThreadSafeAttribute
 }
 type ThreadSafeMetaInterface = Arc<Mutex<MetaInterface>>;
 
@@ -24,7 +32,13 @@ impl MetaInterface {
             settings: settings,
             values: vec![0; map_size],
             timestamps: vec![0; map_size],
-            actions: actions
+            actions: actions,
+            attribute_map: pack_attribute_as_thread_safe(
+                attribute::Attribute::A3(attribute::A3::new("map"))
+            ),
+            attribute_settings: pack_attribute_as_thread_safe(
+                attribute::Attribute::A1(attribute::A1::new("settings"))
+            ),
         }
     }
     

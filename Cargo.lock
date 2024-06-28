@@ -2440,6 +2440,7 @@ name = "plugin-fake"
 version = "0.0.0"
 dependencies = [
  "async-trait",
+ "futures",
  "panduza-connectors",
  "panduza-core",
  "serde_json",
