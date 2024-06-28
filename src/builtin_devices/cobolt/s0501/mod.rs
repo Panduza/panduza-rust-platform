@@ -13,6 +13,7 @@ use panduza_connectors::serial::tty::Config as SerialConfig;
 use tokio_serial;
 
 mod itf_cobolt_0501_blc;
+mod itf_cobolt_0501_thermometer;
 
 
 
@@ -94,6 +95,10 @@ impl DeviceActions for S0501 {
         let mut list = Vec::new();
         list.push(
             itf_cobolt_0501_blc::build("blc", &serial_conf)
+        );
+
+        list.push(
+            itf_cobolt_0501_thermometer::build("thermometer", &serial_conf)
         );
         return Ok(list);
     }
