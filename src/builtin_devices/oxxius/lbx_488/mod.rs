@@ -13,6 +13,7 @@ use panduza_connectors::usb::usb::Config as UsbConfig;
 use tokio_serial;
 
 mod itf_lbx_488_blc;
+mod itf_lbx_488_thermometer;
 
 
 
@@ -82,12 +83,15 @@ impl DeviceActions for LBX488 {
         let mut serial_conf = UsbConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
-        // serial_conf.serial_baudrate = Some(9600);
-
         let mut list = Vec::new();
         list.push(
             itf_lbx_488_blc::build("blc", &serial_conf)
         );
+
+        list.push(
+            itf_lbx_488_thermometer::build("thermometer", &serial_conf)
+        );
+
         return Ok(list);
     }
 }
