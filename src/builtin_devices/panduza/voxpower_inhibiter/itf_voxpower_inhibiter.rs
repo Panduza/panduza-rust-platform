@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
-use panduza_core::meta::relay;
+use panduza_core::meta::bpc;
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
@@ -15,13 +15,15 @@ struct VoxpowerInhibiterActions {
     id: u16,
     connector_tty: tty::TtyConnector,
     serial_config: SerialConfig,
-    state_open: bool,
+    enable_value: bool,
+    voltage_value: f64,
+    current_value: f64,
     time_lock_duration: Option<tokio::time::Duration>,
     
 }
 
 #[async_trait]
-impl relay::RelayActions for VoxpowerInhibiterActions {
+impl bpc::BpcActions for VoxpowerInhibiterActions {
 
     /// Initialize the interface
     /// 
@@ -30,23 +32,15 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
 
-        // println!("yooooo!");
-
         return Ok(());
     }
 
-    /// Configuration of the interface
+    /// Read the enable value
     /// 
-    // async fn config(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
-    //     return Ok(());
-    // }
-
-    /// Read the state value
-    /// 
-    async fn read_state_open(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
+    async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
 
         interface.lock().await.log_info(
-            format!("VoxpowerInhibiter - read_state_open: {}", self.state_open)
+            format!("VoxpowerInhibiter - read enable value: {}", self.enable_value)
         );
 
         let command = format!("S{}\n", self.id);
@@ -54,51 +48,69 @@ impl relay::RelayActions for VoxpowerInhibiterActions {
 
         let mut response_buf: &mut [u8] = &mut [0; 1024];
 
+        // Send the command to get the ON/OFF state of the channel
         let _result = self.connector_tty.write_then_read(
             command_bytes,
             &mut response_buf,
             self.time_lock_duration,
         ).await
             .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
                 let response_bytes = &response_buf[0..nb_of_bytes];
                 let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-                println!("VoxpowerInhibiterActions - channel {} state: {:?}", self.id, response_string);
-                if response_string == "H" {
-                    self.state_open = false;
-                } else {
-                    self.state_open = true;
-                }
+
+                // Pin state High = channel inhibited (OFF)
+                // Pin state Low = channel enabled (ON)
+                self.enable_value = match response_string.as_str() {
+                    "H" => false,
+                    _ => true
+                };
             });
 
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - state_open: {}", self.state_open)
+            format!("Voxpower Inhibiter - channel_{} enable value : {}", self.id, self.enable_value)
         );
 
-        return Ok(self.state_open);
+        return Ok(self.enable_value);
     }
 
-    /// Write the state value
+    /// Write the enable value
     /// 
-    async fn write_state_open(&mut self, interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
         
         let command = if v {
+            // enable the channel
             format!("E{}\n", self.id)
         } else {
+            // inhibit the channel
             format!("I{}\n", self.id)
         };
 
         let _result = self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-                // println!("nb_of_bytes: {:?}", nb_of_bytes);
-            });
+        ).await;
         
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - write_state_open; {}", self.state_open)
+            format!("Voxpower Inhibiter - write enable value; {}", self.enable_value)
         );
+    }
+
+    /// Unused functions for the Voxpower
+    /// 
+    async fn read_voltage_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+        return Ok(self.voltage_value);
+    }
+
+    async fn write_voltage_value(&mut self, _interface: &AmInterface, v: f64) {
+        self.voltage_value = v;
+    }
+
+    async fn read_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+        return Ok(self.current_value);
+    }
+
+    async fn write_current_value(&mut self, _interface: &AmInterface, v: f64) {
+        self.current_value = v;
     }
 }
 
@@ -111,13 +123,24 @@ pub fn build<A: Into<String>>(
     serial_config: &SerialConfig
 ) -> InterfaceBuilder {
 
-    return relay::build(
+    return bpc::build(
         name,
+        bpc::BpcParams {
+            voltage_min: 0.0,
+            voltage_max: 0.0,
+            voltage_decimals: 0,
+
+            current_min: 0.0,
+            current_max: 0.0,
+            current_decimals: 0,
+        }, 
         Box::new(VoxpowerInhibiterActions {
             id: id.clone(),
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
-            state_open: true,
+            enable_value: false,
+            voltage_value: 0.0,
+            current_value: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
     )
