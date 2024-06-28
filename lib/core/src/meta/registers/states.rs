@@ -1,5 +1,9 @@
 
 use async_trait::async_trait;
+use serde_json::Value;
+use tokio::time::Duration;
+use tokio::time::sleep;
+use std::clone;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use crate::attribute;
@@ -79,11 +83,52 @@ impl InterfaceStates for MetaStates {
         interface.lock().await.publish_all_attributes().await;
 
 
+        let interface_clone = interface.clone();
+        let meta_interface_clone = self.meta_interface.clone();
+        let cos = self.meta_interface.lock().await.cyclic_operations.clone();
         let mut loader = interface.lock().await.platform_services.lock().await.task_loader.clone();
         loader.load( async move {
             loop {
-                // sleep(Duration::from_millis(1000)).await;
-                // values.lock().await[1] += 1;
+
+                let mut next_awake = 1000;
+
+                for co in cos.lock().await.iter() {
+                    println!("Cyclic operation {:?}", co.interval);
+
+                    let payload = co.payload.clone();
+                    let oo = serde_json::from_slice::<Value>(&payload).unwrap();
+                    let o = oo.as_object().unwrap();
+
+                    let index = o.get("index").unwrap().as_u64().unwrap() as usize;
+                    let size = o.get("size").unwrap().as_u64().unwrap() as usize;
+
+                    // read data back
+                    let r_values = meta_interface_clone.lock().await.actions.read(&interface_clone, index, size).await.unwrap();
+                    println!("r_vals !!! {:?}", r_values);
+                    
+                    // update the attribute
+                    {
+                        let mut meta_interface_locked = meta_interface_clone.lock().await;
+                    
+                        meta_interface_locked.values.splice(index..index+size, r_values.iter().cloned());
+
+                    
+                        let mut att_map = meta_interface_locked.attribute_map.lock().await;
+                        match &mut *att_map {
+                            attribute::Attribute::A3(a) => {
+                                a.set_payload( meta_interface_locked.to_payload() );
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    if next_awake > co.interval {
+                        next_awake = co.interval;
+                    }
+                }
+
+                sleep(Duration::from_millis(next_awake)).await;
+    
             }
             // Ok(())
         }.boxed()).unwrap();
