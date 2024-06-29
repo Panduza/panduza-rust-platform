@@ -71,9 +71,9 @@ impl InterfaceStates for MetaStates {
             let mut settings_obj = meta_interface_locked.attribute_settings.lock().await;
             match &mut *settings_obj {
                 attribute::Attribute::A1(a) => {
-                    a.update_field("base_address", 0);
-                    a.update_field("register_size", 0);
-                    a.update_field("number_of_register", 0);
+                    a.update_field("base_address", meta_interface_locked.settings.base_address  );
+                    a.update_field("register_size", meta_interface_locked.settings.register_size );
+                    a.update_field("number_of_register", meta_interface_locked.settings.number_of_register );
                 }
                 _ => {}
             }
