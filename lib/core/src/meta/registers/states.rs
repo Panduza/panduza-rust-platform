@@ -85,15 +85,16 @@ impl InterfaceStates for MetaStates {
 
         let interface_clone = interface.clone();
         let meta_interface_clone = self.meta_interface.clone();
-        let cos = self.meta_interface.lock().await.cyclic_operations.clone();
+        let cos = meta_interface_locked.cyclic_operations.clone();
         let mut loader = interface.lock().await.platform_services.lock().await.task_loader.clone();
         loader.load( async move {
             loop {
+                println!("$$$$$ Cyclic operation loop ");
 
                 let mut next_awake = 1000;
 
                 for co in cos.lock().await.iter() {
-                    println!("Cyclic operation {:?}", co.interval);
+                    println!("$$$ Cyclic operation {:?}", co.interval);
 
                     let payload = co.payload.clone();
                     let oo = serde_json::from_slice::<Value>(&payload).unwrap();
@@ -122,10 +123,15 @@ impl InterfaceStates for MetaStates {
                         }
                     }
 
+                    interface_clone.lock().await.publish_all_attributes().await;
+
+
                     if next_awake > co.interval {
                         next_awake = co.interval;
                     }
                 }
+
+                println!("$$$$$ Sleep ");
 
                 sleep(Duration::from_millis(next_awake)).await;
     

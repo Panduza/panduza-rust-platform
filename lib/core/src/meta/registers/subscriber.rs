@@ -153,6 +153,7 @@ impl InterfaceSubscriber for MetaSubscriber {
 
                         let repeat_opt = o.get("repeat");
                         if repeat_opt.is_some() {
+                            println!("????????????repeat !!! {:?}", repeat_opt.unwrap().as_u64().unwrap());
                             let repeat = repeat_opt.unwrap().as_u64().unwrap();
                             
                             self.meta_interface.lock().await.cyclic_operations.lock().await.push_back(
