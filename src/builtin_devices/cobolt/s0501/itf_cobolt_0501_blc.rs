@@ -152,25 +152,47 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
 
-        let mut response: &mut [u8] = &mut [0; 1024];
+        let mut ok_value = false;
+        while !ok_value {
+            let mut response: &mut [u8] = &mut [0; 1024];
 
-        let _result = self.connector_tty.write_then_read(
-            b"l?\r",
-            &mut response,
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                let value_b = &response[0..nb_of_bytes];
+            let _result = self.connector_tty.write_then_read(
+                b"l?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let value_b = &response[0..nb_of_bytes];
 
-                let value_i = String::from_utf8(value_b.to_vec()).unwrap()
-                    .trim().to_string() // Remove \r\n form the message before parsing
-                    .parse::<u16>().unwrap();
+                    let value_s = String::from_utf8(value_b.to_vec()).unwrap()
+                        .trim().to_string(); // Remove \r\n form the message before parsing
+                        // .parse::<u16>().unwrap();
 
-                self.enable_value = match value_i {
-                    0 => false,
-                    _ => true
-                };
-            });
+                    
+                    match value_s.parse::<u16>() {
+                        Ok(u) => {
+                            ok_value = true;
+                            self.enable_value = match u {
+                                0 => false,
+                                _ => true
+                            };
+                        }
+                        Err(e) => {
+                            ok_value = false;
+                            println!("Failed to parse {} : {}", value_s, e); 
+                        }
+                    };
+
+                    // let value_i = String::from_utf8(value_b.to_vec()).unwrap()
+                    //     .trim().to_string() // Remove \r\n form the message before parsing
+                    //     .parse::<u16>().unwrap();
+
+                    // self.enable_value = match value_i {
+                    //     0 => false,
+                    //     _ => true
+                    // };
+                });
+        }
 
         interface.lock().await.log_info(
             format!("read enable value : {}", self.enable_value)
@@ -194,13 +216,13 @@ impl blc::BlcActions for S0501BlcActions {
             format!("write enable value : {}", v)
         );
 
-        let _result = self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
-            });
+        // let _result = self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await
+        //     .map(|nb_of_bytes| {
+        //         println!("nb of bytes: {:?}", nb_of_bytes);
+        //     });
         
         // Clean the buffer from previous values
         let mut ok_val = String::new();
@@ -208,7 +230,7 @@ impl blc::BlcActions for S0501BlcActions {
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
-                b"l?\r",
+                command.as_bytes(), // b"l?\r",
                 &mut response,
                 self.time_lock_duration
             ).await
@@ -255,19 +277,35 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let mut response: &mut [u8] = &mut [0; 1024];
-        let _result = self.connector_tty.write_then_read(
-            b"p?\r",
-            &mut response,
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                let power_b = &response[0..nb_of_bytes];
-                
-                self.power_value = String::from_utf8(power_b.to_vec()).unwrap()
-                    .trim().to_string() // Remove \r\n form the message before parsing
-                    .parse::<f64>().unwrap();
-            });
+        let mut ok_value = false;
+        while !ok_value {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"p?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let power_b = &response[0..nb_of_bytes];
+                    let power_s = String::from_utf8(power_b.to_vec()).unwrap()
+                        .trim().to_string(); // Remove \r\n form the message before parsing
+                    
+                    match power_s.parse::<f64>() {
+                        Ok(f) => {
+                            ok_value = true;
+                            self.power_value = f;
+                        }
+                        Err(e) => {
+                            ok_value = false;
+                            println!("Failed to parse {} : {}", power_s, e); 
+                        }
+                    };
+
+                    // self.power_value = String::from_utf8(power_b.to_vec()).unwrap()
+                    //     .trim().to_string() // Remove \r\n form the message before parsing
+                    //     .parse::<f64>().unwrap();
+                });
+        }
 
         interface.lock().await.log_info(
             format!("read power : {}", self.power_value)
@@ -293,13 +331,30 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|_nb_of_bytes| {
             });
 
+            // let mut response: &mut [u8] = &mut [0; 1024];
+            // let _result = self.connector_tty.read(
+            //     &mut response,
+            // ).await
+            //     .map(|nb_of_bytes| {
+            //         let value_b = &response[0..nb_of_bytes];
+            //         let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    // // If multiple messages are flushed at once, splits the result to check every messages
+                    // for val in values.split("\r\n") {
+                    //     match val {
+                    //         "OK" => { ok_val = "OK".to_string() }
+                    //         _ => { continue; }
+                    //     }
+                    // };
+                // });
+
         // Clean the buffer from previous values
         let mut ok_val = String::new();
 
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
-                b"p?\r",
+                command.as_bytes(), // b"p?\r",
                 &mut response,
                 self.time_lock_duration
             ).await
@@ -322,19 +377,36 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let mut response: &mut [u8] = &mut [0; 1024];
-        let _result = self.connector_tty.write_then_read(
-            b"glc?\r",
-            &mut response,
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                let current_b = &response[0..nb_of_bytes];
+        let mut ok_value = false;
+        while !ok_value {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"glc?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let current_b = &response[0..nb_of_bytes];
 
-                self.current_value = String::from_utf8(current_b.to_vec()).unwrap()
-                    .trim().to_string() // Remove \r\n form the message before parsing
-                    .parse::<f64>().unwrap();
-            });
+                    let current_s = String::from_utf8(current_b.to_vec()).unwrap()
+                        .trim().to_string(); // Remove \r\n form the message before parsing
+                    
+                    match current_s.parse::<f64>() {
+                        Ok(f) => {
+                            ok_value = true;
+                            self.current_value = f;
+                        }
+                        Err(e) => {
+                            ok_value = false;
+                            println!("Failed to parse {} : {}", current_s, e); 
+                        }
+                    };
+
+                    // self.current_value = String::from_utf8(current_b.to_vec()).unwrap()
+                    //     .trim().to_string() // Remove \r\n form the message before parsing
+                    //     .parse::<f64>().unwrap();
+                });
+        }
 
         interface.lock().await.log_info(
             format!("read current : {}", self.current_value)
@@ -352,12 +424,12 @@ impl blc::BlcActions for S0501BlcActions {
 
         let command = format!("slc {}\r", v);
 
-        let _result = self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            });
+        // let _result = self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await
+        //     .map(|_nb_of_bytes| {
+        //     });
 
         // Clean the buffer from previous values
         let mut ok_val = String::new();
@@ -365,7 +437,7 @@ impl blc::BlcActions for S0501BlcActions {
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
-                b"glc?\r",
+                command.as_bytes(), // b"glc?\r",
                 &mut response,
                 self.time_lock_duration
             ).await
