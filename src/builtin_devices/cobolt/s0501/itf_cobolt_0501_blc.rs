@@ -144,6 +144,7 @@ impl blc::BlcActions for S0501BlcActions {
             _ => return platform_error_result!("Unexpected mode command")
         };
 
+<<<<<<< HEAD
         // let response = match self.cmd_ack(command.as_bytes(), "OK".to_string()).await {
         //     Ok(_r) => "OK".to_string(),
         //     Err(_e) => return platform_error_result!("Unexpected response from Cobolt S0501")
@@ -161,6 +162,39 @@ impl blc::BlcActions for S0501BlcActions {
         // Clean the buffer from previous values
         while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
             continue;
+=======
+        // let _result = self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await
+        //     .map(|_nb_of_bytes| {
+        //     });
+        
+        // Clean the buffer from previous values
+        let mut ok_val = String::new();
+
+        while ok_val != "OK".to_string() {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                command.as_bytes(), // b"gam?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let value_b = &response[0..nb_of_bytes];
+
+                    println!("w mode {:?} ???????????????????????????????????", String::from_utf8(value_b.to_vec()).unwrap());
+                    let values = String::from_utf8(value_b.to_vec()).unwrap()
+                        .trim().to_string();
+
+                    for val in values.split("\r\n") {
+                        match val {
+                            "OK" => { ok_val = "OK".to_string() }
+                            _ => { continue; }
+                        }
+                    };
+                });
+>>>>>>> 254ef82 (debug communication)
         }
         return Ok(());
     }
