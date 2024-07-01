@@ -43,24 +43,41 @@ impl thermometer::ThermometerActions for S0501ThermometerActions {
 
     /// Read the measure value
     /// 
-    async fn read_measure_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
-        // let mut response: &mut [u8] = &mut [0; 1024];
-        // let _result = self.connector_tty.write_then_read(
-        //     b"rtec4t?\r",
-        //     &mut response,
-        //     self.time_lock_duration
-        // ).await
-        //     .map(|nb_of_bytes| {
-        //         let power_b = &response[0..nb_of_bytes];
-                
-        //         self.measure_value = String::from_utf8(power_b.to_vec()).unwrap()
-        //             .trim().to_string() // Remove \r\n form the message before parsing
-        //             .parse::<f64>().unwrap();
-        //     });
+    async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+        let mut ok_value = false;
+        while !ok_value {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"rtec4t?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let measure_b = &response[0..nb_of_bytes];
 
-        // interface.lock().await.log_info(
-        //     format!("S0501Thermometer - read_measure_value: {}", self.measure_value)
-        // );
+                    let measure_s = String::from_utf8(measure_b.to_vec()).unwrap()
+                        .trim().to_string(); // Remove \r\n form the message before parsing
+                    
+                    match measure_s.parse::<f64>() {
+                        Ok(f) => {
+                            ok_value = true;
+                            self.measure_value = f;
+                        }
+                        Err(e) => {
+                            ok_value = false;
+                            println!("Failed to parse {} : {}", measure_s, e); 
+                        }
+                    };
+                    
+                    // self.measure_value = String::from_utf8(power_b.to_vec()).unwrap()
+                    //     .trim().to_string() // Remove \r\n form the message before parsing
+                    //     .parse::<f64>().unwrap();
+                });
+        }
+
+        interface.lock().await.log_info(
+            format!("S0501Thermometer - read_measure_value: {}", self.measure_value)
+        );
 
         return Ok(self.measure_value);
     }

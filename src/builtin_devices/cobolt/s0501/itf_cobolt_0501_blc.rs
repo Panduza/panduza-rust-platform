@@ -285,6 +285,23 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|_nb_of_bytes| {
             })?;
 
+            // let mut response: &mut [u8] = &mut [0; 1024];
+            // let _result = self.connector_tty.read(
+            //     &mut response,
+            // ).await
+            //     .map(|nb_of_bytes| {
+            //         let value_b = &response[0..nb_of_bytes];
+            //         let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    // // If multiple messages are flushed at once, splits the result to check every messages
+                    // for val in values.split("\r\n") {
+                    //     match val {
+                    //         "OK" => { ok_val = "OK".to_string() }
+                    //         _ => { continue; }
+                    //     }
+                    // };
+                // });
+
         // Clean the buffer from previous values
         while self.cmd_expect(b"p?\r", "OK".to_string()).await.is_err() {
             continue;
