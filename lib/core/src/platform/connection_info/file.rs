@@ -26,7 +26,7 @@ pub fn system_file_path() -> PathBuf {
     let unix_path =
         PathBuf::from("/etc/panduza").join(filename);
     let windows_path = 
-        PathBuf::from(dirs::home_dir().unwrap()).join("panduza").join(filename);
+        PathBuf::from(dirs::public_dir().unwrap()).join("panduza").join(filename);
 
     // Return the file path depeding on the OS
     match env::consts::OS {

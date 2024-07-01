@@ -150,14 +150,14 @@ impl interface::fsm::States for BpcStates {
         // Init voltage
         interface.lock().await.update_attribute_with_f64("voltage", "min", bpc_itf.params.voltage_min );
         interface.lock().await.update_attribute_with_f64("voltage", "max", bpc_itf.params.voltage_max );
-        interface.lock().await.update_attribute_with_f64("voltage", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("voltage", "value", bpc_itf.params.voltage_min);
         interface.lock().await.update_attribute_with_f64("voltage", "decimals", bpc_itf.params.voltage_decimals as f64);
         interface.lock().await.update_attribute_with_f64("voltage", "polling_cycle", 0.0);
 
         // Init current
         interface.lock().await.update_attribute_with_f64("current", "min", bpc_itf.params.current_min );
         interface.lock().await.update_attribute_with_f64("current", "max", bpc_itf.params.current_max );
-        interface.lock().await.update_attribute_with_f64("current", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "value", bpc_itf.params.current_min);
         interface.lock().await.update_attribute_with_f64("current", "decimals", bpc_itf.params.current_decimals as f64);
         interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
 
