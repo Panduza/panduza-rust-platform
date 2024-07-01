@@ -53,7 +53,7 @@ impl thermometer::ThermometerActions for LBX488ThermometerActions {
     /// 
     async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
         
-        let response = self.ask("?BT".as_bytes()).await
+        let response = self.ask("?DT".as_bytes()).await
             .trim_end_matches("\0")
             .to_string();
         let response_float = response.parse::<f64>().unwrap();

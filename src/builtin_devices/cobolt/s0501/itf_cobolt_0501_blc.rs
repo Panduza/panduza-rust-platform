@@ -58,6 +58,7 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 let mode_b = &response[0..nb_of_bytes];
 
+                println!("{:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", String::from_utf8(mode_b.to_vec()).unwrap().trim().to_string());
                 let mode_i = String::from_utf8(mode_b.to_vec()).unwrap()
                     .trim().to_string() // Remove \r\n form the message before parsing
                     .parse::<u16>().unwrap();
