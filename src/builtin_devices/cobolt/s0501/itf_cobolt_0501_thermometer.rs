@@ -43,24 +43,24 @@ impl thermometer::ThermometerActions for S0501ThermometerActions {
 
     /// Read the measure value
     /// 
-    async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
-        let mut response: &mut [u8] = &mut [0; 1024];
-        let _result = self.connector_tty.write_then_read(
-            b"rtec4t?\r",
-            &mut response,
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                let power_b = &response[0..nb_of_bytes];
+    async fn read_measure_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+        // let mut response: &mut [u8] = &mut [0; 1024];
+        // let _result = self.connector_tty.write_then_read(
+        //     b"rtec4t?\r",
+        //     &mut response,
+        //     self.time_lock_duration
+        // ).await
+        //     .map(|nb_of_bytes| {
+        //         let power_b = &response[0..nb_of_bytes];
                 
-                self.measure_value = String::from_utf8(power_b.to_vec()).unwrap()
-                    .trim().to_string() // Remove \r\n form the message before parsing
-                    .parse::<f64>().unwrap();
-            });
+        //         self.measure_value = String::from_utf8(power_b.to_vec()).unwrap()
+        //             .trim().to_string() // Remove \r\n form the message before parsing
+        //             .parse::<f64>().unwrap();
+        //     });
 
-        interface.lock().await.log_info(
-            format!("S0501Thermometer - read_measure_value: {}", self.measure_value)
-        );
+        // interface.lock().await.log_info(
+        //     format!("S0501Thermometer - read_measure_value: {}", self.measure_value)
+        // );
 
         return Ok(self.measure_value);
     }
