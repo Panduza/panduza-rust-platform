@@ -58,10 +58,15 @@ impl blc::BlcActions for S0501BlcActions {
             .map(|nb_of_bytes| {
                 let mode_b = &response[0..nb_of_bytes];
 
-                println!("{:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", String::from_utf8(mode_b.to_vec()).unwrap().trim().to_string());
+                println!("r mode {:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", String::from_utf8(mode_b.to_vec()).unwrap());
                 let mode_i = String::from_utf8(mode_b.to_vec()).unwrap()
                     .trim().to_string() // Remove \r\n form the message before parsing
                     .parse::<u16>().unwrap();
+
+                // match mode_i.parse::<u16>().unwrap() {
+                //     Ok(u) => { mode_i = u }
+                //     Err(e) => { println!("Failed to parse '{}' : {}", mode_i, e); }
+                // }
 
                 self.mode_value = match mode_i {
                     0 => "constant_current".to_string(),
@@ -90,12 +95,12 @@ impl blc::BlcActions for S0501BlcActions {
             _ => return
         };
 
-        let _result = self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            });
+        // let _result = self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await
+        //     .map(|_nb_of_bytes| {
+        //     });
         
         // Clean the buffer from previous values
         let mut ok_val = String::new();
@@ -103,13 +108,16 @@ impl blc::BlcActions for S0501BlcActions {
         while ok_val != "OK".to_string() {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
-                b"gam?\r",
+                command.as_bytes(), // b"gam?\r",
                 &mut response,
                 self.time_lock_duration
             ).await
                 .map(|nb_of_bytes| {
                     let value_b = &response[0..nb_of_bytes];
-                    let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+                    println!("w mode {:?} ???????????????????????????????????", String::from_utf8(value_b.to_vec()).unwrap());
+                    let values = String::from_utf8(value_b.to_vec()).unwrap()
+                        .trim().to_string();
 
                     for val in values.split("\r\n") {
                         match val {
