@@ -49,31 +49,50 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError> {
 
-        let mut response: &mut [u8] = &mut [0; 1024];
-        let _result = self.connector_tty.write_then_read(
-            b"gam?\r",
-            &mut response,
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                let mode_b = &response[0..nb_of_bytes];
+        let mut ok_value = false;
+        while !ok_value {
+            let mut response: &mut [u8] = &mut [0; 1024];
+            let _result = self.connector_tty.write_then_read(
+                b"gam?\r",
+                &mut response,
+                self.time_lock_duration
+            ).await
+                .map(|nb_of_bytes| {
+                    let mode_b = &response[0..nb_of_bytes];
 
-                println!("r mode {:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", String::from_utf8(mode_b.to_vec()).unwrap());
-                let mode_i = String::from_utf8(mode_b.to_vec()).unwrap()
-                    .trim().to_string() // Remove \r\n form the message before parsing
-                    .parse::<u16>().unwrap();
+                    println!("r mode {:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", String::from_utf8(mode_b.to_vec()).unwrap());
+                    let mode_s = String::from_utf8(mode_b.to_vec()).unwrap()
+                        .trim().to_string(); // Remove \r\n form the message before parsing
+                        // .parse::<u16>().unwrap();
 
-                // match mode_i.parse::<u16>().unwrap() {
-                //     Ok(u) => { mode_i = u }
-                //     Err(e) => { println!("Failed to parse '{}' : {}", mode_i, e); }
-                // }
+                    
+                    match mode_s.parse::<u16>() {
+                        Ok(u) => {
+                            ok_value = true;
+                            self.mode_value = match u {
+                                0 => "constant_current".to_string(),
+                                1 => "constant_power".to_string(),
+                                _ => "no_regulation".to_string()
+                            };
+                        }
+                        Err(e) => {
+                            ok_value = false;
+                            println!("Failed to parse {} : {}", mode_s, e); 
+                        }
+                    };
 
-                self.mode_value = match mode_i {
-                    0 => "constant_current".to_string(),
-                    1 => "constant_power".to_string(),
-                    _ => "no_regulation".to_string()
-                };
-            });
+                    // match mode_s.as_str() {
+                    //     "\r\n" => { ok_value = "\r\n".to_string() }
+                    //     _ => { ok_value = mode_s.clone() }
+                    // }
+
+                    // self.mode_value = match mode_s.parse::<u16>().unwrap() {
+                    //     0 => "constant_current".to_string(),
+                    //     1 => "constant_power".to_string(),
+                    //     _ => "no_regulation".to_string()
+                    // };
+                });
+        }
 
         interface.lock().await.log_info(
             format!("read mode value : {}", self.mode_value.clone())
