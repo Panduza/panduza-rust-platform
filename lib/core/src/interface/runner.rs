@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{clone, sync::Arc};
 
 use futures::FutureExt;
 use tokio::sync::Mutex;
@@ -11,6 +11,9 @@ use crate::link::AmManager as AmLinkManager;
 
 use super::builder::Builder as InterfaceBuilder;
 
+
+use super::listener_task::listener_task;
+
 /// 
 pub struct Runner {
     /// Core Object
@@ -19,8 +22,14 @@ pub struct Runner {
     /// FSM
     fsm: Arc<Mutex<Fsm>>,
 
-    /// Listener
-    listener: Arc<Mutex<Listener>>,
+    // Listener
+    // listener: Arc<Mutex<Listener>>,
+
+    /// Subscriber
+    subscriber: Box<dyn Subscriber>,
+
+    /// Default link
+    link: link::InterfaceHandle,
 }
 pub type AmRunner = Arc<Mutex<Runner>>;
 
@@ -91,7 +100,8 @@ impl Runner {
             Runner {
                 interface: core_obj.clone(),
                 fsm: Arc::new(Mutex::new(Fsm::new(core_obj.clone(), states ))),
-                listener: Listener::new_am(core_obj.clone(), subscriber, link)
+                subscriber,
+                link
             }
         ;
     }
@@ -122,28 +132,27 @@ impl Runner {
     /// 
     pub async fn start(&mut self, task_loader: &mut TaskPoolLoader) {
         
+
+        // TODO ! mutex on FSM and listener is useless... only interface must have a lock
         let fsm = self.fsm.clone();
-        let listener = self.listener.clone();
+        // let listener = self.listener.clone();
 
         // FSM Task
         task_loader.load(async move {
+
+            // listener_task
             loop {
                 fsm.lock().await.run_once().await;
             }
         }.boxed()).unwrap();
 
+
+        
+        let listener = Listener::new(self.interface.clone(), self.subscriber, self.link);
         // Listener Task
         // Ensure communication with the MQTT connection
         let interface_name = self.interface.lock().await.name().clone() ;
-        task_loader.load(async move {
-            loop {
-                if let Err(_) = listener.lock().await.run_once().await {
-                    return __platform_error_result!(
-                        format!("Interface {:?} Listen Task Error", interface_name)
-                    );
-                }
-            }
-        }.boxed()).unwrap();
+        task_loader.load(listener_task(listener).boxed()).unwrap();
 
         // Log success
         self.interface.lock().await.log_info("Interface started");

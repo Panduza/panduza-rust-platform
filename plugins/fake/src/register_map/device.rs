@@ -7,7 +7,7 @@ pub struct RegisterMap;
 impl DeviceActions for RegisterMap {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device_settings: &serde_json::Value)
         -> Result<Vec<InterfaceBuilder>, panduza_core::Error>
     {
 

@@ -138,9 +138,9 @@ impl interface::fsm::States for PowermeterStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
-    async fn error(&self, _interface: &AmInterface)
+    async fn cleaning(&self, _interface: &AmInterface)
     {
-        println!("error");
+        println!("cleaning");
     }
 }
 

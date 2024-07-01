@@ -152,13 +152,9 @@ impl InterfaceStates for MetaStates {
         wait_for_fsm_event(interface).await;
     }
 
-    async fn error(&self, _interface: &ThreadSafeInterface)
-    {
-        println!("error");
-    }
 
-    // async fn cleaning(&self, _interface: &ThreadSafeInterface)
-    // {
-    //     println!("cleaning");
-    // }
+    async fn cleaning(&self, _interface: &ThreadSafeInterface)
+    {
+        println!("cleaning");
+    }
 }

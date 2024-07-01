@@ -23,6 +23,7 @@ use crate::attribute::AttributeInterface;
 use crate::attribute::ThreadSafeAttribute;
 
 use super::logger::Logger;
+use super::ThreadSafeInterface;
 
 /// Shared data and behaviour across an interface objects
 /// 
@@ -102,15 +103,10 @@ impl Interface {
         return obj;
     }
 
-    /// Create a new instance of the Core
+    /// Wrap the interface in a thread safe container
     /// 
-    pub fn new_am<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
-        (name: A, dev_name: B, bench_name: C, itype: D, version: E, client: AsyncClient, platform_services: AmServices)
-            -> AmInterface
-    {
-        return Arc::new(Mutex::new(
-            Interface::new(name, dev_name, bench_name, itype, version, client, platform_services)
-        ));
+    pub fn as_thread_safe(self: Self) -> ThreadSafeInterface {
+        return Arc::new(Mutex::new(self));
     }
 
     // -- IDENTITY --

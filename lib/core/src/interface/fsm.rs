@@ -4,6 +4,10 @@ use async_trait::async_trait;
 use bitflags::bitflags;
 use crate::interface::AmInterface;
 
+
+use tokio::time::sleep;
+use tokio::time::Duration;
+
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -17,16 +21,20 @@ pub enum State {
     Connecting,
     Initializating,
     Running,
-    Error
+    Warning,
+    Cleaning,
+    Stopping,
 }
 
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             State::Connecting => write!(f, "Connecting"),
-            State::Initializating => write!(f, "init"),
-            State::Running => write!(f, "run"),
-            State::Error => write!(f, "err"),
+            State::Initializating => write!(f, "Initializating"),
+            State::Running => write!(f, "Running"),
+            State::Warning => write!(f, "Warning"),
+            State::Cleaning => write!(f, "Cleaning"),
+            State::Stopping => write!(f, "Stopping"),
         }
     }
 }
@@ -44,6 +52,9 @@ bitflags! {
         const CONNECTION_UP             = 0b00000001;
         const CONNECTION_DOWN           = 0b00000010;
         const INIT_DONE                 = 0b00000100;
+        const REBOOT                    = 0b00001000;
+        const STOP                      = 0b00010000;
+        const CLEANED                   = 0b00100000;
         const ERROR                     = 0b10000000;
     }
 }
@@ -72,11 +83,11 @@ pub trait States : Send {
 
     ///
     /// 
-    async fn error(&self, interface: &AmInterface);
+    // async fn warning(&self, interface: &AmInterface);
 
-    // / The interface must be able to clean up all resources before being destroyed.
-    // /
-    // async fn cleaning(&self, interface: &AmInterface);
+    // The interface must be able to clean up all resources before being destroyed.
+    //
+    async fn cleaning(&self, interface: &AmInterface);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -145,7 +156,11 @@ impl Fsm {
                 }
                 // If error, go to error state
                 else if evs.contains(Events::ERROR) {
-                    self.interface.lock().await.move_to_state(State::Error);
+                    self.interface.lock().await.move_to_state(State::Warning);
+                }
+                //
+                else if evs.contains(Events::STOP) {
+                    self.interface.lock().await.move_to_state(State::Stopping);
                 }
             },
             State::Running => {
@@ -157,16 +172,45 @@ impl Fsm {
 
                 // If error, go to error state
                 if evs.contains(Events::ERROR) {
-                    self.interface.lock().await.move_to_state(State::Error);
+                    self.interface.lock().await.move_to_state(State::Warning);
                 }
-                // // If connection down, go to connecting state
-                // else if evs.contains(Events::CONNECTION_DOWN) {
-                //     self.interface.lock().await.move_to_state(State::Connecting);
-                // }
+                // If connection down, go to connecting state
+                else if evs.contains(Events::CONNECTION_DOWN) {
+                    self.interface.lock().await.move_to_state(State::Warning);
+                }
+                //
+                else if evs.contains(Events::STOP) {
+                    self.interface.lock().await.move_to_state(State::Stopping);
+                }
             },
-            State::Error => {
+            State::Warning => {
                 // Execute state
-                self.states.error(&self.interface).await;
+                // self.states.warning(&self.interface).await;
+
+                // Wait for 5 sec and reboot
+                sleep(Duration::from_secs(5)).await;
+
+                // Manage transitions
+                let evs = self.interface.lock().await.events().clone();
+
+                if evs.contains(Events::REBOOT) {
+                    self.interface.lock().await.move_to_state(State::Cleaning);
+                }
+            }
+            State::Cleaning => {
+                // Execute state
+                self.states.cleaning(&self.interface).await;
+
+                // Manage transitions
+                let evs = self.interface.lock().await.events().clone();
+
+                if evs.contains(Events::CLEANED) {
+                    self.interface.lock().await.move_to_state(State::Connecting);
+                }
+            }
+            State::Stopping => {
+                // Execute state
+                self.states.cleaning(&self.interface).await;
             }
         }
 
