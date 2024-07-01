@@ -227,6 +227,17 @@ impl TtyConnector {
             }
     }
 
+
+    pub async fn read(&mut self, response: &mut [u8]) -> Result<usize> {
+        self.core
+            .as_ref()
+            .unwrap()
+            .lock()
+            .await
+            .read(response)
+            .await
+    }
+
 }
 
 
@@ -368,8 +379,8 @@ impl TtyCore {
             Err(_e) => platform_error_result!("Unable to read on serial stream")
         }
 
-        
-
+    async fn read(&mut self, response: &mut [u8]) -> Result<usize> {
+        self.serial_stream.as_mut().unwrap().read(response).await
     }
 
 
