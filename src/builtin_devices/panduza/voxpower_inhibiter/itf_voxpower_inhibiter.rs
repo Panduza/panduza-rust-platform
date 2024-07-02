@@ -127,12 +127,12 @@ pub fn build<A: Into<String>>(
     return bpc::build(
         name,
         bpc::BpcParams {
-            voltage_min: 0.0,
-            voltage_max: 0.0,
+            voltage_min: -1.0,
+            voltage_max: -1.0,
             voltage_decimals: 0,
 
-            current_min: 0.0,
-            current_max: 0.0,
+            current_min: -1.0,
+            current_max: -1.0,
             current_decimals: 0,
         }, 
         Box::new(VoxpowerInhibiterActions {
@@ -140,8 +140,8 @@ pub fn build<A: Into<String>>(
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
             enable_value: false,
-            voltage_value: 0.0,
-            current_value: 0.0,
+            voltage_value: -1.0,
+            current_value: -1.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
     )
