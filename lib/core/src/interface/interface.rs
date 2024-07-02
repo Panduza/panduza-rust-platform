@@ -25,6 +25,10 @@ use crate::attribute::ThreadSafeAttribute;
 use super::logger::Logger;
 use super::ThreadSafeInterface;
 
+
+
+
+
 /// Shared data and behaviour across an interface objects
 /// 
 pub struct Interface {
@@ -62,6 +66,12 @@ pub struct Interface {
     //
     pub platform_services: AmServices,
 
+
+
+    
+    last_error_message: Option<String>,
+
+
     // -- LOGS --
     logger: Logger
 }
@@ -96,6 +106,7 @@ impl Interface {
             attributes: HashMap::new(),
             map_of_attributes: HashMap::new(),
             platform_services: platform_services,
+            last_error_message: None,
             logger: Logger::new(string_bench_name.clone(), string_dev_name.clone(), string_name.clone())
         };
         obj.register_attribute(InfoAttribute::new_boxed(itype, version));
@@ -190,6 +201,12 @@ impl Interface {
     //     self.fsm_events.insert(Events::ERROR);
     //     self.fsm_events_notifier.notify_one();
     // }
+    pub fn set_event_error<A: Into<String>>(&mut self, message: A) {
+        self.last_error_message = Some(message.into());
+        self.fsm_events.insert(Events::ERROR);
+        self.fsm_events_notifier.notify_one();
+    }
+
 
     // -- CLIENT --
 

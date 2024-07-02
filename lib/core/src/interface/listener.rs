@@ -22,15 +22,11 @@ pub struct Listener {
 }
 
 impl Listener {
-    
+
     /// Create a new instance of the Listener
     /// 
     pub fn new(interface: AmInterface, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Listener {
-        return Listener {
-            interface,
-            subscriber,
-            link
-        }
+        return Listener { interface, subscriber, link }
     }
 
     /// Task code that runs the interface Listener
@@ -40,13 +36,15 @@ impl Listener {
     pub async fn run_task(mut self) -> TaskResult {
 
         loop {
+            // Get a new message
             let msg = 
                 self.link.rx().recv().await
                     .ok_or( __platform_error!("Listener channel closed") )?; // Critical error => need to stop
-                    
 
-            self.subscriber.process(&mut self.interface, &msg).await?; // error warning need to live again
-
+            // Process the message
+            if let Err(e) = self.subscriber.process(&mut self.interface, &msg).await {
+                self.interface.lock().await.set_event_error(e.to_string());
+            }
         }
 
         Ok(())
