@@ -10,7 +10,6 @@ mod interface;
 
 
 pub mod fsm_task;
-pub mod listener_task;
 
 pub type Builder = builder::Builder;
 

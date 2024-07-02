@@ -1,7 +1,6 @@
 use serde_json;
 
 use crate::interface::listener::Listener;
-use crate::interface::listener_task::listener_task;
 use crate::interface::fsm_task::fsm_task;
 use crate::interface::fsm::Fsm;
 use crate::platform::TaskPoolLoader;
@@ -223,7 +222,9 @@ impl Device {
         // // Listener Task
         // // Ensure communication with the MQTT connection
         // let interface_name = self.interface.lock().await.name().clone() ;
-        task_loader.load(listener_task(listener).boxed()).unwrap();
+
+        // task_loader.load(Listener::task(listener).boxed()).unwrap();
+        task_loader.load(listener.run_task().boxed()).unwrap();
 
         // // Log success
         // self.interface.lock().await.log_info("Interface started");
