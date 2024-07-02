@@ -28,4 +28,4 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: windows_binaries
-                  path: target/release
+                  path: target/release/panduza-rust-platform.exe
