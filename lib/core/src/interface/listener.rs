@@ -1,12 +1,7 @@
-
-use crate::{__platform_error, link};
-
-use crate::interface::AmInterface;
-
-use super::subscriber::Subscriber;
-
 use crate::TaskResult;
-
+use crate::{__platform_error, link};
+use crate::interface::AmInterface;
+use super::subscriber::Subscriber;
 
 /// Message handler
 /// 
@@ -25,7 +20,8 @@ impl Listener {
 
     /// Create a new instance of the Listener
     /// 
-    pub fn new(interface: AmInterface, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle) -> Listener {
+    pub fn new(interface: AmInterface, subscriber: Box<dyn Subscriber>, link: link::InterfaceHandle)
+        -> Listener {
         return Listener { interface, subscriber, link }
     }
 
@@ -34,7 +30,6 @@ impl Listener {
     /// move the listener into the task 
     /// 
     pub async fn run_task(mut self) -> TaskResult {
-
         loop {
             // Get a new message
             let msg = 
@@ -46,10 +41,8 @@ impl Listener {
                 self.interface.lock().await.set_event_error(e.to_string());
             }
         }
-
         Ok(())
     }
-
 
 }
 
