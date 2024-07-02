@@ -66,6 +66,7 @@ pub struct Services {
 
 }
 pub type AmServices = Arc<Mutex<Services>>;
+pub type ThreadSafeServices = Arc<Mutex<Services>>;
 
 impl Services {
 

@@ -71,7 +71,7 @@ impl Interface {
 
     /// Create a new instance of the Core
     ///
-    fn new<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
+    pub fn new<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
         (name: A, dev_name: B, bench_name: C, itype: D, version: E,
             client: AsyncClient, platform_services: AmServices
         )
