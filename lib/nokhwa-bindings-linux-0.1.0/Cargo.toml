@@ -30,7 +30,7 @@ repository = "https://github.com/l1npengtul/nokhwa"
 path = "../nokhwa-core-0.1.2"
 
 [target."cfg(target_os=\"linux\")".dependencies.v4l]
-version = "0.13"
+version = "0.14"
 
 [target."cfg(target_os=\"linux\")".dependencies.v4l2-sys-mit]
-version = "0.2"
+version = "0.3"
