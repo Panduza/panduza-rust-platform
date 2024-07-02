@@ -119,8 +119,6 @@ impl Fsm {
     }
 
     /// Task code that runs the interface FSM
-    ///  
-    /// * `fsm` - move the fsm into the task 
     /// 
     pub async fn run_task(mut self) -> TaskResult {
 
