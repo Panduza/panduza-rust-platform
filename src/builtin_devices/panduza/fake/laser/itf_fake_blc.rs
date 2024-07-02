@@ -112,7 +112,7 @@ pub fn build<A: Into<String>>(
             current_decimals: 1,
         }, 
         Box::new(FakeBlcActions {
-            mode_value: "no_regulation".to_string(),
+            mode_value: "constant_power".to_string(),
             enable_value: false,
             power_value: 0.0,
             current_value: 0.0,
