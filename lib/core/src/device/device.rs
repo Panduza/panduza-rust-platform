@@ -1,7 +1,7 @@
 use serde_json;
 
 use crate::interface::listener::Listener;
-use crate::interface::fsm_task::fsm_task;
+
 use crate::interface::fsm::Fsm;
 use crate::platform::TaskPoolLoader;
 
@@ -211,10 +211,7 @@ impl Device {
 
         // FSM Task
         let fsm = Fsm::new(interface.clone(), interface_builder.states);
-
-        task_loader.load(fsm_task(fsm).boxed()).unwrap();
-
-
+        task_loader.load(fsm.run_task().boxed()).unwrap();
 
 
 

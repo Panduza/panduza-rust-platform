@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use bitflags::bitflags;
 use crate::interface::AmInterface;
 
+use crate::TaskResult;
 
 use tokio::time::sleep;
 use tokio::time::Duration;
@@ -116,6 +117,22 @@ impl Fsm {
             states: states,
         }
     }
+
+    /// Task code that runs the interface FSM
+    ///  
+    /// * `fsm` - move the fsm into the task 
+    /// 
+    pub async fn run_task(mut self) -> TaskResult {
+
+        loop {
+            self.run_once().await;
+        }
+        
+
+        Ok(())
+    }
+
+
 
     ///
     ///

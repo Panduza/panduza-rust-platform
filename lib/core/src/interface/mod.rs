@@ -9,8 +9,6 @@ pub mod subscriber;
 mod interface;
 
 
-pub mod fsm_task;
-
 pub type Builder = builder::Builder;
 
 pub type Interface = interface::Interface;
