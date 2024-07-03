@@ -5,3 +5,4 @@ pub mod thermometer;
 pub mod powermeter;
 pub mod video;
 pub mod serial;
+pub mod registers;

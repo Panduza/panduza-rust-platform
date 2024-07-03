@@ -1,3 +1,4 @@
+use crate::attribute::Attribute;
 use crate::attribute::MqttPayload;
 use crate::platform::services::AmServices;
 use crate::FunctionResult as PlatformFunctionResult;
@@ -19,8 +20,14 @@ use crate::interface::fsm::Events;
 
 use crate::attribute::InfoAttribute;
 use crate::attribute::AttributeInterface;
+use crate::attribute::ThreadSafeAttribute;
 
 use super::logger::Logger;
+use super::ThreadSafeInterface;
+
+
+
+
 
 /// Shared data and behaviour across an interface objects
 /// 
@@ -54,8 +61,16 @@ pub struct Interface {
     // -- ATTRIBUTES --
     attributes: HashMap<String, Box<dyn AttributeInterface>>,
 
+    map_of_attributes: HashMap<String, ThreadSafeAttribute>,
+
     //
-    platform_services: AmServices,
+    pub platform_services: AmServices,
+
+
+
+    
+    last_error_message: Option<String>,
+
 
     // -- LOGS --
     logger: Logger
@@ -66,7 +81,7 @@ impl Interface {
 
     /// Create a new instance of the Core
     ///
-    fn new<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
+    pub fn new<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
         (name: A, dev_name: B, bench_name: C, itype: D, version: E,
             client: AsyncClient, platform_services: AmServices
         )
@@ -89,7 +104,9 @@ impl Interface {
             fsm_events: Events::NO_EVENT,
             fsm_events_notifier: Arc::new(Notify::new()),
             attributes: HashMap::new(),
+            map_of_attributes: HashMap::new(),
             platform_services: platform_services,
+            last_error_message: None,
             logger: Logger::new(string_bench_name.clone(), string_dev_name.clone(), string_name.clone())
         };
         obj.register_attribute(InfoAttribute::new_boxed(itype, version));
@@ -97,15 +114,10 @@ impl Interface {
         return obj;
     }
 
-    /// Create a new instance of the Core
+    /// Wrap the interface in a thread safe container
     /// 
-    pub fn new_am<A: Into<String>, B: Into<String>, C: Into<String>, D: Into<String>, E: Into<String>>
-        (name: A, dev_name: B, bench_name: C, itype: D, version: E, client: AsyncClient, platform_services: AmServices)
-            -> AmInterface
-    {
-        return Arc::new(Mutex::new(
-            Interface::new(name, dev_name, bench_name, itype, version, client, platform_services)
-        ));
+    pub fn as_thread_safe(self: Self) -> ThreadSafeInterface {
+        return Arc::new(Mutex::new(self));
     }
 
     // -- IDENTITY --
@@ -189,16 +201,60 @@ impl Interface {
     //     self.fsm_events.insert(Events::ERROR);
     //     self.fsm_events_notifier.notify_one();
     // }
+    pub fn set_event_error<A: Into<String>>(&mut self, message: A) {
+        self.last_error_message = Some(message.into());
+        self.fsm_events.insert(Events::ERROR);
+        self.fsm_events_notifier.notify_one();
+    }
+
 
     // -- CLIENT --
 
     /// Get the base topic
     ///
     pub async fn publish(&self, topic: &str, payload: &MqttPayload, retain: bool) {
+        self.log_debug(
+            format!("publish attribute {:?} {:?}", topic, retain)
+        );
+
+        // HERE the rumqtt copy the payload inside its own buffer
+        // It is ok for small payloads but not for big ones, there will be work here for streams
         self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+
     }
 
     // -- ATTRIBUTES --
+
+
+
+    pub async fn add_attribute(&mut self, attribute: ThreadSafeAttribute) {
+
+        let name = attribute.lock().await.name().clone();
+
+        self.log_debug(
+            format!("Create attribute {:?}", name)
+        );
+
+        self.map_of_attributes.insert(name, attribute);
+
+    }
+
+
+
+    pub fn create_attribute(&mut self, attribute: Attribute) -> ThreadSafeAttribute {
+        self.log_debug(
+            format!("Create attribute {:?}", attribute.name())
+        );
+
+        let name = attribute.name().clone();
+        let ts_att = crate::attribute::pack_attribute_as_thread_safe(attribute);
+
+        self.map_of_attributes.insert(name, ts_att.clone());
+
+        ts_att.clone()
+    }
+
+
 
     /// Register a new attribute
     /// 
@@ -224,10 +280,27 @@ impl Interface {
             , &attribute.to_mqtt_payload(), attribute.retain().clone()).await;
     }
 
+    pub async fn publish_attribute_bis(&self, name: &str) {
+        let attribute = 
+            self.map_of_attributes.get(name).unwrap().lock().await;
+        self.publish(
+            format!("{}/{}", self.topic_atts, name).as_str()
+            , &MqttPayload::Bytes(attribute.to_vec().clone()), attribute.retain()).await;
+    }
+
     pub async fn publish_all_attributes(&self) {
         for (_, attribute) in self.attributes.iter() {
             self.publish_attribute(attribute.name()).await;
         }
+
+        for (_, attribute) in self.map_of_attributes.iter() {
+            println!("---------------------");
+            let namme = attribute.lock().await.name();            
+            println!("pok {:?}", namme);
+            self.publish_attribute_bis(namme.as_str()).await;
+            println!("--------------------- end ");
+        }
+
     }
 
     /// Publish the info

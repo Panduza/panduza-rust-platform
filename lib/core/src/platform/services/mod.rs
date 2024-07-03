@@ -62,10 +62,11 @@ pub struct Services {
 
     connection_info: Option<ConnectionInfo>,
 
-    _task_loader: TaskPoolLoader,
+    pub task_loader: TaskPoolLoader,
 
 }
 pub type AmServices = Arc<Mutex<Services>>;
+pub type ThreadSafeServices = Arc<Mutex<Services>>;
 
 impl Services {
 
@@ -84,7 +85,7 @@ impl Services {
             device_store: serde_json::Value::Null,
             _panic_cause: String::new(),
             connection_info: None,
-            _task_loader: task_loader
+            task_loader: task_loader
         }));
     }
 

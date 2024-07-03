@@ -1,13 +1,19 @@
 use serde_json;
 
+use crate::interface::listener::Listener;
+
+use crate::interface::fsm::Fsm;
 use crate::platform::TaskPoolLoader;
 
+use futures::FutureExt;
 use crate::device::traits::DeviceActions;
 use crate::link::AmManager as AmLinkManager;
 
+use crate::interface::Builder as InterfaceBuilder;
 
-use crate::interface;
-use crate::interface::AmRunner;
+use crate::subscription;
+
+use crate::interface::Interface;
 
 /// A device manage a set of interfaces
 /// 
@@ -25,7 +31,7 @@ pub struct Device {
     
     actions: Box<dyn DeviceActions>,
 
-    interfaces: Vec<AmRunner>,
+    // interfaces: Vec<AmRunner>,
 
     /// Connection link manager
     /// To generate connection links for the interfaces
@@ -62,7 +68,7 @@ impl Device {
             started: false,
 
             actions: actions,
-            interfaces: Vec::new(),
+            // interfaces: Vec::new(),
 
             connection_link_manager: connection_link_manager,
             platform_services: platform_services
@@ -140,28 +146,89 @@ impl Device {
 
         // create interfaces
         for builder in builders {
-            self.interfaces.push(
-                interface::Runner::build(builder,
-                    self.dev_name().clone(),
-                    self.bench_name().clone(),
-                    self.connection_link_manager.clone(),
-                    self.platform_services.clone()
-                ).await
-            );
+
+            self.start_interface(builder, task_loader).await;
+            // self.interfaces.push(
+            //     interface::Runner::build(builder,
+            //         self.dev_name().clone(),
+            //         self.bench_name().clone(),
+            //         self.connection_link_manager.clone(),
+            //         self.platform_services.clone()
+            //     ).await
+            // );
         }
 
-        // Start the interfaces
-        let mut interfaces = self.interfaces.clone();
-        for interface in interfaces.iter_mut() {
-            let itf = interface.clone();
-            itf.lock().await.start(task_loader).await;
-        }
+        // // Start the interfaces
+        // let mut interfaces = self.interfaces.clone();
+        // for interface in interfaces.iter_mut() {
+        //     let itf = interface.clone();
+        //     itf.lock().await.start(task_loader).await;
+        // }
 
         // log
         self.log_info("Interfaces started !");
         self.started = true;
     }
 
+
+
+    /// Build & Start an interface
+    /// 
+    pub async fn start_interface(&self, interface_builder: InterfaceBuilder, task_loader: &mut TaskPoolLoader) {
+
+    
+        // Build Interface Base Topic name
+        let topic = format!("pza/{}/{}/{}", self.bench_name, self.dev_name, interface_builder.name);
+    
+        // Get attributes names
+        let att_names = interface_builder.subscriber.attributes_names().await;
+    
+        // Build subscriptions requests
+        let mut requests = vec![
+            subscription::Request::new( subscription::ID_PZA, "pza" ),
+            subscription::Request::new( subscription::ID_PZA_CMDS_SET, &format!("{}/cmds/set", topic) )
+        ];
+        for att_name in att_names {
+            let request = subscription::Request::new( att_name.0, &format!("{}/cmds/{}", topic, att_name.1) );
+            requests.push(request);
+        }
+    
+        // Create the link with the connection
+        let link = self.connection_link_manager.lock().await.request_link(requests).await.unwrap();
+
+
+
+        let interface = 
+            Interface::new(interface_builder.name, self.dev_name.clone(), self.bench_name.clone(), interface_builder.itype, interface_builder.version, link.client(), self.platform_services.clone())
+                .as_thread_safe();
+
+
+        // // TODO ! mutex on FSM and listener is useless... only interface must have a lock
+        // let fsm = self.fsm.clone();
+        // // let listener = self.listener.clone();
+
+
+
+        // FSM Task
+        let fsm = Fsm::new(interface.clone(), interface_builder.states);
+        task_loader.load(fsm.run_task().boxed()).unwrap();
+
+
+
+        let listener = Listener::new(interface.clone(), interface_builder.subscriber, link);
+        // // Listener Task
+        // // Ensure communication with the MQTT connection
+        // let interface_name = self.interface.lock().await.name().clone() ;
+
+        // task_loader.load(Listener::task(listener).boxed()).unwrap();
+        task_loader.load(listener.run_task().boxed()).unwrap();
+
+        // // Log success
+        // self.interface.lock().await.log_info("Interface started");
+
+
+
+    }
 
 
 

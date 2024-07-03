@@ -5,7 +5,7 @@ use crate::Error as PlatformError;
 
 /// Actions that are specific for each device type
 /// 
-pub trait DeviceActions : Send {
+pub trait DeviceActions : Send + Sync {
 
     /// The device must provides a list of interface builders
     /// 
