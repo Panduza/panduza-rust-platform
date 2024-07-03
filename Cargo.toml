@@ -12,6 +12,7 @@ panduza-connectors = { path = "lib/connectors" }
 
 plugin-std = { path = "plugins/std" }
 plugin-fake = { path = "plugins/fake" }
+# plugin-video = { path = "plugins/video" }
 
 
 # Main async framework for the platform
@@ -46,12 +47,6 @@ bytes = "1.5.0"
 
 # Bitflags
 bitflags = "2.5.0"
-
-# Camera management
-# nokhwa = {version = "0.10.4", features = ["input-native", "output-wgpu"]}
-nokhwa = {path = "lib/nokhwa-0.10.4", features = ["input-native", "output-wgpu"]}
-nokhwa-core = { path = "lib/nokhwa-core-0.1.2" }
-# nokhwa-core = {version = "0.1.2"}
 
 # 
 hostname = "0.4.0"

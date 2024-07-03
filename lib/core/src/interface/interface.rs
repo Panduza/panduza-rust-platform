@@ -228,7 +228,15 @@ impl Interface {
 
         // HERE the rumqtt copy the payload inside its own buffer
         // It is ok for small payloads but not for big ones, there will be work here for streams
-        self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await.unwrap();
+
+        let publish_result = self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await;
+
+        match publish_result {
+            Ok(_) => {},
+            Err(e) => {
+                println!("Failed to publish payload : {}", e);
+            }
+        }
 
     }
 

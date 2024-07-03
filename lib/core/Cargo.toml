@@ -81,11 +81,3 @@ tracing-appender = "0.2.3"
 
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
-
-
-# Camera management
-# nokhwa = {version = "0.10.4", features = ["input-native", "output-wgpu"]}
-nokhwa = {path = "../nokhwa-0.10.4", features = ["input-native", "output-wgpu"]}
-nokhwa-core = { path = "../nokhwa-core-0.1.2" }
-# nokhwa-core = {version = "0.1.2"}
-

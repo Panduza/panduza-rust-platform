@@ -80,6 +80,7 @@ async fn main() {
 
         plugin_std::import_plugin_producers(factory);
         plugin_fake::import_plugin_producers(factory);
+        // plugin_video::import_plugin_producers(factory);
     }
     
     
