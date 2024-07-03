@@ -1,3 +1,6 @@
+pub mod digital_input;
+pub mod digital_output;
+
 pub mod bpc;
 pub mod relay;
 pub mod blc;

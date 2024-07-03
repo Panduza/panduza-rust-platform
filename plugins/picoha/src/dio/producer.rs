@@ -39,7 +39,7 @@ impl Producer for DeviceProducer {
 
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, panduza_core::Error> {
-        return Ok(Box::new(RegisterMap{}));
+        return Ok(Box::new(PicoHaDio{}));
     }
 
 }

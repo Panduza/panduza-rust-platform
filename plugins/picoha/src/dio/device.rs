@@ -1,7 +1,7 @@
 use panduza_core::device::traits::DeviceActions;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
-use super::itf_registers;
+use super::itf_digital_input;
 
 pub struct PicoHaDio;
 impl DeviceActions for PicoHaDio {
@@ -26,9 +26,9 @@ impl DeviceActions for PicoHaDio {
         // serial_conf.serial_baudrate = Some(9600);
 
         let mut list = Vec::new();
-        list.push(
-            itf_registers::build("map")
-        );
+        // list.push(
+            // itf_registers::build("map")
+        // );
         return Ok(list);
     }
 }
