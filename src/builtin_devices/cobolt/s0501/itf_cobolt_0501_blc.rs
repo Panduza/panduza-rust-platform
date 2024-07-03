@@ -212,7 +212,8 @@ impl blc::BlcActions for S0501BlcActions {
         while !ok_val {
             let values = match self.ask_string(b"gam?\r").await {
                 Ok(s) => s,
-                Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501")
+                Err(_e) => continue
+                // Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501")
             };
 
             for val in values.split("\r\n") {
@@ -454,20 +455,21 @@ impl blc::BlcActions for S0501BlcActions {
     /// Read the current value
     /// 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+        self.current_value = self.ask_float(b"glc?\r").await?;
 
-        let mut response: &mut [u8] = &mut [0; 1024];
-        let _result = self.connector_tty.write_then_read(
-            b"glc?\r",
-            &mut response,
-            self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                let current_b = &response[0..nb_of_bytes];
+        // let mut response: &mut [u8] = &mut [0; 1024];
+        // let _result = self.connector_tty.write_then_read(
+        //     b"glc?\r",
+        //     &mut response,
+        //     self.time_lock_duration
+        // ).await
+        //     .map(|nb_of_bytes| {
+        //         let current_b = &response[0..nb_of_bytes];
 
-                self.current_value = String::from_utf8(current_b.to_vec()).unwrap()
-                    .trim().to_string() // Remove \r\n form the message before parsing
-                    .parse::<f64>().unwrap();
-            });
+        //         self.current_value = String::from_utf8(current_b.to_vec()).unwrap()
+        //             .trim().to_string() // Remove \r\n form the message before parsing
+        //             .parse::<f64>().unwrap();
+        //     });
 
         interface.lock().await.log_info(
             format!("read current : {}", self.current_value)
@@ -493,27 +495,39 @@ impl blc::BlcActions for S0501BlcActions {
             });
 
         // Clean the buffer from previous values
-        let mut ok_val = String::new();
+        let mut ok_val = false;
 
-        while ok_val != "OK".to_string() {
-            let mut response: &mut [u8] = &mut [0; 1024];
-            let _result = self.connector_tty.write_then_read(
-                b"glc?\r",
-                &mut response,
-                self.time_lock_duration
-            ).await
-                .map(|nb_of_bytes| {
-                    let value_b = &response[0..nb_of_bytes];
-                    let values = String::from_utf8(value_b.to_vec()).unwrap();
+        while !ok_val {
+            let values = match self.ask_string(b"glc?\r").await {
+                Ok(s) => s,
+                Err(_e) => continue
+            };
 
-                    // If multiple messages are flushed at once, splits the result to check every messages
-                    for val in values.split("\r\n") {
-                        match val {
-                            "OK" => { ok_val = "OK".to_string() }
-                            _ => { continue; }
-                        }
-                    };
-                });
+            for val in values.split("\r\n") {
+                match val {
+                    "OK" => ok_val = true,
+                    _ => continue
+                }
+            };
+
+            // let mut response: &mut [u8] = &mut [0; 1024];
+            // let _result = self.connector_tty.write_then_read(
+            //     b"glc?\r",
+            //     &mut response,
+            //     self.time_lock_duration
+            // ).await
+            //     .map(|nb_of_bytes| {
+            //         let value_b = &response[0..nb_of_bytes];
+            //         let values = String::from_utf8(value_b.to_vec()).unwrap();
+
+            //         // If multiple messages are flushed at once, splits the result to check every messages
+            //         for val in values.split("\r\n") {
+            //             match val {
+            //                 "OK" => { ok_val = "OK".to_string() }
+            //                 _ => { continue; }
+            //             }
+            //         };
+            //     });
         }
     }
 }
