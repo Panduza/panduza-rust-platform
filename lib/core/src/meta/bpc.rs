@@ -75,11 +75,7 @@ pub trait BpcActions: Send + Sync {
 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
 
-    async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
-
     async fn write_voltage_value(&mut self, interface: &AmInterface, v: f64);
-
-    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64);
 
@@ -307,14 +303,6 @@ impl BpcSubscriber {
         };
         self.bpc_interface.lock().await
             .actions.write_voltage_value(&interface, requested_value as f64).await;
-
-        let r_value = self.bpc_interface.lock().await
-            .actions.read_voltage_value(&interface).await?;
-
-        interface.lock().await
-            .update_attribute_with_f64("voltage", "value", r_value as f64);
-
-        Ok(())
     }
 
     /// 
@@ -329,14 +317,6 @@ impl BpcSubscriber {
         };
         self.bpc_interface.lock().await
             .actions.write_current_value(&interface, requested_value as f64).await;
-
-        let r_value = self.bpc_interface.lock().await
-            .actions.read_current_value(&interface).await?;
-
-        interface.lock().await
-            .update_attribute_with_f64("current", "value", r_value as f64);
-
-        Ok(())
     }
 
 
@@ -457,4 +437,3 @@ pub fn build<A: Into<String>>(
         Box::new(BpcSubscriber{bpc_interface: c.clone(), attributes_used: attributes_used.clone()})
     );
 }
-

@@ -26,7 +26,6 @@ pub enum Hm7044Channel {
 struct Hm7044BpcActions {
     connector_tty: tty::TtyConnector,
     serial_config: SerialConfig,
-    time_lock_duration: Option<tokio::time::Duration>,
     channel: Hm7044Channel
 }
 
@@ -36,8 +35,7 @@ impl Hm7044BpcActions {
         let mut response: &mut [u8] = &mut [0; 1024];
         let response_len = match self.connector_tty.write_then_read(
             command,
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await {
             Ok(val) => val,
             Err(_e) => {return platform_error_result!("Failed to read and write.");}
@@ -198,16 +196,6 @@ impl bpc::BpcActions for Hm7044BpcActions {
 
     // / Read the voltage value
     // /
-    async fn read_voltage_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
-
-        // Debug
-        // println!("read_voltage_value");
-
-        return match self.get_status().await {
-            Ok((voltage, _current, _enable)) => Ok(voltage),
-            Err(e) => Err(e)
-        };
-    }
 
     async fn write_voltage_value(&mut self, _interface: &AmInterface, v: f64) {
 
@@ -219,17 +207,6 @@ impl bpc::BpcActions for Hm7044BpcActions {
         if result.is_ok() {
             let _ = self.set_voltage(v).await;
         }
-    }
-
-    async fn read_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
-
-        // Debug
-        // println!("read_current_value");
-
-        return match self.get_status().await {
-            Ok((_voltage, current, _enable)) => Ok(current),
-            Err(e) => Err(e)
-        };
     }
 
     async fn write_current_value(&mut self, _interface: &AmInterface, v: f64) {
@@ -269,10 +246,8 @@ pub fn build<A: Into<String>>(
         Box::new(Hm7044BpcActions {
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
-            time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
             channel: channel
         }),
         BpcAttributes::all_attributes()
     )
 }
-
