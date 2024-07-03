@@ -31,8 +31,11 @@ impl Hunter for DeviceHunter {
 
         println!("DeviceHunter::hunt");
 
-        let ports = tokio_serial::available_ports();
-        for port in ports.unwrap() {
+        let ports = match tokio_serial::available_ports() {
+            Ok(p) => p,
+            Err(_e) => return None
+        };
+        for port in ports {
             println!("{:?}", port);
 
             match port.port_type {
