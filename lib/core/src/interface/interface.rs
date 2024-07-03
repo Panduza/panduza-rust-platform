@@ -50,6 +50,7 @@ pub struct Interface {
     // -- FSM --
     /// Current state
     fsm_state: State,
+
     /// Events
     fsm_events: Events,
     /// Notifier for events
@@ -163,12 +164,6 @@ impl Interface {
         return &mut self.fsm_events;
     }
 
-    /// Clear the events
-    ///
-    pub fn clear_events(&mut self) {
-        self.fsm_events = Events::NO_EVENT;
-    }
-
     /// Move to a new state
     ///
     pub fn move_to_state(&mut self, state: State) {
@@ -176,36 +171,50 @@ impl Interface {
         self.fsm_state = state;
         self.update_attribute_with_string("info", "state", &self.fsm_state.to_string());
 
+        let p = self.last_error_message.clone().or(Some("".to_string())).unwrap().clone();
+        self.update_attribute_with_string("info", "error",  &p);
+
         self.log_info(format!("State changed {:?} => {:?}", previous, self.fsm_state));
     }
+
+    // ------------------------------------------------------------------------
+    // -- EVENTS --
 
     /// Get the fsm events notifier
     ///
     pub fn get_fsm_events_notifier(&self) -> Arc<Notify> {
         return self.fsm_events_notifier.clone();
     }
-    // -- Event Setters --
-    pub fn set_event_connection_up(&mut self) {
-        self.fsm_events.insert(Events::CONNECTION_UP);
+
+    /// Clear the events
+    ///
+    pub fn clear_events(&mut self) {
+        self.fsm_events = Events::NO_EVENT;
+    }
+    
+    /// Generic event triggerer
+    /// 
+    pub fn set_event(&mut self, event: Events) {
+        self.fsm_events.insert(event);
         self.fsm_events_notifier.notify_one();
     }
-    pub fn set_event_connection_down(&mut self) {
-        self.fsm_events.insert(Events::CONNECTION_DOWN);
-        self.fsm_events_notifier.notify_one();
-    }
-    pub fn set_event_init_done(&mut self) {
-        self.fsm_events.insert(Events::INIT_DONE);
-        self.fsm_events_notifier.notify_one();
-    }
-    // pub fn set_event_state_error(&mut self) {
-    //     self.fsm_events.insert(Events::ERROR);
-    //     self.fsm_events_notifier.notify_one();
-    // }
+
+    /// Trigger an error event
+    /// Error event must also provide an error message
+    /// 
     pub fn set_event_error<A: Into<String>>(&mut self, message: A) {
         self.last_error_message = Some(message.into());
         self.fsm_events.insert(Events::ERROR);
         self.fsm_events_notifier.notify_one();
     }
+
+    // Helpers for event trigger
+    #[inline(always)]
+    pub fn set_event_connection_up(&mut self) { self.set_event(Events::CONNECTION_UP); }
+    #[inline(always)]
+    pub fn set_event_connection_down(&mut self) { self.set_event(Events::CONNECTION_DOWN); }
+    #[inline(always)]
+    pub fn set_event_init_done(&mut self) { self.set_event(Events::INIT_DONE); }
 
 
     // -- CLIENT --

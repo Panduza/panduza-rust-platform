@@ -141,6 +141,10 @@ impl interface::fsm::States for BlcStates {
     }
 
 
+    async fn warning(&self, _interface: &AmInterface)
+    {
+        println!("cleaning");
+    }
     async fn cleaning(&self, _interface: &AmInterface)
     {
         println!("cleaning");

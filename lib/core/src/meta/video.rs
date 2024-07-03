@@ -156,6 +156,10 @@ impl interface::fsm::States for VideoStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
+    async fn warning(&self, _interface: &AmInterface)
+    {
+        println!("cleaning");
+    }
     async fn cleaning(&self, _interface: &AmInterface)
     {
         println!("cleaning");
