@@ -23,6 +23,31 @@ struct VoxpowerInhibiterActions {
     
 }
 
+impl VoxpowerInhibiterActions {
+    async fn ask(&mut self, command: &[u8]) -> Result<String, PlatformError> {
+
+        let mut response_buf: &mut [u8] = &mut [0; 1024];
+
+        // Send the command then receive the answer
+        let response_len = match self.connector_tty.write_then_read(
+            command,
+            &mut response_buf,
+            self.time_lock_duration
+        ).await {
+            Ok(len) => len,
+            Err(_e) => return platform_error_result!("Failed to read and write")
+        };
+
+        let response_bytes = &response_buf[0..response_len];
+
+        // Parse the answer
+        match String::from_utf8(response_bytes.to_vec()) {
+            Ok(val) => Ok(val),
+            Err(_e) => platform_error_result!("Unexpected answer form Voxpower Inhibiter : could not parse as String")
+        }
+    }
+}
+
 #[async_trait]
 impl bpc::BpcActions for VoxpowerInhibiterActions {
 
@@ -51,29 +76,9 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
 
         let command = format!("S{}\n", self.id);
 
-        let mut response_buf: &mut [u8] = &mut [0; 1024];
-
-        // Send the command then receive the answer
-        let response_len = match self.connector_tty.write_then_read(
-            command.as_bytes(),
-            &mut response_buf,
-            self.time_lock_duration
-        ).await {
-            Ok(len) => len,
-            Err(_e) => return platform_error_result!("Failed to read and write")
-        };
-
-        let response_bytes = &response_buf[0..response_len];
-
-        // Parse the answer
-        let response_string = match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => val,
-            Err(_e) => return platform_error_result!("Unexpected answer form Voxpower Inhibiter : could not parse as String")
-        };
-
         // High (inhibition ON) state when the channel is OFF
         // Low (inhibition OFF) state when the channel is ON
-        self.enable_value = match response_string.as_str() {
+        self.enable_value = match self.ask(command.as_bytes()).await?.as_str() {
             "H" => false,
             "L" => true,
             _ => return platform_error_result!("Unexpected answer form Voxpower Inhibiter")
