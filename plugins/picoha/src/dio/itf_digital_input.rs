@@ -13,10 +13,17 @@ use serde_json::Error;
 
 use futures::FutureExt;
 
+use panduza_connectors::serial::tty;
+
+
 ///
 /// 
 struct InterfaceActions {
 
+    config: tty::Config,
+
+    connector: tty::Connector,
+    
     // pub fake_values: Arc<Mutex<Vec<u64>>>,
 }
 
@@ -26,6 +33,11 @@ impl digital_input::MetaActions for InterfaceActions {
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, interface :&ThreadSafeInterface) -> Result<(), PlatformError> {
+
+
+        // self.connector_tty = tty::get(&self.serial_config).await.unwrap();
+        // self.connector_tty.init().await;
+
 
         // let interface_locked = interface.lock().await;
         // let mut loader = interface_locked.platform_services.lock().await.task_loader.clone();
@@ -76,19 +88,45 @@ impl digital_input::MetaActions for InterfaceActions {
 
 
 
-/// Interface to emulate a Bench Power Channel
+
+/// Builder
 /// 
-pub fn build<A: Into<String>>(
-    name: A
-) -> InterfaceBuilder {
+pub struct Builder {
+    /// Name of the interface
+    name: String,
+    /// Serial configuration
+    serial_config: Option<tty::Config>,
+}
+impl Builder {
+    /// Create a new builder with default values
+    pub fn new() -> Builder {
+        return Builder {
+            name: "digital_input".to_string(),
+            serial_config: None,
+        }
+    }
 
-    let fake_size = 10;
+    /// Set the name of the interface
+    pub fn with_name<A: Into<String>>(mut self, name: A) -> Self {
+        self.name = name.into();
+        self
+    }
 
-    return digital_input::build(
-        name,
-        Box::new(InterfaceActions {
-            // fake_values: Arc::new( Mutex::new( vec![0; fake_size] ))
-        })
-    )
+    /// Set the serial configuration
+    pub fn with_serial_config(mut self, serial_config: tty::Config) -> Self {
+        self.serial_config = Some(serial_config);
+        self
+    }
+
+    /// Build the interface
+    pub fn build(self) -> InterfaceBuilder {
+        digital_input::build(
+            self.name,
+            Box::new(InterfaceActions {
+                config: self.serial_config.unwrap(),
+                connector: tty::Connector::new(None),
+            })
+        )
+    }
 }
 
