@@ -165,6 +165,11 @@ impl interface::fsm::States for BlcStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
+    async fn warning(&self, interface: &AmInterface)
+    {
+        println!("warning");
+    }
+
 
     async fn cleaning(&self, _interface: &AmInterface)
     {

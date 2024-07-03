@@ -129,10 +129,10 @@ impl interface::fsm::States for TestInterfaceStates {
         fsm_events_notifier.notified().await;
     }
 
-    // async fn warning(&self, _interface: &AmInterface)
-    // {
-    //     println!("error");
-    // }
+    async fn warning(&self, _interface: &AmInterface)
+    {
+        println!("error");
+    }
 
     async fn cleaning(&self, _interface: &AmInterface)
     {

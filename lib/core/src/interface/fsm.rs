@@ -82,9 +82,10 @@ pub trait States : Send {
     /// 
     async fn running(&self, interface: &AmInterface);
 
-    ///
+    /// This function must warn the user that something is wrong with the interface.
+    /// Then this function must watch for the event that will trigger the reboot of the interface.
     /// 
-    // async fn warning(&self, interface: &AmInterface);
+    async fn warning(&self, interface: &AmInterface);
 
     // The interface must be able to clean up all resources before being destroyed.
     //
@@ -231,6 +232,9 @@ impl Fsm {
 
         // Clear events for next run
         self.interface.lock().await.clear_events();
+
+        //
+        self.interface.lock().await.publish_all_attributes().await;
 
     }
 

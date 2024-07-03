@@ -152,6 +152,10 @@ impl InterfaceStates for MetaStates {
         wait_for_fsm_event(interface).await;
     }
 
+    async fn warning(&self, interface: &ThreadSafeInterface)
+    {
+        println!("warning");
+    }
 
     async fn cleaning(&self, _interface: &ThreadSafeInterface)
     {
