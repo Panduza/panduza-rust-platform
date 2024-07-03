@@ -2,7 +2,7 @@ use serde_json;
 use serde_json::json;
 use panduza_core::device::traits::{DeviceActions, Producer};
 
-use super::device::RegisterMap;
+use super::device::PicoHaDio;
 
 
 pub struct DeviceProducer;
@@ -24,16 +24,6 @@ impl Producer for DeviceProducer {
 
     fn settings_props(&self) -> serde_json::Value {
         return json!([
-            {
-                "name": "usb_vendor",
-                "type": "string",
-                "default": ""
-            },
-            {
-                "name": "usb_model",
-                "type": "string",
-                "default": ""
-            },
             {
                 "name": "usb_serial",
                 "type": "string",

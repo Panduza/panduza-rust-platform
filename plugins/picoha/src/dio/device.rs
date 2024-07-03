@@ -3,8 +3,8 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 use super::itf_registers;
 
-pub struct RegisterMap;
-impl DeviceActions for RegisterMap {
+pub struct PicoHaDio;
+impl DeviceActions for PicoHaDio {
 
     /// Create the interfaces
     fn interface_builders(&self, device_settings: &serde_json::Value)
