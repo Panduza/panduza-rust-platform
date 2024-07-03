@@ -15,20 +15,14 @@ use crate::Error as PlatformError;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
-pub struct PowermeterParams {
+pub struct AmmeterParams {
     pub measure_decimals: i32,
 }
 
 #[async_trait]
-pub trait PowermeterActions: Send + Sync {
-
-    /// Initialize the interface
-    /// The connector initialization must be done here
-    ///
+pub trait AmmeterActions: Send + Sync {
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
-
     async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
-
 }
 
 // ----------------------------------------------------------------------------
@@ -37,45 +31,22 @@ pub trait PowermeterActions: Send + Sync {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-
-async fn update_measure(duration_between_measures: u64, interface: AmInterface, powermeter_state: Arc<Mutex<PowermeterInterface>>) {
-    let mut interval = time::interval(time::Duration::from_millis(duration_between_measures));
-    loop {
-        let r_value = powermeter_state.lock().await
-            .actions.read_measure_value(&interface).await
-            .unwrap();
-
-        interface.lock().await
-            .update_attribute_with_f64("measure", "value", r_value as f64);
-        
-        interface.lock().await.publish_all_attributes().await;
-
-        interval.tick().await;
-    }
+struct AmmeterInterface {
+    params: AmmeterParams,
+    actions: Box<dyn AmmeterActions>
 }
 
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
+type AmAmmeterInterface = Arc<Mutex<AmmeterInterface>>;
 
-struct PowermeterInterface {
-
-    params: PowermeterParams,
-    actions: Box<dyn PowermeterActions>
-}
-type AmPowermeterInterface = Arc<Mutex<PowermeterInterface>>;
-
-impl PowermeterInterface {
-    fn new(params: PowermeterParams, actions: Box<dyn PowermeterActions>) -> PowermeterInterface {
-        return PowermeterInterface {
+impl AmmeterInterface {
+    fn new(params: AmmeterParams, actions: Box<dyn AmmeterActions>) -> AmmeterInterface {
+        return AmmeterInterface {
             params: params,
             actions: actions
         }
     }
-    fn new_am(params: PowermeterParams, actions: Box<dyn PowermeterActions>) -> AmPowermeterInterface {
-        return Arc::new(Mutex::new( PowermeterInterface::new(params, actions) ));
+    fn new_am(params: AmmeterParams, actions: Box<dyn AmmeterActions>) -> AmAmmeterInterface {
+        return Arc::new(Mutex::new( AmmeterInterface::new(params, actions) ));
     }
 }
 
@@ -85,13 +56,13 @@ impl PowermeterInterface {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-struct PowermeterStates {
-    powermeter_interface: Arc<Mutex<PowermeterInterface>>
+struct AmmeterStates {
+    ammeter_interface: Arc<Mutex<AmmeterInterface>>
 }
 
 
 #[async_trait]
-impl interface::fsm::States for PowermeterStates {
+impl interface::fsm::States for AmmeterStates {
 
     /// Just wait for an fsm event for the connection
     ///
@@ -100,31 +71,39 @@ impl interface::fsm::States for PowermeterStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
+    async fn warning(&self, _interface: &AmInterface)
+    {
+        println!("cleaning");
+    }
+
+    async fn cleaning(&self, _interface: &AmInterface)
+    {
+        println!("cleaning");
+    }
+
 
     /// Initialize the interface
     ///
     async fn initializating(&self, interface: &AmInterface)
     {
-        let mut powermeter_itf = self.powermeter_interface.lock().await;
+        let mut ammeter_itf = self.ammeter_interface.lock().await;
 
         // Custom initialization slot
-        powermeter_itf.actions.initializating(&interface).await.unwrap();
+        ammeter_itf.actions.initializating(&interface).await.unwrap();
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("measure", true));
 
         // Init measure
         interface.lock().await.update_attribute_with_f64("measure", "value", 0.0);
-        interface.lock().await.update_attribute_with_f64("measure", "decimals", powermeter_itf.params.measure_decimals as f64);
+        interface.lock().await.update_attribute_with_f64("measure", "decimals", ammeter_itf.params.measure_decimals as f64);
         interface.lock().await.update_attribute_with_f64("measure", "polling_cycle", 0.0);
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
         
-        let powermeter_interface = Arc::clone(&(self.powermeter_interface));
+        let ammeter_interface = Arc::clone(&(self.ammeter_interface));
         let interface_cloned = Arc::clone(&interface);
-
-        tokio::spawn(update_measure(1000, interface_cloned, powermeter_interface));
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
@@ -137,15 +116,6 @@ impl interface::fsm::States for PowermeterStates {
 
         interface::basic::wait_for_fsm_event(interface).await;
     }
-
-    async fn warning(&self, _interface: &AmInterface)
-    {
-        println!("cleaning");
-    }
-    async fn cleaning(&self, _interface: &AmInterface)
-    {
-        println!("cleaning");
-    }
 }
 
 // ----------------------------------------------------------------------------
@@ -156,17 +126,17 @@ impl interface::fsm::States for PowermeterStates {
 
 const ID_MEASURE: subscription::Id = 0;
 
-struct PowermeterSubscriber {
-    powermeter_interface: Arc<Mutex<PowermeterInterface>>
+struct AmmeterSubscriber {
+    ammeter_interface: Arc<Mutex<AmmeterInterface>>
 }
 
-impl PowermeterSubscriber {
+impl AmmeterSubscriber {
 
     /// 
     /// 
     #[inline(always)]
     async fn process_measure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, _field_data: &Value) {
-        let r_value = self.powermeter_interface.lock().await
+        let r_value = self.ammeter_interface.lock().await
             .actions.read_measure_value(&interface).await
             .unwrap();
 
@@ -178,7 +148,7 @@ impl PowermeterSubscriber {
 }
 
 #[async_trait]
-impl interface::subscriber::Subscriber for PowermeterSubscriber {
+impl interface::subscriber::Subscriber for AmmeterSubscriber {
 
     /// Get the list of attributes names
     ///
@@ -204,8 +174,8 @@ impl interface::subscriber::Subscriber for PowermeterSubscriber {
 
                     // only when running state
 
-                    println!("PowermeterSubscriber::process: {:?}", msg.topic());
-                    println!("PowermeterSubscriber::process: {:?}", msg.payload());
+                    println!("AmmeterSubscriber::process: {:?}", msg.topic());
+                    println!("AmmeterSubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
                     let oo = serde_json::from_slice::<Value>(payload).unwrap();
@@ -245,21 +215,21 @@ impl interface::subscriber::Subscriber for PowermeterSubscriber {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-/// Build the meta interface for a Powermeter Channel
+/// Build the meta interface for a Ammeter Channel
 ///
 pub fn build<A: Into<String>>(
     name: A,
-    params: PowermeterParams,
-    actions: Box<dyn PowermeterActions>
+    params: AmmeterParams,
+    actions: Box<dyn AmmeterActions>
 ) -> InterfaceBuilder {
 
-    let c = PowermeterInterface::new_am(params, actions);
+    let c = AmmeterInterface::new_am(params, actions);
 
     return InterfaceBuilder::new(
         name,
-        "powermeter",
+        "ammeter",
         "0.0",
-        Box::new(PowermeterStates{powermeter_interface: c.clone()}),
-        Box::new(PowermeterSubscriber{powermeter_interface: c.clone()})
+        Box::new(AmmeterStates{ammeter_interface: c.clone()}),
+        Box::new(AmmeterSubscriber{ammeter_interface: c.clone()})
     );
 }

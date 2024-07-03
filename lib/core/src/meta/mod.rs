@@ -5,3 +5,5 @@ pub mod thermometer;
 pub mod powermeter;
 pub mod serial;
 pub mod registers;
+pub mod voltmeter;
+pub mod ammeter;

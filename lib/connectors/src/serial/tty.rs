@@ -7,8 +7,6 @@ use tokio::time::{sleep, Duration};
 use tokio;
 use lazy_static::lazy_static;
 
-
-
 lazy_static! {
     static ref GATE : tokio::sync::Mutex<Gate> 
         = tokio::sync::Mutex::new(Gate { instances: HashMap::new() });
@@ -19,15 +17,16 @@ pub async fn get(config: &Config) -> Option<TtyConnector> {
     gate.get(config)
 }
 
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Config {
     pub usb_vendor: Option<u16>,
     pub usb_model: Option<u16>,
     pub usb_serial: Option<String>,
 
     pub serial_port_name: Option<String>,
-    pub serial_baudrate: Option<u32>
+    pub serial_baudrate: Option<u32>,
+
+    pub time_lock_duration: Option<Duration>
 }
 
 impl Config {
@@ -38,45 +37,31 @@ impl Config {
             usb_serial: None,
             serial_port_name: None,
             serial_baudrate: None,
+            time_lock_duration: None
         }
     }
 
-    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
+    pub fn fill(&mut self, Config: Config) {
+        self.usb_vendor = Config.usb_vendor;
+        self.usb_model = Config.usb_model;
+        self.usb_serial = Config.usb_serial.clone();
+        self.serial_port_name = Config.serial_port_name.clone();
+        self.serial_baudrate = Config.serial_baudrate;
+        self.time_lock_duration = Config.time_lock_duration;
+    }
 
+    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
         self.serial_port_name =
             settings.get("serial_port_name")
-                .map(|v| v.as_str().unwrap().to_string());
-
-                // .unwrap().to_string()
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
 
         self.serial_baudrate =
             settings.get("serial_baudrate")
-                .map(|v| v.as_u64().unwrap() as u32);
-
-        let usb_vendor_str = 
-        settings.get("usb_vendor")
-            .map(|v| v.as_str().unwrap());
-
-        // get VID hexadecimal value
-        self.usb_vendor =
-            Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
-
-        let usb_model_str = 
-            settings.get("usb_model")
-                .map(|v| v.as_str().unwrap());
-
-        // get PID hexadecimal value
-        self.usb_model =
-            Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
-
-        self.usb_serial =
-            settings.get("usb_serial")
-                .map(|v| v.as_str().unwrap().to_string());
-
+                .and_then(|v| v.as_u64())
+                .map(|b| b as u32);
     }
 }
-
-
 
 struct Gate {
     instances: HashMap<String, TtyConnector>
@@ -163,15 +148,12 @@ impl Gate {
 
 }
 
-
-
 #[derive(Clone)]
 pub struct TtyConnector {
     core: Option<Arc<tokio::sync::Mutex<TtyCore>>>,
 }
 
 impl TtyConnector {
-    
     pub fn new(config: Option<Config>) -> TtyConnector {
         match config {
             Some(config)    => {
@@ -213,28 +195,23 @@ impl TtyConnector {
     }
 
 
-    pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
-        time_lock: Option<Duration>) 
+    pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8])
             -> Result<usize> {
         self.core
             .as_ref()
             .unwrap()
             .lock()
             .await
-            .write_then_read(command, response, time_lock)
+            .write_then_read(command, response)
             .await
     }
 
 }
 
-
-
-
 struct TimeLock {
     duration: tokio::time::Duration,
     t0: tokio::time::Instant
 }
-
 
 struct TtyCore {
     config: Config,
@@ -244,7 +221,6 @@ struct TtyCore {
 }
 
 impl TtyCore {
-
     fn new(config: Config) -> TtyCore {
         TtyCore {
             config: config,
@@ -255,7 +231,6 @@ impl TtyCore {
     }
 
     async fn init(&mut self) {
-
         // dirty fix, need to be improved
         if self.serial_stream.is_some() {
             return;
@@ -283,40 +258,36 @@ impl TtyCore {
             self.config.serial_baudrate.unwrap()
 
         );
-
         
-
         let pp = SerialStream::open(&serial_builder);
         let aa = pp.expect("pok");
-
         
         self.builder = Some(serial_builder);
         self.serial_stream = Some(aa);
 
+        if (self.config.time_lock_duration.is_some()) {
+            self.time_lock = Some(TimeLock {
+                duration: self.config.time_lock_duration.unwrap(),
+                t0: tokio::time::Instant::now()
+            });
+        }
     }
 
-
-    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>)-> Result<usize> {
-
-
-        if let Some(lock) = self.time_lock.as_mut() {
-            let elapsed = tokio::time::Instant::now() - lock.t0;
-            if elapsed < lock.duration {
-                let wait_time = lock.duration - elapsed;
+    async fn time_locked_write(&mut self, command: &[u8])-> Result<usize> {
+        if let Some(time_lock) = self.time_lock.as_mut() {
+            let elapsed = tokio::time::Instant::now() - time_lock.t0;
+            if elapsed < time_lock.duration {
+                let wait_time = time_lock.duration - elapsed;
                 sleep(wait_time).await;
             }
-            self.time_lock = None;
         }
 
         // Send the command
         let rrr = self.serial_stream.as_mut().unwrap().write(command).await;
 
         // Set the time lock
-        if let Some(duration) = duration {
-            self.time_lock = Some(TimeLock {
-                duration: duration,
-                t0: tokio::time::Instant::now()
-            });
+        if (self.config.time_lock_duration.is_some()) {
+            self.time_lock.as_mut().unwrap().t0 = tokio::time::Instant::now();
         }
 
         rrr
@@ -327,26 +298,16 @@ impl TtyCore {
         time_lock: Option<Duration>) 
             -> Result<usize> {
 
-        self.time_locked_write(command, time_lock).await
+        self.time_locked_write(command).await
     }
 
-    async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
-        time_lock: Option<Duration>) 
+    async fn write_then_read(&mut self, command: &[u8], response: &mut [u8])
             -> Result<usize> {
-
-
-        let _ = self.time_locked_write(command, time_lock).await;
-
+        let _ = self.time_locked_write(command).await;
 
         // let mut buf: &mut [u8] = &mut [0; 1024];
         self.serial_stream.as_mut().unwrap().read(response).await
         // let n = p.unwrap();
         // println!("Read {} bytes", n);
-
-        
-
     }
-
-
 }
-

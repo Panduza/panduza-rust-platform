@@ -12,11 +12,13 @@ use panduza_connectors::serial::tty::Config as SerialConfig;
 use tokio_serial;
 
 mod itf_bpc;
-
+mod itf_voltmeter;
+mod itf_ammeter;
 
 
 static VID: u16 = 0x0416;
 static PID: u16 = 0x5011;
+static BAUDRATE: u32 = 115200;
 
 pub struct DeviceHunter;
 
@@ -66,33 +68,37 @@ impl Hunter for DeviceHunter {
 
 }
 
-struct Ka3005;
+struct Ka3005p;
 
-impl DeviceActions for Ka3005 {
+impl DeviceActions for Ka3005p {
 
     /// Create the interfaces
     fn interface_builders(&self, device_settings: &serde_json::Value) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
 
-        println!("Ka3005::interface_builders");
+        println!("Ka3005p::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
+        let port = device_settings["serial_port_name"].as_str().unwrap_or_else(|| {
+            panic!("serial_port_name is not defined");
+        }).to_string();
 
-        // const_settings = {
-        //     "usb_vendor": '0416',
-        //     "usb_model": '5011',
-        //     "serial_baudrate": 9600
-        // }
 
-        serial_conf.serial_baudrate = Some(9600);
-
+        serial_conf.fill(SerialConfig {
+            serial_port_name: Some(port),
+            serial_baudrate: Some(BAUDRATE),
+            usb_model: Some(PID),
+            usb_vendor: Some(VID),
+            time_lock_duration: Some(tokio::time::Duration::from_millis(500)),
+            ..Default::default()
+        });
+        
         let mut list = Vec::new();
-        list.push(
-            itf_bpc::build("channel", &serial_conf)
-        );
+        list.push(itf_voltmeter::build("channel_0:_voltmeter", &serial_conf));
+        list.push(itf_ammeter::build("channel_0:_ammeter", &serial_conf));
+        list.push(itf_bpc::build("channel_0:_control", &serial_conf));
         return Ok(list);
     }
 }
@@ -138,8 +144,7 @@ impl Producer for DeviceProducer {
 
 
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
-        return Ok(Box::new(Ka3005{}));
+        return Ok(Box::new(Ka3005p{}));
     }
 
 }
-

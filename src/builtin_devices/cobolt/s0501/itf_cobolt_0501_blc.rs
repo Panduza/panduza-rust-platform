@@ -32,8 +32,7 @@ impl blc::BlcActions for S0501BlcActions {
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
             b"?\r",
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await
             .map(|nb_of_bytes| {
                 let response_bytes = &response[0..nb_of_bytes];
@@ -52,8 +51,7 @@ impl blc::BlcActions for S0501BlcActions {
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
             b"gam?\r",
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await
             .map(|nb_of_bytes| {
                 let mode_b = &response[0..nb_of_bytes];
@@ -103,8 +101,7 @@ impl blc::BlcActions for S0501BlcActions {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
                 b"gam?\r",
-                &mut response,
-                self.time_lock_duration
+                &mut response
             ).await
                 .map(|nb_of_bytes| {
                     let value_b = &response[0..nb_of_bytes];
@@ -128,8 +125,7 @@ impl blc::BlcActions for S0501BlcActions {
 
         let _result = self.connector_tty.write_then_read(
             b"l?\r",
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await
             .map(|nb_of_bytes| {
                 let value_b = &response[0..nb_of_bytes];
@@ -181,8 +177,7 @@ impl blc::BlcActions for S0501BlcActions {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
                 b"l?\r",
-                &mut response,
-                self.time_lock_duration
+                &mut response
             ).await
                 .map(|nb_of_bytes| {
                     let value_b = &response[0..nb_of_bytes];
@@ -205,8 +200,7 @@ impl blc::BlcActions for S0501BlcActions {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
                 b"l?\r",
-                &mut response,
-                self.time_lock_duration
+                &mut response
             ).await
                 .map(|nb_of_bytes| {
                     let value_b = &response[0..nb_of_bytes];
@@ -230,8 +224,7 @@ impl blc::BlcActions for S0501BlcActions {
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
             b"p?\r",
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await
             .map(|nb_of_bytes| {
                 let power_b = &response[0..nb_of_bytes];
@@ -272,8 +265,7 @@ impl blc::BlcActions for S0501BlcActions {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
                 b"p?\r",
-                &mut response,
-                self.time_lock_duration
+                &mut response
             ).await
                 .map(|nb_of_bytes| {
                     let value_b = &response[0..nb_of_bytes];
@@ -297,8 +289,7 @@ impl blc::BlcActions for S0501BlcActions {
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
             b"glc?\r",
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await
             .map(|nb_of_bytes| {
                 let current_b = &response[0..nb_of_bytes];
@@ -338,8 +329,7 @@ impl blc::BlcActions for S0501BlcActions {
             let mut response: &mut [u8] = &mut [0; 1024];
             let _result = self.connector_tty.write_then_read(
                 b"glc?\r",
-                &mut response,
-                self.time_lock_duration
+                &mut response
             ).await
                 .map(|nb_of_bytes| {
                     let value_b = &response[0..nb_of_bytes];

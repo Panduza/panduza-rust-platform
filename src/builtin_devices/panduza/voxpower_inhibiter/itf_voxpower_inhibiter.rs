@@ -51,8 +51,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         // Send the command to get the ON/OFF state of the channel
         let _result = self.connector_tty.write_then_read(
             command_bytes,
-            &mut response_buf,
-            self.time_lock_duration,
+            &mut response_buf
         ).await
             .map(|nb_of_bytes| {
                 let response_bytes = &response_buf[0..nb_of_bytes];
@@ -96,18 +95,8 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         );
     }
 
-    /// Unused functions for the Voxpower
-    /// 
-    async fn read_voltage_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
-        return Ok(self.voltage_value);
-    }
-
     async fn write_voltage_value(&mut self, _interface: &AmInterface, v: f64) {
         self.voltage_value = v;
-    }
-
-    async fn read_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
-        return Ok(self.current_value);
     }
 
     async fn write_current_value(&mut self, _interface: &AmInterface, v: f64) {
