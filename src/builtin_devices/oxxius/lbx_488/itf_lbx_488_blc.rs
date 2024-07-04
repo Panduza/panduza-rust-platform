@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 
 
-use panduza_core::{platform_error_result, Error as PlatformError};
+use panduza_core::Error as PlatformError;
+use panduza_core::platform_error_result;
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_core::meta::blc;
@@ -24,12 +25,22 @@ impl LBX488BlcActions {
     /// Wrapper to format the commands
     /// 
     async fn ask(&mut self, command: &[u8]) -> String {
+
         let mut cmd = vec![0; 32];
         cmd[..command.len()].copy_from_slice(command);
 
         self.connector_usb.write(cmd.as_ref()).await;
-        let res = self.connector_usb.read().await;
-        res
+        self.connector_usb.read().await
+    }
+
+    /// Parse the data into f64
+    /// 
+    async fn ask_float(&mut self, command: &[u8]) -> Result<f64, PlatformError> {
+
+        match self.ask(command).await.trim_end_matches("\0").to_string().parse::<f64>() {
+            Ok(f) => Ok(f),
+            Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
+        }
     }
 }
 
@@ -40,7 +51,10 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
 
-        self.connector_usb = usb::get(&self.serial_config).await.unwrap();
+        self.connector_usb = match usb::get(&self.serial_config).await {
+            Some(connector) => connector,
+            None => return platform_error_result!("Unable to create USB connector for Oxxius LBX488")
+        };
         self.connector_usb.init().await;
 
         let result = self.ask("?HID".as_bytes()).await;
@@ -52,6 +66,11 @@ impl blc::BlcActions for LBX488BlcActions {
 
         return Ok(());
     }
+
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
 
     /// Read the mode value
     /// 
@@ -83,14 +102,19 @@ impl blc::BlcActions for LBX488BlcActions {
         let command = match v.as_str() {
             "constant_current" => format!("ACC 1"),
             "constant_power" => format!("APC 1"),
-            _ => return platform_error_result!("error !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            _ => return platform_error_result!("Unexpected command for mode value")
         };
 
         self.ask(command.as_bytes()).await;
         return Ok(());
     }
 
-     /// Read the enable value
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+
+    /// Read the enable value
     /// 
     async fn read_enable_value(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
 
@@ -123,14 +147,16 @@ impl blc::BlcActions for LBX488BlcActions {
         return Ok(());
     }
 
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+
     /// Read the power value
     /// 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response = self.ask("?SP".as_bytes()).await
-            .trim_end_matches("\0")
-            .to_string();
-        let response_float = response.parse::<f64>().unwrap();
+        let response_float = self.ask_float(b"?SP").await?;
         self.power_value = response_float * 0.001;
 
         interface.lock().await.log_info(
@@ -155,15 +181,16 @@ impl blc::BlcActions for LBX488BlcActions {
         return Ok(());
     }
 
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+
     /// Read the current value
     /// 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response = self.ask("?SC".as_bytes()).await
-            .trim_end_matches("\0")
-            .to_string();
-
-        let response_float = response.parse::<f64>().unwrap();
+        let response_float = self.ask_float(b"?SC").await?;
         self.current_value = response_float * 0.001;
 
         

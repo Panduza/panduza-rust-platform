@@ -101,13 +101,6 @@ pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
 
-    // fn manufacturer(&self) -> String {
-    //     return "korad".to_string();
-    // }
-    // fn model(&self) -> String {
-    //     return "KA3005".to_string();
-    // }
-
     fn settings_props(&self) -> serde_json::Value {
         return json!([
             {

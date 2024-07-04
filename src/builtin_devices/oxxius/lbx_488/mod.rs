@@ -7,7 +7,6 @@ use panduza_core::device::{ traits::DeviceActions, traits::Producer, traits::Hun
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
-// use panduza_connectors::serial::tty::Config as SerialConfig;
 use panduza_connectors::usb::usb::Config as UsbConfig;
 
 use tokio_serial;
@@ -31,8 +30,11 @@ impl Hunter for DeviceHunter {
 
         println!("DeviceHunter::hunt");
 
-        let ports = tokio_serial::available_ports();
-        for port in ports.unwrap() {
+        let ports = match tokio_serial::available_ports() {
+            Ok(p) => p,
+            Err(_e) => return None
+        };
+        for port in ports {
             println!("{:?}", port);
 
             match port.port_type {
@@ -82,8 +84,6 @@ impl DeviceActions for LBX488 {
         let mut serial_conf = UsbConfig::new();
         serial_conf.import_from_json_settings(device_settings);
 
-        // serial_conf.serial_baudrate = Some(9600);
-
         let mut list = Vec::new();
         list.push(
             itf_lbx_488_blc::build("blc", &serial_conf)
@@ -98,13 +98,6 @@ impl DeviceActions for LBX488 {
 pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
-
-    // fn manufacturer(&self) -> String {
-    //     return "korad".to_string();
-    // }
-    // fn model(&self) -> String {
-    //     return "KA3005".to_string();
-    // }
 
     fn settings_props(&self) -> serde_json::Value {
         return json!([
@@ -123,11 +116,6 @@ impl Producer for DeviceProducer {
                 "type": "string",
                 "default": ""
             }
-            // {
-            //     "name": "serial_port_name",
-            //     "type": "string",
-            //     "default": ""
-            // }
         ]);
     }
 
