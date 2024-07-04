@@ -80,31 +80,44 @@ impl bpc::BpcActions for Ka3005pBpcActions {
         let _result = self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|c| {
-                println!("c: {:?}", c);
-            });
+        ).await;
 
         interface.lock().await.log_info(
             format!("KA3005 - write_enable_value: {}", self.enable_value)
         );
+
         self.enable_value = v;
     }
 
     async fn write_voltage_value(&mut self, interface: &AmInterface, v: f64) {
+        let command = format!("VSET1:{:05.2}", v);
+
+        let _result = self.connector_tty.write(
+            command.as_bytes(),
+            self.time_lock_duration
+        ).await;
+
         interface.lock().await.log_warn(
             format!("NOT IMPLEMENTED KA3005 - write_voltage_value: {}", v)
         );
+
         self.voltage_value = v;
     }
 
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
-        interface.lock().await.log_warn(
-            format!("NOT IMPLEMENTED KA3005 - write_current_value: {}", v)
-        );
-        self.current_value = v;
-    }
+    async fn write_current_value(&mut self, interface: &AmInterface, c: f64) {
+        let command = format!("ISET1:{:05.3}", c);
 
+        let _result = self.connector_tty.write(
+            command.as_bytes(),
+            self.time_lock_duration
+        ).await;
+
+        interface.lock().await.log_warn(
+            format!("NOT IMPLEMENTED KA3005 - write_current_value: {}", c)
+        );
+    
+        self.current_value = c;
+    }
 }
 
 
