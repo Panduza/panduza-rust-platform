@@ -3,13 +3,15 @@ use async_trait::async_trait;
 
 use crate::Error as PlatformError;
 
+use super::Device;
+
 /// Actions that are specific for each device type
 /// 
 pub trait DeviceActions : Send + Sync {
 
     /// The device must provides a list of interface builders
     /// 
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device)
         -> Result<Vec<InterfaceBuilder>, PlatformError>;
 
 }

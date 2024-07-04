@@ -1,3 +1,4 @@
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -15,7 +16,7 @@ struct FakeThermometer;
 impl DeviceActions for FakeThermometer {
 
     /// Create the interfaces
-    fn interface_builders(&self, _device_settings: &serde_json::Value) 
+    fn interface_builders(&self, _device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
         let mut list = Vec::new();

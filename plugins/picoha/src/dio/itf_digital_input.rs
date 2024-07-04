@@ -35,8 +35,8 @@ impl digital_input::MetaActions for InterfaceActions {
     async fn initializating(&mut self, interface :&ThreadSafeInterface) -> Result<(), PlatformError> {
 
 
-        // self.connector_tty = tty::get(&self.serial_config).await.unwrap();
-        // self.connector_tty.init().await;
+        self.connector = tty::get(&self.config).await.unwrap();
+        self.connector.init().await;
 
 
         // let interface_locked = interface.lock().await;

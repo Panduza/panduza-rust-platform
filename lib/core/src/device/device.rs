@@ -26,7 +26,7 @@ pub struct Device {
     bench_name: String,
 
 
-    settings: serde_json::Value,
+    pub settings: serde_json::Value,
 
     started: bool,
 
@@ -41,7 +41,7 @@ pub struct Device {
 
     platform_services: crate::platform::services::AmServices,
 
-    logger: Logger,
+    pub logger: Logger,
 }
 
 impl Device {
@@ -141,7 +141,7 @@ impl Device {
         self.log_info("Start Interfaces...");
 
         // Get the interface builders
-        let r = self.actions.interface_builders(&self.settings);
+        let r = self.actions.interface_builders(&self);
         // if let Err(e) = builders {
         //     self.log_warn("Error");
         // }

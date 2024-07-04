@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -67,15 +68,16 @@ struct PM100A;
 impl DeviceActions for PM100A {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+        let device_settings = device.settings.clone();
 
         println!("PM100A::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = UsbtmcConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
+        serial_conf.import_from_json_settings(&device_settings);
 
         // serial_conf.serial_baudrate = Some(9600);
 
