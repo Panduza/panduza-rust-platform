@@ -21,6 +21,9 @@ struct S0501BlcActions {
 }
 
 impl S0501BlcActions {
+
+    /// Send a command and return the answer as a String
+    /// 
     async fn ask_string(&mut self, command: &[u8]) -> Result<String, PlatformError> {
 
         let mut response_buf: &mut [u8] = &mut [0; 1024];
@@ -44,6 +47,8 @@ impl S0501BlcActions {
         }
     }
 
+    /// Parse the answer into u16
+    /// 
     async fn ask_int(&mut self, command: &[u8]) -> Result<u16, PlatformError> {
 
         match self.ask_string(command).await?.trim().to_string().parse::<u16>() {
@@ -52,6 +57,8 @@ impl S0501BlcActions {
         }
     }
 
+    /// Parse the answer into f64
+    /// 
     async fn ask_float(&mut self, command: &[u8]) -> Result<f64, PlatformError> {
 
         match self.ask_string(command).await?.trim().to_string().parse::<f64>() {
@@ -60,7 +67,9 @@ impl S0501BlcActions {
         }
     }
 
-    async fn cmd_ack(&mut self, command: &[u8], expected_response: String) -> Result<(), PlatformError> {
+    /// Send the command and check if it received the expected answer
+    /// 
+    async fn cmd_expect(&mut self, command: &[u8], expected_response: String) -> Result<(), PlatformError> {
 
         let response = self.ask_string(command).await?;
 
@@ -85,7 +94,7 @@ impl blc::BlcActions for S0501BlcActions {
 
         self.connector_tty = match tty::get(&self.serial_config).await {
             Some(connector) => connector,
-            None => return platform_error_result!("Unable to create TTY connector for Cobolt laser")
+            None => return platform_error_result!("Unable to create TTY connector for Cobolt S0501")
         };
         self.connector_tty.init().await;
 
@@ -141,7 +150,7 @@ impl blc::BlcActions for S0501BlcActions {
         // };
 
         // println!("{} !!!!!!!!!!!!!!!!!!!!!!!!!!!", response);
-        
+
         let _result = self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
@@ -150,7 +159,7 @@ impl blc::BlcActions for S0501BlcActions {
             });
         
         // Clean the buffer from previous values
-        while self.cmd_ack(b"gam?\r", "OK".to_string()).await.is_err() {
+        while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
             continue;
         }
         return Ok(());
@@ -205,13 +214,13 @@ impl blc::BlcActions for S0501BlcActions {
         
         // Clean the buffer from previous values
 
-        while self.cmd_ack(b"l?\r", "OK".to_string()).await.is_err() {
+        while self.cmd_expect(b"l?\r", "OK".to_string()).await.is_err() {
             continue;
         }
 
         // The laser has an intertia to change to from OFF to ON so waits until it actually change state
 
-        while self.cmd_ack(b"l?\r", format!("{val_int}")).await.is_err() {
+        while self.cmd_expect(b"l?\r", format!("{val_int}")).await.is_err() {
             continue;
         }
         return Ok(());
@@ -253,7 +262,7 @@ impl blc::BlcActions for S0501BlcActions {
             });
 
         // Clean the buffer from previous values
-        while self.cmd_ack(b"p?\r", "OK".to_string()).await.is_err() {
+        while self.cmd_expect(b"p?\r", "OK".to_string()).await.is_err() {
             continue;
         }
         return Ok(());
@@ -293,7 +302,7 @@ impl blc::BlcActions for S0501BlcActions {
             });
 
         // Clean the buffer from previous values
-        while self.cmd_ack(b"glc?\r", "OK".to_string()).await.is_err() {
+        while self.cmd_expect(b"glc?\r", "OK".to_string()).await.is_err() {
             continue;
         }
         return Ok(());
