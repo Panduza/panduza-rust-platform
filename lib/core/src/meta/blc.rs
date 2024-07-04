@@ -35,19 +35,19 @@ pub trait BlcActions: Send + Sync {
 
     async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError>;
 
-    async fn write_mode_value(&mut self, interface: &AmInterface, v: String);
+    async fn write_mode_value(&mut self, interface: &AmInterface, v: String) -> Result<(), PlatformError>;
 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> Result<(), PlatformError>;
 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
-    async fn write_power_value(&mut self, interface: &AmInterface, v: f64);
+    async fn write_power_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError>;
 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f64);
+    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError>;
 
 }
 
@@ -199,7 +199,7 @@ impl BlcSubscriber {
     #[inline(always)]
     async fn process_mode_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_str().unwrap().to_string();
-        self.blc_interface.lock().await
+        let _ =self.blc_interface.lock().await
             .actions.write_mode_value(&interface, requested_value).await;
 
         let r_value = self.blc_interface.lock().await
@@ -215,7 +215,7 @@ impl BlcSubscriber {
     #[inline(always)]
     async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_bool().unwrap();
-        self.blc_interface.lock().await
+        let _ = self.blc_interface.lock().await
             .actions.write_enable_value(&interface, requested_value).await;
 
         let r_value = self.blc_interface.lock().await
@@ -231,7 +231,7 @@ impl BlcSubscriber {
     #[inline(always)]
     async fn process_power_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_f64().unwrap();
-        self.blc_interface.lock().await
+        let _ = self.blc_interface.lock().await
             .actions.write_power_value(&interface, requested_value as f64).await;
 
         let r_value = self.blc_interface.lock().await
@@ -247,7 +247,7 @@ impl BlcSubscriber {
     #[inline(always)]
     async fn process_current_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
         let requested_value = field_data.as_f64().unwrap();
-        self.blc_interface.lock().await
+        let _ = self.blc_interface.lock().await
             .actions.write_current_value(&interface, requested_value as f64).await;
 
         let r_value = self.blc_interface.lock().await
