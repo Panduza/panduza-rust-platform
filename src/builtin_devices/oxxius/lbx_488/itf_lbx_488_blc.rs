@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 
-use panduza_core::Error as PlatformError;
+use panduza_core::{platform_error_result, Error as PlatformError};
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_core::meta::blc;
@@ -74,7 +74,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
     /// Write the mode value
     /// 
-    async fn write_mode_value(&mut self, interface: &AmInterface, v: String) {
+    async fn write_mode_value(&mut self, interface: &AmInterface, v: String) -> Result<(), PlatformError> {
 
         interface.lock().await.log_info(
             format!("write mode value : {}", v)
@@ -83,10 +83,11 @@ impl blc::BlcActions for LBX488BlcActions {
         let command = match v.as_str() {
             "constant_current" => format!("ACC 1"),
             "constant_power" => format!("APC 1"),
-            _ => return
+            _ => return platform_error_result!("error !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         };
 
         self.ask(command.as_bytes()).await;
+        return Ok(());
     }
 
      /// Read the enable value
@@ -105,7 +106,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
     /// Write the enable value
     /// 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> Result<(), PlatformError> {
 
         let val_int = match v {
             true => 1,
@@ -119,6 +120,7 @@ impl blc::BlcActions for LBX488BlcActions {
         interface.lock().await.log_info(
             format!("write enable value : {}", status)
         );
+        return Ok(());
     }
 
     /// Read the power value
@@ -140,7 +142,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
     /// Write the power value
     /// 
-    async fn write_power_value(&mut self, interface: &AmInterface, v: f64) {
+    async fn write_power_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
 
         let val_mw = ((v * 1000.0) * 100.0).round() / 100.0;
         let command = format!("PM {}", val_mw);
@@ -150,6 +152,7 @@ impl blc::BlcActions for LBX488BlcActions {
         );
 
         self.ask(command.as_bytes()).await;
+        return Ok(());
     }
 
     /// Read the current value
@@ -174,7 +177,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
     /// Write the current value
     /// 
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
+    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
 
         let val_ma = ((v * 1000.0) * 100.0).round() / 100.0;
         let command = format!("CM {}", val_ma);
@@ -184,6 +187,7 @@ impl blc::BlcActions for LBX488BlcActions {
         );
 
         self.ask(command.as_bytes()).await;
+        return Ok(());
     }
 }
 
