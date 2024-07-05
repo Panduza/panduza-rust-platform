@@ -1,4 +1,3 @@
-use std::f64::consts::E;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -182,7 +181,7 @@ impl interface::fsm::States for BlcStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
-    async fn warning(&self, interface: &AmInterface)
+    async fn warning(&self, _interface: &AmInterface)
     {
         println!("warning");
     }
@@ -261,7 +260,7 @@ impl BlcSubscriber {
             .update_attribute_with_bool("enable", "value", r_value)
             {
                 Ok(att) => att,
-                Err(_e) => __platform_error_result!("Unable to update attribute")
+                Err(_e) => return __platform_error_result!("Unable to update attribute")
             };
 
         Ok(())
@@ -374,16 +373,16 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
                         };
                         for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "mode" && field_name == "value" {
-                                self.process_mode_value(&interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_mode_value(&interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "enable" && field_name == "value" {
-                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "power" && field_name == "value" {
-                                self.process_power_value(interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_power_value(interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "current" && field_name == "value" {
-                                self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
