@@ -1,3 +1,4 @@
+use std::f64::consts::E;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -12,6 +13,7 @@ use crate::interface::builder::Builder as InterfaceBuilder;
 
 
 use crate::Error as PlatformError;
+use crate::__platform_error_result;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
@@ -120,7 +122,10 @@ impl interface::fsm::States for BlcStates {
         let mut blc_itf = self.blc_interface.lock().await;
 
         // Custom initialization slot
-        blc_itf.actions.initializating(&interface).await.unwrap();
+        let _itf = match blc_itf.actions.initializating(&interface).await {
+            Ok(i) => i,
+            Err(_e) => return __platform_error_result!("Unable to initialize BLC interface")
+        };
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("mode", true));
@@ -129,12 +134,22 @@ impl interface::fsm::States for BlcStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
 
         // Init mode
-        let mode_value = blc_itf.actions.read_mode_value(&interface).await.unwrap();
+        let mode_value = match blc_itf.actions.read_mode_value(&interface).await{
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read mode value")
+        };
         interface.lock().await.update_attribute_with_string("mode", "value", &mode_value);
 
         // Init enable
-        let enable_value = blc_itf.actions.read_enable_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value).unwrap();
+        let enable_value = match blc_itf.actions.read_enable_value(&interface).await{
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read mode value")
+        };
+        
+        let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
+            Ok(att) => att,
+            Err(_e) => return __platform_error_result!("Unable to update attribute")
+        };
 
         // Init power
         interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
@@ -155,6 +170,7 @@ impl interface::fsm::States for BlcStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+        
         Ok(())
     }
 
@@ -198,65 +214,109 @@ impl BlcSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_mode_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_str().unwrap().to_string();
+    async fn process_mode_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
+    -> Result<(), PlatformError>
+    {
+        let requested_value = match field_data.as_str() {
+            Some(str) => str,
+            None => return __platform_error_result!("Mode value not provided")
+        }.to_string();
         let _ =self.blc_interface.lock().await
             .actions.write_mode_value(&interface, requested_value).await;
 
-        let r_value = self.blc_interface.lock().await
+        let r_value = match self.blc_interface.lock().await
             .actions.read_mode_value(&interface).await
-            .unwrap();
+            {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read mode value")
+            };
 
         interface.lock().await
             .update_attribute_with_string("mode", "value", &r_value);
+
+        Ok(())
     }
 
     /// 
     /// 
     #[inline(always)]
-    async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_bool().unwrap();
+    async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
+    -> Result<(), PlatformError>
+    {
+        let requested_value = match field_data.as_bool() {
+            Some(bool) => bool,
+            None => return __platform_error_result!("Enable value not provided")
+        };
         let _ = self.blc_interface.lock().await
             .actions.write_enable_value(&interface, requested_value).await;
 
-        let r_value = self.blc_interface.lock().await
+        let r_value = match self.blc_interface.lock().await
             .actions.read_enable_value(&interface).await
-            .unwrap();
+            {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read enable value")
+            };
 
-        interface.lock().await
-            .update_attribute_with_bool("enable", "value", r_value).unwrap();
+        let _update_att = match interface.lock().await
+            .update_attribute_with_bool("enable", "value", r_value)
+            {
+                Ok(att) => att,
+                Err(_e) => __platform_error_result!("Unable to update attribute")
+            };
+
+        Ok(())
     }
 
     /// 
     /// 
     #[inline(always)]
-    async fn process_power_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_f64().unwrap();
+    async fn process_power_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
+    -> Result<(), PlatformError>
+    {
+        let requested_value = match field_data.as_f64() {
+            Some(val) => val,
+            None => return __platform_error_result!("Power value not porvided")
+        };
         let _ = self.blc_interface.lock().await
             .actions.write_power_value(&interface, requested_value as f64).await;
 
-        let r_value = self.blc_interface.lock().await
+        let r_value = match self.blc_interface.lock().await
             .actions.read_power_value(&interface).await
-            .unwrap();
+            {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read power")
+            };
 
         interface.lock().await
             .update_attribute_with_f64("power", "value", r_value as f64);
+
+        Ok(())
     }
 
     /// 
     /// 
     #[inline(always)]
-    async fn process_current_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value) {
-        let requested_value = field_data.as_f64().unwrap();
+    async fn process_current_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
+    -> Result<(), PlatformError>
+    {
+        let requested_value = match field_data.as_f64() {
+            Some(val) => val,
+            None => return __platform_error_result!("Current value not porvided")
+        };
         let _ = self.blc_interface.lock().await
             .actions.write_current_value(&interface, requested_value as f64).await;
 
-        let r_value = self.blc_interface.lock().await
+        let r_value = match self.blc_interface.lock().await
             .actions.read_current_value(&interface).await
-            .unwrap();
+            {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read current")
+            };
 
         interface.lock().await
             .update_attribute_with_f64("current", "value", r_value as f64);
+
+        Ok(())
     }
 
 
@@ -297,12 +357,22 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
                     println!("BlcSubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
-                    let oo = serde_json::from_slice::<Value>(payload).unwrap();
-                    let o = oo.as_object().unwrap();
+                    let oo = match serde_json::from_slice::<Value>(payload) {
+                        Ok(val) => val,
+                        Err(_e) => return __platform_error_result!("Unable to deserializa data")
+                    };
+                    let o = match oo.as_object() {
+                        Some(val) => val,
+                        None => return __platform_error_result!("No data provided")
+                    };
 
 
                     for (attribute_name, fields) in o.iter() {
-                        for (field_name, field_data) in fields.as_object().unwrap().iter() {
+                        let fields_obj = match fields.as_object() {
+                            Some(val) => val,
+                            None => return __platform_error_result!("No data provided")
+                        };
+                        for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "mode" && field_name == "value" {
                                 self.process_mode_value(&interface, attribute_name, field_name, field_data).await;
                             }

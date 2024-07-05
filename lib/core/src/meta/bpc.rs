@@ -153,9 +153,9 @@ impl interface::fsm::States for BpcStates {
             Err(_e) => return __platform_error_result!("Unable to read enable value")
         };
 
-        let _updated_enable = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
-            Ok(i) => i,
-            Err(_e) => return __platform_error_result!("Unable to update attribute enable")
+        let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
+            Ok(att) => att,
+            Err(_e) => return __platform_error_result!("Unable to update attribute")
         };
 
         // Init voltage
@@ -236,11 +236,11 @@ impl BpcSubscriber {
                 Err(_e) => return __platform_error_result!("Unable to read enable value")
             };
 
-        let _updated_value = match interface.lock().await
+        let _update_att = match interface.lock().await
             .update_attribute_with_bool("enable", "value", r_value)
             {
                 Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to update attribute enable")
+                Err(_e) => return __platform_error_result!("Unable to update attribute")
             };
         
         Ok(())
@@ -254,7 +254,7 @@ impl BpcSubscriber {
         {
         let requested_value = match field_data.as_f64(){
             Some(val) => val,
-            None => return __platform_error_result!("Unable to parse requested voltage as f64")
+            None => return __platform_error_result!("Voltage value not provided")
         };
         self.bpc_interface.lock().await
             .actions.write_voltage_value(&interface, requested_value as f64).await;
@@ -263,7 +263,7 @@ impl BpcSubscriber {
             .actions.read_voltage_value(&interface).await
             {
                 Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read voltage as f64")
+                Err(_e) => return __platform_error_result!("Unable to read voltage")
             };
 
         interface.lock().await
@@ -335,31 +335,31 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                     println!("BpcSubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
-                    let oo = match serde_json::from_slice::<Value>(payload){
+                    let oo = match serde_json::from_slice::<Value>(payload) {
                         Ok(val) => val,
                         Err(_e) => return __platform_error_result!("Unable to deserializa data")
                     };
                     
-                    let o = match oo.as_object(){
+                    let o = match oo.as_object() {
                         Some(val) => val,
                         None => return __platform_error_result!("No data provided")
                     };
 
 
                     for (attribute_name, fields) in o.iter() {
-                        let fields_data = match fields.as_object() {
+                        let fields_obj = match fields.as_object() {
                             Some(val) => val,
                             None => return __platform_error_result!("No data provided")
                         };
-                        for (field_name, field_data) in fields_data.iter() {
+                        for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "enable" && field_name == "value" {
-                                let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "voltage" && field_name == "value" {
-                                let _ = self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
+                                self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "current" && field_name == "value" {
-                                let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                                self.process_current_value(interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
