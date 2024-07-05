@@ -86,7 +86,7 @@ impl interface::fsm::States for RelayStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface)
+    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
     {
         // Custom initialization slot
         self.relay_interface.lock().await.actions.initializating(&interface).await.unwrap();
@@ -103,6 +103,7 @@ impl interface::fsm::States for RelayStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+        Ok(())
     }
 
     async fn running(&self, interface: &AmInterface)

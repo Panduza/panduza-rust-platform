@@ -37,11 +37,12 @@ impl blc::BlcActions for FakeBlcActions {
         return Ok(mode_val);
     }
 
-    async fn write_mode_value(&mut self, interface: &AmInterface, v: String) {
+    async fn write_mode_value(&mut self, interface: &AmInterface, v: String) -> Result<(), PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBlc - write_mode_value: {}", self.mode_value)
         );
         self.mode_value = v;
+        return Ok(());
     }
 
     /// Read the enable value
@@ -53,11 +54,12 @@ impl blc::BlcActions for FakeBlcActions {
         return Ok(self.enable_value);
     }
 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> Result<(), PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBlc - write_enable_value: {}", self.enable_value)
         );
         self.enable_value = v;
+        return Ok(());
     }
 
     /// Read the power value
@@ -69,11 +71,12 @@ impl blc::BlcActions for FakeBlcActions {
         return Ok(self.power_value);
     }
 
-    async fn write_power_value(&mut self, interface: &AmInterface, v: f64) {
+    async fn write_power_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBlc - write_power_value: {}", v)
         );
         self.power_value = v;
+        return Ok(());
     }
  
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
@@ -83,11 +86,12 @@ impl blc::BlcActions for FakeBlcActions {
         return Ok(self.current_value);
     }
 
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
+    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBlc - write_current_value: {}", v)
         );
         self.current_value = v;
+        return Ok(());
     }
 
 }

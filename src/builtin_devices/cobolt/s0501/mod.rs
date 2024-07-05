@@ -31,8 +31,11 @@ impl Hunter for DeviceHunter {
 
         println!("DeviceHunter::hunt");
 
-        let ports = tokio_serial::available_ports();
-        for port in ports.unwrap() {
+        let ports = match tokio_serial::available_ports() {
+            Ok(p) => p,
+            Err(_e) => return None
+        };
+        for port in ports {
             println!("{:?}", port);
 
             match port.port_type {
@@ -101,13 +104,6 @@ impl DeviceActions for S0501 {
 pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
-
-    // fn manufacturer(&self) -> String {
-    //     return "korad".to_string();
-    // }
-    // fn model(&self) -> String {
-    //     return "KA3005".to_string();
-    // }
 
     fn settings_props(&self) -> serde_json::Value {
         return json!([

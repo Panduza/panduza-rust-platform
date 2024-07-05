@@ -11,6 +11,8 @@ use crate::attribute;
 
 use futures::FutureExt;
 
+use crate::Error as PlatformError;
+
 use crate::interface::ThreadSafeInterface;
 
 use crate::interface::fsm::States as InterfaceStates;
@@ -40,6 +42,7 @@ impl InterfaceStates for MetaStates {
     /// Initialize the interface
     ///
     async fn initializating(&self, interface: &ThreadSafeInterface)
+    -> Result<(), PlatformError>
     {
         let mut meta_interface_locked = self.meta_interface.lock().await;
 
@@ -128,6 +131,8 @@ impl InterfaceStates for MetaStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+
+        Ok(())
     }
 
     async fn running(&self, interface: &ThreadSafeInterface)
