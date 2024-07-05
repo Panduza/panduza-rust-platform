@@ -1,5 +1,7 @@
 // use std::ops::DerefMut;
 
+use serde_json::{json, Value};
+
 use super::AmServices;
 use crate::device;
 
@@ -17,20 +19,32 @@ pub async fn execute_service_hunt(
     let devices = device.lock().await;
     let hunters = devices.hunters();
 
-    let store = devices.create_an_empty_store();
+    let mut cur_device_hunt;
+    let mut devices_hunt = Vec::new();
+
+    let mut store = devices.create_an_empty_store();
 
     tracing::info!(class="Platform", "Hunting...");
 
-
     for hunter in hunters {
-        let devices = hunter.hunt().await;
-        if devices.is_some() {
-            tracing::info!(class="Platform", "Hunting Success!");
+        cur_device_hunt = hunter.hunt().await;
 
+        match cur_device_hunt {
+            Some(device) => {
+                // If a device has been found
+                devices_hunt.push(device);
+            },
+            None => {
+                // If device not found
+            }
         }
     }
 
+    // update store
+    store = json!(devices_hunt);
     
+    tracing::info!(class="Platform", "store : {}", store);
+
     services.lock().await.update_device_store(store);
 
     tracing::info!(class="Platform", "Hunting Success!");

@@ -28,7 +28,7 @@ impl Hunter for DeviceHunter {
 
         let mut bag = Vec::new();
 
-        println!("DeviceHunter::hunt");
+        println!("DeviceHunter::hunt : Korad");
 
         let ports = tokio_serial::available_ports();
         for port in ports.unwrap() {
@@ -37,7 +37,7 @@ impl Hunter for DeviceHunter {
             match port.port_type {
                 tokio_serial::SerialPortType::UsbPort(info) => {
                     if info.vid == VID && info.pid == PID {
-                        println!("Found device");
+                        println!("Found device : Korad");
 
                         bag.push(json!(
                             {

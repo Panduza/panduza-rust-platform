@@ -25,14 +25,16 @@ impl Hunter for DeviceHunter {
 
         let mut bag = Vec::new();
 
-        println!("DeviceHunter::hunt");
+        println!("DeviceHunter::hunt Voxpower inhibitor");
 
         let ports = tokio_serial::available_ports();
         for port in ports.unwrap() {
+            println!("Port : {:?}", port);
+
             match port.port_type {
                 tokio_serial::SerialPortType::UsbPort(info) => {
                     if info.vid == VID && info.pid == PID {
-                        println!("Found device");
+                        println!("Found device : Voxpower Inhibiter");
 
                         bag.push(json!(
                             {

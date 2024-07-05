@@ -192,6 +192,8 @@ impl Platform {
 
                         execute_service_boot(services.clone()).await?;
 
+                        services.lock().await.trigger_hunt();
+
                         // Load the tree file
                         if let Err(e) = Platform::load_tree_file(services.clone()).await
                         {
@@ -223,7 +225,6 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- HUNT ---
                     if services.lock().await.hunt_requested() {
-
                         if execute_service_hunt(services.clone(), devices.clone()).await.is_err() {
                             return __platform_error_result!("Failed to hunt");
                         }

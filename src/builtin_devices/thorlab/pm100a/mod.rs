@@ -9,7 +9,6 @@ use panduza_connectors::usb::usbtmc::Config as UsbtmcConfig;
 mod itf_pm100a_powermeter;
 
 
-
 static VID: u16 = 0x1313;
 static PID: u16 = 0x8079;
 // serial number = P1006194
@@ -26,29 +25,29 @@ impl Hunter for DeviceHunter {
 
         println!("DeviceHunter::hunt");
 
-        let ports = tokio_serial::available_ports();
-        for port in ports.unwrap() {
-            println!("{:?}", port);
+        // usb type device
+        let option_device_info = nusb::list_devices()
+            .unwrap()
+            .find(|d| d.vendor_id() == VID && d.product_id() == PID);
+        
+        match option_device_info {
+            Some(device_info) => {
+                println!("Found device : Thorlab");
 
-            match port.port_type {
-                tokio_serial::SerialPortType::UsbPort(info) => {
-                    if info.vid == VID && info.pid == PID {
-                        println!("Found device");
-
-                        bag.push(json!(
-                            {
-                                "name": "Thorlabs PM100A",
-                                "ref": "thorlabs.pm100a",
-                                "settings": {
-                                    "usb_vendor": format!("{:04x}", info.vid),
-                                    "usb_model": format!("{:04x}", info.pid),
-                                    "usb_serial": info.serial_number,
-                                }
-                            }
-                        ))
+                bag.push(json!(
+                    {
+                        "name": "Thorlabs PM100A",
+                        "ref": "thorlabs.pm100a",
+                        "settings": {
+                            "usb_vendor": format!("{:04x}", device_info.vendor_id()),
+                            "usb_model": format!("{:04x}", device_info.product_id()),
+                            "usb_serial": device_info.serial_number(),
+                        }
                     }
-                },
-                _ => {}
+                ))
+            },
+            None => {
+                println!("Thorlab not connected");
             }
         }
 

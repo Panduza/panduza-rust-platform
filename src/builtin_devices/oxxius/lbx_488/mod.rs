@@ -10,8 +10,6 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 // use panduza_connectors::serial::tty::Config as SerialConfig;
 use panduza_connectors::usb::usb::Config as UsbConfig;
 
-use tokio_serial;
-
 mod itf_lbx_488_blc;
 
 
@@ -29,31 +27,31 @@ impl Hunter for DeviceHunter {
 
         let mut bag = Vec::new();
 
-        println!("DeviceHunter::hunt");
+        println!("DeviceHunter::hunt Oxxius");
 
-        let ports = tokio_serial::available_ports();
-        for port in ports.unwrap() {
-            println!("{:?}", port);
+       // usb type device
+       let option_device_info = nusb::list_devices()
+        .unwrap()
+        .find(|d| d.vendor_id() == VID && d.product_id() == PID);
+    
+        match option_device_info {
+            Some(device_info) => {
+                println!("Found device : Oxxius");
 
-            match port.port_type {
-                tokio_serial::SerialPortType::UsbPort(info) => {
-                    if info.vid == VID && info.pid == PID {
-                        println!("Found device");
-
-                        bag.push(json!(
-                            {
-                                "name": "Oxxius LBX_488",
-                                "ref": "oxxius.lbx_488",
-                                "settings": {
-                                    "usb_vendor": format!("{:04x}", info.vid),
-                                    "usb_model": format!("{:04x}", info.pid),
-                                    "usb_serial": info.serial_number,
-                                }
-                            }
-                        ))
+                bag.push(json!(
+                    {
+                        "name": "Oxxius LBX_488",
+                        "ref": "oxxius.lbx_488",
+                        "settings": {
+                            "usb_vendor": format!("{:04x}", device_info.vendor_id()),
+                            "usb_model": format!("{:04x}", device_info.product_id()),
+                            "usb_serial": device_info.serial_number(),
+                        }
                     }
-                },
-                _ => {}
+                ))
+            },
+            None => {
+                println!("Oxxius not connected");
             }
         }
 

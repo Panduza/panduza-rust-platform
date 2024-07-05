@@ -25,6 +25,8 @@ dirs = "3.0.2"
 # MQTT async client
 rumqttc = "0.24.0"
 
+# Used to get USB port info (hunt)
+nusb = "0.1.9"
 
 # rumqttd = { git = "https://github.com/bytebeamio/rumqtt", ref = "main" }
 rumqttd = { git = "https://github.com/Panduza/rumqtt", branch = "pza_tests" }
