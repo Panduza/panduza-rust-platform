@@ -1,7 +1,7 @@
 
 
 
-
+mod logger;
 mod device;
 mod factory;
 mod manager;

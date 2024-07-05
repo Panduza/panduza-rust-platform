@@ -9,6 +9,9 @@ You must install Rust and Cargo then execute this commands
 # Enable fmt tracing (std terminal logs)
 cargo run --features trac-fmt
 
+# Enable fmt tracing + broker logs 
+cargo run --features trac-fmt, broker-log
+
 # Enable tokio console tracing
 RUSTFLAGS="--cfg tokio_unstable" cargo run --features trac-console
 ```

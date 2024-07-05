@@ -1,10 +1,11 @@
 use std::fmt;
 // use std::thread;
 use colored::Colorize;
+use tracing::Metadata;
 // use regex::Regex;
 use tracing_core::{Event, Subscriber};
 use tracing_subscriber::fmt::{
-    format::{self, FormatEvent, FormatFields},
+    format::{self, FormatEvent, FormatFields, Writer},
     FmtContext
 };
 use tracing_subscriber::registry::LookupSpan;
@@ -44,6 +45,22 @@ fn color_words_in_quotes(input: &str) -> String {
     result
 }
 
+/// Send in stdout content and level of log message
+/// 
+fn write_log_message(metadata: &Metadata<'static>, mut writer: Writer, res: Option<&String>) -> fmt::Result {
+    // Level
+    if metadata.level() == &tracing_core::Level::ERROR {
+        write!(&mut writer, "{}: ", "ERROR".red())?;
+    } else if metadata.level() == &tracing_core::Level::WARN {
+        write!(&mut writer, "{}: ", "WARN".yellow())?;
+    }
+
+    // Write message
+    let message = res.unwrap();
+    write!(&mut writer, "{}", color_words_in_quotes(message))?;
+
+    return writeln!(writer); 
+}
 
 /// A custom event formatter that formats events in a platform-specific way.
 /// 
@@ -85,53 +102,61 @@ where
             let class_opt = visitor.entries().get("class");
             match class_opt {
                 Some(class_name) => {
-                    match class_name.trim_matches('"') {
-                        "Platform" => {
-                            write!(&mut writer, "{}", "[P] ".to_string().red() )?;
-                        },
-                        "Factory" => {
-                            write!(&mut writer, "{}", "[F] ".to_string().magenta() )?;
-                        },
-                        "Connection" => {
-                            let f = format!("[{}] ", visitor.entries().get("cname").unwrap().trim_matches('"'));
-                            write!(&mut writer, "{}", f.blue() )?;
-                        },
-                        "Device" => {
-                            let f = format!("[{}/{}] ", 
-                                visitor.entries().get("bname").unwrap().trim_matches('"'),
-                                visitor.entries().get("dname").unwrap().trim_matches('"')
-                            );
-                            write!(&mut writer, "{}", f.green() )?;
-                        },
-                        "Interface" => {
-                            let f = format!("[{}/{}/{}] ",
-                                visitor.entries().get("bname").unwrap().trim_matches('"'),
-                                visitor.entries().get("dname").unwrap().trim_matches('"'),
-                                visitor.entries().get("iname").unwrap().trim_matches('"')
-                            );
-                            write!(&mut writer, "{}", f.bright_cyan() )?;
-                        },
-                        _ => { }
+                    // Log platform except broker
+                    if cfg!(feature = "trac-fmt") {
+                        match class_name.trim_matches('"') {
+                            "Platform" => {
+                                write!(&mut writer, "{}", "[P] ".to_string().red() )?;
+                            },
+                            "Factory" => {
+                                write!(&mut writer, "{}", "[F] ".to_string().magenta() )?;
+                            },
+                            "Connection" => {
+                                let f = format!("[{}] ", visitor.entries().get("cname").unwrap().trim_matches('"'));
+                                write!(&mut writer, "{}", f.blue() )?;
+                            },
+                            "Device" => {
+                                let f = format!("[{}/{}] ", 
+                                    visitor.entries().get("bname").unwrap().trim_matches('"'),
+                                    visitor.entries().get("dname").unwrap().trim_matches('"')
+                                );
+                                write!(&mut writer, "{}", f.green() )?;
+                            },
+                            "Interface" => {
+                                let f = format!("[{}/{}/{}] ",
+                                    visitor.entries().get("bname").unwrap().trim_matches('"'),
+                                    visitor.entries().get("dname").unwrap().trim_matches('"'),
+                                    visitor.entries().get("iname").unwrap().trim_matches('"')
+                                );
+                                write!(&mut writer, "{}", f.bright_cyan() )?;
+                            },
+                            _ => { }
+                        }
                     }
                 },
                 None => {
-                    write!(&mut writer, "{}", "[BROKER] ".to_string() )?;
+                    // Broker message
+                    if cfg!(feature = "broker-log") {
+                        write!(&mut writer, "{}", "[BROKER] ".to_string())?;
+                    }
                 }
             }
 
-            // Level
-            if metadata.level() == &tracing_core::Level::ERROR {
-                write!(&mut writer, "{}: ", "ERROR".red())?;
-            } else if metadata.level() == &tracing_core::Level::WARN {
-                write!(&mut writer, "{}: ", "WARN".yellow())?;
-            }
-
-            // Write message
-            let message = res.unwrap();
-            write!(&mut writer, "{}", color_words_in_quotes(message))?;
+            // If broker message show it only if broker-log is activated
+            if class_opt.is_none() {
+                if cfg!(feature = "broker-log") {
+                    return write_log_message(metadata, writer, res);
+                }
+            } else {
+                // Level
+                if cfg!(feature = "trac-fmt") {
+                    return write_log_message(metadata, writer, res);
+                }    
+            }         
         }
 
         // Return the formatted event
-        writeln!(writer)
+        // writeln!(writer)
+        Ok(())
     }
 }

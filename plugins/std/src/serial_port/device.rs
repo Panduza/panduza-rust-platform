@@ -1,4 +1,5 @@
 use panduza_core::device::traits::DeviceActions;
+use panduza_core::device::Device;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
@@ -10,7 +11,7 @@ pub struct SerialPort;
 impl DeviceActions for SerialPort {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device) 
         -> Result<Vec<InterfaceBuilder>, panduza_core::Error>
     {
 

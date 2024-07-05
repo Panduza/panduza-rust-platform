@@ -45,7 +45,7 @@ fn init_fmt_subscriber()
 /// 
 pub fn init()
 {
-    if cfg!(feature = "trac-fmt") {
+    if cfg!(feature = "trac-fmt") || cfg!(feature = "broker-log") {
         init_fmt_subscriber();
     }
     else if cfg!(feature = "log-issue") {

@@ -5,6 +5,7 @@ use bitflags::bitflags;
 use crate::interface::AmInterface;
 
 use crate::TaskResult;
+use crate::Error as PlatformError;
 
 use tokio::time::sleep;
 use tokio::time::Duration;
@@ -76,7 +77,7 @@ pub trait States : Send {
     /// The interface is now connected to a broker and need some initialization tasks.
     /// This state must hold the initialization of the connector and the initial atttribute values.
     ///
-    async fn initializating(&self, interface: &AmInterface);
+    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>;
 
     /// The interface is now running and can perform its main operationnal state.
     /// 

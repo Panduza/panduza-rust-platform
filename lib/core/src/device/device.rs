@@ -15,6 +15,8 @@ use crate::subscription;
 
 use crate::interface::Interface;
 
+use super::logger::Logger;
+
 /// A device manage a set of interfaces
 /// 
 pub struct Device {
@@ -24,7 +26,7 @@ pub struct Device {
     bench_name: String,
 
 
-    settings: serde_json::Value,
+    pub settings: serde_json::Value,
 
     started: bool,
 
@@ -37,7 +39,9 @@ pub struct Device {
     /// To generate connection links for the interfaces
     connection_link_manager: AmLinkManager,
 
-    platform_services: crate::platform::services::AmServices
+    platform_services: crate::platform::services::AmServices,
+
+    pub logger: Logger,
 }
 
 impl Device {
@@ -58,10 +62,13 @@ impl Device {
         platform_services: crate::platform::services::AmServices
     ) -> Device 
     {
+        let dev_name = dev_name.into();
+        let bench_name = bench_name.into();
+
         // Create the object
         let obj = Device {
-            dev_name: dev_name.into(),
-            bench_name: bench_name.into(),
+            dev_name: dev_name.clone(),
+            bench_name: bench_name.clone(),
 
             settings: settings,
 
@@ -71,7 +78,9 @@ impl Device {
             // interfaces: Vec::new(),
 
             connection_link_manager: connection_link_manager,
-            platform_services: platform_services
+            platform_services: platform_services,
+
+            logger: Logger::new(bench_name.clone(), dev_name.clone())
         };
 
         // Info log
@@ -132,7 +141,7 @@ impl Device {
         self.log_info("Start Interfaces...");
 
         // Get the interface builders
-        let r = self.actions.interface_builders(&self.settings);
+        let r = self.actions.interface_builders(&self);
         // if let Err(e) = builders {
         //     self.log_warn("Error");
         // }
