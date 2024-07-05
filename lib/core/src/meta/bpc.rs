@@ -353,13 +353,13 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                         };
                         for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "enable" && field_name == "value" {
-                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "voltage" && field_name == "value" {
-                                self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
                             }
                             else if attribute_name == "current" && field_name == "value" {
-                                self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
