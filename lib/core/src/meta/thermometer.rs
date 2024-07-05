@@ -10,6 +10,7 @@ use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 use crate::Error as PlatformError;
+use crate::__platform_error_result;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
@@ -99,7 +100,10 @@ impl interface::fsm::States for ThermometerStates {
         let mut thermometer_itf = self.thermometer_interface.lock().await;
 
         // Custom initialization slot
-        thermometer_itf.actions.initializating(&interface).await.unwrap();
+        let _itf = match thermometer_itf.actions.initializating(&interface).await {
+            Ok(i) => i,
+            Err(_e) => return __platform_error_result!("Unable to initialize thermometer interface")
+        };
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("measure", true));
@@ -155,13 +159,19 @@ impl ThermometerSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_measure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, _field_data: &Value) {
-        let r_value = self.thermometer_interface.lock().await
+    async fn process_measure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, _field_data: &Value) -> Result<(), PlatformError>
+    {
+        let r_value = match self.thermometer_interface.lock().await
             .actions.read_measure_value(&interface).await
-            .unwrap();
+            {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read measure value")
+            };
 
         interface.lock().await
             .update_attribute_with_f64("measure", "value", r_value as f64);
+
+        Ok(())
     }
 
 
@@ -199,14 +209,24 @@ impl interface::subscriber::Subscriber for ThermometerSubscriber {
                     println!("ThermometerSubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
-                    let oo = serde_json::from_slice::<Value>(payload).unwrap();
-                    let o = oo.as_object().unwrap();
+                    let oo = match serde_json::from_slice::<Value>(payload) {
+                        Ok(val) => val,
+                        Err(_e) => return __platform_error_result!("Unable to deserializa data")
+                    };
+                    let o = match oo.as_object() {
+                        Some(val) => val,
+                        None => return __platform_error_result!("No data provided")
+                    };
 
 
                     for (attribute_name, fields) in o.iter() {
-                        for (field_name, field_data) in fields.as_object().unwrap().iter() {
+                        let fields_obj = match fields.as_object() {
+                            Some(val) => val,
+                            None => return __platform_error_result!("No data provided")
+                        };
+                        for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "measure" && field_name == "value" {
-                                self.process_measure_value(&interface, attribute_name, field_name, field_data).await;
+                                let _ = self.process_measure_value(&interface, attribute_name, field_name, field_data).await;
                             }
                         }
                     }
