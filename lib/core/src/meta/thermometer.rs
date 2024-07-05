@@ -104,7 +104,8 @@ impl interface::fsm::States for ThermometerStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("measure", true));
 
         // Init measure
-        interface.lock().await.update_attribute_with_f64("measure", "value", 0.0);
+        let measure_value = thermometer_itf.actions.read_measure_value(&interface).await.unwrap();
+        interface.lock().await.update_attribute_with_f64("measure", "value", measure_value);
         interface.lock().await.update_attribute_with_f64("measure", "decimals", thermometer_itf.params.measure_decimals as f64);
         interface.lock().await.update_attribute_with_f64("measure", "polling_cycle", 0.0);
 

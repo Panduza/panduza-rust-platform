@@ -135,18 +135,20 @@ impl interface::fsm::States for BlcStates {
         // Init enable
         let enable_value = blc_itf.actions.read_enable_value(&interface).await.unwrap();
         interface.lock().await.update_attribute_with_bool("enable", "value", enable_value).unwrap();
-
+        
         // Init power
+        let power_value = blc_itf.actions.read_power_value(&interface).await.unwrap();
         interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
         interface.lock().await.update_attribute_with_f64("power", "max", blc_itf.params.power_max );
-        interface.lock().await.update_attribute_with_f64("power", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("power", "value", power_value);
         interface.lock().await.update_attribute_with_f64("power", "decimals", blc_itf.params.power_decimals as f64);
         interface.lock().await.update_attribute_with_f64("power", "polling_cycle", 0.0);
 
         // Init current
+        let current_value = blc_itf.actions.read_current_value(&interface).await.unwrap();
         interface.lock().await.update_attribute_with_f64("current", "min", blc_itf.params.current_min );
         interface.lock().await.update_attribute_with_f64("current", "max", blc_itf.params.current_max );
-        interface.lock().await.update_attribute_with_f64("current", "value", 0.0);
+        interface.lock().await.update_attribute_with_f64("current", "value", current_value);
         interface.lock().await.update_attribute_with_f64("current", "decimals", blc_itf.params.current_decimals as f64);
         interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
 
