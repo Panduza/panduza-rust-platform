@@ -8,6 +8,7 @@ use panduza_core::{attribute::JsonAttribute, interface::{self, AmInterface}, sub
 use panduza_core::interface::Builder as InterfaceBuilder;
 
 use panduza_core::FunctionResult as PlatformFunctionResult;
+use panduza_core::Error as PlatformError;
 
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -106,7 +107,7 @@ impl interface::fsm::States for TestInterfaceStates {
         fsm_events_notifier.notified().await;
     }
 
-    async fn initializating(&self, interface: &AmInterface)
+    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
     {
         interface::basic::interface_initializating(interface).await;
         
@@ -121,6 +122,8 @@ impl interface::fsm::States for TestInterfaceStates {
 
 
         ii.set_event_init_done();
+
+        Ok(())
     }
 
     async fn running(&self, interface: &AmInterface)

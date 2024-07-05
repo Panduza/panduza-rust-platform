@@ -10,6 +10,7 @@ use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 use crate::Error as PlatformError;
+use crate::__platform_error_result;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
@@ -87,22 +88,35 @@ impl interface::fsm::States for RelayStates {
     /// Initialize the interface
     ///
     async fn initializating(&self, interface: &AmInterface)
+    -> Result<(), PlatformError>
     {
         // Custom initialization slot
-        self.relay_interface.lock().await.actions.initializating(&interface).await.unwrap();
+        let _itf = match self.relay_interface.lock().await.actions.initializating(&interface).await {
+            Ok(i) => i,
+            Err(_e) => return __platform_error_result!("Unable to initialize powermeter interface")
+        };
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("state", true));
 
         // Init state
-        let state_value = self.relay_interface.lock().await.actions.read_state_open(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_bool("state", "open", state_value).unwrap();
+        let state_value = match self.relay_interface.lock().await.actions.read_state_open(&interface).await {
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read state open")
+        };
+
+        let _update_att = match interface.lock().await.update_attribute_with_bool("state", "open", state_value) {
+            Ok(att) => att,
+            Err(_e) => return __platform_error_result!("Unable to update attribute")
+        };
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+
+        Ok(())
     }
 
     async fn running(&self, interface: &AmInterface)
@@ -144,13 +158,19 @@ impl RelaySubscriber {
     async fn process_state_open(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
         -> PlatformFunctionResult
     {
-        let requested_value = field_data.as_bool().unwrap();
+        let requested_value = match field_data.as_bool() {
+            Some(bool) => bool,
+            None => return __platform_error_result!("State open not provided")
+        };
         self.relay_interface.lock().await
             .actions.write_state_open(&interface, requested_value).await;
 
-        let r_value = self.relay_interface.lock().await
+        let r_value = match self.relay_interface.lock().await
             .actions.read_state_open(&interface).await
-            .unwrap();
+            {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read state open")
+            };
 
         interface.lock().await
             .update_attribute_with_bool("state", "open", r_value)
@@ -190,14 +210,27 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
                     println!("RelaySubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
-                    let oo = serde_json::from_slice::<Value>(payload).unwrap();
-                    let o = oo.as_object().unwrap();
+                    let oo = match serde_json::from_slice::<Value>(payload) {
+                        Ok(val) => val,
+                        Err(_e) => return __platform_error_result!("Unable to deserializa data")
+                    };
+                    let o = match oo.as_object() {
+                        Some(val) => val,
+                        None => return __platform_error_result!("No data provided")
+                    };
 
 
                     for (attribute_name, fields) in o.iter() {
-                        for (field_name, field_data) in fields.as_object().unwrap().iter() {
+                        let fields_obj = match fields.as_object() {
+                            Some(val) => val,
+                            None => return __platform_error_result!("No data provided")
+                        };
+                        for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "state" && field_name == "open" {
-                                self.process_state_open(&interface, attribute_name, field_name, field_data).await.unwrap();
+                                let _ = match self.process_state_open(&interface, attribute_name, field_name, field_data).await {
+                                    Ok(val) => val,
+                                    Err(_e) => return __platform_error_result!("Unable to process state open")
+                                };
 
                             }
                         }
