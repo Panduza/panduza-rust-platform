@@ -93,7 +93,8 @@ impl interface::fsm::States for ThermometerStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
+    async fn initializating(&self, interface: &AmInterface)
+    -> Result<(), PlatformError>
     {
         let mut thermometer_itf = self.thermometer_interface.lock().await;
 
@@ -114,6 +115,7 @@ impl interface::fsm::States for ThermometerStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+
         Ok(())
     }
 

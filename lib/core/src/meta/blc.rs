@@ -116,7 +116,8 @@ impl interface::fsm::States for BlcStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
+    async fn initializating(&self, interface: &AmInterface)
+    -> Result<(), PlatformError>
     {
         let mut blc_itf = self.blc_interface.lock().await;
 
@@ -171,7 +172,7 @@ impl interface::fsm::States for BlcStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
-        
+
         Ok(())
     }
 

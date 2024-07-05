@@ -132,7 +132,8 @@ impl interface::fsm::States for BpcStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
+    async fn initializating(&self, interface: &AmInterface)
+    -> Result<(), PlatformError>
     {
         let mut bpc_itf = self.bpc_interface.lock().await;
 
