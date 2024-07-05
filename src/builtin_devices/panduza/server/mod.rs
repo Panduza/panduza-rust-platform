@@ -1,4 +1,5 @@
 
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
@@ -17,7 +18,7 @@ impl DeviceActions for ServerDeviceActions {
 
     /// Create the interfaces
     /// 
-    fn interface_builders(&self, _device_settings: &serde_json::Value) 
+    fn interface_builders(&self, _: &Device) 
         -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
         let mut list = Vec::new();

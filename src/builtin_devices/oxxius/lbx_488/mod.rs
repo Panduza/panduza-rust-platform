@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -72,15 +73,17 @@ struct LBX488;
 impl DeviceActions for LBX488 {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+
+        let device_settings = device.settings.clone();
 
         println!("S0501::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = UsbConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
+        serial_conf.import_from_json_settings(&device_settings);
 
         // serial_conf.serial_baudrate = Some(9600);
 

@@ -169,6 +169,7 @@ impl Gate {
 pub struct TtyConnector {
     core: Option<Arc<tokio::sync::Mutex<TtyCore>>>,
 }
+pub type Connector = TtyConnector;
 
 impl TtyConnector {
     

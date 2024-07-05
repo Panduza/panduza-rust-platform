@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -66,16 +67,18 @@ struct VoxpowerInhibiter;
 impl DeviceActions for VoxpowerInhibiter {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device)
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+
+        let device_settings = device.settings.clone();
 
         println!("Voxpower Inhibiter::interface_builders");
         println!("{}", device_settings);
 
         // Get the serial settings from the tree.json
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
+        serial_conf.import_from_json_settings(&device_settings);
 
         serial_conf.serial_baudrate = Some(9600);
 

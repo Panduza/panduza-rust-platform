@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -71,15 +72,18 @@ struct S0501;
 impl DeviceActions for S0501 {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+        let logger = device.logger.clone();
 
-        println!("S0501::interface_builders");
-        println!("{}", device_settings);
+        let device_settings = device.settings.clone();
+
+        logger.log_info("S0501::interface_builders");
+        logger.log_info(format!("{}", device_settings));
 
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
+        serial_conf.import_from_json_settings(&device_settings);
 
         serial_conf.serial_baudrate = Some(115200);
 
