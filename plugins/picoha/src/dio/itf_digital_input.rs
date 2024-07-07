@@ -15,6 +15,7 @@ use futures::FutureExt;
 
 use panduza_connectors::serial::tty;
 
+use super::api_dio::PicohaDioRequest;
 
 ///
 /// 
