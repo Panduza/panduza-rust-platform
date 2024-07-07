@@ -6,6 +6,8 @@ edition = "2021"
 
 [dependencies]
 
+# The panduza connectors library
+panduza-core = { path = "../core" }
 
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
@@ -30,6 +32,7 @@ futures-lite = "2.3.0"
 # 
 lazy_static = "1.4.0"
 
+serial-line-ip = "0.5.0"
 
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
