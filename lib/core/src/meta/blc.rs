@@ -134,14 +134,14 @@ impl interface::fsm::States for BlcStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
 
         // Init mode
-        let mode_value = match blc_itf.actions.read_mode_value(&interface).await{
+        let mode_value = match blc_itf.actions.read_mode_value(&interface).await {
             Ok(val) => val,
             Err(_e) => return __platform_error_result!("Unable to read mode value")
         };
         interface.lock().await.update_attribute_with_string("mode", "value", &mode_value);
 
         // Init enable
-        let enable_value = match blc_itf.actions.read_enable_value(&interface).await{
+        let enable_value = match blc_itf.actions.read_enable_value(&interface).await {
             Ok(val) => val,
             Err(_e) => return __platform_error_result!("Unable to read mode value")
         };
@@ -152,7 +152,10 @@ impl interface::fsm::States for BlcStates {
         };
 
         // Init power
-        let power_value = blc_itf.actions.read_power_value(&interface).await.unwrap();
+        let power_value = match blc_itf.actions.read_power_value(&interface).await {
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read power value")
+        };
         interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
         interface.lock().await.update_attribute_with_f64("power", "max", blc_itf.params.power_max );
         interface.lock().await.update_attribute_with_f64("power", "value", power_value);
@@ -160,7 +163,10 @@ impl interface::fsm::States for BlcStates {
         interface.lock().await.update_attribute_with_f64("power", "polling_cycle", 0.0);
 
         // Init current
-        let current_value = blc_itf.actions.read_current_value(&interface).await.unwrap();
+        let current_value = match blc_itf.actions.read_current_value(&interface).await {
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read current value")
+        };
         interface.lock().await.update_attribute_with_f64("current", "min", blc_itf.params.current_min );
         interface.lock().await.update_attribute_with_f64("current", "max", blc_itf.params.current_max );
         interface.lock().await.update_attribute_with_f64("current", "value", current_value);

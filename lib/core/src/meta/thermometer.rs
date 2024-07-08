@@ -109,7 +109,10 @@ impl interface::fsm::States for ThermometerStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("measure", true));
 
         // Init measure
-        let measure_value = thermometer_itf.actions.read_measure_value(&interface).await.unwrap();
+        let measure_value = match thermometer_itf.actions.read_measure_value(&interface).await {
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read measure value")
+        };
         interface.lock().await.update_attribute_with_f64("measure", "value", measure_value);
         interface.lock().await.update_attribute_with_f64("measure", "decimals", thermometer_itf.params.measure_decimals as f64);
         interface.lock().await.update_attribute_with_f64("measure", "polling_cycle", 0.0);

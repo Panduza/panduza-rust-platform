@@ -160,7 +160,10 @@ impl interface::fsm::States for BpcStates {
         };
 
         // Init voltage
-        let voltage_value = bpc_itf.actions.read_voltage_value(&interface).await.unwrap();
+        let voltage_value = match bpc_itf.actions.read_voltage_value(&interface).await {
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read voltage value")
+        };
         interface.lock().await.update_attribute_with_f64("voltage", "min", bpc_itf.params.voltage_min );
         interface.lock().await.update_attribute_with_f64("voltage", "max", bpc_itf.params.voltage_max );
         interface.lock().await.update_attribute_with_f64("voltage", "value", voltage_value);
@@ -168,7 +171,10 @@ impl interface::fsm::States for BpcStates {
         interface.lock().await.update_attribute_with_f64("voltage", "polling_cycle", 0.0);
 
         // Init current
-        let current_value = bpc_itf.actions.read_current_value(&interface).await.unwrap();
+        let current_value = match bpc_itf.actions.read_current_value(&interface).await {
+            Ok(val) => val,
+            Err(_e) => return __platform_error_result!("Unable to read current value")
+        };
         interface.lock().await.update_attribute_with_f64("current", "min", bpc_itf.params.current_min );
         interface.lock().await.update_attribute_with_f64("current", "max", bpc_itf.params.current_max );
         interface.lock().await.update_attribute_with_f64("current", "value", current_value);
