@@ -27,7 +27,7 @@ impl Hunter for DeviceHunter {
 
         let mut bag = Vec::new();
 
-        println!("DeviceHunter::hunt Oxxius");
+        // println!("DeviceHunter::hunt Oxxius");
 
        // usb type device
        let option_device_info = nusb::list_devices()

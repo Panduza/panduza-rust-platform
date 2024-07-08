@@ -110,6 +110,7 @@ impl Services {
     }
 
     pub fn start_hunting(&mut self) {
+        self.hunt_in_progress = true;
         self.insert_request(Requests::HUNT);
     }
 
