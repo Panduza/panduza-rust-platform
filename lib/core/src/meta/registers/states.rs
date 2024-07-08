@@ -17,8 +17,6 @@ use crate::interface::ThreadSafeInterface;
 
 use crate::interface::fsm::States as InterfaceStates;
 
-use crate::Error as PlatformError;
-
 use super::interface::MetaInterface;
 
 use crate::interface::basic::wait_for_fsm_event;
