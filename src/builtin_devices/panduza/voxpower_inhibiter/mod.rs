@@ -81,7 +81,7 @@ impl DeviceActions for VoxpowerInhibiter {
 
         // Get the serial settings from the tree.json
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(&device_settings);
+        let _ = serial_conf.import_from_json_settings(&device_settings);
 
         serial_conf.serial_baudrate = Some(9600);
 

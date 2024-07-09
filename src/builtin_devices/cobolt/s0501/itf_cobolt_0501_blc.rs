@@ -96,7 +96,7 @@ impl blc::BlcActions for S0501BlcActions {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create TTY connector for Cobolt S0501")
         };
-        self.connector_tty.init().await;
+        let _ = self.connector_tty.init().await;
 
         let response_string = self.ask_string(b"?\r").await?;
 

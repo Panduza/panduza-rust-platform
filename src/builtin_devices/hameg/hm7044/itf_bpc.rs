@@ -158,7 +158,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
 
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
-        self.connector_tty.init().await;
+        let _ = self.connector_tty.init().await;
 
         // Send '\r' to close any incomplete command sent previously.
         self.send_cmd_read_answer(b"\r").await?;

@@ -60,7 +60,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
             None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
         };
 
-        self.connector_tty.init().await;
+        let _ = self.connector_tty.init().await;
 
         return Ok(());
     }

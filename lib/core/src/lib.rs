@@ -14,6 +14,8 @@ pub type TaskResult = Result<(), crate::error::Error>;
 
 pub type FunctionResult = Result<(), crate::error::Error>;
 
+/// Public macro to create a platform Error outside of panduza core
+///
 #[macro_export]
 macro_rules! platform_error {
     ($msg:expr) => {
@@ -21,6 +23,8 @@ macro_rules! platform_error {
     };
 }
 
+/// Public macro to create a platform Err Result outside of panduza core
+///
 #[macro_export]
 macro_rules! platform_error_result {
     ($msg:expr) => {

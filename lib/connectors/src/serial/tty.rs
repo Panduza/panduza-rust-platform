@@ -1,11 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 use tokio_serial::{self, SerialPortBuilder};
-use tokio::io::{AsyncReadExt, AsyncWriteExt, Result};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};//, Result};
 use tokio_serial::SerialStream;
 use tokio::time::{sleep, Duration};
 
 use tokio;
 use lazy_static::lazy_static;
+
+use panduza_core::FunctionResult as PlatformFunctionResult;
+use panduza_core::Error as PlatformError;
+use panduza_core::platform_error_result;
 
 
 
@@ -41,43 +45,59 @@ impl Config {
         }
     }
 
-    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
+    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) -> PlatformFunctionResult {
 
-        // self.serial_port_name = match settings.get("serial_port_name") {
-        //     Some(val) => val,
-        //     None => 
-        // }
-
-        self.serial_port_name =
-            settings.get("serial_port_name")
-                .map(|v| v.as_str().unwrap().to_string());
-
-                // .unwrap().to_string()
-
-        self.serial_baudrate =
-            settings.get("serial_baudrate")
-                .map(|v| v.as_u64().unwrap() as u32);
-
-        let usb_vendor_str = 
-        settings.get("usb_vendor")
-            .map(|v| v.as_str().unwrap());
+        self.serial_baudrate = match settings.get("serial_baudrate")
+        {
+            Some(val) => match val.as_u64()
+            {
+                Some(u) => Some(u as u32),
+                None => return platform_error_result!("Serial baudrate not an integer")
+            },
+            None => return platform_error_result!("Missing serial_baudrate from tree.json")
+        };
 
         // get VID hexadecimal value
-        self.usb_vendor =
-            Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
-
-        let usb_model_str = 
-            settings.get("usb_model")
-                .map(|v| v.as_str().unwrap());
+        self.usb_vendor = match settings.get("usb_vendor")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => match u16::from_str_radix(s, 16)
+                {
+                    Ok(val) => Some(val),
+                    Err(_e) => return platform_error_result!("usb_vendor not an hexadecimal value")
+                },
+                None => return platform_error_result!("usb_vendor not a String")
+            },
+            None => return platform_error_result!("Missing usb_vendor from tree.json")
+        };
 
         // get PID hexadecimal value
-        self.usb_model =
-            Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
+        self.usb_model = match settings.get("usb_model")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => match u16::from_str_radix(s, 16)
+                {
+                    Ok(val) => Some(val),
+                    Err(_e) => return platform_error_result!("usb_model not an hexadecimal value")
+                },
+                None => return platform_error_result!("usb_model not a String")
+            },
+            None => return platform_error_result!("Missing usb_model from tree.json")
+        };
 
-        self.usb_serial =
-            settings.get("usb_serial")
-                .map(|v| v.as_str().unwrap().to_string());
+        self.usb_serial = match settings.get("usb_serial")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => Some(s.to_string()),
+                None => return platform_error_result!("usb_serial not a String")
+            },
+            None => return platform_error_result!("Missing usb_serial from tree.json")
+        };
 
+        Ok(())
     }
 }
 
@@ -148,7 +168,7 @@ impl Gate {
                 for port in ports {
                     match port.port_type {
                         tokio_serial::SerialPortType::UsbPort(info) => {
-                            if info.vid == config.usb_vendor.unwrap() && info.pid == config.usb_model.unwrap() {
+                            if Some(info.vid) == config.usb_vendor && Some(info.pid) == config.usb_model {
                                 return Ok(port.port_name);
                             }
                         },
@@ -196,39 +216,35 @@ impl TtyConnector {
         }
     }
 
-    pub async fn init(&mut self) {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .init()
-            .await;
+    pub async fn init(&mut self) -> PlatformFunctionResult {
+        let _ = match self.core.as_ref()
+            {
+                Some(val) => val.lock().await.init().await,
+                None => return platform_error_result!("Unable to initialize TTY connector")
+            };
+
+        Ok(())
     }
 
     pub async fn write(&mut self, command: &[u8],
         time_lock: Option<Duration>) 
-            -> Result<usize> {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .write(command, time_lock)
-            .await
+            -> Result<usize, PlatformError> {
+        match self.core.as_ref()
+        {
+            Some(val) => val.lock().await.write(command, time_lock).await,
+            None => return platform_error_result!("Unable to write")
+        }
     }
 
 
     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
         time_lock: Option<Duration>) 
-            -> Result<usize> {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .write_then_read(command, response, time_lock)
-            .await
+            -> Result<usize, PlatformError> {
+        match self.core.as_ref()
+            {
+                Some(val) => val.lock().await.write_then_read(command, response, time_lock).await,
+                None => return platform_error_result!("Unable to write then read")
+            }
     }
 
 }
@@ -260,20 +276,23 @@ impl TtyCore {
         }
     }
 
-    async fn init(&mut self) {
+    async fn init(&mut self) -> PlatformFunctionResult {
 
         // dirty fix, need to be improved
         if self.serial_stream.is_some() {
-            return;
+            return Ok(());
         }
 
         if self.config.serial_port_name.is_none() && self.config.usb_vendor.is_some() && self.config.usb_model.is_some() {
 
-            let ports = tokio_serial::available_ports().unwrap();
+            let ports = match tokio_serial::available_ports() {
+                Ok(p) => p,
+                Err(_e) => return  platform_error_result!("Unable to list serial ports")
+            };
             for port in ports {
                 match port.port_type {
                     tokio_serial::SerialPortType::UsbPort(info) => {
-                        if info.vid == self.config.usb_vendor.unwrap() && info.pid == self.config.usb_model.unwrap(){
+                        if Some(info.vid) == self.config.usb_vendor && Some(info.pid) == self.config.usb_model {
                             self.config.serial_port_name = Some(port.port_name);
                         }
                     },
@@ -285,8 +304,14 @@ impl TtyCore {
         }
 
         let serial_builder = tokio_serial::new(
-            self.config.serial_port_name.as_ref().unwrap()   ,
-            self.config.serial_baudrate.unwrap()
+            match self.config.serial_port_name.as_ref() {
+                Some(val) => val,
+                None => return platform_error_result!("Serial port name is empty")
+            },
+            match self.config.serial_baudrate {
+                Some(val) => val,
+                None => return platform_error_result!("Serial baudrate is empty")
+            }
 
         );
 
@@ -299,10 +324,11 @@ impl TtyCore {
         self.builder = Some(serial_builder);
         self.serial_stream = Some(aa);
 
+        Ok(())
     }
 
 
-    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>)-> Result<usize> {
+    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>)-> Result<usize, PlatformError> {
 
 
         if let Some(lock) = self.time_lock.as_mut() {
@@ -315,7 +341,15 @@ impl TtyCore {
         }
 
         // Send the command
-        let rrr = self.serial_stream.as_mut().unwrap().write(command).await;
+        let stream = match self.serial_stream.as_mut() {
+            Some(s) => s,
+            None => return platform_error_result!("No serial stream")
+        };
+        
+        let rrr = match stream.write(command).await {
+            Ok(val) => Ok(val),
+            Err(_e) => return platform_error_result!("Unable to write on serial stream")
+        };
 
         // Set the time lock
         if let Some(duration) = duration {
@@ -331,23 +365,28 @@ impl TtyCore {
     
     async fn write(&mut self, command: &[u8],
         time_lock: Option<Duration>) 
-            -> Result<usize> {
+            -> Result<usize, PlatformError> {
 
         self.time_locked_write(command, time_lock).await
     }
 
     async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
         time_lock: Option<Duration>) 
-            -> Result<usize> {
+            -> Result<usize, PlatformError> {
 
 
         let _ = self.time_locked_write(command, time_lock).await;
 
 
-        // let mut buf: &mut [u8] = &mut [0; 1024];
-        self.serial_stream.as_mut().unwrap().read(response).await
-        // let n = p.unwrap();
-        // println!("Read {} bytes", n);
+        let stream = match self.serial_stream.as_mut() {
+            Some(s) => s,
+            None => return platform_error_result!("No serial stream")
+        };
+
+        match stream.read(response).await {
+            Ok(val) => Ok(val),
+            Err(_e) => platform_error_result!("Unable to read on serial stream")
+        }
 
         
 

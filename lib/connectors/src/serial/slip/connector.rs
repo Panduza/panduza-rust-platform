@@ -5,6 +5,7 @@ use nusb::Error;
 use super::tty::TtyConnector;
 
 use panduza_core::interface::logger::{self, Logger as InterfaceLogger};
+use panduza_core::Error as PlatformError;
 
 
 #[derive(Clone)]
@@ -39,7 +40,7 @@ impl Connector {
     /// - `response` - Buffer to store the response.
     /// 
     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8])
-            -> Result<usize, Error> {
+            -> Result<usize, PlatformError> {
         
 
         let mut encoded_command = [0u8; 1024];
