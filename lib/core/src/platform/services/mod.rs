@@ -110,6 +110,7 @@ impl Services {
     }
 
     pub fn start_hunting(&mut self) {
+        self.hunt_in_progress = true;
         self.insert_request(Requests::HUNT);
     }
 
@@ -166,6 +167,10 @@ impl Services {
         return self.xxx_requested(Requests::STOP);
     }
 
+    pub fn trigger_hunt(&mut self) {
+        self.insert_request(Requests::HUNT);
+    }
+
     pub fn hunt_requested(&mut self) -> bool {
         return self.xxx_requested(Requests::HUNT);
     }
@@ -201,6 +206,8 @@ impl Services {
         self.hunt_in_progress = true;
     }
 
+    // Store the devices currently connected in USB
+    // to use it in the platform (without needing the tree.jsib)
     pub fn update_device_store(&mut self, store: serde_json::Value) {
         self.device_store = store;
         self.hunt_in_progress = false;

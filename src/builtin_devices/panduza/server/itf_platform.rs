@@ -28,8 +28,15 @@ impl PlatformInterfaceSubscriber {
         //     .actions.write_enable_value(&interface, requested_value).await;
 
         if requested_value == true {
+
+            // Hunting is going to start
+            let _ = interface.lock().await.update_attribute_with_bool("devices", "hunting", true);
+
+            interface.lock().await
+                .publish_all_attributes().await;
+
             let platform_services = interface.lock().await
-            .platform_services();
+                .platform_services();
 
             platform_services.lock().await.start_hunting();
 
@@ -38,9 +45,12 @@ impl PlatformInterfaceSubscriber {
             }
 
             interface.lock().await
-                .update_attribute_with_json("devices", "hunting", 
+                .update_attribute_with_json("devices", "store", 
                     platform_services.lock().await.get_device_store()
                 );
+
+            // Hunting has finished
+            let _ = interface.lock().await.update_attribute_with_bool("devices", "hunting", false);
             interface.lock().await
                 .publish_all_attributes().await;
         }
@@ -147,10 +157,23 @@ impl interface::fsm::States for TestInterfaceStates {
 
         let mut ii = interface.lock().await;
         let ps = ii.platform_services().clone();
-        ii.update_attribute_with_json("devices", "hunting", 
-                    ps.lock().await.get_device_store()
-            );
 
+        let store = ps.lock().await.get_device_store().clone();
+
+        ii.update_attribute_with_json("devices", "store", 
+            &store
+        );
+
+        match store.as_object() {
+            Some(store_map) => {
+                ii.update_attribute_with_json("devices", "max", &serde_json::Value::Number(
+                    store_map.len().into()
+                ));
+            },  
+            None => {
+                // If max not found don't publish max
+            }
+        }
 
         ii.update_attribute_with_string("dtree", "name", &"pok".to_string());
         ii.update_attribute_with_json("dtree", "content", &json!({ "a": 1 }));
