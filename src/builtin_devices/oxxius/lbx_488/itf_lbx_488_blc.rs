@@ -16,6 +16,7 @@ struct LBX488BlcActions {
     serial_config: UsbConfig,
     mode_value: String,
     enable_value: bool,
+    power_max: f64,
     power_value: f64,
     current_value: f64,
 }
@@ -154,13 +155,26 @@ impl blc::BlcActions for LBX488BlcActions {
 
     /// Read the power value
     /// 
-    async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+    async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response_float = self.ask_float(b"?SP").await?;
-        self.power_value = response_float * 0.001;
+        let response_float = self.ask_float(b"?MAXLP").await?;
+        self.power_max = response_float * 0.001;
 
         interface.lock().await.log_info(
             format!("read power : {}", response_float)
+        );
+
+        return Ok(self.power_max);
+    }
+
+    /// Read the power value
+    /// 
+    async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+
+        self.power_value = self.ask_float(b"p?\r").await?;
+
+        interface.lock().await.log_info(
+            format!("read power : {}", self.power_value)
         );
 
         return Ok(self.power_value);
@@ -231,7 +245,7 @@ pub fn build<A: Into<String>>(
         name, 
         blc::BlcParams {
             power_min: 0.0,
-            power_max: 0.04,
+            // power_max: 0.04,
             power_decimals: 3,
 
             current_min: 0.0,
@@ -243,6 +257,7 @@ pub fn build<A: Into<String>>(
             serial_config: serial_config.clone(),
             mode_value: "constant_power".to_string(),
             enable_value: false,
+            power_max: 0.0,
             power_value: 0.0,
             current_value: 0.0,
         })

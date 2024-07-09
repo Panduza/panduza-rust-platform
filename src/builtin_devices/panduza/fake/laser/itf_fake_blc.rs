@@ -12,6 +12,7 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 struct FakeBlcActions {
     mode_value: String,
     enable_value: bool,
+    power_max: f64,
     power_value: f64,
     current_value: f64,
 }
@@ -64,6 +65,17 @@ impl blc::BlcActions for FakeBlcActions {
 
     /// Read the power value
     /// 
+    async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+
+        interface.lock().await.log_info(
+            format!("FakeBlc - read power max : {}", self.power_max)
+        );
+
+        return Ok(self.power_max);
+    }
+
+    /// Read the power value
+    /// 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBlc - read_power_value: {}", self.power_value)
@@ -108,7 +120,6 @@ pub fn build<A: Into<String>>(
         name, 
         blc::BlcParams {
             power_min: 0.0,
-            power_max: 0.3,
             power_decimals: 3,
 
             current_min: 0.0,
@@ -120,6 +131,7 @@ pub fn build<A: Into<String>>(
             enable_value: false,
             power_value: 0.0,
             current_value: 0.0,
+            power_max: 0.3
         })
     )
 }
