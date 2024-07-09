@@ -1,7 +1,7 @@
 pub mod fsm;
 pub mod basic;
 
-mod logger;
+pub mod logger;
 pub mod builder;
 pub mod listener;
 pub mod subscriber;

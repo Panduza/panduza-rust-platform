@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -71,15 +72,17 @@ struct Ka3005;
 impl DeviceActions for Ka3005 {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+
+        let device_settings = device.settings.clone();
 
         println!("Ka3005::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
+        serial_conf.import_from_json_settings(&device_settings);
 
         // const_settings = {
         //     "usb_vendor": '0416',

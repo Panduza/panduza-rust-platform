@@ -1,25 +1,14 @@
-// use std::result;
-
 use async_trait::async_trait;
-// use rusb;
-// use std::time::Duration;
 
-// use rust_usbtmc::instrument::Instrument;
 use panduza_core::Error as PlatformError;
+use panduza_core::platform_error_result;
 use panduza_core::meta::powermeter;
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
-// use panduza_connectors::serial::tty::Tty;
-// use panduza_connectors::serial::tty::{self, TtyConnector};
-// use panduza_connectors::serial::tty::Config as SerialConfig;
 use panduza_connectors::usb::usbtmc::{self, Config as SerialConfig, UsbtmcConnector};
-// use crate::platform_error_result;
 
-
-// static VID: u16 = 0x1313;
-// static PID: u16 = 0x8079;
 
 
 ///
@@ -36,7 +25,10 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
-        self.connector_usbtmc = usbtmc::get(&self.serial_config).await.unwrap();
+        self.connector_usbtmc = match usbtmc::get(&self.serial_config).await {
+            Some(connector) => connector,
+            None => return platform_error_result!("Unable to create USBTMC connector for Thorlabs PM100A")
+        };
         self.connector_usbtmc.init().await;
 
         let result = self.connector_usbtmc.ask("*IDN?".to_string()).await;

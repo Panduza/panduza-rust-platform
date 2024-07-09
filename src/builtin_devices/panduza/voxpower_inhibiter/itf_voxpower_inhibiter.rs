@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
+use panduza_core::platform_error_result;
 use panduza_core::meta::bpc;
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
@@ -22,50 +23,66 @@ struct VoxpowerInhibiterActions {
     
 }
 
+impl VoxpowerInhibiterActions {
+    async fn ask(&mut self, command: &[u8]) -> Result<String, PlatformError> {
+
+        let mut response_buf: &mut [u8] = &mut [0; 1024];
+
+        // Send the command then receive the answer
+        let response_len = match self.connector_tty.write_then_read(
+            command,
+            &mut response_buf,
+            self.time_lock_duration
+        ).await {
+            Ok(len) => len,
+            Err(_e) => return platform_error_result!("Failed to read and write")
+        };
+
+        let response_bytes = &response_buf[0..response_len];
+
+        // Parse the answer
+        match String::from_utf8(response_bytes.to_vec()) {
+            Ok(val) => Ok(val),
+            Err(_e) => platform_error_result!("Unexpected answer form Voxpower Inhibiter : could not parse as String")
+        }
+    }
+}
+
 #[async_trait]
 impl bpc::BpcActions for VoxpowerInhibiterActions {
 
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
+        
+        self.connector_tty = match tty::get(&self.serial_config).await {
+            Some(connector) => connector,
+            None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
+        };
 
-        self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
 
         return Ok(());
     }
 
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+
     /// Read the enable value
     /// 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
 
-        interface.lock().await.log_info(
-            format!("VoxpowerInhibiter - read enable value: {}", self.enable_value)
-        );
-
         let command = format!("S{}\n", self.id);
-        let command_bytes = command.as_bytes();
 
-        let mut response_buf: &mut [u8] = &mut [0; 1024];
-
-        // Send the command to get the ON/OFF state of the channel
-        let _result = self.connector_tty.write_then_read(
-            command_bytes,
-            &mut response_buf,
-            self.time_lock_duration,
-        ).await
-            .map(|nb_of_bytes| {
-                let response_bytes = &response_buf[0..nb_of_bytes];
-                let response_string = String::from_utf8(response_bytes.to_vec()).unwrap();
-
-                // Pin state High = channel inhibited (OFF)
-                // Pin state Low = channel enabled (ON)
-                self.enable_value = if response_string == "H" {
-                    false
-                } else {
-                    true
-                };
-            });
+        // High (inhibition ON) state when the channel is OFF
+        // Low (inhibition OFF) state when the channel is ON
+        self.enable_value = match self.ask(command.as_bytes()).await?.as_str() {
+            "H" => false,
+            "L" => true,
+            _ => return platform_error_result!("Unexpected answer form Voxpower Inhibiter")
+        };
 
         interface.lock().await.log_info(
             format!("Voxpower Inhibiter - channel_{} enable value : {}", self.id, self.enable_value)
@@ -95,6 +112,11 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
             format!("Voxpower Inhibiter - write enable value; {}", self.enable_value)
         );
     }
+
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
 
     /// Unused functions for the Voxpower
     /// 

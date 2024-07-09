@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -7,7 +8,6 @@ use panduza_core::device::{ traits::DeviceActions, traits::Producer, traits::Hun
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
-// use panduza_connectors::serial::tty::Config as SerialConfig;
 use panduza_connectors::usb::usb::Config as UsbConfig;
 
 mod itf_lbx_488_blc;
@@ -70,17 +70,17 @@ struct LBX488;
 impl DeviceActions for LBX488 {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+
+        let device_settings = device.settings.clone();
 
         println!("S0501::interface_builders");
         println!("{}", device_settings);
 
         let mut serial_conf = UsbConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
-
-        // serial_conf.serial_baudrate = Some(9600);
+        serial_conf.import_from_json_settings(&device_settings);
 
         let mut list = Vec::new();
         list.push(
@@ -96,13 +96,6 @@ impl DeviceActions for LBX488 {
 pub struct DeviceProducer;
 
 impl Producer for DeviceProducer {
-
-    // fn manufacturer(&self) -> String {
-    //     return "korad".to_string();
-    // }
-    // fn model(&self) -> String {
-    //     return "KA3005".to_string();
-    // }
 
     fn settings_props(&self) -> serde_json::Value {
         return json!([
@@ -121,11 +114,6 @@ impl Producer for DeviceProducer {
                 "type": "string",
                 "default": ""
             }
-            // {
-            //     "name": "serial_port_name",
-            //     "type": "string",
-            //     "default": ""
-            // }
         ]);
     }
 

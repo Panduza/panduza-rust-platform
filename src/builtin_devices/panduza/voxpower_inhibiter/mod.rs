@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::device::Device;
 use serde_json::json;
 
 use panduza_core::Error as PlatformError;
@@ -27,10 +28,12 @@ impl Hunter for DeviceHunter {
 
         // println!("DeviceHunter::hunt Voxpower inhibitor");
 
-        let ports = tokio_serial::available_ports();
-        for port in ports.unwrap() {
-            // println!("Port : {:?}", port);
 
+        let ports = match tokio_serial::available_ports() {
+            Ok(p) => p,
+            Err(_e) => return None
+        };
+        for port in ports {
             match port.port_type {
                 tokio_serial::SerialPortType::UsbPort(info) => {
                     if info.vid == VID && info.pid == PID {
@@ -69,16 +72,18 @@ struct VoxpowerInhibiter;
 impl DeviceActions for VoxpowerInhibiter {
 
     /// Create the interfaces
-    fn interface_builders(&self, device_settings: &serde_json::Value) 
+    fn interface_builders(&self, device: &Device)
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+
+        let device_settings = device.settings.clone();
 
         println!("Voxpower Inhibiter::interface_builders");
         println!("{}", device_settings);
 
         // Get the serial settings from the tree.json
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(device_settings);
+        serial_conf.import_from_json_settings(&device_settings);
 
         serial_conf.serial_baudrate = Some(9600);
 

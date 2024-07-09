@@ -43,6 +43,11 @@ impl Config {
 
     pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
 
+        // self.serial_port_name = match settings.get("serial_port_name") {
+        //     Some(val) => val,
+        //     None => 
+        // }
+
         self.serial_port_name =
             settings.get("serial_port_name")
                 .map(|v| v.as_str().unwrap().to_string());
@@ -169,6 +174,7 @@ impl Gate {
 pub struct TtyConnector {
     core: Option<Arc<tokio::sync::Mutex<TtyCore>>>,
 }
+pub type Connector = TtyConnector;
 
 impl TtyConnector {
     
