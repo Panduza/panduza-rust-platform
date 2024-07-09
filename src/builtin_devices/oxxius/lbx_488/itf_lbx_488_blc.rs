@@ -158,6 +158,7 @@ impl blc::BlcActions for LBX488BlcActions {
     async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
         let response_float = self.ask_float(b"?MAXLP").await?;
+        
         self.power_max = response_float * 0.001;
 
         interface.lock().await.log_info(
@@ -171,7 +172,9 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        self.power_value = self.ask_float(b"p?\r").await?;
+        let response_float = self.ask_float(b"?SP\r").await?;
+        self.power_value = response_float * 0.001;
+        println!("Success reading power value : {:?}", self.power_value);
 
         interface.lock().await.log_info(
             format!("read power : {}", self.power_value)
