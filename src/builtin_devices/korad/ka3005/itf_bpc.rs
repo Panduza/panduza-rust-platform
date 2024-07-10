@@ -154,7 +154,12 @@ pub fn build<A: Into<String>>(
             voltage_value: 0.0,
             current_value: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
-        })
+        }),
+        vec![
+            "enable".to_string(),
+            "voltage".to_string(),
+            "current".to_string()
+        ]
     )
 }
 

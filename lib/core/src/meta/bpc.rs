@@ -116,7 +116,8 @@ impl BpcInterface {
 // ----------------------------------------------------------------------------
 
 struct BpcStates {
-    bpc_interface: Arc<Mutex<BpcInterface>>
+    bpc_interface: Arc<Mutex<BpcInterface>>,
+    attributes_used: Vec<String>
 }
 
 
@@ -142,38 +143,49 @@ impl interface::fsm::States for BpcStates {
             Err(_e) => return __platform_error_result!("Unable to initialize BPC interface")
         };
 
-        // Register attributes
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("voltage", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
+        // If enable is used by the interface 
+        if self.attributes_used.contains(&"enable".to_string()) {
+            // Register enable attribute
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
 
-        // Init enable
-        let enable_value = match bpc_itf.actions.read_enable_value(&interface).await {
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read enable value")
-        };
+            // Init enable
+            let enable_value = match bpc_itf.actions.read_enable_value(&interface).await {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read enable value")
+            };
 
-        let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
-            Ok(att) => att,
-            Err(_e) => return __platform_error_result!("Unable to update attribute")
-        };
+            let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
+                Ok(att) => att,
+                Err(_e) => return __platform_error_result!("Unable to update attribute")
+            };
+        }
 
-        // Init voltage
-        let voltage_value = bpc_itf.actions.read_voltage_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_f64("voltage", "min", bpc_itf.params.voltage_min );
-        interface.lock().await.update_attribute_with_f64("voltage", "max", bpc_itf.params.voltage_max );
-        interface.lock().await.update_attribute_with_f64("voltage", "value", voltage_value);
-        interface.lock().await.update_attribute_with_f64("voltage", "decimals", bpc_itf.params.voltage_decimals as f64);
-        interface.lock().await.update_attribute_with_f64("voltage", "polling_cycle", 0.0);
+        // If voltage attribute is used by interface 
+        if self.attributes_used.contains(&"voltage".to_string()) {
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed("voltage", true));
 
-        // Init current
-        let current_value = bpc_itf.actions.read_current_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_f64("current", "min", bpc_itf.params.current_min );
-        interface.lock().await.update_attribute_with_f64("current", "max", bpc_itf.params.current_max );
-        interface.lock().await.update_attribute_with_f64("current", "value", current_value);
-        interface.lock().await.update_attribute_with_f64("current", "decimals", bpc_itf.params.current_decimals as f64);
-        interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
+            // Init voltage
+            let voltage_value = bpc_itf.actions.read_voltage_value(&interface).await.unwrap();
+            interface.lock().await.update_attribute_with_f64("voltage", "min", bpc_itf.params.voltage_min );
+            interface.lock().await.update_attribute_with_f64("voltage", "max", bpc_itf.params.voltage_max );
+            interface.lock().await.update_attribute_with_f64("voltage", "value", voltage_value);
+            interface.lock().await.update_attribute_with_f64("voltage", "decimals", bpc_itf.params.voltage_decimals as f64);
+            interface.lock().await.update_attribute_with_f64("voltage", "polling_cycle", 0.0);
+        }
 
+        // If current attribute is used by interface 
+        if self.attributes_used.contains(&"current".to_string()) { 
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
+
+             // Init current
+            let current_value = bpc_itf.actions.read_current_value(&interface).await.unwrap();
+            interface.lock().await.update_attribute_with_f64("current", "min", bpc_itf.params.current_min );
+            interface.lock().await.update_attribute_with_f64("current", "max", bpc_itf.params.current_max );
+            interface.lock().await.update_attribute_with_f64("current", "value", current_value);
+            interface.lock().await.update_attribute_with_f64("current", "decimals", bpc_itf.params.current_decimals as f64);
+            interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
+        }
+        
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
 
@@ -213,7 +225,8 @@ const ID_VOLTAGE: subscription::Id = 1;
 const ID_CURRENT: subscription::Id = 2;
 
 struct BpcSubscriber {
-    bpc_interface: Arc<Mutex<BpcInterface>>
+    bpc_interface: Arc<Mutex<BpcInterface>>,
+    attributes_used: Vec<String>
 }
 
 impl BpcSubscriber {
@@ -309,11 +322,19 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
     /// Get the list of attributes names
     ///
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
-        return vec![
-            (ID_ENABLE, "enable".to_string()),
-            (ID_VOLTAGE, "voltage".to_string()),
-            (ID_CURRENT, "current".to_string())
-        ];
+
+        let mut attributes_names: Vec<(subscription::Id, String)> = Vec::new();
+
+        if self.attributes_used.contains(&"enable".to_string()) {
+            attributes_names.push((ID_ENABLE, "enable".to_string()));
+        }
+        if self.attributes_used.contains(&"voltage".to_string()) {
+            attributes_names.push((ID_VOLTAGE, "voltage".to_string()));
+        }
+        if self.attributes_used.contains(&"current".to_string()) {
+            attributes_names.push((ID_CURRENT, "current".to_string()));
+        }
+        return attributes_names;
     }
 
 
@@ -328,47 +349,47 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
         match msg {
             subscription::Message::Mqtt(msg) => {
                 match msg.id() {
-                subscription::ID_PZA_CMDS_SET => {
-                    // interface.lock().await.publish_info().await;
+                    subscription::ID_PZA_CMDS_SET => {
+                        // interface.lock().await.publish_info().await;
 
-                    // only when running state
+                        // only when running state
 
-                    println!("BpcSubscriber::process: {:?}", msg.topic());
-                    println!("BpcSubscriber::process: {:?}", msg.payload());
+                        println!("BpcSubscriber::process: {:?}", msg.topic());
+                        println!("BpcSubscriber::process: {:?}", msg.payload());
 
-                    let payload = msg.payload();
-                    let oo = match serde_json::from_slice::<Value>(payload) {
-                        Ok(val) => val,
-                        Err(_e) => return __platform_error_result!("Unable to deserializa data")
-                    };
-                    
-                    let o = match oo.as_object() {
-                        Some(val) => val,
-                        None => return __platform_error_result!("No data provided")
-                    };
-
-
-                    for (attribute_name, fields) in o.iter() {
-                        let fields_obj = match fields.as_object() {
+                        let payload = msg.payload();
+                        let oo = match serde_json::from_slice::<Value>(payload) {
+                            Ok(val) => val,
+                            Err(_e) => return __platform_error_result!("Unable to deserializa data")
+                        };
+                        
+                        let o = match oo.as_object() {
                             Some(val) => val,
                             None => return __platform_error_result!("No data provided")
                         };
-                        for (field_name, field_data) in fields_obj.iter() {
-                            if attribute_name == "enable" && field_name == "value" {
-                                let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
-                            }
-                            else if attribute_name == "voltage" && field_name == "value" {
-                                let _ = self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
-                            }
-                            else if attribute_name == "current" && field_name == "value" {
-                                let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
+
+
+                        for (attribute_name, fields) in o.iter() {
+                            let fields_obj = match fields.as_object() {
+                                Some(val) => val,
+                                None => return __platform_error_result!("No data provided")
+                            };
+                            for (field_name, field_data) in fields_obj.iter() {
+                                if attribute_name == "enable" && field_name == "value" {
+                                    let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                                }
+                                else if attribute_name == "voltage" && field_name == "value" {
+                                    let _ = self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
+                                }
+                                else if attribute_name == "current" && field_name == "value" {
+                                    let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                                }
                             }
                         }
-                    }
-                    interface.lock().await.publish_all_attributes().await;
+                        interface.lock().await.publish_all_attributes().await;
 
 
-                },
+                    },
                     _ => {
                         // not managed by the common level
                     }
@@ -396,7 +417,8 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
 pub fn build<A: Into<String>>(
     name: A,
     params: BpcParams,
-    actions: Box<dyn BpcActions>
+    actions: Box<dyn BpcActions>,
+    attributes_used: Vec<String>
 ) -> InterfaceBuilder {
 
     let c = BpcInterface::new_am(params, actions);
@@ -405,8 +427,8 @@ pub fn build<A: Into<String>>(
         name,
         "bpc",
         "0.0",
-        Box::new(BpcStates{bpc_interface: c.clone()}),
-        Box::new(BpcSubscriber{bpc_interface: c.clone()})
+        Box::new(BpcStates{bpc_interface: c.clone(), attributes_used: attributes_used.clone()}),
+        Box::new(BpcSubscriber{bpc_interface: c.clone(), attributes_used: attributes_used.clone()})
     );
 }
 

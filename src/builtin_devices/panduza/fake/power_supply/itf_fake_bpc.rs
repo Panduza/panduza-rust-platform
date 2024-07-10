@@ -92,7 +92,12 @@ pub fn build<A: Into<String>>(
             enable_value: false,
             voltage_value: 0.0,
             current_value: 0.0,
-        })
+        }),
+        vec![
+            "enable".to_string(),
+            // "voltage".to_string(),
+            // "current".to_string()
+        ]
     )
 }
 
