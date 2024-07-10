@@ -91,24 +91,15 @@ impl interface::fsm::States for RelayStates {
     -> Result<(), PlatformError>
     {
         // Custom initialization slot
-        let _itf = match self.relay_interface.lock().await.actions.initializating(&interface).await {
-            Ok(i) => i,
-            Err(_e) => return __platform_error_result!("Unable to initialize powermeter interface")
-        };
+        self.relay_interface.lock().await.actions.initializating(&interface).await?;
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("state", true));
 
         // Init state
-        let state_value = match self.relay_interface.lock().await.actions.read_state_open(&interface).await {
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read state open")
-        };
+        let state_value = self.relay_interface.lock().await.actions.read_state_open(&interface).await?;
 
-        let _update_att = match interface.lock().await.update_attribute_with_bool("state", "open", state_value) {
-            Ok(att) => att,
-            Err(_e) => return __platform_error_result!("Unable to update attribute")
-        };
+        interface.lock().await.update_attribute_with_bool("state", "open", state_value)?;
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -165,12 +156,8 @@ impl RelaySubscriber {
         self.relay_interface.lock().await
             .actions.write_state_open(&interface, requested_value).await;
 
-        let r_value = match self.relay_interface.lock().await
-            .actions.read_state_open(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read state open")
-            };
+        let r_value = self.relay_interface.lock().await
+            .actions.read_state_open(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_bool("state", "open", r_value)
@@ -227,10 +214,7 @@ impl interface::subscriber::Subscriber for RelaySubscriber {
                         };
                         for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "state" && field_name == "open" {
-                                let _ = match self.process_state_open(&interface, attribute_name, field_name, field_data).await {
-                                    Ok(val) => val,
-                                    Err(_e) => return __platform_error_result!("Unable to process state open")
-                                };
+                                self.process_state_open(&interface, attribute_name, field_name, field_data).await?;
 
                             }
                         }

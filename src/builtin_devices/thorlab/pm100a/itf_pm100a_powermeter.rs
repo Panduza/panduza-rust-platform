@@ -29,9 +29,9 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create USBTMC connector for Thorlabs PM100A")
         };
-        self.connector_usbtmc.init().await;
+        self.connector_usbtmc.init().await?;
 
-        let result = self.connector_usbtmc.ask("*IDN?".to_string()).await;
+        let result = self.connector_usbtmc.ask("*IDN?".to_string()).await?;
 
         interface.lock().await.log_info(
             format!("PM100A - initializing: {}", result)
@@ -43,7 +43,7 @@ impl powermeter::PowermeterActions for PM100APowermeterActions {
     /// Read the measure value
     /// 
     async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
-        let result = self.connector_usbtmc.ask("READ?".to_string()).await;
+        let result = self.connector_usbtmc.ask("READ?".to_string()).await?;
         self.measure_value = result.parse::<f64>().expect("bad measure");
 
         interface.lock().await.log_info(

@@ -115,26 +115,6 @@ impl Gate {
         let key_string = Gate::generate_unique_key_from_config(config)?;
         let key= key_string.as_str();
 
-        // if !(self.instances.contains_key(&key)) {
-        //     self.instances.get(&key) = String::new();
-        //     match (Gate{instanes: self.instances}) {
-        //         Ok(mut new_instance) => {
-        //             async {
-        //                 new_instance.connect().await;
-        //             };
-                    
-        //             self.instances.get(&key) = new_instance;
-        //             tracing::info!(class="Platform", "connector created");
-        //         }
-        //         Err(e) => {
-        //             tracing::trace!(class="Platform", "Error during initialization");
-        //         }
-        //     }
-        // } else {
-        //     tracing::info!(class="Platform", "connector already created, use existing instance");
-        // }
-
-
         // if the instance is not found, it means that the port is not opened yet
         if ! self.instances.contains_key(key) {
 
@@ -375,7 +355,7 @@ impl TtyCore {
             -> Result<usize, PlatformError> {
 
 
-        let _ = self.time_locked_write(command, time_lock).await;
+        self.time_locked_write(command, time_lock).await?;
 
 
         let stream = match self.serial_stream.as_mut() {

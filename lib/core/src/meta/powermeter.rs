@@ -44,12 +44,8 @@ async fn update_measure(duration_between_measures: u64, interface: AmInterface, 
 {
     let mut interval = time::interval(time::Duration::from_millis(duration_between_measures));
     loop {
-        let r_value = match powermeter_state.lock().await
-            .actions.read_measure_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read measure value")
-            };
+        let r_value = powermeter_state.lock().await
+            .actions.read_measure_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_f64("measure", "value", r_value as f64);
@@ -115,19 +111,13 @@ impl interface::fsm::States for PowermeterStates {
         let mut powermeter_itf = self.powermeter_interface.lock().await;
 
         // Custom initialization slot
-        let _itf = match powermeter_itf.actions.initializating(&interface).await {
-            Ok(i) => i,
-            Err(_e) => return __platform_error_result!("Unable to initialize powermeter interface")
-        };
+        powermeter_itf.actions.initializating(&interface).await?;
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("measure", true));
 
         // Init measure
-        let measure_value = match powermeter_itf.actions.read_measure_value(&interface).await {
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read measure value")
-        };
+        let measure_value = powermeter_itf.actions.read_measure_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("measure", "value", measure_value);
         interface.lock().await.update_attribute_with_f64("measure", "decimals", powermeter_itf.params.measure_decimals as f64);
         interface.lock().await.update_attribute_with_f64("measure", "polling_cycle", 0.0);
@@ -183,12 +173,8 @@ impl PowermeterSubscriber {
     #[inline(always)]
     async fn process_measure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, _field_data: &Value) -> Result<(), PlatformError>
     {
-        let r_value = match self.powermeter_interface.lock().await
-            .actions.read_measure_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read measure value")
-            };
+        let r_value = self.powermeter_interface.lock().await
+            .actions.read_measure_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_f64("measure", "value", r_value as f64);
@@ -247,7 +233,7 @@ impl interface::subscriber::Subscriber for PowermeterSubscriber {
                         };
                         for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "measure" && field_name == "value" {
-                                let _ = self.process_measure_value(&interface, attribute_name, field_name, field_data).await;
+                                self.process_measure_value(&interface, attribute_name, field_name, field_data).await?;
                             }
                         }
                     }

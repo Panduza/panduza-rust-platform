@@ -29,14 +29,11 @@ impl S0501BlcActions {
         let mut response_buf: &mut [u8] = &mut [0; 1024];
 
         // Send the command then receive the answer
-        let response_len = match self.connector_tty.write_then_read(
+        let response_len = self.connector_tty.write_then_read(
             command,
             &mut response_buf,
             self.time_lock_duration
-        ).await {
-            Ok(len) => len,
-            Err(_e) => return platform_error_result!("Failed to read and write")
-        };
+        ).await?;
 
         let response_bytes = &response_buf[0..response_len];
 
@@ -96,7 +93,7 @@ impl blc::BlcActions for S0501BlcActions {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create TTY connector for Cobolt S0501")
         };
-        let _ = self.connector_tty.init().await;
+        self.connector_tty.init().await?;
 
         let response_string = self.ask_string(b"?\r").await?;
 
@@ -151,12 +148,12 @@ impl blc::BlcActions for S0501BlcActions {
 
         // println!("{} !!!!!!!!!!!!!!!!!!!!!!!!!!!", response);
 
-        let _result = self.connector_tty.write(
+        self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await
             .map(|_nb_of_bytes| {
-            });
+            })?;
         
         // Clean the buffer from previous values
         while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
@@ -204,13 +201,13 @@ impl blc::BlcActions for S0501BlcActions {
             format!("write enable value : {}", v)
         );
 
-        let _result = self.connector_tty.write(
+        self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await
             .map(|nb_of_bytes| {
                 println!("nb of bytes: {:?}", nb_of_bytes);
-            });
+            })?;
         
         // Clean the buffer from previous values
 
@@ -254,12 +251,12 @@ impl blc::BlcActions for S0501BlcActions {
 
         let command = format!("p {}\r", v);
 
-        let _result = self.connector_tty.write(
+        self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await
             .map(|_nb_of_bytes| {
-            });
+            })?;
 
         // Clean the buffer from previous values
         while self.cmd_expect(b"p?\r", "OK".to_string()).await.is_err() {
@@ -294,12 +291,12 @@ impl blc::BlcActions for S0501BlcActions {
 
         let command = format!("slc {}\r", v);
 
-        let _result = self.connector_tty.write(
+        self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await
             .map(|_nb_of_bytes| {
-            });
+            })?;
 
         // Clean the buffer from previous values
         while self.cmd_expect(b"glc?\r", "OK".to_string()).await.is_err() {

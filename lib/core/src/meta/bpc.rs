@@ -138,10 +138,7 @@ impl interface::fsm::States for BpcStates {
         let mut bpc_itf = self.bpc_interface.lock().await;
 
         // Custom initialization slot
-        let _itf = match bpc_itf.actions.initializating(&interface).await {
-            Ok(i) => i,
-            Err(_e) => return __platform_error_result!("Unable to initialize BPC interface")
-        };
+        bpc_itf.actions.initializating(&interface).await?;
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
@@ -149,21 +146,12 @@ impl interface::fsm::States for BpcStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
 
         // Init enable
-        let enable_value = match bpc_itf.actions.read_enable_value(&interface).await {
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read enable value")
-        };
+        let enable_value = bpc_itf.actions.read_enable_value(&interface).await?;
 
-        let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
-            Ok(att) => att,
-            Err(_e) => return __platform_error_result!("Unable to update attribute")
-        };
+        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value)?;
 
         // Init voltage
-        let voltage_value = match bpc_itf.actions.read_voltage_value(&interface).await {
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read voltage value")
-        };
+        let voltage_value = bpc_itf.actions.read_voltage_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("voltage", "min", bpc_itf.params.voltage_min );
         interface.lock().await.update_attribute_with_f64("voltage", "max", bpc_itf.params.voltage_max );
         interface.lock().await.update_attribute_with_f64("voltage", "value", voltage_value);
@@ -171,10 +159,7 @@ impl interface::fsm::States for BpcStates {
         interface.lock().await.update_attribute_with_f64("voltage", "polling_cycle", 0.0);
 
         // Init current
-        let current_value = match bpc_itf.actions.read_current_value(&interface).await {
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read current value")
-        };
+        let current_value = bpc_itf.actions.read_current_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("current", "min", bpc_itf.params.current_min );
         interface.lock().await.update_attribute_with_f64("current", "max", bpc_itf.params.current_max );
         interface.lock().await.update_attribute_with_f64("current", "value", current_value);
@@ -238,19 +223,11 @@ impl BpcSubscriber {
         self.bpc_interface.lock().await
             .actions.write_enable_value(&interface, requested_value).await;
 
-        let r_value = match self.bpc_interface.lock().await
-            .actions.read_enable_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read enable value")
-            };
+        let r_value = self.bpc_interface.lock().await
+            .actions.read_enable_value(&interface).await?;
 
-        let _update_att = match interface.lock().await
-            .update_attribute_with_bool("enable", "value", r_value)
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to update attribute")
-            };
+        interface.lock().await
+            .update_attribute_with_bool("enable", "value", r_value)?;
         
         Ok(())
     }
@@ -268,12 +245,8 @@ impl BpcSubscriber {
         self.bpc_interface.lock().await
             .actions.write_voltage_value(&interface, requested_value as f64).await;
 
-        let r_value = match self.bpc_interface.lock().await
-            .actions.read_voltage_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read voltage")
-            };
+        let r_value = self.bpc_interface.lock().await
+            .actions.read_voltage_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_f64("voltage", "value", r_value as f64);
@@ -294,12 +267,8 @@ impl BpcSubscriber {
         self.bpc_interface.lock().await
             .actions.write_current_value(&interface, requested_value as f64).await;
 
-        let r_value = match self.bpc_interface.lock().await
-            .actions.read_current_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read voltage as f64")
-            };
+        let r_value = self.bpc_interface.lock().await
+            .actions.read_current_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_f64("current", "value", r_value as f64);
@@ -362,13 +331,13 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                         };
                         for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "enable" && field_name == "value" {
-                                let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await?;
                             }
                             else if attribute_name == "voltage" && field_name == "value" {
-                                let _ = self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
+                                self.process_voltage_value(interface, attribute_name, field_name, field_data).await?;
                             }
                             else if attribute_name == "current" && field_name == "value" {
-                                let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                                self.process_current_value(interface, attribute_name, field_name, field_data).await?;
                             }
                         }
                     }

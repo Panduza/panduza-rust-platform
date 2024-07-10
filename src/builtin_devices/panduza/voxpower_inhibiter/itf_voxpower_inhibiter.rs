@@ -29,14 +29,11 @@ impl VoxpowerInhibiterActions {
         let mut response_buf: &mut [u8] = &mut [0; 1024];
 
         // Send the command then receive the answer
-        let response_len = match self.connector_tty.write_then_read(
+        let response_len = self.connector_tty.write_then_read(
             command,
             &mut response_buf,
             self.time_lock_duration
-        ).await {
-            Ok(len) => len,
-            Err(_e) => return platform_error_result!("Failed to read and write")
-        };
+        ).await?;
 
         let response_bytes = &response_buf[0..response_len];
 
@@ -60,7 +57,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
             None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
         };
 
-        let _ = self.connector_tty.init().await;
+        self.connector_tty.init().await?;
 
         return Ok(());
     }

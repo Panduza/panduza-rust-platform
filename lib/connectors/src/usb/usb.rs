@@ -1,5 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
-use nusb::{transfer::Direction, Interface};
+use nusb::{transfer::Direction, transfer::EndpointType, Interface};
 
 use tokio;
 use lazy_static::lazy_static;
@@ -40,7 +40,7 @@ impl Config {
 
     pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) -> PlatformFunctionResult {
 
-        // get VID hexadecimal value
+        // Get VID hexadecimal value
         self.usb_vendor = match settings.get("usb_vendor")
         {
             Some(val) => match val.as_str()
@@ -55,7 +55,7 @@ impl Config {
             None => return platform_error_result!("Missing usb_vendor from tree.json")
         };
 
-        // get PID hexadecimal value
+        // Get PID hexadecimal value
         self.usb_model = match settings.get("usb_model")
         {
             Some(val) => match val.as_str()
@@ -70,6 +70,7 @@ impl Config {
             None => return platform_error_result!("Missing usb_model from tree.json")
         };
 
+        // Get serial number
         self.usb_serial = match settings.get("usb_serial")
         {
             Some(val) => match val.as_str()
@@ -227,14 +228,15 @@ impl UsbCore {
 
     async fn write(&mut self, command: &[u8]) -> PlatformFunctionResult {
         
-        // find the Bulk Out endpoint to send the message
         let itf = match self.interface.as_ref() {
             Some(val) => val,
             None => return platform_error_result!("No USB interface")
         };
+        
+        // find the Bulk Out endpoint to send the message
         for interface_descriptor in itf.descriptors() {
             for endpoint in interface_descriptor.endpoints() {
-                if endpoint.direction() == Direction::Out {
+                if endpoint.direction() == Direction::Out && endpoint.transfer_type() == EndpointType::Bulk {
                     // Send the command on the usb
                     match block_on(itf.bulk_out(endpoint.address(), command.to_vec())).into_result() {
                         Ok(_v) => return Ok(()),
@@ -256,9 +258,10 @@ impl UsbCore {
             Some(val) => val,
             None => return platform_error_result!("No USB interface")
         };
+
         for interface_descriptor in itf.descriptors() {
             for endpoint in interface_descriptor.endpoints() {
-                if endpoint.direction() == Direction::In {
+                if endpoint.direction() == Direction::In && endpoint.transfer_type() == EndpointType::Bulk {
                     let response = nusb::transfer::RequestBuffer::new(32 as usize);
                     let data = match block_on(itf.bulk_in(endpoint.address(), response)).into_result() {
                         Ok(val) => val,

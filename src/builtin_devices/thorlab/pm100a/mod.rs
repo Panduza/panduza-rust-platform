@@ -80,7 +80,7 @@ impl DeviceActions for PM100A {
         println!("{}", device_settings);
 
         let mut serial_conf = UsbtmcConfig::new();
-        serial_conf.import_from_json_settings(&device_settings);
+        serial_conf.import_from_json_settings(&device_settings)?;
 
         // serial_conf.serial_baudrate = Some(9600);
 
