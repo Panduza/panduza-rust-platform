@@ -177,7 +177,7 @@ impl Factory {
             product_map.insert("settings_props".to_string(), producer_obj.settings_props() );
             product_map.insert("instances".to_string(), 
                 serde_json::Value::Array(vec![]) );
-
+                
             store_map.insert(producer_ref.to_string(), 
                 serde_json::Value::Object(product_map) );
         }

@@ -192,9 +192,7 @@ impl Platform {
 
                         execute_service_boot(services.clone()).await?;
 
-                        // Load the tree file
-                        if let Err(e) = Platform::load_tree_file(services.clone()).await
-                        {
+                        if let Err(e) = Platform::load_tree_file(services.clone()).await {
                             tracing::warn!(class="Platform", "Failed to load tree: {}", e);
                             tracing::warn!(class="Platform", "Continue with default configuration");
                         }
@@ -223,7 +221,6 @@ impl Platform {
                     // --------------------------------------------------------
                     // --- HUNT ---
                     if services.lock().await.hunt_requested() {
-
                         if execute_service_hunt(services.clone(), devices.clone()).await.is_err() {
                             return __platform_error_result!("Failed to hunt");
                         }
@@ -247,9 +244,6 @@ impl Platform {
     /// Start the broker connection
     ///
     async fn start_broker_connection(services: AmServices, devices: device::AmManager, connection: connection::AmManager) {
-
-
-
 
         let sss = services.lock().await;
         let oci = sss.connection_info();
@@ -358,6 +352,7 @@ impl Platform {
 
         let tree_ref = services_lock.get_tree_content();
 
+        tracing::info!(class="Platform", "store : {}", tree_ref);
 
         let devices_definitions= tree_ref.get("devices");
         match devices_definitions {

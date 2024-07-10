@@ -18,7 +18,6 @@ use crate::FunctionResult as PlatformFunctionResult;
 
 pub struct BlcParams {
     pub power_min: f64,
-    pub power_max: f64,
     pub power_decimals: i32,
 
     pub current_min: f64,
@@ -41,6 +40,8 @@ pub trait BlcActions: Send + Sync {
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> Result<(), PlatformError>;
+
+    async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
@@ -140,9 +141,11 @@ impl interface::fsm::States for BlcStates {
         interface.lock().await.update_attribute_with_bool("enable", "value", enable_value)?;
 
         // Init power
+        let max_power = blc_itf.actions.read_power_max(&interface).await.unwrap();
+        println!("max power : {}", max_power);
         let power_value = blc_itf.actions.read_power_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
-        interface.lock().await.update_attribute_with_f64("power", "max", blc_itf.params.power_max );
+        interface.lock().await.update_attribute_with_f64("power", "max", max_power);
         interface.lock().await.update_attribute_with_f64("power", "value", power_value);
         interface.lock().await.update_attribute_with_f64("power", "decimals", blc_itf.params.power_decimals as f64);
         interface.lock().await.update_attribute_with_f64("power", "polling_cycle", 0.0);

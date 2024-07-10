@@ -26,7 +26,8 @@ impl Hunter for DeviceHunter {
 
         let mut bag = Vec::new();
 
-        println!("DeviceHunter::hunt");
+        // println!("DeviceHunter::hunt Voxpower inhibitor");
+
 
         let ports = match tokio_serial::available_ports() {
             Ok(p) => p,
@@ -36,13 +37,14 @@ impl Hunter for DeviceHunter {
             match port.port_type {
                 tokio_serial::SerialPortType::UsbPort(info) => {
                     if info.vid == VID && info.pid == PID {
-                        println!("Found device");
+                        println!("Found device : Voxpower Inhibiter");
 
                         bag.push(json!(
                             {
                                 "name": "Voxpower Inhibiter",
                                 "ref": "panduza.voxpower_inhibiter",
                                 "settings": {
+                                    "serial_baudrate": 9600,
                                     "usb_vendor": format!("{:04x}", info.vid),
                                     "usb_model": format!("{:04x}", info.pid),
                                     "usb_serial": info.serial_number,

@@ -29,7 +29,7 @@ impl Hunter for DeviceHunter {
 
         let mut bag = Vec::new();
 
-        println!("DeviceHunter::hunt");
+        // println!("DeviceHunter::hunt");
 
         let ports = match tokio_serial::available_ports() {
             Ok(p) => p,
@@ -48,6 +48,7 @@ impl Hunter for DeviceHunter {
                                 "name": "Cobolt S0501",
                                 "ref": "cobolt.s0501",
                                 "settings": {
+                                    "serial_baudrate": 115200,
                                     "usb_vendor": format!("{:04x}", info.vid),
                                     "usb_model": format!("{:04x}", info.pid),
                                     "usb_serial": info.serial_number,

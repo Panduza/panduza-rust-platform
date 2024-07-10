@@ -1,3 +1,5 @@
+use core::f64;
+
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
@@ -15,6 +17,7 @@ struct S0501BlcActions {
     serial_config: SerialConfig,
     mode_value: String,
     enable_value: bool,
+    power_max: f64,
     power_value: f64,
     current_value: f64,
     time_lock_duration: Option<tokio::time::Duration>,
@@ -241,6 +244,30 @@ impl blc::BlcActions for S0501BlcActions {
         return Ok(self.power_value);
     }
 
+    /// Read max power value 
+    /// 
+    async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+
+        let model_number = self.ask_string(b"glm?\r").await?;
+        let vector_model_info: Vec<&str> = model_number.split("-").collect();
+        let power_max_string = vector_model_info[3].to_string();
+        
+        match power_max_string.parse::<f64>() {
+            Ok(power_max) => {
+                self.power_max = power_max * 0.001;
+            },
+            Err(_) => {
+                return platform_error_result!("Failed to parse max power in Cobolt s0501");
+            }
+        }
+
+        interface.lock().await.log_info(
+            format!("read max power : {}", self.power_value)
+        );
+
+        return Ok(self.power_max);
+    }
+
     /// Write the power value
     /// 
     async fn write_power_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
@@ -315,11 +342,11 @@ pub fn build<A: Into<String>>(
     serial_config: &SerialConfig
 ) -> InterfaceBuilder {
 
+    
     return blc::build(
         name, 
         blc::BlcParams {
             power_min: 0.0,
-            power_max: 0.3,
             power_decimals: 3,
 
             current_min: 0.0,
@@ -333,6 +360,7 @@ pub fn build<A: Into<String>>(
             enable_value: false,
             power_value: 0.0,
             current_value: 0.0,
+            power_max: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         })
     )
