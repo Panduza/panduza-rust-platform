@@ -271,7 +271,12 @@ pub fn build<A: Into<String>>(
             serial_config: serial_config.clone(),
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
             channel: channel
-        })
+        }),
+        vec![
+            "enable".to_string(),
+            "voltage".to_string(),
+            "current".to_string()
+        ]
     )
 }
 
