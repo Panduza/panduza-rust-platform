@@ -24,20 +24,23 @@ impl LBX488BlcActions {
 
     /// Wrapper to format the commands
     /// 
-    async fn ask(&mut self, command: &[u8]) -> String {
+    async fn ask(&mut self, command: &[u8]) -> Result<String, PlatformError> {
 
         let mut cmd = vec![0; 32];
         cmd[..command.len()].copy_from_slice(command);
 
-        self.connector_usb.write(cmd.as_ref()).await;
-        self.connector_usb.read().await
+        self.connector_usb.write(cmd.as_ref()).await?;
+        match self.connector_usb.read().await {
+            Ok(val) => Ok(val),
+            Err(_e) => platform_error_result!("Unable to read")
+        }
     }
 
     /// Parse the data into f64
     /// 
     async fn ask_float(&mut self, command: &[u8]) -> Result<f64, PlatformError> {
 
-        match self.ask(command).await.trim_end_matches("\0").to_string().parse::<f64>() {
+        match self.ask(command).await?.trim_end_matches("\0").to_string().parse::<f64>() {
             Ok(f) => Ok(f),
             Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
         }
@@ -55,9 +58,9 @@ impl blc::BlcActions for LBX488BlcActions {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create USB connector for Oxxius LBX488")
         };
-        self.connector_usb.init().await;
+        self.connector_usb.init().await?;
 
-        let result = self.ask("?HID".as_bytes()).await;
+        let result = self.ask("?HID".as_bytes()).await?;
 
         interface.lock().await.log_info(
             format!("LBX_488 - initializing: {}", result)
@@ -78,12 +81,12 @@ impl blc::BlcActions for LBX488BlcActions {
 
         self.mode_value = "no_regulation".to_string();
 
-        let acc = self.ask("?ACC".as_bytes()).await;
+        let acc = self.ask("?ACC".as_bytes()).await?;
         if acc == "1\x00" {
             self.mode_value = "constant_current".to_string();
         }
         
-        let apc = self.ask("?APC".as_bytes()).await;
+        let apc = self.ask("?APC".as_bytes()).await?;
         if apc == "1\x00" {
             self.mode_value = "constant_power".to_string();
         }
@@ -105,7 +108,7 @@ impl blc::BlcActions for LBX488BlcActions {
             _ => return platform_error_result!("Unexpected command for mode value")
         };
 
-        self.ask(command.as_bytes()).await;
+        self.ask(command.as_bytes()).await?;
         return Ok(());
     }
 
@@ -118,7 +121,7 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn read_enable_value(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
 
-        let emission = self.ask("?L".as_bytes()).await;
+        let emission = self.ask("?L".as_bytes()).await?;
         if emission == "1\x00" {
             self.enable_value = true;
         } else {
@@ -139,7 +142,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
         let command = format!("L {}", val_int);
 
-        let status = self.ask(command.as_bytes()).await;
+        let status = self.ask(command.as_bytes()).await?;
         
         interface.lock().await.log_info(
             format!("write enable value : {}", status)
@@ -177,7 +180,7 @@ impl blc::BlcActions for LBX488BlcActions {
             format!("write power : {}", val_mw)
         );
 
-        self.ask(command.as_bytes()).await;
+        self.ask(command.as_bytes()).await?;
         return Ok(());
     }
 
@@ -213,7 +216,7 @@ impl blc::BlcActions for LBX488BlcActions {
             format!("write current : {}", val_ma)
         );
 
-        self.ask(command.as_bytes()).await;
+        self.ask(command.as_bytes()).await?;
         return Ok(());
     }
 }
