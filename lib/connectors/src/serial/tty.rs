@@ -57,35 +57,35 @@ impl Config {
             None => return platform_error_result!("Missing serial_baudrate from tree.json")
         };
 
-        // get VID hexadecimal value
-        self.usb_vendor = match settings.get("usb_vendor")
-        {
-            Some(val) => match val.as_str()
-            {
-                Some(s) => match u16::from_str_radix(s, 16)
-                {
-                    Ok(val) => Some(val),
-                    Err(_e) => return platform_error_result!("usb_vendor not an hexadecimal value")
-                },
-                None => return platform_error_result!("usb_vendor not a String")
-            },
-            None => return platform_error_result!("Missing usb_vendor from tree.json")
-        };
+        // // get VID hexadecimal value
+        // self.usb_vendor = match settings.get("usb_vendor")
+        // {
+        //     Some(val) => match val.as_str()
+        //     {
+        //         Some(s) => match u16::from_str_radix(s, 16)
+        //         {
+        //             Ok(val) => Some(val),
+        //             Err(_e) => return platform_error_result!("usb_vendor not an hexadecimal value")
+        //         },
+        //         None => return platform_error_result!("usb_vendor not a String")
+        //     },
+        //     None => return platform_error_result!("Missing usb_vendor from tree.json")
+        // };
 
-        // get PID hexadecimal value
-        self.usb_model = match settings.get("usb_model")
-        {
-            Some(val) => match val.as_str()
-            {
-                Some(s) => match u16::from_str_radix(s, 16)
-                {
-                    Ok(val) => Some(val),
-                    Err(_e) => return platform_error_result!("usb_model not an hexadecimal value")
-                },
-                None => return platform_error_result!("usb_model not a String")
-            },
-            None => return platform_error_result!("Missing usb_model from tree.json")
-        };
+        // // get PID hexadecimal value
+        // self.usb_model = match settings.get("usb_model")
+        // {
+        //     Some(val) => match val.as_str()
+        //     {
+        //         Some(s) => match u16::from_str_radix(s, 16)
+        //         {
+        //             Ok(val) => Some(val),
+        //             Err(_e) => return platform_error_result!("usb_model not an hexadecimal value")
+        //         },
+        //         None => return platform_error_result!("usb_model not a String")
+        //     },
+        //     None => return platform_error_result!("Missing usb_model from tree.json")
+        // };
 
         self.usb_serial = match settings.get("usb_serial")
         {
@@ -148,7 +148,7 @@ impl Gate {
                 for port in ports {
                     match port.port_type {
                         tokio_serial::SerialPortType::UsbPort(info) => {
-                            if Some(info.vid) == config.usb_vendor && Some(info.pid) == config.usb_model {
+                            if info.serial_number == config.usb_serial {
                                 return Ok(port.port_name);
                             }
                         },
@@ -263,7 +263,7 @@ impl TtyCore {
             return Ok(());
         }
 
-        if self.config.serial_port_name.is_none() && self.config.usb_vendor.is_some() && self.config.usb_model.is_some() {
+        if self.config.serial_port_name.is_none() && self.config.usb_serial.is_some() {
 
             let ports = match tokio_serial::available_ports() {
                 Ok(p) => p,
@@ -272,7 +272,7 @@ impl TtyCore {
             for port in ports {
                 match port.port_type {
                     tokio_serial::SerialPortType::UsbPort(info) => {
-                        if Some(info.vid) == self.config.usb_vendor && Some(info.pid) == self.config.usb_model {
+                        if info.serial_number == self.config.usb_serial {
                             self.config.serial_port_name = Some(port.port_name);
                         }
                     },

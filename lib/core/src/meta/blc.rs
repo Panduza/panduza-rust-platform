@@ -141,7 +141,7 @@ impl interface::fsm::States for BlcStates {
         interface.lock().await.update_attribute_with_bool("enable", "value", enable_value)?;
 
         // Init power
-        let max_power = blc_itf.actions.read_power_max(&interface).await.unwrap();
+        let max_power = blc_itf.actions.read_power_max(&interface).await?;
         println!("max power : {}", max_power);
         let power_value = blc_itf.actions.read_power_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
