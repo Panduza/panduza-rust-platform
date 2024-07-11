@@ -1,9 +1,13 @@
 use std::{collections::HashMap, sync::Arc};
-use nusb::{transfer::Direction, Interface};
+use nusb::{transfer::Direction, transfer::EndpointType, Interface};
 
 use tokio;
 use lazy_static::lazy_static;
 use futures_lite::future::block_on;
+
+use panduza_core::FunctionResult as PlatformFunctionResult;
+use panduza_core::Error as PlatformError;
+use panduza_core::platform_error_result;
 
 lazy_static! {
     static ref GATE : tokio::sync::Mutex<Gate>
@@ -34,28 +38,50 @@ impl Config {
         }
     }
 
-    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
+    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) -> PlatformFunctionResult {
 
-        let usb_vendor_str = 
-            settings.get("usb_vendor")
-                .map(|v| v.as_str().unwrap());
+        // Get VID hexadecimal value
+        self.usb_vendor = match settings.get("usb_vendor")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => match u16::from_str_radix(s, 16)
+                {
+                    Ok(val) => Some(val),
+                    Err(_e) => return platform_error_result!("usb_vendor not an hexadecimal value")
+                },
+                None => return platform_error_result!("usb_vendor not a String")
+            },
+            None => return platform_error_result!("Missing usb_vendor from tree.json")
+        };
 
-        // get VID hexadecimal value
-        self.usb_vendor =
-            Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
+        // Get PID hexadecimal value
+        self.usb_model = match settings.get("usb_model")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => match u16::from_str_radix(s, 16)
+                {
+                    Ok(val) => Some(val),
+                    Err(_e) => return platform_error_result!("usb_model not an hexadecimal value")
+                },
+                None => return platform_error_result!("usb_model not a String")
+            },
+            None => return platform_error_result!("Missing usb_model from tree.json")
+        };
 
-        let usb_model_str = 
-            settings.get("usb_model")
-                .map(|v| v.as_str().unwrap());
+        // Get serial number
+        self.usb_serial = match settings.get("usb_serial")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => Some(s.to_string()),
+                None => return platform_error_result!("usb_serial not a String")
+            },
+            None => return platform_error_result!("Missing usb_serial from tree.json")
+        };
 
-        // get PID hexadecimal value
-        self.usb_model =
-            Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
-
-        self.usb_serial =
-            settings.get("usb_serial")
-                .map(|v| v.as_str().unwrap().to_string());
-
+        Ok(())
     }
 }
 
@@ -96,8 +122,9 @@ impl Gate {
     ///
     fn generate_unique_key_from_config(config: &Config) -> Option<String> {
         // Check if the usb vendor and model are provided
-        if let Some(k) = Some(format!("{}_{}_{}", config.usb_vendor.unwrap(), config.usb_model.unwrap(), config.usb_serial.as_ref().unwrap())) {
-            return Some(k.clone());
+        if config.usb_vendor.is_some() && config.usb_model.is_some() && config.usb_serial.is_some() {
+            let k = format!("{}_{}_{}", config.usb_vendor.unwrap(), config.usb_model.unwrap(), config.usb_serial.as_ref().unwrap());
+            return Some(k);
         }
 
         // Finally unable to generate a key with the config
@@ -133,36 +160,28 @@ impl UsbConnector {
         }
     }
 
-    pub async fn init(&mut self) {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .init()
-            .await;
+    pub async fn init(&mut self) -> PlatformFunctionResult {
+        let _ = match self.core.as_ref() {
+            Some(val) => val.lock().await.init().await,
+            None => return platform_error_result!("Unable to initialize USB connector")
+        };
+
+        Ok(())
     }
 
 
-    pub async fn write(&mut self, command: &[u8]) {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .write(command)
-            .await
+    pub async fn write(&mut self, command: &[u8]) -> PlatformFunctionResult {
+        match self.core.as_ref() {
+            Some(val) => val.lock().await.write(command).await,
+            None => platform_error_result!("Unable to write")
+        }
     }
 
-    pub async fn read(&mut self) 
-            -> String {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .read()
-            .await
+    pub async fn read(&mut self) -> Result<String, PlatformError> {
+        match self.core.as_ref() {
+            Some(val) => val.lock().await.read().await,
+            None => platform_error_result!("Unable to write")
+        }
     }
 
 }
@@ -182,55 +201,82 @@ impl UsbCore {
         }
     }
 
-    async fn init(&mut self) {
+    async fn init(&mut self) -> PlatformFunctionResult {
 
         // Open device with to provided VID and PID
         // TODO find the device with the serial number
-        let devices = nusb::list_devices()
-            .unwrap()
-            .find(|d| d.vendor_id() == self._config.usb_vendor.unwrap() && d.product_id() == self._config.usb_model.unwrap())
+        let devices = match nusb::list_devices() {
+            Ok(val) => val,
+            Err(_e) => return platform_error_result!("Unable to list USB devices")
+        }
+            .find(|d| Some(d.vendor_id()) == self._config.usb_vendor && Some(d.product_id()) == self._config.usb_model)
             .expect("device is not connected");
 
-        let device = devices.open().unwrap();
-        self.interface = Some(device.claim_interface(0).unwrap());
+        let device = match devices.open() {
+            Ok(val) => val,
+            Err(_e) => return platform_error_result!("Unable to open USB device")
+        };
 
+        self.interface = match device.claim_interface(0) {
+            Ok(val) => Some(val),
+            Err(_e) => return platform_error_result!("Unable to create USB device interface")
+        };
+
+        Ok(())
     }
 
 
-    async fn write(&mut self, command: &[u8]) {
+    async fn write(&mut self, command: &[u8]) -> PlatformFunctionResult {
+        
+        let itf = match self.interface.as_ref() {
+            Some(val) => val,
+            None => return platform_error_result!("No USB interface")
+        };
         
         // find the Bulk Out endpoint to send the message
-        for interface_descriptor in self.interface.as_ref().unwrap().descriptors() {
+        for interface_descriptor in itf.descriptors() {
             for endpoint in interface_descriptor.endpoints() {
-                if endpoint.direction() == Direction::Out {
+                if endpoint.direction() == Direction::Out && endpoint.transfer_type() == EndpointType::Bulk {
                     // Send the command on the usb
-                    block_on(self.interface.as_ref().unwrap().bulk_out(endpoint.address(), command.to_vec()))
-                        .into_result()
-                        .unwrap();
+                    match block_on(itf.bulk_out(endpoint.address(), command.to_vec())).into_result() {
+                        Ok(_v) => return Ok(()),
+                        Err(_e) => return platform_error_result!("Unable to write on USB")
+                    }
                 }
             }
         }
+        Ok(())
     }
 
 
-    async fn read(&mut self) 
-        -> String {
+    async fn read(&mut self) -> Result<String, PlatformError> {
 
         let mut msg = String::new();
 
         // find the Bulk In endpoint to receive the message
-        for interface_descriptor in self.interface.as_ref().unwrap().descriptors() {
+        let itf = match self.interface.as_ref() {
+            Some(val) => val,
+            None => return platform_error_result!("No USB interface")
+        };
+
+        for interface_descriptor in itf.descriptors() {
             for endpoint in interface_descriptor.endpoints() {
-                if endpoint.direction() == Direction::In {
+                if endpoint.direction() == Direction::In && endpoint.transfer_type() == EndpointType::Bulk {
                     let response = nusb::transfer::RequestBuffer::new(32 as usize);
-                    let data = block_on(self.interface.as_ref().unwrap().bulk_in(endpoint.address(), response)).into_result().unwrap();
+                    let data = match block_on(itf.bulk_in(endpoint.address(), response)).into_result() {
+                        Ok(val) => val,
+                        Err(_e) => return platform_error_result!("Unable to read USB data")
+                    };
                     
-                    msg = String::from_utf8(data).unwrap();
+                    msg = match String::from_utf8(data) {
+                        Ok(val) => val,
+                        Err(_e) => return platform_error_result!("Unable to decode received USB data")
+                    };
                 }
             }
         }
 
-        msg
+        Ok(msg)
     }
 
 }

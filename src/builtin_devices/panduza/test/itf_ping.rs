@@ -122,6 +122,7 @@ impl interface::fsm::States for TestInterfaceStates {
 
 
         ii.set_event_init_done();
+
         Ok(())
     }
 

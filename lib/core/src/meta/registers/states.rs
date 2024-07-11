@@ -11,11 +11,11 @@ use crate::attribute;
 
 use futures::FutureExt;
 
+use crate::Error as PlatformError;
+
 use crate::interface::ThreadSafeInterface;
 
 use crate::interface::fsm::States as InterfaceStates;
-
-use crate::Error as PlatformError;
 
 use super::interface::MetaInterface;
 
@@ -144,6 +144,7 @@ impl InterfaceStates for MetaStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+
         Ok(())
     }
 

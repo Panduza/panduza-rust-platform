@@ -29,7 +29,7 @@ impl bpc::BpcActions for Ka3005BpcActions {
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
 
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
-        self.connector_tty.init().await;
+        let _ = self.connector_tty.init().await;
 
         println!("yooooo!");
 

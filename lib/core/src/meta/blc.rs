@@ -117,15 +117,13 @@ impl interface::fsm::States for BlcStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
+    async fn initializating(&self, interface: &AmInterface)
+    -> Result<(), PlatformError>
     {
         let mut blc_itf = self.blc_interface.lock().await;
 
         // Custom initialization slot
-        let _itf = match blc_itf.actions.initializating(&interface).await {
-            Ok(i) => i,
-            Err(_e) => return __platform_error_result!("Unable to initialize BLC interface")
-        };
+        blc_itf.actions.initializating(&interface).await?;
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("mode", true));
@@ -134,27 +132,18 @@ impl interface::fsm::States for BlcStates {
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
 
         // Init mode
-        let mode_value = match blc_itf.actions.read_mode_value(&interface).await{
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read mode value")
-        };
+        let mode_value = blc_itf.actions.read_mode_value(&interface).await?;
         interface.lock().await.update_attribute_with_string("mode", "value", &mode_value);
 
         // Init enable
-        let enable_value = match blc_itf.actions.read_enable_value(&interface).await{
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read mode value")
-        };
+        let enable_value = blc_itf.actions.read_enable_value(&interface).await?;
         
-        let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
-            Ok(att) => att,
-            Err(_e) => return __platform_error_result!("Unable to update attribute")
-        };
+        interface.lock().await.update_attribute_with_bool("enable", "value", enable_value)?;
 
         // Init power
         let max_power = blc_itf.actions.read_power_max(&interface).await.unwrap();
         println!("max power : {}", max_power);
-        let power_value = blc_itf.actions.read_power_value(&interface).await.unwrap();
+        let power_value = blc_itf.actions.read_power_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
         interface.lock().await.update_attribute_with_f64("power", "max", max_power);
         interface.lock().await.update_attribute_with_f64("power", "value", power_value);
@@ -162,7 +151,7 @@ impl interface::fsm::States for BlcStates {
         interface.lock().await.update_attribute_with_f64("power", "polling_cycle", 0.0);
 
         // Init current
-        let current_value = blc_itf.actions.read_current_value(&interface).await.unwrap();
+        let current_value = blc_itf.actions.read_current_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("current", "min", blc_itf.params.current_min );
         interface.lock().await.update_attribute_with_f64("current", "max", blc_itf.params.current_max );
         interface.lock().await.update_attribute_with_f64("current", "value", current_value);
@@ -174,7 +163,7 @@ impl interface::fsm::States for BlcStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
-        
+
         Ok(())
     }
 
@@ -225,15 +214,11 @@ impl BlcSubscriber {
             Some(str) => str,
             None => return __platform_error_result!("Mode value not provided")
         }.to_string();
-        let _ =self.blc_interface.lock().await
-            .actions.write_mode_value(&interface, requested_value).await;
+        self.blc_interface.lock().await
+            .actions.write_mode_value(&interface, requested_value).await?;
 
-        let r_value = match self.blc_interface.lock().await
-            .actions.read_mode_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read mode value")
-            };
+        let r_value = self.blc_interface.lock().await
+            .actions.read_mode_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_string("mode", "value", &r_value);
@@ -251,22 +236,14 @@ impl BlcSubscriber {
             Some(bool) => bool,
             None => return __platform_error_result!("Enable value not provided")
         };
-        let _ = self.blc_interface.lock().await
-            .actions.write_enable_value(&interface, requested_value).await;
+        self.blc_interface.lock().await
+            .actions.write_enable_value(&interface, requested_value).await?;
 
-        let r_value = match self.blc_interface.lock().await
-            .actions.read_enable_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read enable value")
-            };
+        let r_value = self.blc_interface.lock().await
+            .actions.read_enable_value(&interface).await?;
 
-        let _update_att = match interface.lock().await
-            .update_attribute_with_bool("enable", "value", r_value)
-            {
-                Ok(att) => att,
-                Err(_e) => return __platform_error_result!("Unable to update attribute")
-            };
+        interface.lock().await
+            .update_attribute_with_bool("enable", "value", r_value)?;
 
         Ok(())
     }
@@ -281,15 +258,11 @@ impl BlcSubscriber {
             Some(val) => val,
             None => return __platform_error_result!("Power value not porvided")
         };
-        let _ = self.blc_interface.lock().await
-            .actions.write_power_value(&interface, requested_value as f64).await;
+        self.blc_interface.lock().await
+            .actions.write_power_value(&interface, requested_value as f64).await?;
 
-        let r_value = match self.blc_interface.lock().await
-            .actions.read_power_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read power")
-            };
+            let r_value = self.blc_interface.lock().await
+            .actions.read_power_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_f64("power", "value", r_value as f64);
@@ -307,15 +280,11 @@ impl BlcSubscriber {
             Some(val) => val,
             None => return __platform_error_result!("Current value not porvided")
         };
-        let _ = self.blc_interface.lock().await
-            .actions.write_current_value(&interface, requested_value as f64).await;
+        self.blc_interface.lock().await
+            .actions.write_current_value(&interface, requested_value as f64).await?;
 
-        let r_value = match self.blc_interface.lock().await
-            .actions.read_current_value(&interface).await
-            {
-                Ok(val) => val,
-                Err(_e) => return __platform_error_result!("Unable to read current")
-            };
+        let r_value = self.blc_interface.lock().await
+            .actions.read_current_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_f64("current", "value", r_value as f64);
@@ -378,16 +347,16 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
                         };
                         for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "mode" && field_name == "value" {
-                                let _ = self.process_mode_value(&interface, attribute_name, field_name, field_data).await;
+                                self.process_mode_value(&interface, attribute_name, field_name, field_data).await?;
                             }
                             else if attribute_name == "enable" && field_name == "value" {
-                                let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                                self.process_enable_value(&interface, attribute_name, field_name, field_data).await?;
                             }
                             else if attribute_name == "power" && field_name == "value" {
-                                let _ = self.process_power_value(interface, attribute_name, field_name, field_data).await;
+                                self.process_power_value(interface, attribute_name, field_name, field_data).await?;
                             }
                             else if attribute_name == "current" && field_name == "value" {
-                                let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
+                                self.process_current_value(interface, attribute_name, field_name, field_data).await?;
                             }
                         }
                     }

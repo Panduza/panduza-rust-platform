@@ -82,7 +82,7 @@ impl DeviceActions for Ka3005 {
         println!("{}", device_settings);
 
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(&device_settings);
+        let _ = serial_conf.import_from_json_settings(&device_settings);
 
         // const_settings = {
         //     "usb_vendor": '0416',

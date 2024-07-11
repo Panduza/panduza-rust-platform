@@ -80,7 +80,7 @@ impl DeviceActions for LBX488 {
         println!("{}", device_settings);
 
         let mut serial_conf = UsbConfig::new();
-        serial_conf.import_from_json_settings(&device_settings);
+        serial_conf.import_from_json_settings(&device_settings)?;
 
         let mut list = Vec::new();
         list.push(

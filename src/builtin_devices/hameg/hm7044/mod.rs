@@ -28,7 +28,7 @@ impl DeviceActions for Hm7044 {
         // println!("{}", device_settings);
 
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(&device_settings);
+        let _ = serial_conf.import_from_json_settings(&device_settings);
 
         serial_conf.serial_baudrate = Some(9600);
 

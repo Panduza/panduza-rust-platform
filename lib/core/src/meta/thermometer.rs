@@ -10,6 +10,7 @@ use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 use crate::Error as PlatformError;
+use crate::__platform_error_result;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
@@ -93,18 +94,19 @@ impl interface::fsm::States for ThermometerStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
+    async fn initializating(&self, interface: &AmInterface)
+    -> Result<(), PlatformError>
     {
         let mut thermometer_itf = self.thermometer_interface.lock().await;
 
         // Custom initialization slot
-        thermometer_itf.actions.initializating(&interface).await.unwrap();
+        thermometer_itf.actions.initializating(&interface).await?;
 
         // Register attributes
         interface.lock().await.register_attribute(JsonAttribute::new_boxed("measure", true));
 
         // Init measure
-        let measure_value = thermometer_itf.actions.read_measure_value(&interface).await.unwrap();
+        let measure_value = thermometer_itf.actions.read_measure_value(&interface).await?;
         interface.lock().await.update_attribute_with_f64("measure", "value", measure_value);
         interface.lock().await.update_attribute_with_f64("measure", "decimals", thermometer_itf.params.measure_decimals as f64);
         interface.lock().await.update_attribute_with_f64("measure", "polling_cycle", 0.0);
@@ -114,6 +116,7 @@ impl interface::fsm::States for ThermometerStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+
         Ok(())
     }
 
@@ -153,13 +156,15 @@ impl ThermometerSubscriber {
     /// 
     /// 
     #[inline(always)]
-    async fn process_measure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, _field_data: &Value) {
+    async fn process_measure_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, _field_data: &Value) -> Result<(), PlatformError>
+    {
         let r_value = self.thermometer_interface.lock().await
-            .actions.read_measure_value(&interface).await
-            .unwrap();
+            .actions.read_measure_value(&interface).await?;
 
         interface.lock().await
             .update_attribute_with_f64("measure", "value", r_value as f64);
+
+        Ok(())
     }
 
 
@@ -197,14 +202,24 @@ impl interface::subscriber::Subscriber for ThermometerSubscriber {
                     println!("ThermometerSubscriber::process: {:?}", msg.payload());
 
                     let payload = msg.payload();
-                    let oo = serde_json::from_slice::<Value>(payload).unwrap();
-                    let o = oo.as_object().unwrap();
+                    let oo = match serde_json::from_slice::<Value>(payload) {
+                        Ok(val) => val,
+                        Err(_e) => return __platform_error_result!("Unable to deserializa data")
+                    };
+                    let o = match oo.as_object() {
+                        Some(val) => val,
+                        None => return __platform_error_result!("No data provided")
+                    };
 
 
                     for (attribute_name, fields) in o.iter() {
-                        for (field_name, field_data) in fields.as_object().unwrap().iter() {
+                        let fields_obj = match fields.as_object() {
+                            Some(val) => val,
+                            None => return __platform_error_result!("No data provided")
+                        };
+                        for (field_name, field_data) in fields_obj.iter() {
                             if attribute_name == "measure" && field_name == "value" {
-                                self.process_measure_value(&interface, attribute_name, field_name, field_data).await;
+                                self.process_measure_value(&interface, attribute_name, field_name, field_data).await?;
                             }
                         }
                     }

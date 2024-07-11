@@ -1,10 +1,14 @@
 use std::{collections::HashMap, sync::Arc};
-use nusb::Interface;
+use nusb::{transfer::Direction, transfer::EndpointType, Interface};
 
 use tokio;
 use lazy_static::lazy_static;
 use usbtmc_message::Sequencer;
 use futures_lite::future::block_on;
+
+use panduza_core::FunctionResult as PlatformFunctionResult;
+use panduza_core::Error as PlatformError;
+use panduza_core::platform_error_result;
 
 lazy_static! {
     static ref GATE : tokio::sync::Mutex<Gate>
@@ -35,35 +39,50 @@ impl Config {
         }
     }
 
-    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
+    pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) -> PlatformFunctionResult {
 
-        let usb_vendor_str = 
-            settings.get("usb_vendor")
-                .map(|v| v.as_str().unwrap());
+        // Get VID hexadecimal value
+        self.usb_vendor = match settings.get("usb_vendor")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => match u16::from_str_radix(s, 16)
+                {
+                    Ok(val) => Some(val),
+                    Err(_e) => return platform_error_result!("usb_vendor not an hexadecimal value")
+                },
+                None => return platform_error_result!("usb_vendor not a String")
+            },
+            None => return platform_error_result!("Missing usb_vendor from tree.json")
+        };
 
-        // get VID hexadecimal value
-        self.usb_vendor =
-            Some(u16::from_str_radix(usb_vendor_str.as_ref().unwrap(), 16).unwrap());
+        // Get PID hexadecimal value
+        self.usb_model = match settings.get("usb_model")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => match u16::from_str_radix(s, 16)
+                {
+                    Ok(val) => Some(val),
+                    Err(_e) => return platform_error_result!("usb_model not an hexadecimal value")
+                },
+                None => return platform_error_result!("usb_model not a String")
+            },
+            None => return platform_error_result!("Missing usb_model from tree.json")
+        };
 
-        let usb_model_str = 
-            settings.get("usb_model")
-                .map(|v| v.as_str().unwrap());
+        // Get serial number
+        self.usb_serial = match settings.get("usb_serial")
+        {
+            Some(val) => match val.as_str()
+            {
+                Some(s) => Some(s.to_string()),
+                None => return platform_error_result!("usb_serial not a String")
+            },
+            None => return platform_error_result!("Missing usb_serial from tree.json")
+        };
 
-        // get PID hexadecimal value
-        self.usb_model =
-            Some(u16::from_str_radix(usb_model_str.as_ref().unwrap(), 16).unwrap());
-            
-        // self.usb_vendor =
-        //     settings.get("usb_vendor")
-        //         .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
-
-        // self.usb_model =
-        //     settings.get("usb_model")
-        //         .map(|v| v.as_str().unwrap().to_string().parse::<u16>().unwrap());
-
-        self.usb_serial =
-            settings.get("usb_serial")
-                .map(|v| v.as_str().unwrap().to_string());
+        Ok(())
 
     }
 }
@@ -105,8 +124,9 @@ impl Gate {
     ///
     fn generate_unique_key_from_config(config: &Config) -> Option<String> {
         // Check if the usb vendor and model are provided
-        if let Some(k) = Some(format!("{}_{}_{}", config.usb_vendor.unwrap(), config.usb_model.unwrap(), config.usb_serial.as_ref().unwrap())) {
-            return Some(k.clone());
+        if config.usb_vendor.is_some() && config.usb_model.is_some() && config.usb_serial.is_some() {
+            let k = format!("{}_{}_{}", config.usb_vendor.unwrap(), config.usb_model.unwrap(), config.usb_serial.as_ref().unwrap());
+            return Some(k);
         }
 
         // Finally unable to generate a key with the config
@@ -142,33 +162,28 @@ impl UsbtmcConnector {
         }
     }
 
-    pub async fn init(&mut self) {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .init()
-            .await;
+    pub async fn init(&mut self) -> PlatformFunctionResult {
+        let _ = match self.core.as_ref() {
+            Some(val) => val.lock().await.init().await,
+            None => platform_error_result!("Unable to initialize USBTMC connector")
+        };
+
+        Ok(())
     }
 
 
-    pub async fn ask(&mut self, command: String) 
-            -> String {
-        self.core
-            .as_ref()
-            .unwrap()
-            .lock()
-            .await
-            .write_then_read(command)
-            .await
+    pub async fn ask(&mut self, command: String) -> Result<String, PlatformError> {
+        match self.core.as_ref() {
+            Some(val) => val.lock().await.write_then_read(command).await,
+            None => platform_error_result!("Unable to write then read")
+        }
     }
 
 }
 
 
 struct UsbtmcCore {
-    _config: Config,
+    config: Config,
     interface: Option<Interface>,
 }
 
@@ -176,51 +191,84 @@ impl UsbtmcCore {
 
     fn new(config: Config) -> UsbtmcCore {
         UsbtmcCore {
-            _config: config,
+            config: config,
             interface: None,
         }
     }
 
-    async fn init(&mut self) {
+    async fn init(&mut self) -> PlatformFunctionResult {
 
-        let devices = nusb::list_devices()
-            .unwrap()
-            .find(|d| d.vendor_id() == 0x1313 && d.product_id() == 0x8079)//format!("{:04x}", self.config.usb_vendor.unwrap()).parse::<u16>().unwrap() && d.product_id() == format!("{:04x}", self.config.usb_model.unwrap()).parse::<u16>().unwrap())
+        let devices = match nusb::list_devices() {
+            Ok(val) => val,
+            Err(_e) => return platform_error_result!("Unable to list USB devices")
+        }
+            .find(|d| Some(d.vendor_id()) == self.config.usb_vendor && Some(d.product_id()) == self.config.usb_model)
             .expect("device is not connected");
 
-        let device = devices.open().unwrap();
-        self.interface = Some(device.claim_interface(0).unwrap());
+            let device = match devices.open() {
+                Ok(val) => val,
+                Err(_e) => return platform_error_result!("Unable to open USB device")
+            };
+    
+            self.interface = match device.claim_interface(0) {
+                Ok(val) => Some(val),
+                Err(_e) => return platform_error_result!("Unable to create USB device interface")
+            };
 
+        Ok(())
     }
 
 
-    async fn write_then_read(&mut self, command: String) 
-            -> String{
+    async fn write_then_read(&mut self, command: String) -> Result<String, PlatformError> {
+        
+        let itf = match self.interface.as_ref() {
+            Some(val) => val,
+            None => return platform_error_result!("No USB interface")
+        };
+
+        let mut endpoint_out = 0;
+        let mut endpoint_in = 0;
+
+        // Get the usb endpoints
+        for interface_descriptor in itf.descriptors() {
+            for endpoint in interface_descriptor.endpoints() {
+                if endpoint.direction() == Direction::Out && endpoint.transfer_type() == EndpointType::Bulk {
+                    endpoint_out = endpoint.address()
+                }
+                if endpoint.direction() == Direction::In && endpoint.transfer_type() == EndpointType::Bulk {
+                    endpoint_in = endpoint.address()
+                }
+            }
+        }
 
         // Create a sequencer with a max_sequence_length of 64 (depend on your device)
         let mut sequencer = Sequencer::new(64);
 
         // Create a message sequence from a command
-        let sequence = sequencer.command_to_message_sequence(command);
+        let sequence = sequencer.command_to_message_sequence(command.clone());
         
         // Send the sequence on the usb
         for i in 0..sequence.len() {
             let message = sequence[i].to_vec();
             // SEND TO USB
-            block_on(self.interface.as_ref().unwrap().bulk_out(0x02, message.to_vec()))
-                .into_result()
-                .unwrap();
-            
+            match block_on(itf.bulk_out(endpoint_out, message.to_vec())).into_result() {
+                Ok(val) => val,
+                Err(_e) => return platform_error_result!("Unable to write on USB")
+            };
         }
-
         
         let response = nusb::transfer::RequestBuffer::new(64 as usize);
-        let data = block_on(self.interface.as_ref().unwrap().bulk_in(0x82, response)).into_result().unwrap();
+        
+        // Receive data form the usb
+        let data = match block_on(itf.bulk_in(endpoint_in, response)).into_result() {
+            Ok(val) => val,
+            Err(_e) => return platform_error_result!("Unable to read on USB")
+        };
 
         // Parse the received data
         let msg = usbtmc_message::BulkInMessage::from_u8_array(&data);
 
-        msg.payload_as_string()
+        Ok(msg.payload_as_string())
         
     }
 
