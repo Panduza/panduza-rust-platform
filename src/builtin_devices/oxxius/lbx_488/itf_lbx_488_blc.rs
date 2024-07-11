@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 
+use panduza_core::meta::blc::BlcAttributes;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::interface::AmInterface;
@@ -266,7 +267,8 @@ pub fn build<A: Into<String>>(
             power_max: 0.0,
             power_value: 0.0,
             current_value: 0.0,
-        })
+        }),
+        BlcAttributes::all_attributes()
     )
 }
 

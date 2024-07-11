@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::meta::bpc::BpcAttributes;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::meta::bpc;
@@ -164,7 +165,7 @@ pub fn build<A: Into<String>>(
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         }),
         vec![
-            "enable".to_string()
+            BpcAttributes::Enable.to_string()
         ]
     )
 }

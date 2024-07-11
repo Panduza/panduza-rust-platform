@@ -1,6 +1,7 @@
 use core::f64;
 
 use async_trait::async_trait;
+use panduza_core::meta::blc::BlcAttributes;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::meta::blc;
@@ -362,6 +363,7 @@ pub fn build<A: Into<String>>(
             current_value: 0.0,
             power_max: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
-        })
+        }),
+        BlcAttributes::all_attributes()
     )
 }

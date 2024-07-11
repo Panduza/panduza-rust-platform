@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::mem::swap;
 
 use panduza_core::Error as PlatformError;
-use panduza_core::meta::blc;
+use panduza_core::meta::blc::{self, BlcAttributes};
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
@@ -132,7 +132,8 @@ pub fn build<A: Into<String>>(
             power_value: 0.0,
             current_value: 0.0,
             power_max: 0.3
-        })
+        }),
+        BlcAttributes::all_attributes()
     )
 }
 
