@@ -16,6 +16,44 @@ use crate::__platform_error_result;
 
 use crate::FunctionResult as PlatformFunctionResult;
 
+
+// Enum of every attributes who can be used by a bench power controller
+pub enum BlcAttributes {
+    Mode,
+    Enable,
+    Power,
+    Current
+}
+
+impl BlcAttributes {
+    pub fn to_string(&self) -> String {
+        match self {
+            BlcAttributes::Mode => "mode".to_string(),
+            BlcAttributes::Enable => "enable".to_string(),
+            BlcAttributes::Power => "power".to_string(),
+            BlcAttributes::Current => "current".to_string(),
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BlcAttributes::Mode => "mode",
+            BlcAttributes::Enable => "enable",
+            BlcAttributes::Power => "power",
+            BlcAttributes::Current => "current"
+        }
+    }
+
+    pub fn all_attributes() -> Vec<String> {
+        return vec![
+            "mode".to_string(),
+            "enable".to_string(),
+            "power".to_string(),
+            "current".to_string()
+        ]
+    }
+}
+
 pub struct BlcParams {
     pub power_min: f64,
     pub power_decimals: i32,
@@ -101,7 +139,8 @@ impl BlcInterface {
 // ----------------------------------------------------------------------------
 
 struct BlcStates {
-    blc_interface: Arc<Mutex<BlcInterface>>
+    blc_interface: Arc<Mutex<BlcInterface>>,
+    attributes_used: Vec<String>
 }
 
 
@@ -127,47 +166,65 @@ impl interface::fsm::States for BlcStates {
             Err(_e) => return __platform_error_result!("Unable to initialize BLC interface")
         };
 
-        // Register attributes
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("mode", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("enable", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("power", true));
-        interface.lock().await.register_attribute(JsonAttribute::new_boxed("current", true));
+        // If mode power/current attribute is used by device interface
+        if self.attributes_used.contains(&BlcAttributes::Mode.to_string()) {
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed(BlcAttributes::Mode.as_str(), true));
 
-        // Init mode
-        let mode_value = match blc_itf.actions.read_mode_value(&interface).await{
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read mode value")
-        };
-        interface.lock().await.update_attribute_with_string("mode", "value", &mode_value);
+            // Init mode
+            let mode_value = match blc_itf.actions.read_mode_value(&interface).await{
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read mode value")
+            };
+            interface.lock().await.update_attribute_with_string(BlcAttributes::Mode.as_str(), "value", &mode_value);
+        }
 
-        // Init enable
-        let enable_value = match blc_itf.actions.read_enable_value(&interface).await{
-            Ok(val) => val,
-            Err(_e) => return __platform_error_result!("Unable to read mode value")
-        };
+        // If mode enable attribute is used by device interface
+        if self.attributes_used.contains(&BlcAttributes::Enable.to_string()) {
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed(BlcAttributes::Enable.as_str(), true));
+
+            // Init enable
+            let enable_value = match blc_itf.actions.read_enable_value(&interface).await{
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read mode value")
+            };
+            
+            let _update_att = match interface.lock().await.update_attribute_with_bool(BlcAttributes::Enable.as_str(), "value", enable_value) {
+                Ok(att) => att,
+                Err(_e) => return __platform_error_result!("Unable to update attribute")
+            };
+        }
         
-        let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
-            Ok(att) => att,
-            Err(_e) => return __platform_error_result!("Unable to update attribute")
-        };
 
-        // Init power
-        let max_power = blc_itf.actions.read_power_max(&interface).await.unwrap();
-        println!("max power : {}", max_power);
-        let power_value = blc_itf.actions.read_power_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_f64("power", "min", blc_itf.params.power_min );
-        interface.lock().await.update_attribute_with_f64("power", "max", max_power);
-        interface.lock().await.update_attribute_with_f64("power", "value", power_value);
-        interface.lock().await.update_attribute_with_f64("power", "decimals", blc_itf.params.power_decimals as f64);
-        interface.lock().await.update_attribute_with_f64("power", "polling_cycle", 0.0);
+        // If power attribute is used by device interface
+        if self.attributes_used.contains(&BlcAttributes::Power.to_string()) {
+            let power_attribute_str = BlcAttributes::Power.as_str();
 
-        // Init current
-        let current_value = blc_itf.actions.read_current_value(&interface).await.unwrap();
-        interface.lock().await.update_attribute_with_f64("current", "min", blc_itf.params.current_min );
-        interface.lock().await.update_attribute_with_f64("current", "max", blc_itf.params.current_max );
-        interface.lock().await.update_attribute_with_f64("current", "value", current_value);
-        interface.lock().await.update_attribute_with_f64("current", "decimals", blc_itf.params.current_decimals as f64);
-        interface.lock().await.update_attribute_with_f64("current", "polling_cycle", 0.0);
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed(power_attribute_str, true));
+
+            // Init power
+            let max_power = blc_itf.actions.read_power_max(&interface).await.unwrap();
+            let power_value = blc_itf.actions.read_power_value(&interface).await.unwrap();
+            interface.lock().await.update_attribute_with_f64(power_attribute_str, "min", blc_itf.params.power_min );
+            interface.lock().await.update_attribute_with_f64(power_attribute_str, "max", max_power);
+            interface.lock().await.update_attribute_with_f64(power_attribute_str, "value", power_value);
+            interface.lock().await.update_attribute_with_f64(power_attribute_str, "decimals", blc_itf.params.power_decimals as f64);
+            interface.lock().await.update_attribute_with_f64(power_attribute_str, "polling_cycle", 0.0);
+        }
+
+        // If current attribute is used by device interface
+        if self.attributes_used.contains(&BlcAttributes::Current.to_string()) {
+            let current_attribute_str = BlcAttributes::Current.as_str();
+
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed(current_attribute_str, true));
+
+            // Init current
+            let current_value = blc_itf.actions.read_current_value(&interface).await.unwrap();
+            interface.lock().await.update_attribute_with_f64(current_attribute_str, "min", blc_itf.params.current_min );
+            interface.lock().await.update_attribute_with_f64(current_attribute_str, "max", blc_itf.params.current_max );
+            interface.lock().await.update_attribute_with_f64(current_attribute_str, "value", current_value);
+            interface.lock().await.update_attribute_with_f64(current_attribute_str, "decimals", blc_itf.params.current_decimals as f64);
+            interface.lock().await.update_attribute_with_f64(current_attribute_str, "polling_cycle", 0.0);
+        }
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -210,7 +267,8 @@ const ID_POWER: subscription::Id = 2;
 const ID_CURRENT: subscription::Id = 3;
 
 struct BlcSubscriber {
-    blc_interface: Arc<Mutex<BlcInterface>>
+    blc_interface: Arc<Mutex<BlcInterface>>,
+    attributes_used: Vec<String>
 }
 
 impl BlcSubscriber {
@@ -332,12 +390,26 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
     /// Get the list of attributes names
     ///
     async fn attributes_names(&self) -> Vec<(subscription::Id, String)> {
-        return vec![
-            (ID_MODE, "mode".to_string()),
-            (ID_ENABLE, "enable".to_string()),
-            (ID_POWER, "power".to_string()),
-            (ID_CURRENT, "current".to_string())
-        ];
+
+        let mut attributes_names: Vec<(subscription::Id, String)> = Vec::new();
+
+        if self.attributes_used.contains(&BlcAttributes::Mode.to_string()) {
+            attributes_names.push((ID_MODE, BlcAttributes::Mode.to_string()));
+        }
+
+        if self.attributes_used.contains(&BlcAttributes::Enable.to_string()) {
+            attributes_names.push((ID_ENABLE, BlcAttributes::Enable.to_string()));
+        }
+        
+        if self.attributes_used.contains(&BlcAttributes::Power.to_string()) {
+            attributes_names.push((ID_POWER, BlcAttributes::Power.to_string()));
+        }
+
+        if self.attributes_used.contains(&BlcAttributes::Current.to_string()) {
+            attributes_names.push((ID_CURRENT, BlcAttributes::Current.to_string()));
+        }
+
+        return attributes_names;
     }
 
 
@@ -377,16 +449,16 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
                             None => return __platform_error_result!("No data provided")
                         };
                         for (field_name, field_data) in fields_obj.iter() {
-                            if attribute_name == "mode" && field_name == "value" {
+                            if attribute_name == BlcAttributes::Mode.as_str() && field_name == "value" && self.attributes_used.contains(&BlcAttributes::Mode.to_string()) {
                                 let _ = self.process_mode_value(&interface, attribute_name, field_name, field_data).await;
                             }
-                            else if attribute_name == "enable" && field_name == "value" {
+                            else if attribute_name == BlcAttributes::Enable.as_str() && field_name == "value" && self.attributes_used.contains(&BlcAttributes::Enable.to_string()) {
                                 let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
                             }
-                            else if attribute_name == "power" && field_name == "value" {
+                            else if attribute_name == BlcAttributes::Power.as_str() && field_name == "value" && self.attributes_used.contains(&BlcAttributes::Power.to_string()) {
                                 let _ = self.process_power_value(interface, attribute_name, field_name, field_data).await;
                             }
-                            else if attribute_name == "current" && field_name == "value" {
+                            else if attribute_name == BlcAttributes::Current.as_str() && field_name == "value" && self.attributes_used.contains(&BlcAttributes::Current.to_string()) {
                                 let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
                             }
                         }
@@ -422,7 +494,8 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
 pub fn build<A: Into<String>>(
     name: A,
     params: BlcParams,
-    actions: Box<dyn BlcActions>
+    actions: Box<dyn BlcActions>,
+    attributes_used: Vec<String>
 ) -> InterfaceBuilder {
 
     let c = BlcInterface::new_am(params, actions);
@@ -431,8 +504,8 @@ pub fn build<A: Into<String>>(
         name,
         "blc",
         "0.0",
-        Box::new(BlcStates{blc_interface: c.clone()}),
-        Box::new(BlcSubscriber{blc_interface: c.clone()})
+        Box::new(BlcStates{blc_interface: c.clone(), attributes_used: attributes_used.clone()}),
+        Box::new(BlcSubscriber{blc_interface: c.clone(), attributes_used: attributes_used.clone()})
     );
 }
 
