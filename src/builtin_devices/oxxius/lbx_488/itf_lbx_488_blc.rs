@@ -77,6 +77,44 @@ impl blc::BlcActions for LBX488BlcActions {
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
 
+    /// Read the analog modulation
+    /// 
+    async fn read_analog_modulation(&mut self, interface: &AmInterface) -> Result<bool, PlatformError> {
+        
+        let answer = self.ask("?AM".as_bytes()).await?;
+        if answer == "0\x00" {
+            println!("anwser = {}", answer);
+        }
+
+        if answer == "1\x00" {
+            println!("anwser = {}", answer);
+        }
+
+        println!("anwser = {}", answer);
+
+        interface.lock().await.log_info(
+            format!("read analog modulation value : {}", answer)
+        );
+        return Ok(false);
+    }
+
+    /// Write the analog modulation
+    /// 
+    async fn write_analog_modulation(&mut self, interface: &AmInterface, v: bool) -> Result<(), PlatformError> {
+
+        interface.lock().await.log_info(
+            format!("write analog modulation value : {}", v)
+        );
+
+        self.ask(format!("AM {}", v).as_bytes()).await?;
+        return Ok(());
+    }
+
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+
     /// Read the mode value
     /// 
     async fn read_mode_value(&mut self, _interface: &AmInterface) -> Result<String, PlatformError> {
@@ -162,11 +200,11 @@ impl blc::BlcActions for LBX488BlcActions {
     async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
         let response_float = self.ask_float(b"?MAXLP").await?;
-        
+
         self.power_max = response_float * 0.001;
 
         interface.lock().await.log_info(
-            format!("read power : {}", response_float)
+            format!("read max power : {}", response_float)
         );
 
         return Ok(self.power_max);
@@ -207,6 +245,21 @@ impl blc::BlcActions for LBX488BlcActions {
     // ----------------------------------------------------------------------------
     // ----------------------------------------------------------------------------
 
+    /// Read max current value
+    /// 
+    
+    async fn read_max_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
+
+        let response_float = self.ask_float(b"?MAXLC").await?;
+        self.current_value = response_float * 0.001;
+
+        interface.lock().await.log_info(
+            format!("read max current : {}", response_float)
+        );
+
+        return Ok(self.current_value);
+    }
+
     /// Read the current value
     /// 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
@@ -215,7 +268,6 @@ impl blc::BlcActions for LBX488BlcActions {
         self.current_value = response_float * 0.001;
 
         
-
         interface.lock().await.log_info(
             format!("read current : {}", response_float)
         );
@@ -256,7 +308,6 @@ pub fn build<A: Into<String>>(
             power_decimals: 3,
 
             current_min: 0.0,
-            current_max: 0.0978,
             current_decimals: 3,
         }, 
         Box::new(LBX488BlcActions {

@@ -26,6 +26,19 @@ impl blc::BlcActions for FakeBlcActions {
         return Ok(());
     }
 
+    /// Read the analog modulation
+    /// 
+    async fn read_analog_modulation(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
+        return Ok(false);
+    }
+
+    /// Write the analog modulation
+    /// 
+    async fn write_analog_modulation(&mut self, _interface: &AmInterface, _v: bool) -> Result<(), PlatformError> {
+        return Ok(());
+    }
+
+
     /// Read the mode value
     /// 
     async fn read_mode_value(&mut self, interface: &AmInterface) -> Result<String, PlatformError> {
@@ -98,6 +111,11 @@ impl blc::BlcActions for FakeBlcActions {
         return Ok(self.current_value);
     }
 
+    async fn read_max_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+
+        return Ok(0.5);
+    }
+
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBlc - write_current_value: {}", v)
@@ -123,7 +141,6 @@ pub fn build<A: Into<String>>(
             power_decimals: 3,
 
             current_min: 0.0,
-            current_max: 0.5,
             current_decimals: 1,
         }, 
         Box::new(FakeBlcActions {

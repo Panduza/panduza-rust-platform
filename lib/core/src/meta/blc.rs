@@ -22,7 +22,8 @@ pub enum BlcAttributes {
     Mode,
     Enable,
     Power,
-    Current
+    Current,
+    AnalogModulation
 }
 
 impl BlcAttributes {
@@ -32,6 +33,7 @@ impl BlcAttributes {
             BlcAttributes::Enable => "enable".to_string(),
             BlcAttributes::Power => "power".to_string(),
             BlcAttributes::Current => "current".to_string(),
+            BlcAttributes::AnalogModulation => "analog_modulation".to_string()
         }
     }
 
@@ -40,7 +42,8 @@ impl BlcAttributes {
             BlcAttributes::Mode => "mode",
             BlcAttributes::Enable => "enable",
             BlcAttributes::Power => "power",
-            BlcAttributes::Current => "current"
+            BlcAttributes::Current => "current",
+            BlcAttributes::AnalogModulation => "analog_modulation"
         }
     }
 
@@ -49,7 +52,8 @@ impl BlcAttributes {
             "mode".to_string(),
             "enable".to_string(),
             "power".to_string(),
-            "current".to_string()
+            "current".to_string(),
+            "analog_modulation".to_string()
         ]
     }
 }
@@ -59,7 +63,6 @@ pub struct BlcParams {
     pub power_decimals: i32,
 
     pub current_min: f64,
-    pub current_max: f64,
     pub current_decimals: i32,
 }
 
@@ -85,10 +88,15 @@ pub trait BlcActions: Send + Sync {
 
     async fn write_power_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError>;
 
+    async fn read_max_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
+
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError>;
 
+    async fn read_analog_modulation(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
+
+    async fn write_analog_modulation(&mut self, interface: &AmInterface, v: bool) -> Result<(), PlatformError>;
 }
 
 // ----------------------------------------------------------------------------
@@ -164,6 +172,19 @@ impl interface::fsm::States for BlcStates {
         // Custom initialization slot
         blc_itf.actions.initializating(&interface).await?;
 
+        // If analog modulation attribute is used by device interface (must be put 
+        // at 0 at first to init other attribute else read command could not be send 
+        // correctly)
+        if self.attributes_used.contains(&BlcAttributes::AnalogModulation.to_string()) {
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed(BlcAttributes::AnalogModulation.as_str(), true));
+
+            // Init analog modulation (should disable analog modulation)
+            blc_itf.actions.write_analog_modulation(&interface, false).await?;
+            let analog_modulation = blc_itf.actions.read_analog_modulation(&interface).await?;
+
+            interface.lock().await.update_attribute_with_bool(BlcAttributes::AnalogModulation.as_str(), "value", analog_modulation)?;
+        }   
+
         // If mode power/current attribute is used by device interface
         if self.attributes_used.contains(&BlcAttributes::Mode.to_string()) {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(BlcAttributes::Mode.as_str(), true));
@@ -207,9 +228,10 @@ impl interface::fsm::States for BlcStates {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(current_attribute_str, true));
 
             // Init current
+            let max_current = blc_itf.actions.read_max_current_value(&interface).await?;
             let current_value = blc_itf.actions.read_current_value(&interface).await?;
             interface.lock().await.update_attribute_with_f64(current_attribute_str, "min", blc_itf.params.current_min );
-            interface.lock().await.update_attribute_with_f64(current_attribute_str, "max", blc_itf.params.current_max );
+            interface.lock().await.update_attribute_with_f64(current_attribute_str, "max", max_current );
             interface.lock().await.update_attribute_with_f64(current_attribute_str, "value", current_value);
             interface.lock().await.update_attribute_with_f64(current_attribute_str, "decimals", blc_itf.params.current_decimals as f64);
             interface.lock().await.update_attribute_with_f64(current_attribute_str, "polling_cycle", 0.0);
