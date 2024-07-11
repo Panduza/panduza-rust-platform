@@ -186,6 +186,7 @@ impl interface::fsm::States for BpcStates {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(enable_attribute.as_str(), true));
 
             // Init enable
+<<<<<<< HEAD
             let enable_value = bpc_itf.actions.read_enable_value(&interface).await?;
             interface.lock().await.update_attribute_with_bool("enable", "value", enable_value)?;
         }
@@ -198,6 +199,27 @@ impl interface::fsm::States for BpcStates {
 
             // Init voltage
             let voltage_value = bpc_itf.actions.read_voltage_value(&interface).await?;
+=======
+            let enable_value = match bpc_itf.actions.read_enable_value(&interface).await {
+                Ok(val) => val,
+                Err(_e) => return __platform_error_result!("Unable to read enable value")
+            };
+
+            let _update_att = match interface.lock().await.update_attribute_with_bool("enable", "value", enable_value) {
+                Ok(att) => att,
+                Err(_e) => return __platform_error_result!("Unable to update attribute")
+            };
+        }
+
+        // If voltage attribute is used by interface 
+        if self.attributes_used.contains(&voltage_attribute.to_string()) {
+            let voltage_str = voltage_attribute.as_str();
+
+            interface.lock().await.register_attribute(JsonAttribute::new_boxed(voltage_str, true));
+
+            // Init voltage
+            let voltage_value = bpc_itf.actions.read_voltage_value(&interface).await.unwrap();
+>>>>>>> d11c26c4cb6817cb12c9cd3c8b6dac0dc90f2469
             interface.lock().await.update_attribute_with_f64(voltage_str, "min", bpc_itf.params.voltage_min );
             interface.lock().await.update_attribute_with_f64(voltage_str, "max", bpc_itf.params.voltage_max );
             interface.lock().await.update_attribute_with_f64(voltage_str, "value", voltage_value);
@@ -212,7 +234,11 @@ impl interface::fsm::States for BpcStates {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(current_str, true));
 
              // Init current
+<<<<<<< HEAD
             let current_value = bpc_itf.actions.read_current_value(&interface).await?;
+=======
+            let current_value = bpc_itf.actions.read_current_value(&interface).await.unwrap();
+>>>>>>> d11c26c4cb6817cb12c9cd3c8b6dac0dc90f2469
             interface.lock().await.update_attribute_with_f64(current_str, "min", bpc_itf.params.current_min );
             interface.lock().await.update_attribute_with_f64(current_str, "max", bpc_itf.params.current_max );
             interface.lock().await.update_attribute_with_f64(current_str, "value", current_value);
@@ -386,11 +412,16 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                             None => return __platform_error_result!("No data provided")
                         };
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> d11c26c4cb6817cb12c9cd3c8b6dac0dc90f2469
                         for (attribute_name, fields) in o.iter() {
                             let fields_obj = match fields.as_object() {
                                 Some(val) => val,
                                 None => return __platform_error_result!("No data provided")
                             };
+<<<<<<< HEAD
                             for (field_name, field_data) in fields_obj.iter() { 
                                 // Go until contains only if enable if attribute_name == "enable" and field_name == "value"
                                 if attribute_name == BpcAttributes::Enable.as_str() && field_name == "value" && self.attributes_used.contains(&BpcAttributes::Enable.to_string()) {
@@ -401,6 +432,19 @@ impl interface::subscriber::Subscriber for BpcSubscriber {
                                 }
                                 else if attribute_name == BpcAttributes::Current.as_str() && field_name == "value" && self.attributes_used.contains(&BpcAttributes::Current.to_string()) {
                                     self.process_current_value(interface, attribute_name, field_name, field_data).await?;
+=======
+                            for (field_name, field_data) in fields_obj.iter() {
+                                
+                                // Go until contains only if enable if attribute_name == "enable" and field_name == "value"
+                                if attribute_name == BpcAttributes::Enable.as_str() && field_name == "value" && self.attributes_used.contains(&BpcAttributes::Enable.to_string()) {
+                                    let _ = self.process_enable_value(&interface, attribute_name, field_name, field_data).await;
+                                }
+                                else if attribute_name == BpcAttributes::Voltage.as_str() && field_name == "value" && self.attributes_used.contains(&BpcAttributes::Voltage.to_string()) {
+                                    let _ = self.process_voltage_value(interface, attribute_name, field_name, field_data).await;
+                                }
+                                else if attribute_name == BpcAttributes::Current.as_str() && field_name == "value" && self.attributes_used.contains(&BpcAttributes::Current.to_string()) {
+                                    let _ = self.process_current_value(interface, attribute_name, field_name, field_data).await;
+>>>>>>> d11c26c4cb6817cb12c9cd3c8b6dac0dc90f2469
                                 }
                             }
                         }
