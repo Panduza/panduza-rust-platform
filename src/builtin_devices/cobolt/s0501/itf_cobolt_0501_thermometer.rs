@@ -75,9 +75,9 @@ impl thermometer::ThermometerActions for S0501ThermometerActions {
                 });
         }
 
-        // interface.lock().await.log_info(
-        //     format!("S0501Thermometer - read_measure_value: {}", self.measure_value)
-        // );
+        interface.lock().await.log_info(
+            format!("S0501Thermometer - read_measure_value: {}", self.measure_value)
+        );
 
         return Ok(self.measure_value);
     }
