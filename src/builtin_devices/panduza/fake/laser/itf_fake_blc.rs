@@ -15,6 +15,7 @@ struct FakeBlcActions {
     power_max: f64,
     power_value: f64,
     current_value: f64,
+    analog_modulation: bool
 }
 
 #[async_trait]
@@ -29,12 +30,13 @@ impl blc::BlcActions for FakeBlcActions {
     /// Read the analog modulation
     /// 
     async fn read_analog_modulation(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
-        return Ok(false);
+        return Ok(self.analog_modulation);
     }
 
     /// Write the analog modulation
     /// 
-    async fn write_analog_modulation(&mut self, _interface: &AmInterface, _v: bool) -> Result<(), PlatformError> {
+    async fn write_analog_modulation(&mut self, _interface: &AmInterface, v: bool) -> Result<(), PlatformError> {
+        self.analog_modulation = v;
         return Ok(());
     }
 
@@ -148,7 +150,8 @@ pub fn build<A: Into<String>>(
             enable_value: false,
             power_value: 0.0,
             current_value: 0.0,
-            power_max: 0.3
+            power_max: 0.3,
+            analog_modulation: true
         }),
         BlcAttributes::all_attributes()
     )

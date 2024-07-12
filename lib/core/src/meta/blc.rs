@@ -290,10 +290,10 @@ impl BlcSubscriber {
     async fn process_analog_modulation(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
     -> Result<(), PlatformError>
     {
-
+        
         let requested_value = match field_data.as_bool() {
             Some(request) => request,
-            None => return __platform_error_result!("Mode value not provided")
+            None => return __platform_error_result!("Analog modulation value not provided")
         };
         self.blc_interface.lock().await
             .actions.write_analog_modulation(&interface, requested_value).await?;
