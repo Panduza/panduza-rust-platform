@@ -203,7 +203,6 @@ impl interface::fsm::States for BlcStates {
             
             let _update_att = interface.lock().await.update_attribute_with_bool(BlcAttributes::Enable.as_str(), "value", enable_value)?;
         }
-        
 
         // If power attribute is used by device interface
         if self.attributes_used.contains(&BlcAttributes::Power.to_string()) {
@@ -236,6 +235,7 @@ impl interface::fsm::States for BlcStates {
             interface.lock().await.update_attribute_with_f64(current_attribute_str, "decimals", blc_itf.params.current_decimals as f64);
             interface.lock().await.update_attribute_with_f64(current_attribute_str, "polling_cycle", 0.0);
         }
+
 
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;

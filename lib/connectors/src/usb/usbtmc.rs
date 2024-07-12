@@ -41,36 +41,6 @@ impl Config {
 
     pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) -> PlatformFunctionResult {
 
-        // Get VID hexadecimal value
-        self.usb_vendor = match settings.get("usb_vendor")
-        {
-            Some(val) => match val.as_str()
-            {
-                Some(s) => match u16::from_str_radix(s, 16)
-                {
-                    Ok(val) => Some(val),
-                    Err(_e) => return platform_error_result!("usb_vendor not an hexadecimal value")
-                },
-                None => return platform_error_result!("usb_vendor not a String")
-            },
-            None => return platform_error_result!("Missing usb_vendor from tree.json")
-        };
-
-        // Get PID hexadecimal value
-        self.usb_model = match settings.get("usb_model")
-        {
-            Some(val) => match val.as_str()
-            {
-                Some(s) => match u16::from_str_radix(s, 16)
-                {
-                    Ok(val) => Some(val),
-                    Err(_e) => return platform_error_result!("usb_model not an hexadecimal value")
-                },
-                None => return platform_error_result!("usb_model not a String")
-            },
-            None => return platform_error_result!("Missing usb_model from tree.json")
-        };
-
         // Get serial number
         self.usb_serial = match settings.get("usb_serial")
         {
@@ -124,9 +94,8 @@ impl Gate {
     ///
     fn generate_unique_key_from_config(config: &Config) -> Option<String> {
         // Check if the usb vendor and model are provided
-        if config.usb_vendor.is_some() && config.usb_model.is_some() && config.usb_serial.is_some() {
-            let k = format!("{}_{}_{}", config.usb_vendor.unwrap(), config.usb_model.unwrap(), config.usb_serial.as_ref().unwrap());
-            return Some(k);
+        if config.usb_serial.is_some() {
+            return config.usb_serial.clone();
         }
 
         // Finally unable to generate a key with the config
@@ -202,18 +171,18 @@ impl UsbtmcCore {
             Ok(val) => val,
             Err(_e) => return platform_error_result!("Unable to list USB devices")
         }
-            .find(|d| Some(d.vendor_id()) == self.config.usb_vendor && Some(d.product_id()) == self.config.usb_model)
+            .find(|d| d.serial_number() == self.config.usb_serial.as_deref())
             .expect("device is not connected");
 
-            let device = match devices.open() {
-                Ok(val) => val,
-                Err(_e) => return platform_error_result!("Unable to open USB device")
-            };
-    
-            self.interface = match device.claim_interface(0) {
-                Ok(val) => Some(val),
-                Err(_e) => return platform_error_result!("Unable to create USB device interface")
-            };
+        let device = match devices.open() {
+            Ok(val) => val,
+            Err(_e) => return platform_error_result!("Unable to open USB device")
+        };
+
+        self.interface = match device.claim_interface(0) {
+            Ok(val) => Some(val),
+            Err(_e) => return platform_error_result!("Unable to create USB device interface")
+        };
 
         Ok(())
     }
