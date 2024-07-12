@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use panduza_core::Error as PlatformError;
+use panduza_core::{platform_error_result, Error as PlatformError};
 use panduza_core::meta::thermometer;
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
@@ -20,13 +20,26 @@ impl LBX488ThermometerActions {
 
     /// Wrapper to format the commands
     /// 
-    async fn ask(&mut self, command: &[u8]) -> String {
+    async fn ask(&mut self, command: &[u8]) -> Result<String, PlatformError> {
+
         let mut cmd = vec![0; 32];
         cmd[..command.len()].copy_from_slice(command);
 
-        self.connector_usb.write(cmd.as_ref()).await;
-        let res = self.connector_usb.read().await;
-        res
+        self.connector_usb.write(cmd.as_ref()).await?;
+        match self.connector_usb.read().await {
+            Ok(val) => Ok(val),
+            Err(_e) => platform_error_result!("Unable to read")
+        }
+    }
+
+    /// Parse the data into f64
+    /// 
+    async fn ask_float(&mut self, command: &[u8]) -> Result<f64, PlatformError> {
+
+        match self.ask(command).await?.trim_end_matches("\0").to_string().parse::<f64>() {
+            Ok(f) => Ok(f),
+            Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
+        }
     }
 }
 
@@ -36,15 +49,17 @@ impl thermometer::ThermometerActions for LBX488ThermometerActions {
     /// 
     async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
         
-        self.connector_usb = usb::get(&self.serial_config).await.unwrap();
-        self.connector_usb.init().await;
+        self.connector_usb = match usb::get(&self.serial_config).await {
+            Some(connector) => connector,
+            None => return platform_error_result!("Unable to create USB connector for Oxxius LBX488")
+        };
+        self.connector_usb.init().await?;
 
-        let result = self.ask("?HID".as_bytes()).await;
+        let result = self.ask("?HID".as_bytes()).await?;
 
         interface.lock().await.log_info(
             format!("LBX_488_Thermometer - initializing: {}", result)
         );
-
 
         return Ok(());
     }
@@ -53,10 +68,7 @@ impl thermometer::ThermometerActions for LBX488ThermometerActions {
     /// 
     async fn read_measure_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
         
-        let response = self.ask("?DT".as_bytes()).await
-            .trim_end_matches("\0")
-            .to_string();
-        let response_float = response.parse::<f64>().unwrap();
+        let response_float = self.ask_float("?DT".as_bytes()).await?;
         self.measure_value = response_float * 0.001;
 
         interface.lock().await.log_info(
