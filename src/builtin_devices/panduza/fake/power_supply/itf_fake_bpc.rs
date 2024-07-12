@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
-use panduza_core::meta::bpc;
+use panduza_core::meta::bpc::{self, BpcAttributes};
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
@@ -92,7 +92,8 @@ pub fn build<A: Into<String>>(
             enable_value: false,
             voltage_value: 0.0,
             current_value: 0.0,
-        })
+        }),
+        BpcAttributes::all_attributes()
     )
 }
 

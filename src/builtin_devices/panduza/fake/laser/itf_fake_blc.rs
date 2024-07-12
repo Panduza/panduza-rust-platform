@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::mem::swap;
 
 use panduza_core::Error as PlatformError;
-use panduza_core::meta::blc;
+use panduza_core::meta::blc::{self, BlcAttributes};
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
@@ -25,6 +25,19 @@ impl blc::BlcActions for FakeBlcActions {
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
         return Ok(());
     }
+
+    /// Read the analog modulation
+    /// 
+    async fn read_analog_modulation(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
+        return Ok(false);
+    }
+
+    /// Write the analog modulation
+    /// 
+    async fn write_analog_modulation(&mut self, _interface: &AmInterface, _v: bool) -> Result<(), PlatformError> {
+        return Ok(());
+    }
+
 
     /// Read the mode value
     /// 
@@ -98,6 +111,11 @@ impl blc::BlcActions for FakeBlcActions {
         return Ok(self.current_value);
     }
 
+    async fn read_max_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+
+        return Ok(0.5);
+    }
+
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
         interface.lock().await.log_info(
             format!("FakeBlc - write_current_value: {}", v)
@@ -123,7 +141,6 @@ pub fn build<A: Into<String>>(
             power_decimals: 3,
 
             current_min: 0.0,
-            current_max: 0.5,
             current_decimals: 1,
         }, 
         Box::new(FakeBlcActions {
@@ -132,7 +149,8 @@ pub fn build<A: Into<String>>(
             power_value: 0.0,
             current_value: 0.0,
             power_max: 0.3
-        })
+        }),
+        BlcAttributes::all_attributes()
     )
 }
 

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
-use panduza_core::meta::bpc;
+use panduza_core::meta::bpc::{self, BpcAttributes};
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
@@ -271,7 +271,8 @@ pub fn build<A: Into<String>>(
             serial_config: serial_config.clone(),
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
             channel: channel
-        })
+        }),
+        BpcAttributes::all_attributes()
     )
 }
 

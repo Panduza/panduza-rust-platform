@@ -1,6 +1,7 @@
 use core::f64;
 
 use async_trait::async_trait;
+use panduza_core::meta::blc::BlcAttributes;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::meta::blc;
@@ -104,6 +105,23 @@ impl blc::BlcActions for S0501BlcActions {
             format!("Cobolt S0501 initializing : {}", response_string)
         );
 
+        return Ok(());
+    }
+
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------
+
+    /// Read the analog modulation
+    /// 
+    async fn read_analog_modulation(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
+        return Ok(false);
+    }
+
+    /// Write the analog modulation
+    /// 
+    async fn write_analog_modulation(&mut self, _interface: &AmInterface, _v: bool) -> Result<(), PlatformError> {
         return Ok(());
     }
 
@@ -309,6 +327,14 @@ impl blc::BlcActions for S0501BlcActions {
         return Ok(self.current_value);
     }
 
+
+    /// Read the max current value possible
+    /// 
+    async fn read_max_current_value(&mut self, _interface: &AmInterface) -> Result<f64, PlatformError> {
+        return Ok(0.5);
+    }
+
+
     /// Write the current value
     /// 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
@@ -350,7 +376,6 @@ pub fn build<A: Into<String>>(
             power_decimals: 3,
 
             current_min: 0.0,
-            current_max: 0.5,
             current_decimals: 1,
         }, 
         Box::new(S0501BlcActions {
@@ -362,6 +387,7 @@ pub fn build<A: Into<String>>(
             current_value: 0.0,
             power_max: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
-        })
+        }),
+        BlcAttributes::all_attributes()
     )
 }

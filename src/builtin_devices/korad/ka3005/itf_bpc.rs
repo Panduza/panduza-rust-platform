@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use panduza_core::Error as PlatformError;
-use panduza_core::meta::bpc;
+use panduza_core::meta::bpc::{self, BpcAttributes};
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
@@ -154,7 +154,8 @@ pub fn build<A: Into<String>>(
             voltage_value: 0.0,
             current_value: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
-        })
+        }),
+        BpcAttributes::all_attributes()
     )
 }
 
