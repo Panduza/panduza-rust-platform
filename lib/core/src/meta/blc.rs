@@ -173,14 +173,16 @@ impl interface::fsm::States for BlcStates {
         blc_itf.actions.initializating(&interface).await?;
 
         // If analog modulation attribute is used by device interface (must be put 
-        // at 0 at first to init other attribute else read command could not be send 
+        // at 1 at first to init other attribute else read command could not be send 
         // correctly)
         if self.attributes_used.contains(&BlcAttributes::AnalogModulation.to_string()) {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(BlcAttributes::AnalogModulation.as_str(), true));
 
             // Init analog modulation (should disable analog modulation)
-            blc_itf.actions.write_analog_modulation(&interface, false).await?;
+            blc_itf.actions.write_analog_modulation(&interface, true).await?;
             let analog_modulation = blc_itf.actions.read_analog_modulation(&interface).await?;
+
+            println!("############################ read analog modulation : {}", analog_modulation);
 
             interface.lock().await.update_attribute_with_bool(BlcAttributes::AnalogModulation.as_str(), "value", analog_modulation)?;
         }   
@@ -283,6 +285,30 @@ struct BlcSubscriber {
 }
 
 impl BlcSubscriber {
+
+    /// 
+    /// 
+    #[inline(always)]
+    async fn process_analog_modulation(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
+    -> Result<(), PlatformError>
+    {
+        println!("################### paf");
+
+        let requested_value = match field_data.as_bool() {
+            Some(request) => request,
+            None => return __platform_error_result!("Mode value not provided")
+        };
+        self.blc_interface.lock().await
+            .actions.write_analog_modulation(&interface, requested_value).await?;
+
+        let r_value = self.blc_interface.lock().await
+            .actions.read_analog_modulation(&interface).await?;
+
+        interface.lock().await
+            .update_attribute_with_bool(&BlcAttributes::AnalogModulation.to_string(), "value", r_value)?;
+
+        Ok(())
+    }
 
     /// 
     /// 
@@ -451,6 +477,9 @@ impl interface::subscriber::Subscriber for BlcSubscriber {
                             }
                             else if attribute_name == BlcAttributes::Current.as_str() && field_name == "value" && self.attributes_used.contains(&BlcAttributes::Current.to_string()) {
                                 self.process_current_value(interface, attribute_name, field_name, field_data).await?;
+                            }
+                            else if attribute_name == BlcAttributes::AnalogModulation.as_str() && field_name == "value" && self.attributes_used.contains(&BlcAttributes::AnalogModulation.to_string()) {
+                                self.process_analog_modulation(interface, attribute_name, field_name, field_data).await?;
                             }
                         }
                     }
