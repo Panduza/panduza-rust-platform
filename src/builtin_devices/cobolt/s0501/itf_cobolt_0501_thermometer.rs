@@ -23,7 +23,7 @@ impl thermometer::ThermometerActions for S0501ThermometerActions {
     /// 
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
-        self.connector_tty.init().await;
+        self.connector_tty.init().await?;
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
