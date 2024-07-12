@@ -20,6 +20,7 @@ struct LBX488BlcActions {
     power_max: f64,
     power_value: f64,
     current_value: f64,
+    analog_modulation: bool
 }
 
 impl LBX488BlcActions {
@@ -83,19 +84,17 @@ impl blc::BlcActions for LBX488BlcActions {
         
         let answer = self.ask("?AM".as_bytes()).await?;
         if answer == "0\x00" {
-            println!("anwser = {}", answer);
+            self.analog_modulation = false;
         }
 
         if answer == "1\x00" {
-            println!("anwser = {}", answer);
+            self.analog_modulation = true;
         }
 
-        println!("anwser = {}", answer);
-
         interface.lock().await.log_info(
-            format!("read analog modulation value : {}", answer)
+            format!("read analog modulation value : {}", self.analog_modulation)
         );
-        return Ok(false);
+        return Ok(self.analog_modulation);
     }
 
     /// Write the analog modulation
@@ -106,7 +105,19 @@ impl blc::BlcActions for LBX488BlcActions {
             format!("write analog modulation value : {}", v)
         );
 
-        self.ask(format!("AM {}", v).as_bytes()).await?;
+        let cmd;
+
+        if v {
+            cmd = 1;
+        } else {
+            cmd = 0;
+        }
+
+        // Analog need 1 to be activate but digital (CW) is desactivated
+        // with 1, so here I activate analog and disable digital (or reverse)
+
+        self.ask(format!("AM {}", cmd).as_bytes()).await?;
+        self.ask(format!("CW {}", cmd).as_bytes()).await?;
         return Ok(());
     }
 
@@ -318,6 +329,7 @@ pub fn build<A: Into<String>>(
             power_max: 0.0,
             power_value: 0.0,
             current_value: 0.0,
+            analog_modulation: true
         }),
         BlcAttributes::all_attributes()
     )
