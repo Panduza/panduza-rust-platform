@@ -182,8 +182,6 @@ impl interface::fsm::States for BlcStates {
             blc_itf.actions.write_analog_modulation(&interface, true).await?;
             let analog_modulation = blc_itf.actions.read_analog_modulation(&interface).await?;
 
-            println!("############################ read analog modulation : {}", analog_modulation);
-
             interface.lock().await.update_attribute_with_bool(BlcAttributes::AnalogModulation.as_str(), "value", analog_modulation)?;
         }   
 
@@ -292,7 +290,6 @@ impl BlcSubscriber {
     async fn process_analog_modulation(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
     -> Result<(), PlatformError>
     {
-        println!("################### paf");
 
         let requested_value = match field_data.as_bool() {
             Some(request) => request,
