@@ -6,14 +6,14 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
 // use panduza_connectors::serial::tty::Tty;
-use panduza_connectors::serial::tty::{self, TtyConnector};
-use panduza_connectors::serial::tty::Config as SerialConfig;
+use panduza_connectors::serial::tty2::{self, TtyConnector};
+use panduza_connectors::serial::tty2::Config as SerialConfig;
 // use crate::platform_error_result;
 
 ///
 /// 
-struct Ka3005BpcActions {
-    connector_tty: tty::TtyConnector,
+struct Ka3005pBpcActions {
+    connector_tty: TtyConnector,
     serial_config: SerialConfig,
     enable_value: bool,
     voltage_value: f64,
@@ -22,27 +22,24 @@ struct Ka3005BpcActions {
 }
 
 #[async_trait]
-impl bpc::BpcActions for Ka3005BpcActions {
+impl bpc::BpcActions for Ka3005pBpcActions {
 
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
 
-        self.connector_tty = tty::get(&self.serial_config).await.unwrap();
+        self.connector_tty = tty2::get(&self.serial_config).await.unwrap();
         let _ = self.connector_tty.init().await;
-
-        println!("yooooo!");
 
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
             b"*IDN?",
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await
             .map(|c| {
                 let pp = &response[0..c];
                 let sss = String::from_utf8(pp.to_vec()).unwrap();
-                println!("Ka3005BpcActions - initializating: {:?}", sss);
+                println!("Ka3005pBpcActions - initializating: {:?}", sss);
             });
 
 
@@ -56,8 +53,7 @@ impl bpc::BpcActions for Ka3005BpcActions {
         let mut response: &mut [u8] = &mut [0; 1024];
         let _result = self.connector_tty.write_then_read(
             b"STATUS?",
-            &mut response,
-            self.time_lock_duration
+            &mut response
         ).await
             .map(|c| {
                 println!("c: {:?}", c);
@@ -84,47 +80,76 @@ impl bpc::BpcActions for Ka3005BpcActions {
         let _result = self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|c| {
-                println!("c: {:?}", c);
-            });
+        ).await;
 
         interface.lock().await.log_info(
             format!("KA3005 - write_enable_value: {}", self.enable_value)
         );
+
         self.enable_value = v;
     }
 
-    /// Read the voltage value
-    /// 
     async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
-        interface.lock().await.log_warn(
-            format!("NOT IMPLEMENTED KA3005 - read_voltage_value: {}", self.voltage_value)
+
+        let mut response: &mut [u8] = &mut [0; 1024];
+        let _result = self.connector_tty.write_then_read(
+            b"VSET1?",
+            &mut response
+        ).await;
+
+        let value = String::from_utf8(response.to_vec()).unwrap().parse::<f64>().expect("bad measure");
+
+        interface.lock().await.log_info(
+            format!("KA3005 - read_voltage_value: {}", value)
         );
-        return Ok(self.voltage_value);
+        return Ok(value);
     }
 
     async fn write_voltage_value(&mut self, interface: &AmInterface, v: f64) {
+        let command = format!("VSET1:{:05.2}", v);
+
+        let _result = self.connector_tty.write(
+            command.as_bytes(),
+            self.time_lock_duration
+        ).await;
+
         interface.lock().await.log_warn(
             format!("NOT IMPLEMENTED KA3005 - write_voltage_value: {}", v)
         );
+
         self.voltage_value = v;
     }
 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
-        interface.lock().await.log_warn(
-            format!("NOT IMPLEMENTED KA3005 - read_current_value: {}", self.current_value)
+
+        let mut response: &mut [u8] = &mut [0; 1024];
+        let _result = self.connector_tty.write_then_read(
+            b"ISET1?",
+            &mut response
+        ).await;
+
+        let value = String::from_utf8(response.to_vec()).unwrap().parse::<f64>().expect("bad measure");
+
+        interface.lock().await.log_info(
+            format!("KA3005 - read_current_value: {}", value)
         );
-        return Ok(self.current_value);
+        return Ok(value);
     }
 
-    async fn write_current_value(&mut self, interface: &AmInterface, v: f64) {
-        interface.lock().await.log_warn(
-            format!("NOT IMPLEMENTED KA3005 - write_current_value: {}", v)
-        );
-        self.current_value = v;
-    }
+    async fn write_current_value(&mut self, interface: &AmInterface, c: f64) {
+        let command = format!("ISET1:{:05.3}", c);
 
+        let _result = self.connector_tty.write(
+            command.as_bytes(),
+            self.time_lock_duration
+        ).await;
+
+        interface.lock().await.log_warn(
+            format!("NOT IMPLEMENTED KA3005 - write_current_value: {}", c)
+        );
+    
+        self.current_value = c;
+    }
 }
 
 
@@ -147,7 +172,7 @@ pub fn build<A: Into<String>>(
             current_max: 3.0,
             current_decimals: 3,
         }, 
-        Box::new(Ka3005BpcActions {
+        Box::new(Ka3005pBpcActions {
             connector_tty: TtyConnector::new(None),
             serial_config: serial_config.clone(),
             enable_value: false,
@@ -158,4 +183,3 @@ pub fn build<A: Into<String>>(
         BpcAttributes::all_attributes()
     )
 }
-

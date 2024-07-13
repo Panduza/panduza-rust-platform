@@ -289,4 +289,3 @@ pub fn build<A: Into<String>>(
         Box::new(PowermeterSubscriber{powermeter_interface: c.clone()})
     );
 }
-
