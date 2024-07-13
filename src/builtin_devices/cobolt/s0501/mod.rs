@@ -79,7 +79,7 @@ impl DeviceActions for S0501 {
     fn interface_builders(&self, device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
-        let logger = device.logger.clone();
+        let logger = device.clone_logger().clone();
 
         let device_settings = device.settings.clone();
 

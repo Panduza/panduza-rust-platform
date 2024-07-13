@@ -11,11 +11,11 @@ use crate::link::AmManager as AmLinkManager;
 
 use crate::interface::Builder as InterfaceBuilder;
 
-use crate::subscription;
+use crate::{subscription, FunctionResult, __platform_error_result};
 
 use crate::interface::Interface;
 
-use super::logger::Logger;
+use super::logger::{self, Logger};
 
 /// A device manage a set of interfaces
 /// 
@@ -41,7 +41,7 @@ pub struct Device {
 
     platform_services: crate::platform::services::AmServices,
 
-    pub logger: Logger,
+    logger: Logger,
 }
 
 impl Device {
@@ -133,24 +133,27 @@ impl Device {
 
     /// Create and Start the interfaces
     /// 
-    pub async fn start_interfaces(&mut self, task_loader: &mut TaskPoolLoader) {
+    pub async fn start_interfaces(&mut self, task_loader: &mut TaskPoolLoader)
+        -> FunctionResult
+    {
         // Do nothing if already started
         if self.started {
-            return;
+            self.logger.log_warn("Device already started");
+            // return __platform_error_result!("Device already started");
         }
-        self.log_info("Start Interfaces...");
+        self.logger.log_info("Start Interfaces...");
 
         // Get the interface builders
         let r = self.actions.interface_builders(&self);
         // if let Err(e) = builders {
         //     self.log_warn("Error");
         // }
-        let builders = r.unwrap();
+        let builders = r?;
 
         // Do nothing if no interface in the device
         if builders.len() == 0 {
-            self.log_warn("No interface to build, skip device start");
-            return;
+            self.logger.log_warn("No interface to build, skip device start");
+            return Ok(());
         }
 
         // create interfaces
@@ -175,8 +178,10 @@ impl Device {
         // }
 
         // log
-        self.log_info("Interfaces started !");
+        self.logger.log_info("Interfaces started !");
         self.started = true;
+
+        Ok(())
     }
 
 
@@ -239,20 +244,29 @@ impl Device {
 
     }
 
-
-
     /// Log warning
     /// 
+    #[deprecated(since = "0.1.0", note = "use clone_logger() instead")]
     #[inline]
     pub fn log_warn<A: Into<String>>(&self, text: A) {
+        // println!("DEPRECATED: Device::log_warn() is deprecated, use Device::clone_logger() instead !");
         tracing::warn!(class="Device", bname=self.bench_name, dname=self.dev_name, "{}", text.into());
     }
 
     /// Log info
     /// 
+    #[deprecated(since = "0.1.0", note = "use clone_logger() instead")]
     #[inline]
     pub fn log_info<A: Into<String>>(&self, text: A) {
+        // println!("DEPRECATED: Device::log_info() is deprecated, use Device::clone_logger() instead !");
         tracing::info!(class="Device", bname=self.bench_name, dname=self.dev_name, "{}", text.into());
+    }
+
+    /// This function allow an external module to use the device logger
+    /// The logger is threadsafe and can also safely be cloned
+    /// 
+    pub fn clone_logger(&self) -> Logger {
+        return self.logger.clone();
     }
 
 }

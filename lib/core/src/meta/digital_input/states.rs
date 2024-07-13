@@ -17,6 +17,7 @@ use crate::interface::ThreadSafeInterface;
 
 use crate::interface::fsm::States as InterfaceStates;
 
+use super::interface;
 use super::interface::MetaInterface;
 
 use crate::interface::basic::wait_for_fsm_event;
@@ -49,7 +50,7 @@ impl InterfaceStates for MetaStates {
         
 
         // Custom initialization slot
-        meta_interface_locked.actions.initializating(&interface).await.unwrap();
+        meta_interface_locked.actions.initializating(&interface).await?;
 
 
    
@@ -138,18 +139,22 @@ impl InterfaceStates for MetaStates {
     async fn running(&self, interface: &ThreadSafeInterface)
     {
         println!("running");
-
-
         wait_for_fsm_event(interface).await;
     }
 
     async fn warning(&self, interface: &ThreadSafeInterface)
     {
+        // Wait for 5 sec and reboot
+        sleep(Duration::from_secs(5)).await;
+
+        interface.lock().await.set_event_reboot();
+
         println!("warning");
     }
 
-    async fn cleaning(&self, _interface: &ThreadSafeInterface)
+    async fn cleaning(&self, interface: &ThreadSafeInterface)
     {
         println!("cleaning");
+        interface.lock().await.set_event_cleaned();
     }
 }

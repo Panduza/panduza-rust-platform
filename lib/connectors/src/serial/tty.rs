@@ -1,4 +1,6 @@
+use std::str::FromStr;
 use std::{collections::HashMap, sync::Arc};
+use serde_json::json;
 use tokio_serial::{self, SerialPortBuilder};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};//, Result};
 use tokio_serial::SerialStream;
@@ -10,6 +12,8 @@ use lazy_static::lazy_static;
 use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
+use panduza_core::platform_error;
+use tracing::Value;
 
 
 
@@ -47,15 +51,15 @@ impl Config {
 
     pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) -> PlatformFunctionResult {
 
-        self.serial_baudrate = match settings.get("serial_baudrate")
-        {
-            Some(val) => match val.as_u64()
-            {
-                Some(u) => Some(u as u32),
-                None => return platform_error_result!("Serial baudrate not an integer")
-            },
-            None => return platform_error_result!("Missing serial_baudrate from tree.json")
-        };
+
+        let serial_baudrate_default = json!(9600);
+        let baudrate = settings.get("serial_baudrate")
+            .or(Some(&serial_baudrate_default))
+            .ok_or(platform_error!("Unable to get serial baudrate"))?
+            .as_u64()
+            .ok_or(platform_error!("Serial baudrate not an integer"))?;
+        self.serial_baudrate = Some(baudrate as u32);
+
 
         // // get VID hexadecimal value
         // self.usb_vendor = match settings.get("usb_vendor")
@@ -87,15 +91,19 @@ impl Config {
         //     None => return platform_error_result!("Missing usb_model from tree.json")
         // };
 
-        self.usb_serial = match settings.get("usb_serial")
-        {
-            Some(val) => match val.as_str()
-            {
-                Some(s) => Some(s.to_string()),
-                None => return platform_error_result!("usb_serial not a String")
-            },
-            None => return platform_error_result!("Missing usb_serial from tree.json")
-        };
+
+        let usb_serial_default = json!("");
+        let usb_serial = settings.get("usb_serial")
+            .or(Some(&usb_serial_default))
+            .ok_or(platform_error!("Unable to get usb serial"))?
+            .as_str()
+            .ok_or(platform_error!("Usb serial not a string"))?;
+        self.usb_serial = Some(
+            String::from_str(usb_serial)
+                .map_err(|_e| platform_error!("Unable to convert usb_serial to string"))?
+        );
+
+
 
         Ok(())
     }

@@ -337,7 +337,7 @@ impl Platform {
         }
 
         // Mount devices
-        d.start_devices().await;
+        d.start_devices().await.unwrap();
     }
 
     /// Reload tree inside platform configuration
@@ -389,7 +389,7 @@ impl Platform {
 
 
         let mut d = devices_manager.lock().await;
-        d.start_devices().await;
+        d.start_devices().await.unwrap();
 
         // Success
         Ok(())

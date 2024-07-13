@@ -27,10 +27,10 @@ impl Logger {
     //     tracing::error!(class=CLASS_NAME, bname=self.bname, dname=self.dname, iname=self.iname, "{}", text.into());
     // }
 
-    // #[inline]
-    // pub fn log_warn<A: Into<String>>(&self, text: A) {
-    //     tracing::warn!(class=CLASS_NAME, bname=self.bname, dname=self.dname, iname=self.iname, "{}", text.into());
-    // }
+    #[inline]
+    pub fn log_warn<A: Into<String>>(&self, text: A) {
+        tracing::warn!(class=CLASS_NAME, bname=self.bname, dname=self.dname, "{}", text.into());
+    }
 
     #[inline]
     pub fn log_info<A: Into<String>>(&self, text: A) {
