@@ -63,6 +63,12 @@ pub async fn import_file(file_path: PathBuf) -> Result<Info, Error> {
 ///
 pub fn export_file(info: &Info) -> FunctionResult {
 
+    // Create the file directory
+    let mut filedir_path = std::path::PathBuf::from(info.file_path.clone());
+    filedir_path.pop();
+    std::fs::create_dir_all(filedir_path)
+        .map_err(|e| __platform_error!(e.to_string()) )?;
+
     //  Write new file
     let mut file = std::fs::File::create(&info.file_path)
         .map_err(|e| __platform_error!(e.to_string()) )?;
