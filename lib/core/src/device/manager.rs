@@ -8,6 +8,7 @@ use crate::platform::TaskPoolLoader;
 
 use crate::Error as PlatformError;
 
+use crate::FunctionResult;
 use crate::__platform_error_result;
 
 use super::traits::Hunter;
@@ -82,10 +83,12 @@ impl Manager {
 
 
     pub async fn start_devices(&mut self)
+        -> FunctionResult
     {
         for(_, device) in self.instances.iter_mut() {
-            device.start_interfaces(&mut self.task_loader).await;
+            device.start_interfaces(&mut self.task_loader).await?;
         }
+        Ok(())
     }
 
 

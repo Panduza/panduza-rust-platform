@@ -1,11 +1,13 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
+use tokio::time::sleep;
 
 use crate::attribute::{self, JsonAttribute};
-use crate::interface::AmInterface;
+use crate::interface::{AmInterface, ThreadSafeInterface};
 
 
 use crate::{interface, subscription};
@@ -237,14 +239,20 @@ impl interface::fsm::States for BpcStates {
         interface::basic::wait_for_fsm_event(interface).await;
     }
 
-    async fn warning(&self, _interface: &AmInterface)
+    async fn warning(&self, interface: &ThreadSafeInterface)
     {
-        println!("cleaning");
+        // Wait for 5 sec and reboot
+        sleep(Duration::from_secs(5)).await;
+
+        interface.lock().await.set_event_reboot();
+
+        println!("warning");
     }
 
-    async fn cleaning(&self, _interface: &AmInterface)
+    async fn cleaning(&self, interface: &ThreadSafeInterface)
     {
         println!("cleaning");
+        interface.lock().await.set_event_cleaned();
     }
 }
 

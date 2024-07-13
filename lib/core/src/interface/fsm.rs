@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use bitflags::bitflags;
 use crate::interface::AmInterface;
 
+use crate::FunctionResult;
 use crate::TaskResult;
 use crate::Error as PlatformError;
 
@@ -132,11 +133,9 @@ impl Fsm {
         Ok(())
     }
 
-
-
     ///
     ///
-    pub async fn run_once(&mut self) {
+    pub async fn run_once(&mut self) -> FunctionResult {
 
         // Get state but do not keep the lock
         let state = self.interface.lock().await.current_state().clone();
@@ -152,6 +151,11 @@ impl Fsm {
                 // Execute state
                 self.states.connecting(&self.interface).await;
 
+                // I don't like this... but for now do the job
+                // Else the connection event is not triggered after the first time
+                // A cache mecanism must be implemented but maybe better than this one
+                self.interface.lock().await.trigger_event_connection_cache();
+
                 // Manage transitions
                 let evs = self.interface.lock().await.events().clone();
 
@@ -161,8 +165,10 @@ impl Fsm {
                 }
             },
             State::Initializating => {
-                // Execute state
-                self.states.initializating(&self.interface).await;
+                // Execute state and manage errors if any
+                if let Err(e) = self.states.initializating(&self.interface).await {
+                    self.interface.lock().await.set_event_error(e.to_string());
+                }
 
                 // Manage transitions
                 let evs = self.interface.lock().await.events().clone();
@@ -201,11 +207,11 @@ impl Fsm {
                 }
             },
             State::Warning => {
-                // Execute state
-                // self.states.warning(&self.interface).await;
+                // Log last error
+                self.interface.lock().await.log_last_error();
 
-                // Wait for 5 sec and reboot
-                sleep(Duration::from_secs(5)).await;
+                // Execute state
+                self.states.warning(&self.interface).await;
 
                 // Manage transitions
                 let evs = self.interface.lock().await.events().clone();
@@ -236,7 +242,7 @@ impl Fsm {
 
         //
         self.interface.lock().await.publish_all_attributes().await;
-
+        Ok(())
     }
 
 }

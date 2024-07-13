@@ -158,11 +158,17 @@ impl InterfaceStates for MetaStates {
 
     async fn warning(&self, interface: &ThreadSafeInterface)
     {
+        // Wait for 5 sec and reboot
+        sleep(Duration::from_secs(5)).await;
+
+        interface.lock().await.set_event_reboot();
+
         println!("warning");
     }
 
-    async fn cleaning(&self, _interface: &ThreadSafeInterface)
+    async fn cleaning(&self, interface: &ThreadSafeInterface)
     {
         println!("cleaning");
+        interface.lock().await.set_event_cleaned();
     }
 }

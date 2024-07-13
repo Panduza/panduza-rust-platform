@@ -1608,7 +1608,7 @@ dependencies = [
 
 [[package]]
 name = "panduza-core"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "bitflags 2.5.0",

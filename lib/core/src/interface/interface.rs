@@ -57,6 +57,9 @@ pub struct Interface {
     fsm_events_notifier: Arc<Notify>,
 
     // -- CLIENT --
+
+    is_connection_up: bool,
+
     client: AsyncClient,
 
     // -- ATTRIBUTES --
@@ -100,6 +103,7 @@ impl Interface {
             topic_cmds: String::new(),
             topic_atts: String::new(),
             topic_info: String::new(),
+            is_connection_up: false,
             client: client,
             fsm_state: State::Connecting,
             fsm_events: Events::NO_EVENT,
@@ -210,12 +214,28 @@ impl Interface {
 
     // Helpers for event trigger
     #[inline(always)]
-    pub fn set_event_connection_up(&mut self) { self.set_event(Events::CONNECTION_UP); }
+    pub fn set_event_connection_up(&mut self) { 
+        self.is_connection_up = true; // bidouille pas propre
+        self.set_event(Events::CONNECTION_UP);
+    }
     #[inline(always)]
-    pub fn set_event_connection_down(&mut self) { self.set_event(Events::CONNECTION_DOWN); }
+    pub fn set_event_connection_down(&mut self) {
+        self.is_connection_up = false; // bidouille pas propre
+        self.set_event(Events::CONNECTION_DOWN);
+    }
     #[inline(always)]
     pub fn set_event_init_done(&mut self) { self.set_event(Events::INIT_DONE); }
+    #[inline(always)]
+    pub fn set_event_reboot(&mut self) { self.set_event(Events::REBOOT); }
+    #[inline(always)]
+    pub fn set_event_cleaned(&mut self) { self.set_event(Events::CLEANED); }
 
+
+    pub fn trigger_event_connection_cache(&mut self) {
+        if self.is_connection_up {
+            self.set_event_connection_up();
+        }
+    }
 
     // -- CLIENT --
 
@@ -407,6 +427,19 @@ impl Interface {
     /// 
     pub fn clone_logger(&self) -> Logger {
         return self.logger.clone();
+    }
+
+    /// Log the last error message
+    ///
+    pub fn log_last_error(&self) {
+        match &self.last_error_message {
+            Some(msg) => {
+                self.logger.log_warn(format!("Last error message: {}", msg));
+            },
+            None => {
+                self.logger.log_warn("No error message");
+            }
+        }
     }
 
 }
