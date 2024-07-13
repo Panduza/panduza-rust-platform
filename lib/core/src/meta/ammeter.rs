@@ -84,7 +84,7 @@ impl interface::fsm::States for AmmeterStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface)
+    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
     {
         let mut ammeter_itf = self.ammeter_interface.lock().await;
 
@@ -107,6 +107,8 @@ impl interface::fsm::States for AmmeterStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+
+        Ok(())
     }
 
     async fn running(&self, interface: &AmInterface)

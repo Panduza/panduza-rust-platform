@@ -83,7 +83,7 @@ impl interface::fsm::States for VoltmeterStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface)
+    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
     {
         let mut voltmeter_itf = self.voltmeter_interface.lock().await;
 
@@ -106,6 +106,8 @@ impl interface::fsm::States for VoltmeterStates {
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();
+
+        Ok(())
     }
 
     async fn running(&self, interface: &AmInterface)

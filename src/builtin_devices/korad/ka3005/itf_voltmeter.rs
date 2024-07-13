@@ -6,14 +6,14 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_core::meta::voltmeter;
 
 // use panduza_connectors::serial::tty::Tty;
-use panduza_connectors::serial::tty::{self, TtyConnector};
-use panduza_connectors::serial::tty::Config as SerialConfig;
+use panduza_connectors::serial::tty2::{self, TtyConnector};
+use panduza_connectors::serial::tty2::Config as SerialConfig;
 // use crate::platform_error_result;
 
 ///
 /// 
 struct Ka3005pVoltmeterActions {
-    connector_tty: tty::TtyConnector,
+    connector_tty: TtyConnector,
     serial_config: SerialConfig
 }
 
@@ -23,7 +23,7 @@ impl voltmeter::VoltmeterActions for Ka3005pVoltmeterActions {
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
-        self.connector_tty = tty::get(&self.serial_config).await.unwrap();
+        self.connector_tty = tty2::get(&self.serial_config).await.unwrap();
         self.connector_tty.init().await;
 
         return Ok(());

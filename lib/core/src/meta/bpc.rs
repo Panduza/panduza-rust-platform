@@ -75,7 +75,11 @@ pub trait BpcActions: Send + Sync {
 
     async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
 
+    async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
+
     async fn write_voltage_value(&mut self, interface: &AmInterface, v: f64);
+
+    async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64);
 
@@ -165,8 +169,7 @@ impl interface::fsm::States for BpcStates {
 
     /// Initialize the interface
     ///
-    async fn initializating(&self, interface: &AmInterface)
-    -> Result<(), PlatformError>
+    async fn initializating(&self, interface: &AmInterface) -> Result<(), PlatformError>
     {
         let mut bpc_itf = self.bpc_interface.lock().await;
 
@@ -195,10 +198,9 @@ impl interface::fsm::States for BpcStates {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(voltage_str, true));
 
             // Init voltage
-            let voltage_value = bpc_itf.actions.read_voltage_value(&interface).await?;
             interface.lock().await.update_attribute_with_f64(voltage_str, "min", bpc_itf.params.voltage_min );
             interface.lock().await.update_attribute_with_f64(voltage_str, "max", bpc_itf.params.voltage_max );
-            interface.lock().await.update_attribute_with_f64(voltage_str, "value", voltage_value);
+            interface.lock().await.update_attribute_with_f64(voltage_str, "value", 0.0);
             interface.lock().await.update_attribute_with_f64(voltage_str, "decimals", bpc_itf.params.voltage_decimals as f64);
             interface.lock().await.update_attribute_with_f64(voltage_str, "polling_cycle", 0.0);
         }
@@ -210,10 +212,9 @@ impl interface::fsm::States for BpcStates {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(current_str, true));
 
              // Init current
-            let current_value = bpc_itf.actions.read_current_value(&interface).await?;
             interface.lock().await.update_attribute_with_f64(current_str, "min", bpc_itf.params.current_min );
             interface.lock().await.update_attribute_with_f64(current_str, "max", bpc_itf.params.current_max );
-            interface.lock().await.update_attribute_with_f64(current_str, "value", current_value);
+            interface.lock().await.update_attribute_with_f64(current_str, "value", 0.0);
             interface.lock().await.update_attribute_with_f64(current_str, "decimals", bpc_itf.params.current_decimals as f64);
             interface.lock().await.update_attribute_with_f64(current_str, "polling_cycle", 0.0);
         }
@@ -303,6 +304,8 @@ impl BpcSubscriber {
         };
         self.bpc_interface.lock().await
             .actions.write_voltage_value(&interface, requested_value as f64).await;
+
+        Ok(())
     }
 
     /// 
@@ -317,6 +320,8 @@ impl BpcSubscriber {
         };
         self.bpc_interface.lock().await
             .actions.write_current_value(&interface, requested_value as f64).await;
+
+        Ok(())
     }
 
 

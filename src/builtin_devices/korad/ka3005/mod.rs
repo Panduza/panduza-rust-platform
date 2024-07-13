@@ -8,7 +8,7 @@ use panduza_core::device::{ traits::DeviceActions, traits::Producer, traits::Hun
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 
-use panduza_connectors::serial::tty::Config as SerialConfig;
+use panduza_connectors::serial::tty2::Config as SerialConfig;
 
 use tokio_serial;
 
@@ -77,6 +77,8 @@ impl DeviceActions for Ka3005p {
     fn interface_builders(&self, device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
+
+        let device_settings = &device.settings;
 
         println!("Ka3005p::interface_builders");
         println!("{}", device_settings);
