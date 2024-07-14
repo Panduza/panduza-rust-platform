@@ -13,7 +13,10 @@ use serde_json::Error;
 
 use futures::FutureExt;
 
-use panduza_connectors::serial::tty;
+
+use panduza_connectors::serial::tty3::get as ConnectorGet;
+use panduza_connectors::serial::tty3::Config as SerialConfig;
+use panduza_connectors::serial::tty3::Connector as SerialConnector;
 
 use super::api_dio::PicohaDioRequest;
 
@@ -23,9 +26,9 @@ use panduza_core::platform_error;
 /// 
 struct InterfaceActions {
 
-    config: tty::Config,
+    config: SerialConfig,
 
-    connector: tty::Connector,
+    connector: SerialConnector,
     
     // pub fake_values: Arc<Mutex<Vec<u64>>>,
 }
@@ -38,8 +41,7 @@ impl digital_input::MetaActions for InterfaceActions {
     async fn initializating(&mut self, interface :&ThreadSafeInterface) -> Result<(), PlatformError> {
 
 
-        self.connector = tty::get(&self.config).await
-            .ok_or(platform_error!("unable to create the tty connector"))?;
+        self.connector = ConnectorGet(&self.config).await?;
         self.connector.init().await?;
 
 
@@ -99,7 +101,7 @@ pub struct Builder {
     /// Name of the interface
     name: String,
     /// Serial configuration
-    serial_config: Option<tty::Config>,
+    serial_config: Option<SerialConfig>,
 }
 impl Builder {
     /// Create a new builder with default values
@@ -117,7 +119,7 @@ impl Builder {
     }
 
     /// Set the serial configuration
-    pub fn with_serial_config(mut self, serial_config: tty::Config) -> Self {
+    pub fn with_serial_config(mut self, serial_config: SerialConfig) -> Self {
         self.serial_config = Some(serial_config);
         self
     }
@@ -128,7 +130,7 @@ impl Builder {
             self.name,
             Box::new(InterfaceActions {
                 config: self.serial_config.unwrap(),
-                connector: tty::Connector::new(None),
+                connector: SerialConnector::new(None),
             })
         )
     }

@@ -111,6 +111,9 @@ where
                             "Factory" => {
                                 write!(&mut writer, "{}", "[F] ".to_string().magenta() )?;
                             },
+                            "Connector" => {
+                                write!(&mut writer, "{}", "[C] ".to_string().purple() )?;
+                            },
                             "Connection" => {
                                 let f = format!("[{}] ", visitor.entries().get("cname").unwrap().trim_matches('"'));
                                 write!(&mut writer, "{}", f.blue() )?;

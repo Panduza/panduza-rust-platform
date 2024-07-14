@@ -5,7 +5,7 @@ use serde_json::de;
 
 use super::itf_digital_input;
 
-use panduza_connectors::serial::tty;
+use panduza_connectors::serial::tty3::Config as SerialConfig;
 
 
 pub struct PicoHaDio;
@@ -33,7 +33,7 @@ impl DeviceActions for PicoHaDio {
 
 
 
-        let mut serial_conf = tty::Config::new();
+        let mut serial_conf = SerialConfig::new();
         serial_conf.import_from_json_settings(&device_settings)?;
 
         serial_conf.serial_baudrate = Some(9600);
