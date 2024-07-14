@@ -1,19 +1,22 @@
 static CLASS_NAME: &str = "Connector";
 
-/// Logger for interfaces
+/// Logger for Connector Gates
 /// 
 #[derive(Clone)]
 pub struct Logger {
-    /// Bench name
+    /// Connector name
+    name: String,
+    /// Connector unique key instance
     key: String,
 }
 impl Logger {
 
-    /// Create a new logger
+    /// Create a new Logger
     ///
-    pub fn new<A: Into<String>>(key: A) 
+    pub fn new<A: Into<String>, B: Into<String>>(name: A, key: B) 
         -> Logger {
         return Logger {
+            name: name.into(),
             key: key.into()
         }
     }
@@ -27,17 +30,17 @@ impl Logger {
 
     #[inline]
     pub fn log_warn<A: Into<String>>(&self, text: A) {
-        tracing::warn!(class=CLASS_NAME, key=self.key, "{}", text.into());
+        tracing::warn!(class=CLASS_NAME, i1=self.name, i2=self.key, "{}", text.into());
     }
 
     #[inline]
     pub fn log_info<A: Into<String>>(&self, text: A) {
-        tracing::info!(class=CLASS_NAME, key=self.key, "{}", text.into());
+        tracing::info!(class=CLASS_NAME, i1=self.name, i2=self.key, "{}", text.into());
     }
 
     #[inline]
     pub fn log_trace<A: Into<String>>(&self, text: A) {
-        tracing::trace!(class=CLASS_NAME, key=self.key, "{}", text.into());
+        tracing::trace!(class=CLASS_NAME, i1=self.name, i2=self.key, "{}", text.into());
     }
 
 }
