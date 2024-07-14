@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use prost::Message;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tokio::time::Duration;
@@ -14,13 +15,20 @@ use serde_json::Error;
 use futures::FutureExt;
 
 
+use panduza_connectors::serial::slip::get as ConnectorSlipGet;
 use panduza_connectors::serial::tty3::get as ConnectorGet;
+use panduza_connectors::serial::slip::Connector as SlipConnector;
 use panduza_connectors::serial::tty3::Config as SerialConfig;
 use panduza_connectors::serial::tty3::Connector as SerialConnector;
 
+
+
 use super::api_dio::PicohaDioRequest;
+use super::api_dio::RequestType;
+
 
 use panduza_core::platform_error;
+
 
 ///
 /// 
@@ -28,7 +36,7 @@ struct InterfaceActions {
 
     config: SerialConfig,
 
-    connector: SerialConnector,
+    connector: Option<SlipConnector>,
     
     // pub fake_values: Arc<Mutex<Vec<u64>>>,
 }
@@ -40,23 +48,37 @@ impl digital_input::MetaActions for InterfaceActions {
     /// 
     async fn initializating(&mut self, interface :&ThreadSafeInterface) -> Result<(), PlatformError> {
 
+        let logger = interface.lock().await.clone_logger();
 
-        self.connector = ConnectorGet(&self.config).await?;
-        self.connector.init().await?;
+        self.connector = ConnectorSlipGet(&self.config, Some(logger)).await;
+        self.connector.as_mut().unwrap().init().await?;
 
 
-        // let interface_locked = interface.lock().await;
-        // let mut loader = interface_locked.platform_services.lock().await.task_loader.clone();
+        let request = PicohaDioRequest {
+            r#type: RequestType::Ping as i32,
+            pin_num: 5,
+            value: 0,
+        };
+        // let request = PicohaDioRequest {
+        //     r#type: RequestType::GetPinDirection as i32,
+        //     pin_num: 0,
+        //     value: 0,
+        // };
+        
+        println!("=====");
+        // let mut buf = vec![0;20];
+        let buf = request.encode_to_vec();
+        // if p.is_err() {
+        //     println!("------*** Error: {:?}", p.err());
+        // }
+        // else {
+        //     println!("------*** Ok");
+        // };
+        println!("Sending: {:?}", buf);
+        println!("=====");
 
-        // let values = self.fake_values.clone();
-        // loader.load( async move {
-        //     loop {
-        //         sleep(Duration::from_millis(1000)).await;
-        //         values.lock().await[1] += 1;
-        //     }
-        //     // Ok(())
-        // }.boxed()).unwrap();
-
+        let respond = &mut [0; 20];
+        self.connector.as_mut().unwrap().write_then_read(&buf, respond).await.unwrap();
 
         return Ok(());
     }
@@ -130,7 +152,7 @@ impl Builder {
             self.name,
             Box::new(InterfaceActions {
                 config: self.serial_config.unwrap(),
-                connector: SerialConnector::new(None),
+                connector: None,
             })
         )
     }

@@ -2,10 +2,10 @@
 
 use nusb::Error;
 
-use super::tty::TtyConnector;
+use super::super::tty3::TtyConnector as TtyConnector;
 
 use panduza_core::interface::logger::{self, Logger as InterfaceLogger};
-use panduza_core::Error as PlatformError;
+use panduza_core::{Error as PlatformError, FunctionResult};
 
 
 #[derive(Clone)]
@@ -24,10 +24,10 @@ impl Connector {
         }
     }
 
-    pub async fn init(&mut self) {
+    pub async fn init(&mut self) -> FunctionResult  {
         self.parent_connector
             .init()
-            .await;
+            .await
     }
 
     /// Encode command with SLIP (serial line internet protocol)
@@ -43,10 +43,16 @@ impl Connector {
             -> Result<usize, PlatformError> {
         
 
-        let mut encoded_command = [0u8; 1024];
+        let mut encoded_command = [0u8; 15];
         let mut slip_encoder = serial_line_ip::Encoder::new();
         
         let res = slip_encoder.encode(command, &mut encoded_command);
+
+        if res.is_ok() {
+            let rrrrr = res.unwrap();
+            println!("Encoding command: r{:?} w{:?}", rrrrr.read, rrrrr.written);
+        }
+        println!("Encoded command: {:?}", encoded_command);
 
 
         let slip_decoder = serial_line_ip::Decoder::new();
