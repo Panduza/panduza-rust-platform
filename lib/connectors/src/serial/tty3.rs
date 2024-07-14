@@ -23,7 +23,7 @@ lazy_static! {
 }
 
 // get should return an error message
-pub async fn get(config: &Config) -> Option<TtyConnector> {
+pub async fn get(config: &Config) -> Result<TtyConnector, PlatformError> {
     let mut gate = GATE.lock().await;
     gate.get(config)
 }
@@ -93,16 +93,21 @@ impl Config {
         // };
 
 
-        let usb_serial_default = json!("");
-        let usb_serial = settings.get("usb_serial")
-            .or(Some(&usb_serial_default))
-            .ok_or(platform_error!("Unable to get usb serial"))?
-            .as_str()
-            .ok_or(platform_error!("Usb serial not a string"))?;
-        self.usb_serial = Some(
-            String::from_str(usb_serial)
-                .map_err(|_e| platform_error!("Unable to convert usb_serial to string"))?
-        );
+
+        let usb_serial = settings.get("usb_serial");
+        if usb_serial.is_some() {
+            let usb_serial_str = usb_serial
+                .ok_or(platform_error!("Unable to get usb serial"))?
+                .as_str()
+                .ok_or(platform_error!("Usb serial not a string"))?;
+            self.usb_serial = Some(
+                String::from_str(usb_serial_str)
+                    .map_err(|_e| platform_error!("Unable to convert usb_serial to string"))?
+            );
+        }
+        else {
+            self.usb_serial = None;
+        }
 
 
 
@@ -118,8 +123,7 @@ struct Gate {
 
 impl Gate {
 
-
-    fn get(&mut self, config: &Config) -> Option<TtyConnector> {
+    fn get(&mut self, config: &Config) -> Result<TtyConnector, PlatformError> {
         // First try to get the key
         let key_string = Gate::generate_unique_key_from_config(config)?;
         let key= key_string.as_str();
@@ -136,30 +140,49 @@ impl Gate {
         }
 
         // Try to find the instance
-        let instance = self.instances.get(key)?;
+        let instance = self.instances.get(key)
+            .ok_or(platform_error!(
+                format!("Unable to find the tty connector \"{}\"", key)
+            ))?;
 
         // Return the instance
-        Some(instance.clone())
+        Ok(instance.clone())
     }
 
     /// Try to generate a unique key from the config
     /// This key will be used to find back the tty connector
     ///
-    fn generate_unique_key_from_config(config: &Config) -> Option<String> {
+    fn generate_unique_key_from_config(config: &Config) -> Result<String, PlatformError> {
         // Check if the serial port name is provided
         if let Some(k) = config.serial_port_name.as_ref() {
-            return Some(k.clone());
+            tracing::debug!(class="Connector", "serial port name is provided: {:?}", k);
+            return Ok(k.clone());
         }
+        
+        tracing::debug!(class="Connector", "usb ids: {:?}", config.usb_serial);
+
+        // Check if
+        // if usb_vid only use it only
 
         // Check if the usb vendor and model are provided to find the key
         if let Some(k) = tokio_serial::available_ports()
             .and_then(|ports| {
                 for port in ports {
+
+                    // Some debug logs
+                    tracing::debug!(class="Connector", " - serial port: {:?}", port);
+
                     match port.port_type {
                         tokio_serial::SerialPortType::UsbPort(info) => {
-                            if info.serial_number == config.usb_serial {
+                            
+                            if Gate::match_usb_info_port(info, config).is_ok() {
                                 return Ok(port.port_name);
                             }
+                            
+                            // if info.vid == config.usb_vendor &&
+                            //     info.product_id == config.usb_model.unwrap_or(0) {
+                            //     return Ok(port.port_name);
+                            // }
                         },
                         _ => {}
                     }
@@ -168,11 +191,48 @@ impl Gate {
             })
             .ok()
         {
-            return Some(k.clone());
+            return Ok(k.clone());
         }
 
         // Finally unable to generate a key with the config
-        return None;
+        return Err(platform_error!("Unable to generate a key from the config"));
+    }
+
+
+
+    fn match_usb_info_port(usb_info_port: tokio_serial::UsbPortInfo, config: &Config)
+        -> PlatformFunctionResult {
+
+
+        let valid_vid = config.usb_vendor
+            .and_then(
+                |val| Some(val == usb_info_port.vid)
+            )
+            .ok_or(platform_error!("usb_vendor is missing from config (you need at least vid)"))?;
+
+        let valid_pid = config.usb_model
+            .and_then(
+                |val| Some(val == usb_info_port.pid)
+            )
+            .or(Some(true)) // If the pid is not provided, it's ok
+            .unwrap(); // "Some" value here anyway
+
+        let valid_serial = config.usb_serial.as_ref()
+            .and_then(
+                |val| {
+                    usb_info_port.serial_number
+                        .and_then( |s| Some(s == *val) )
+                }
+            )
+            .or(Some(true)) // If the serial is not provided, it's ok
+            .unwrap(); // "Some" value here anyway
+    
+        // Ok only if all the conditions are met
+        if valid_vid && valid_pid && valid_serial {
+            Ok(())
+        } else {
+            platform_error_result!("usb info port does not match the config")
+        }
     }
 
 }
