@@ -179,7 +179,7 @@ impl interface::fsm::States for BlcStates {
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(BlcAttributes::AnalogModulation.as_str(), true));
 
             // Init analog modulation (should disable analog modulation)
-            blc_itf.actions.write_analog_modulation(&interface, false).await?;
+            blc_itf.actions.write_analog_modulation(&interface, true).await?;
             let analog_modulation = blc_itf.actions.read_analog_modulation(&interface).await?;
 
             interface.lock().await.update_attribute_with_bool(BlcAttributes::AnalogModulation.as_str(), "value", analog_modulation)?;

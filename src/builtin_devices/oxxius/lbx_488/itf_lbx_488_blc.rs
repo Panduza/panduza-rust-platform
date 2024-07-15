@@ -7,7 +7,6 @@ use panduza_core::platform_error_result;
 use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_core::meta::blc;
-
 use panduza_connectors::usb::usb::{self, UsbConnector};
 use panduza_connectors::usb::usb::Config as UsbConfig;
 
@@ -66,7 +65,7 @@ impl blc::BlcActions for LBX488BlcActions {
         let result = self.ask("?HID".as_bytes()).await?;
 
         interface.lock().await.log_info(
-            format!("LBX_488_BLC - initializing: {}", result)
+            format!("LBX_488 - initializing: {}", result)
         );
 
 
@@ -107,7 +106,7 @@ impl blc::BlcActions for LBX488BlcActions {
             format!("write analog modulation value : {}", v)
         );
 
-        self.ask(format!("AM {}", v).as_bytes()).await?;
+        // self.ask(format!("AM {}", v).as_bytes()).await?;
         return Ok(());
     }
 

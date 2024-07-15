@@ -140,15 +140,27 @@ impl UsbConnector {
 
 
     pub async fn write(&mut self, command: &[u8]) -> PlatformFunctionResult {
+        println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
         match self.core.as_ref() {
-            Some(val) => val.lock().await.write(command).await,
+            Some(val) => {
+                
+                let t = val.lock().await.write(command).await;
+                println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!2");
+                return t;
+    },
             None => platform_error_result!("Unable to write")
         }
     }
 
     pub async fn read(&mut self) -> Result<String, PlatformError> {
+        println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!3");
         match self.core.as_ref() {
-            Some(val) => val.lock().await.read().await,
+            Some(val) => {
+                
+                let t = val.lock().await.read().await;
+                println!("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!4");
+                return t;
+    },
             None => platform_error_result!("Unable to write")
         }
     }
