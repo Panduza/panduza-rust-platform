@@ -1,3 +1,4 @@
+use panduza_connectors::usb;
 use panduza_core::device::traits::DeviceActions;
 use panduza_core::device::Device;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
@@ -7,6 +8,8 @@ use super::itf_digital_input;
 
 use panduza_connectors::serial::tty3::Config as SerialConfig;
 
+use panduza_connectors::UsbSettings;
+use panduza_connectors::SerialSettings;
 
 pub struct PicoHaDio;
 
@@ -30,6 +33,16 @@ impl DeviceActions for PicoHaDio {
         // Log debug info
         logger.log_info("Build interfaces for \"picoha.dio\" device");
         logger.log_info(format!("settings: {}", device_settings));
+
+
+
+        let usb_settings = UsbSettings::new()
+            .set_serial_from_json_settings(&device_settings)?;
+
+
+        // let serial_settings = SerialSettings::new()
+        //     .set_port_name_from_json_or_usb_settings(&device_settings)?
+        //     .set_baudrate(115200);
 
 
 
