@@ -116,7 +116,7 @@ impl blc::BlcActions for S0501BlcActions {
     /// Read the analog modulation
     /// 
     async fn read_analog_modulation(&mut self, _interface: &AmInterface) -> Result<bool, PlatformError> {
-        return Ok(false);
+        return Ok(true);
     }
 
     /// Write the analog modulation
@@ -388,6 +388,11 @@ pub fn build<A: Into<String>>(
             power_max: 0.0,
             time_lock_duration: Some(tokio::time::Duration::from_millis(100)),
         }),
-        BlcAttributes::all_attributes()
+        vec![
+            BlcAttributes::Enable.to_string(),
+            BlcAttributes::Power.to_string(),
+            BlcAttributes::Current.to_string(),
+            BlcAttributes::Mode.to_string(),
+        ]
     )
 }
