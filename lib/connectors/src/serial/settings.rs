@@ -1,8 +1,11 @@
-use serde_json::json;
 use panduza_core::platform_error;
 use panduza_core::Error as PlatformError;
 
+use tokio_serial::DataBits;
+use tokio_serial::FlowControl;
+use tokio_serial::Parity;
 use tokio_serial::SerialPortInfo;
+use tokio_serial::StopBits;
 use tokio_serial::UsbPortInfo;
 use tokio_serial::available_ports as available_serial_ports;
 
@@ -17,12 +20,18 @@ static SERIAL_PORT_NAME_KEY: &str = "usb_serial";
 pub struct Settings {
     /// Local logger
     pub logger: GateLogger,
-
     /// The serial port name
     pub port_name: Option<String>,
-
-    /// The serial port baudrate
-    pub baudrate: Option<u32>
+    /// The baud rate in symbols-per-second
+    pub baudrate: u32,
+    /// Number of bits used to represent a character sent on the line
+    pub data_bits: DataBits,
+    /// The type of signalling to use for controlling data transfer
+    pub flow_control: FlowControl,
+    /// The type of parity to use for error checking
+    pub parity: Parity,
+    /// Number of bits to use to signal the end of a character
+    pub stop_bits: StopBits,
 }
 
 impl Settings {
@@ -33,7 +42,11 @@ impl Settings {
         Settings {
             logger: GateLogger::new("serial-settings"),
             port_name: None,
-            baudrate: None,
+            baudrate: 9600,
+            data_bits: DataBits::Eight,
+            flow_control: FlowControl::None,
+            parity: Parity::None,
+            stop_bits: StopBits::One
         }
     }
 
@@ -46,7 +59,7 @@ impl Settings {
 
     /// Set the port name from the json settings or the usb settings if json settings fails
     ///
-    pub fn set_port_name_from_json_or_usb_settings(mut self, json_settings: &serde_json::Value, usb_settings: &UsbSettings)
+    pub fn set_port_name_from_json_or_usb_settings(self, json_settings: &serde_json::Value, usb_settings: &UsbSettings)
         -> Result<Self, PlatformError>
     {
         // Try to extract the port name from the json settings
@@ -95,7 +108,7 @@ impl Settings {
     /// Set the baudrate
     /// 
     pub fn set_baudrate(mut self, baudrate: u32) -> Self {
-        self.baudrate = Some(baudrate);
+        self.baudrate = baudrate;
         self
     }
 
@@ -170,12 +183,9 @@ impl Settings {
 
 }
 
-
-
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-
 
 #[cfg(test)]
 mod tests {

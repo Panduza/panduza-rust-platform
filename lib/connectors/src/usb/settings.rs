@@ -35,6 +35,20 @@ impl Settings {
         }
     }
 
+    /// Set the vendor
+    /// 
+    pub fn set_vendor(mut self, vendor: u16) -> Self {
+        self.vendor = Some(vendor);
+        self
+    }
+
+    /// Set the model
+    /// 
+    pub fn set_model(mut self, model: u16) -> Self {
+        self.model = Some(model);
+        self
+    }
+
     /// Extracts the serial port name from the json settings
     /// This function fails if the settings is not present or ill-formed
     /// 
@@ -74,15 +88,29 @@ impl Settings {
         self
     }
 
+    /// Like `set_serial_from_json_settings` but with a default value in case
+    /// of error on settings extraction
+    /// 
+    pub fn optional_set_serial_from_json_settings(mut self, settings: &serde_json::Value)
+        -> Self
+    {
+        self.serial = match settings.get(USB_SERIAL_KEY) {
+            Some(serial) => {
+                match serial.as_str() {
+                    Some(s) => Some(s.to_string()),
+                    None => None
+                }
+            },
+            None => None
+        };
+        self
+    }
 
 }
 
-
-
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-
 
 #[cfg(test)]
 mod tests {

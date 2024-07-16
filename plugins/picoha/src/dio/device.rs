@@ -14,8 +14,8 @@ use panduza_connectors::SerialSettings;
 pub struct PicoHaDio;
 
 
-static PICOHA_VENDOR_ID: u16 = 0x16c0;
-static PICOHA_PRODUCT_ID: u16 = 0x05e1;
+static PICOHA_VENDOR_ID: u16 = 0x16C0;
+static PICOHA_PRODUCT_ID: u16 = 0x05E1;
 
 
 impl DeviceActions for PicoHaDio {
@@ -28,26 +28,29 @@ impl DeviceActions for PicoHaDio {
         let logger = device.clone_logger().clone();
 
         // Get the device settings
-        let device_settings = device.settings.clone();
+        let json_settings = device.settings.clone();
 
         // Log debug info
         logger.log_info("Build interfaces for \"picoha.dio\" device");
-        logger.log_info(format!("settings: {}", device_settings));
+        logger.log_info(format!("settings: {}", json_settings));
 
 
 
+        // Usb settings
         let usb_settings = UsbSettings::new()
-            .set_serial_from_json_settings(&device_settings)?;
+            .set_vendor(PICOHA_VENDOR_ID)
+            .set_model(PICOHA_PRODUCT_ID)
+            .optional_set_serial_from_json_settings(&json_settings);
 
-
-        // let serial_settings = SerialSettings::new()
-        //     .set_port_name_from_json_or_usb_settings(&device_settings)?
-        //     .set_baudrate(115200);
+        // Serial settings
+        let serial_settings = SerialSettings::new()
+            .set_port_name_from_json_or_usb_settings(&json_settings, &usb_settings)?
+            .set_baudrate(115200);
 
 
 
         let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(&device_settings)?;
+        serial_conf.import_from_json_settings(&json_settings)?;
 
         serial_conf.serial_baudrate = Some(9600);
         serial_conf.usb_vendor = Some(PICOHA_VENDOR_ID);
