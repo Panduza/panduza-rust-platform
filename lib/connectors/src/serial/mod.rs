@@ -5,3 +5,6 @@ pub mod tty3;
 pub mod slip;
 
 pub mod settings;
+
+
+pub mod generic;
