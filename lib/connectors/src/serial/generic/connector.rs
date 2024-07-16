@@ -1,6 +1,7 @@
 
 
 
+#[derive(Clone)]
 pub struct Connector {
     // config: Config,
     // builder: Option< SerialPortBuilder >,

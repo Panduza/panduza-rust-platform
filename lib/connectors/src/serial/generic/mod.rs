@@ -8,6 +8,7 @@ mod connector;
 
 use panduza_core::{interface::logger::Logger, Error as PlatformError};
 
+use panduza_core::interface::logger::Logger as InterfaceLogger;
 
 use crate::SerialSettings;
 
@@ -25,3 +26,4 @@ pub async fn get(serial_settings: &SerialSettings, logger: Option<InterfaceLogge
     //     )
     // );
 }
+
