@@ -33,7 +33,7 @@ impl Hunter for DeviceHunter {
         
         match option_device_info {
             Some(device_info) => {
-                println!("Found device : Thorlab");
+                // println!("Found device : Thorlab");
 
                 bag.push(json!(
                     {
@@ -47,9 +47,7 @@ impl Hunter for DeviceHunter {
                     }
                 ))
             },
-            None => {
-                println!("Thorlab not connected");
-            }
+            None => {}
         }
 
         if bag.is_empty() {
@@ -72,8 +70,8 @@ impl DeviceActions for PM100A {
     {
         let device_settings = device.settings.clone();
 
-        println!("PM100A::interface_builders");
-        println!("{}", device_settings);
+        // println!("PM100A::interface_builders");
+        // println!("{}", device_settings);
 
         let mut serial_conf = UsbtmcConfig::new();
         serial_conf.import_from_json_settings(&device_settings)?;

@@ -36,7 +36,7 @@ impl Hunter for DeviceHunter {
     
         match option_device_info {
             Some(device_info) => {
-                println!("Found device : Oxxius");
+                // println!("Found device : Oxxius");
 
                 bag.push(json!(
                     {
@@ -50,9 +50,7 @@ impl Hunter for DeviceHunter {
                     }
                 ))
             },
-            None => {
-                println!("Oxxius not connected");
-            }
+            None => {}
         }
 
         if bag.is_empty() {
@@ -76,8 +74,8 @@ impl DeviceActions for LBX488 {
 
         let device_settings = device.settings.clone();
 
-        println!("S0501::interface_builders");
-        println!("{}", device_settings);
+        // println!("S0501::interface_builders");
+        // println!("{}", device_settings);
 
         let mut serial_conf = UsbConfig::new();
         serial_conf.import_from_json_settings(&device_settings)?;
