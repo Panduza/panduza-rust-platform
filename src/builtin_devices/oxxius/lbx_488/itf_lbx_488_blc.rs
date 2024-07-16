@@ -227,7 +227,6 @@ impl blc::BlcActions for LBX488BlcActions {
 
         let response_float = self.ask_float(b"?SP\r").await?;
         self.power_value = response_float * 0.001;
-        println!("Success reading power value : {:?}", self.power_value);
 
         interface.lock().await.log_info(
             format!("read power : {}", self.power_value)

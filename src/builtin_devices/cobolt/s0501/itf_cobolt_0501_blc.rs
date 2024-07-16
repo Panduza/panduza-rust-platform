@@ -162,13 +162,6 @@ impl blc::BlcActions for S0501BlcActions {
             _ => return platform_error_result!("Unexpected mode command")
         };
 
-        // let response = match self.cmd_ack(command.as_bytes(), "OK".to_string()).await {
-        //     Ok(_r) => "OK".to_string(),
-        //     Err(_e) => return platform_error_result!("Unexpected response from Cobolt S0501")
-        // };
-
-        // println!("{} !!!!!!!!!!!!!!!!!!!!!!!!!!!", response);
-
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
@@ -226,8 +219,7 @@ impl blc::BlcActions for S0501BlcActions {
             command.as_bytes(),
             self.time_lock_duration
         ).await
-            .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
+            .map(|_nb_of_bytes| {
             })?;
         
         // Clean the buffer from previous values
