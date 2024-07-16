@@ -174,12 +174,16 @@ impl UsbCore {
 
         // Open device with to provided VID and PID
         // TODO find the device with the serial number
-        let devices = match nusb::list_devices() {
+        let devices_option = match nusb::list_devices() {
             Ok(val) => val,
             Err(_e) => return platform_error_result!("Unable to list USB devices")
         }
-            .find(|d| d.serial_number() == self.config.usb_serial.as_deref())
-            .expect("device is not connected");
+            .find(|d| d.serial_number() == self.config.usb_serial.as_deref());
+
+        let devices = match devices_option{
+            Some(v) => v,
+            None => return platform_error_result!("Unable to list USB devices")
+        };
 
         let device = match devices.open() {
             Ok(val) => val,

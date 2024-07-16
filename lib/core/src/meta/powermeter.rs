@@ -39,14 +39,22 @@ pub trait PowermeterActions: Send + Sync {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-
-async fn update_measure(duration_between_measures: u64, interface: AmInterface, powermeter_state: Arc<Mutex<PowermeterInterface>>)
+/// Check if interface has been disconnected every 10 seconds, if not connected
+/// reboot interface
+/// 
+async fn update_measure(duration_between_measures: u64, interface: AmInterface, powermeter_state: Arc<Mutex<PowermeterInterface>>, device_name: String)
 -> Result<(), PlatformError>
 {
     let mut interval = time::interval(time::Duration::from_millis(duration_between_measures));
     loop {
-        let r_value = powermeter_state.lock().await
-            .actions.read_measure_value(&interface).await?;
+        let r_value = match powermeter_state.lock().await
+            .actions.read_measure_value(&interface).await {
+            Ok(v) => v,
+            Err(e) => {
+                interface.lock().await.set_event_error(format!("{:?} has been disconnected", device_name));
+                return __platform_error_result!(format!("{:?} has been disconnected : {:?}", device_name, e));
+            }
+        };
 
         interface.lock().await
             .update_attribute_with_f64("measure", "value", r_value as f64);
@@ -128,8 +136,9 @@ impl interface::fsm::States for PowermeterStates {
         
         let powermeter_interface = Arc::clone(&(self.powermeter_interface));
         let interface_cloned = Arc::clone(&interface);
+        let device_name = interface.lock().await._dev_name().clone();
 
-        tokio::spawn(update_measure(1000, interface_cloned, powermeter_interface));
+        tokio::spawn(update_measure(1000, interface_cloned, powermeter_interface, device_name));
 
         // Notify the end of the initialization
         interface.lock().await.set_event_init_done();

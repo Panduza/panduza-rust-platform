@@ -52,11 +52,15 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
     /// Initialize the interface
     /// 
     async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
+
+        println!("serial_config : {:?}", &self.serial_config);
         
         self.connector_tty = match tty::get(&self.serial_config).await {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
         };
+
+        println!("Connector successfully created !!!");
 
         self.connector_tty.init().await?;
 
