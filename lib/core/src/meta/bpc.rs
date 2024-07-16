@@ -4,13 +4,13 @@ use std::time::Duration;
 use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
-use tokio::time::sleep;
+use tokio::time::{self, sleep};
 
 use crate::attribute::{self, JsonAttribute};
 use crate::interface::{AmInterface, ThreadSafeInterface};
 
 
-use crate::{interface, subscription};
+use crate::{interface, platform_error, platform_error_result, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 
@@ -151,6 +151,37 @@ impl BpcInterface {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
+
+async fn update_bpc(duration_between_measures: u64, interface: AmInterface, bpc_state: Arc<Mutex<BpcInterface>>)
+-> Result<(), PlatformError>
+{
+    let mut interval = time::interval(time::Duration::from_millis(duration_between_measures));
+    loop {
+        let enable_value = match bpc_state.lock().await
+            .actions.read_enable_value(&interface).await {
+            Ok(v) => v,
+            Err(e) => {
+                interface.lock().await.set_event_error("Bpc has been disconnected");
+                return __platform_error_result!(format!("bpc has been disconnected : {:?}", e));
+            }
+        };
+
+        interface.lock().await
+            .update_attribute_with_bool("enable", "value", enable_value)?;
+
+        
+        interface.lock().await.publish_all_attributes().await;
+
+        interval.tick().await;
+    }
+}
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
 struct BpcStates {
     bpc_interface: Arc<Mutex<BpcInterface>>,
     attributes_used: Vec<String>
@@ -184,6 +215,7 @@ impl interface::fsm::States for BpcStates {
 
         // If enable is used by the interface 
         if self.attributes_used.contains(&enable_attribute.to_string()) {
+
             // Register enable attribute
             interface.lock().await.register_attribute(JsonAttribute::new_boxed(enable_attribute.as_str(), true));
 
@@ -221,6 +253,12 @@ impl interface::fsm::States for BpcStates {
             interface.lock().await.update_attribute_with_f64(current_str, "decimals", bpc_itf.params.current_decimals as f64);
             interface.lock().await.update_attribute_with_f64(current_str, "polling_cycle", 0.0);
         }
+
+        // Try to read every interfaces to see if device has been disconnected
+        let bpc_interface = Arc::clone(&(self.bpc_interface));
+        let interface_cloned = Arc::clone(&interface);
+
+        tokio::spawn(update_bpc(10000, interface_cloned, bpc_interface));
         
         // Publish all attributes for start
         interface.lock().await.publish_all_attributes().await;
@@ -234,8 +272,7 @@ impl interface::fsm::States for BpcStates {
     async fn running(&self, interface: &AmInterface)
     {
         println!("running");
-
-
+        
         interface::basic::wait_for_fsm_event(interface).await;
     }
 

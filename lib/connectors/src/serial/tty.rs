@@ -268,15 +268,16 @@ impl TtyCore {
     async fn init(&mut self) -> PlatformFunctionResult {
 
         // dirty fix, need to be improved
-        if self.serial_stream.is_some() {
-            return Ok(());
-        }
+        // if self.serial_stream.is_some() {
+        //     return Ok(());
+        // }
 
-        if self.config.serial_port_name.is_none() && self.config.usb_serial.is_some() {
+        self.config.serial_port_name = None;
 
+        if self.config.usb_serial.is_some() {
             let ports = match tokio_serial::available_ports() {
                 Ok(p) => p,
-                Err(_e) => return  platform_error_result!("Unable to list serial ports")
+                Err(_e) => return platform_error_result!("Unable to list serial ports")
             };
             for port in ports {
                 match port.port_type {
@@ -289,7 +290,7 @@ impl TtyCore {
                 }
             }
         } else {
-            tracing::trace!(class="Platform", "unknown serial_port_name and usb_vendor");
+            return platform_error_result!("unknown usb_serial");
         }
 
         let serial_builder = tokio_serial::new(
@@ -304,15 +305,16 @@ impl TtyCore {
 
         );
 
-        
-
         let pp = SerialStream::open(&serial_builder);
-        let aa = pp.expect("pok");
 
+        let aa = match pp {
+            Ok(val) => val,
+            Err(e) => return platform_error_result!(format!("Serial stream error : {:?}", e))
+        };
         
         self.builder = Some(serial_builder);
         self.serial_stream = Some(aa);
-
+        
         Ok(())
     }
 
@@ -337,7 +339,9 @@ impl TtyCore {
         
         let rrr = match stream.write(command).await {
             Ok(val) => Ok(val),
-            Err(_e) => return platform_error_result!("Unable to write on serial stream")
+            Err(e) => {
+                return platform_error_result!(format!("Unable to write on serial stream : {:?}", e))
+            }
         };
 
         // Set the time lock
