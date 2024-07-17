@@ -266,22 +266,26 @@ impl blc::BlcActions for S0501BlcActions {
     /// 
     async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let model_number = self.ask_string(b"glm?\r").await?;
-        let vector_model_info: Vec<&str> = model_number.split("-").collect();
-        let power_max_string = vector_model_info[3].to_string();
-        
-        match power_max_string.parse::<f64>() {
-            Ok(power_max) => {
-                self.power_max = power_max * 0.001;
-            },
-            Err(_) => {
-                return platform_error_result!("Failed to parse max power in Cobolt s0501");
-            }
-        }
+        // Store max 
 
-        interface.lock().await.log_info(
-            format!("read max power : {}", self.power_value)
-        );
+        if self.power_max == 0.0 {
+            let model_number = self.ask_string(b"glm?\r").await?;
+            let vector_model_info: Vec<&str> = model_number.split("-").collect();
+            let power_max_string = vector_model_info[3].to_string();
+            
+            match power_max_string.parse::<f64>() {
+                Ok(power_max) => {
+                    self.power_max = power_max * 0.001;
+                },
+                Err(_) => {
+                    return platform_error_result!("Failed to parse max power in Cobolt s0501");
+                }
+            }
+
+            interface.lock().await.log_info(
+                format!("read max power : {}", self.power_value)
+            );
+        }
 
         return Ok(self.power_max);
     }
