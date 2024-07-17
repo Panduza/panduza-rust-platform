@@ -23,6 +23,7 @@ use panduza_connectors::serial::slip::Connector as SlipConnector;
 use panduza_connectors::serial::tty3::Config as SerialConfig;
 use panduza_connectors::serial::generic::SerialConnector;
 
+use panduza_connectors::serial::generic::garbage_collector;
 
 
 use super::api_dio::PicohaDioRequest;
@@ -50,7 +51,7 @@ impl digital_input::MetaActions for InterfaceActions {
     /// 
     async fn initializating(&mut self, interface :&ThreadSafeInterface) -> Result<(), PlatformError> {
 
-        let logger = interface.lock().await.clone_logger();
+        // let logger = interface.lock().await.clone_logger();
 
 
         // self.connector = 
@@ -61,10 +62,17 @@ impl digital_input::MetaActions for InterfaceActions {
 
 
         println!("before creatino");
-        self.connector = Some( ConnectorSlipGet(&seee, Some(logger.clone())).await? );
+        self.connector = Some( ConnectorSlipGet(&seee).await? );
         println!("after creatino");
 
-        // self.connector =  None;
+
+        self.connector
+            .ok_or(platform_error!("Connector is not initialized"))?
+            .init().await?;
+
+        self.connector =  None;
+
+        garbage_collector().await;
 
         
 

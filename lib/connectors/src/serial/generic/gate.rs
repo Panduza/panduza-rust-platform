@@ -2,7 +2,6 @@ use panduza_core::platform_error;
 use panduza_core::Error as PlatformError;
 
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use lazy_static::lazy_static;
 
@@ -15,7 +14,10 @@ use super::SerialConnector;
 
 lazy_static! {
     static ref GATE : tokio::sync::Mutex<Gate> 
-        = tokio::sync::Mutex::new(Gate { instances: HashMap::new() });
+        = tokio::sync::Mutex::new(Gate {
+            logger: GateLogger::new("serial-generic"),
+            instances: HashMap::new()
+        });
 }
 
 // get should return an error message
@@ -24,15 +26,16 @@ pub async fn get(serial_settings: &SerialSettings) -> Result<SerialConnector, Pl
     gate.get(serial_settings)
 }
 
-pub async fn run_garbage_collector() {
+pub async fn garbage_collector() {
     let mut gate = GATE.lock().await;
-    // gate.run_garbage_collector();
+    gate.garbage_collector();
 }
 
 
 /// Main entry point to acces connectors
 /// 
 pub struct Gate {
+    logger: GateLogger,
     instances: HashMap<String, SerialConnector>
 }
 
@@ -53,12 +56,14 @@ impl Gate {
         // if the instance is not found, it means that the port is not opened yet
         if ! self.instances.contains_key(key) {
 
+            //
+            self.logger.log_info(format!("Creating a new serial connector for {}", key));
+
             // Create a new instance
-            let new_instance = SerialConnector::new(&self);
+            let new_instance = SerialConnector::new(serial_settings);
 
             // Save the instance
             self.instances.insert(key.to_string(), new_instance.clone());
-            tracing::info!(class="Platform", "connector created");
 
             
             return Ok(new_instance.clone());
@@ -71,10 +76,24 @@ impl Gate {
             ))?;
 
 
-        println!("c -----> {}", instance.count_refs());
-
         // Return the instance
         Ok(instance.clone())
+    }
+
+
+    /// Garbage collector
+    /// 
+    fn garbage_collector(&mut self) {
+        let mut keys_to_remove = Vec::new();
+        for (key, instance) in self.instances.iter() {
+            // If there is only left one reference, we can remove it (it is the gate)
+            if instance.count_refs() == 1 {
+                keys_to_remove.push(key.clone());
+            }
+        }
+        for key in keys_to_remove {
+            self.instances.remove(&key);
+        }
     }
 
 }

@@ -1,96 +1,87 @@
+use panduza_core::platform_error;
+use panduza_core::FunctionResult;
+use tokio_serial::SerialStream;
 
 
 
+use crate::ConnectorLogger;
+use crate::SerialSettings;
 
 
 
 pub struct Driver {
-    // config: Config,
+    logger: ConnectorLogger,
+    settings: SerialSettings,
     // builder: Option< SerialPortBuilder >,
-    // serial_stream: Option< SerialStream >,
+    
+    serial_stream: Option< SerialStream >,
+
     // time_lock: Option<TimeLock>
 }
 
 
 impl Driver {
-    pub fn new() -> Self {
-        println!("Driver is being created!");
+
+    /// Create a new instance of the driver
+    /// 
+    pub fn new(settings: &SerialSettings) -> Self {
+        // Get the port name safely
+        let port_name = settings.port_name.as_ref()
+            .map(|val| val.clone())
+            .unwrap_or("undefined".to_string()).clone();
+
+        // Create instance
         Driver {
-            // driver: Some(Arc::new(Mutex::new(driver))
+            logger: ConnectorLogger::new("serial", port_name),
+            settings: settings.clone(),
+            serial_stream: None
         }
+    }
+
+    /// Initialize the driver
+    /// 
+    pub async fn init(&mut self) -> FunctionResult {
+
+        // Internal driver already initialized by an other entity => OK
+        if self.serial_stream.is_some() {
+            return Ok(());
+        }
+
+        // Get the port name
+        let port_name = self.settings.port_name.as_ref()
+            .ok_or_else(|| platform_error!("Port name is not set in settings"))?;
+
+        // Setup builder
+        let serial_builder = tokio_serial::new(
+            port_name,
+            self.settings.baudrate
+        )
+            .data_bits(self.settings.data_bits)
+            .stop_bits(self.settings.stop_bits)
+            .parity(self.settings.parity)
+            .flow_control(self.settings.flow_control);
+         
+        // Build the stream
+        self.serial_stream = Some(
+            SerialStream::open(&serial_builder)
+                .map_err(|e| platform_error!("Unable to open serial stream: {}", e))?
+        );
+
+        Ok(())
     }
     
 }
 
 impl Drop for Driver {
     fn drop(&mut self) {
-        println!("Driver is being dropped!");
-        // Perform cleanup logic here
+        // Close the serial stream
+        self.logger.log_warn("Closing serial stream");
+        self.serial_stream = None;
     }
 }
 
 
-// impl TtyCore {
 
-//     fn new(config: Config) -> TtyCore {
-//         TtyCore {
-//             config: config,
-//             builder: None,
-//             serial_stream: None,
-//             time_lock: None
-//         }
-//     }
-
-//     async fn init(&mut self) -> PlatformFunctionResult {
-
-//         // dirty fix, need to be improved
-//         if self.serial_stream.is_some() {
-//             return Ok(());
-//         }
-
-//         if self.config.serial_port_name.is_none() && self.config.usb_serial.is_some() {
-
-//             let ports = match tokio_serial::available_ports() {
-//                 Ok(p) => p,
-//                 Err(_e) => return  platform_error_result!("Unable to list serial ports")
-//             };
-//             for port in ports {
-//                 match port.port_type {
-//                     tokio_serial::SerialPortType::UsbPort(info) => {
-//                         if info.serial_number == self.config.usb_serial {
-//                             self.config.serial_port_name = Some(port.port_name);
-//                         }
-//                     },
-//                     _ => {}
-//                 }
-//             }
-//         } else {
-//             tracing::trace!(class="Platform", "unknown serial_port_name and usb_vendor");
-//         }
-
-//         let serial_builder = tokio_serial::new(
-//             match self.config.serial_port_name.as_ref() {
-//                 Some(val) => val,
-//                 None => return platform_error_result!("Serial port name is empty")
-//             },
-//             match self.config.serial_baudrate {
-//                 Some(val) => val,
-//                 None => return platform_error_result!("Serial baudrate is empty")
-//             }
-
-//         );
-
-        
-
-//         let pp = SerialStream::open(&serial_builder);
-//         let aa = pp.expect("pok");
-
-        
-//         self.builder = Some(serial_builder);
-//         self.serial_stream = Some(aa);
-
-//         Ok(())
-//     }
 
 
 //     async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>)-> Result<usize, PlatformError> {

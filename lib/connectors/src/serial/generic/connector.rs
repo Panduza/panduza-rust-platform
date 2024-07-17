@@ -3,9 +3,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use super::SerialDriver;
-
-
-use super::gate::Gate;
+use crate::SerialSettings;
 
 #[derive(Clone)]
 pub struct Connector {
@@ -20,9 +18,9 @@ pub struct Connector {
 
 impl Connector {
     
-    pub fn new(gate: &Gate) -> Self {
+    pub fn new(settings: &SerialSettings) -> Self {
         Connector {
-            driver: Arc::new(Mutex::new( SerialDriver::new() ))
+            driver: Arc::new(Mutex::new( SerialDriver::new(settings) ))
         }
     }
     
