@@ -1,3 +1,4 @@
+use panduza_core::platform_error;
 use panduza_core::FunctionResult;
 use panduza_core::Error as PlatformError;
 
@@ -56,8 +57,6 @@ impl Driver {
 
         self.serial_connector = SerialGetFunction(&self.settings).await?;
         
-
-
         Ok(())
     }
 
@@ -73,28 +72,30 @@ impl Driver {
     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8])
             -> Result<usize, PlatformError> {
         
-
-        let mut encoded_command = [0u8; 15];
+        // Prepare encoding
+        let mut encoded_command = [0u8; 200];
         let mut slip_encoder = serial_line_ip::Encoder::new();
         
-        let res = slip_encoder.encode(command, &mut encoded_command);
+        // Encode the command
+        let mut totals = slip_encoder.encode(command, &mut encoded_command)
+            .map_err(|e| platform_error!("Unable to encode command: {:?}", e))?;
 
-        if res.is_ok() {
-            let rrrrr = res.unwrap();
-            println!("Encoding command: r{:?} w{:?}", rrrrr.read, rrrrr.written);
-        }
-        println!("Encoded command: {:?}", encoded_command);
+        // Finalise the encoding
+        totals += slip_encoder.finish(&mut encoded_command[totals.written..])
+            .map_err(|e| platform_error!("Unable to finsh command encoding: {:?}", e))?;
 
+        // Write the command to the serial port
+        let mut encoded_response = [0u8; 200];
+        let total_read = self.serial_connector
+            .write_then_read_until(&encoded_command, &mut encoded_response, 0xc0 as u8)
+            .await?;
 
-        let slip_decoder = serial_line_ip::Decoder::new();
+        // Prepare decoding
+        let mut slip_decoder = serial_line_ip::Decoder::new();
+        let total_decoded = slip_decoder.decode(&encoded_response[..total_read], response)
+            .map_err(|e| platform_error!("Unable to decode response: {:?}", e))?;
 
-        
-        // self.parent_connector
-        //     .write_then_read(command, response, None)
-        //     .await
-
-
-        Ok(2)
+        Ok(total_decoded.0)
     }
 
 

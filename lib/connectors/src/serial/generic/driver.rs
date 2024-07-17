@@ -1,5 +1,6 @@
 use panduza_core::platform_error;
 use panduza_core::FunctionResult;
+use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio_serial::SerialStream;
 
@@ -14,9 +15,12 @@ use crate::SerialSettings;
 
 
 struct TimeLock {
-    duration: tokio::time::Duration,
-    t0: tokio::time::Instant
+    pub duration: tokio::time::Duration,
+    pub t0: tokio::time::Instant
 }
+
+
+
 
 pub struct Driver {
     logger: ConnectorLogger,
@@ -82,7 +86,7 @@ impl Driver {
 
     /// Write a command on the serial stream
     /// 
-    async fn time_locked_write(&mut self, command: &[u8])-> Result<usize, PlatformError> {
+    pub async fn write_time_locked(&mut self, command: &[u8])-> Result<usize, PlatformError> {
 
         // Check if a time lock is set
         if let Some(lock) = self.time_lock.as_mut() {
@@ -95,14 +99,10 @@ impl Driver {
         }
 
         // Send the command
-        let stream = match self.serial_stream.as_mut() {
-            Some(s) => s,
-            None => return Err(platform_error!("No serial stream"))
-        };
-        let write_result = match stream.write(command).await {
-            Ok(val) => Ok(val),
-            Err(_e) => return Err(platform_error!("Unable to write on serial stream"))
-        };
+        let write_result = self.serial_stream.as_mut()
+            .ok_or_else(|| platform_error!("No serial stream"))?
+            .write(command).await
+            .map_err(|e| platform_error!("Unable to write on serial stream: {}", e));
 
         // Set the time lock
         if let Some(duration) = self.settings.time_lock_duration {
@@ -112,10 +112,49 @@ impl Driver {
             });
         }
 
-        write_result
+        return write_result;
     }
 
-    
+    /// Lock the connector to write a command then wait for the answers
+    /// 
+    pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8]) 
+            -> Result<usize, PlatformError>
+    {
+        // Write
+        self.write_time_locked(command).await?;
+
+        // Read the response
+        self.serial_stream.as_mut()
+            .ok_or_else(|| platform_error!("No serial stream"))?
+            .read(response).await
+            .map_err(|e| platform_error!("Unable to read on serial stream {:?}", e))
+    }
+
+    ///
+    /// 
+    pub async fn write_then_read_until(&mut self, command: &[u8], response: &mut [u8], end: u8)
+            -> Result<usize, PlatformError>
+    {
+        // Write
+        self.write_time_locked(command).await?;
+
+        // Read the response until "end"
+        let mut n = 0;
+        loop {
+            let mut single_buf = [0u8; 1];
+            self.serial_stream.as_mut()
+                .ok_or_else(|| platform_error!("No serial stream"))?
+                .read_exact(&mut single_buf).await
+                .map_err(|e| platform_error!("Unable to read on serial stream {:?}", e))?;
+            response[n] = single_buf[0];
+            n += 1;
+            if single_buf[0] == end {
+                break;
+            }
+        }
+        Ok(n)
+    }
+
 }
 
 impl Drop for Driver {
@@ -126,35 +165,3 @@ impl Drop for Driver {
     }
 }
 
-
-
-
-
-
-    
-//     async fn write(&mut self, command: &[u8],
-//         time_lock: Option<Duration>) 
-//             -> Result<usize, PlatformError> {
-
-//         self.time_locked_write(command, time_lock).await
-//     }
-
-//     async fn write_then_read(&mut self, command: &[u8], response: &mut [u8],
-//         time_lock: Option<Duration>) 
-//             -> Result<usize, PlatformError> {
-
-
-//         self.time_locked_write(command, time_lock).await?;
-
-
-//         let stream = match self.serial_stream.as_mut() {
-//             Some(s) => s,
-//             None => return platform_error_result!("No serial stream")
-//         };
-
-//         match stream.read(response).await {
-//             Ok(val) => Ok(val),
-//             Err(_e) => platform_error_result!("Unable to read on serial stream")
-//         }
-
-        
