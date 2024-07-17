@@ -60,7 +60,7 @@ impl Gate {
             self.logger.log_info(format!("Creating a new serial connector for {}", key));
 
             // Create a new instance
-            let new_instance = SerialConnector::new(serial_settings);
+            let new_instance = SerialConnector::from_settings(serial_settings);
 
             // Save the instance
             self.instances.insert(key.to_string(), new_instance.clone());

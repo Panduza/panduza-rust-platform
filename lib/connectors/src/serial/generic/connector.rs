@@ -1,42 +1,45 @@
 
 use std::sync::Arc;
+use panduza_core::FunctionResult;
 use tokio::sync::Mutex;
 
 use super::SerialDriver;
 use crate::SerialSettings;
 
+use panduza_core::platform_error;
+
 #[derive(Clone)]
 pub struct Connector {
-    // config: Config,
-    // builder: Option< SerialPortBuilder >,
-    // serial_stream: Option< SerialStream >,
-    // time_lock: Option<TimeLock>
-
-
-    driver: Arc< Mutex< SerialDriver > >
+    driver: Option< Arc< Mutex< SerialDriver > > >
 }
 
 impl Connector {
     
-    pub fn new(settings: &SerialSettings) -> Self {
+    pub fn new() -> Self {
         Connector {
-            driver: Arc::new(Mutex::new( SerialDriver::new(settings) ))
+            driver: None
+        }
+    }
+
+    pub fn from_settings(settings: &SerialSettings) -> Self {
+        Connector {
+            driver: Some( Arc::new(Mutex::new( SerialDriver::new(settings) )) )
         }
     }
     
-
     pub fn count_refs(&self) -> usize {
-        Arc::strong_count(&self.driver)
+        match self.driver.as_ref() {
+            Some(obj) => Arc::strong_count(obj),
+            None => 0
+        }
     }
 
-}
-
-impl Drop for Connector {
-    fn drop(&mut self) {
-        
-        println!("Connector is being dropped!");
-        
-        println!("d -----> {}", self.count_refs());
-        // Perform cleanup logic here
+    pub async fn init(&self) -> FunctionResult {
+        self.driver
+            .as_ref()
+            .ok_or(platform_error!("Connector is not initialized"))?
+            .lock().await
+            .init().await
     }
+
 }

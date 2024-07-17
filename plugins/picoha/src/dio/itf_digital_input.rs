@@ -39,7 +39,7 @@ struct InterfaceActions {
 
     config: SerialConfig,
 
-    connector: Option<SerialConnector>,
+    connector: SerialConnector,
     
     // pub fake_values: Arc<Mutex<Vec<u64>>>,
 }
@@ -62,15 +62,12 @@ impl digital_input::MetaActions for InterfaceActions {
 
 
         println!("before creatino");
-        self.connector = Some( ConnectorSlipGet(&seee).await? );
+        self.connector = ConnectorSlipGet(&seee).await?;
         println!("after creatino");
 
 
-        self.connector
-            .ok_or(platform_error!("Connector is not initialized"))?
-            .init().await?;
+        self.connector.init().await?;
 
-        self.connector =  None;
 
         garbage_collector().await;
 
@@ -178,7 +175,7 @@ impl Builder {
             self.name,
             Box::new(InterfaceActions {
                 config: self.serial_config.unwrap(),
-                connector: None,
+                connector: SerialConnector::new(),
             })
         )
     }
