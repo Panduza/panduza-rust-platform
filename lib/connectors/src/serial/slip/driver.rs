@@ -1,3 +1,5 @@
+use panduza_core::FunctionResult;
+
 use crate::{ConnectorLogger, SerialSettings};
 
 
@@ -41,4 +43,34 @@ impl Driver {
     }
 
 
+    
+    /// Initialize the driver
+    /// 
+    pub async fn init(&mut self) -> FunctionResult {
+
+        // Internal driver already initialized by an other entity => OK
+        if self.serial_connector.is_initialized() {
+            return Ok(());
+        }
+
+
+        self.serial_connector = SerialGetFunction(&self.settings).await?;
+        
+
+
+        Ok(())
+    }
+    
+
+
 }
+
+
+impl Drop for Driver {
+    fn drop(&mut self) {
+        // Close the serial stream
+        self.logger.log_warn("Closing serial connector");
+        self.serial_connector.clear();
+    }
+}
+

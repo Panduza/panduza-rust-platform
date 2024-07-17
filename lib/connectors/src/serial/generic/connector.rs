@@ -27,6 +27,14 @@ impl Connector {
         }
     }
     
+    pub fn is_initialized(&self) -> bool {
+        self.driver.is_some()
+    }
+
+    pub fn clear(&mut self) {
+        self.driver = None;
+    }
+
     pub fn count_refs(&self) -> usize {
         match self.driver.as_ref() {
             Some(obj) => Arc::strong_count(obj),
