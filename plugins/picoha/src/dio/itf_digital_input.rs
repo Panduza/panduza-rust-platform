@@ -69,7 +69,7 @@ impl digital_input::MetaActions for InterfaceActions {
         println!("after creatino");
 
 
-        // self.connector.init().await?;
+        self.connector.init().await?;
 
 
         garbage_collector().await;

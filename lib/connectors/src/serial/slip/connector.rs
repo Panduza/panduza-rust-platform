@@ -1,17 +1,12 @@
 
 use std::sync::Arc;
+use panduza_core::{platform_error, FunctionResult};
 use tokio::sync::Mutex;
 
 use crate::SerialSettings;
 
 use super::SlipDriver;
 
-// use nusb::Error;
-
-// use super::super::tty3::TtyConnector as TtyConnector;
-
-// use panduza_core::interface::logger::{self, Logger as InterfaceLogger};
-// use panduza_core::{Error as PlatformError, FunctionResult};
 
 
 #[derive(Clone)]
@@ -33,6 +28,8 @@ impl Connector {
         }
     }
     
+    /// Check if the driver is initialized
+    /// 
     pub fn count_refs(&self) -> usize {
         match self.driver.as_ref() {
             Some(obj) => Arc::strong_count(obj),
@@ -40,6 +37,16 @@ impl Connector {
         }
     }
 
+    /// Initialize the driver
+    /// 
+    pub async fn init(&self) -> FunctionResult {
+        self.driver
+            .as_ref()
+            .ok_or(platform_error!("Connector is not initialized"))?
+            .lock().await
+            .init().await
+    }
+    
 //     pub fn new(parent_connector: TtyConnector,
 //         logger: Option<InterfaceLogger>
 //         ) -> Connector {
