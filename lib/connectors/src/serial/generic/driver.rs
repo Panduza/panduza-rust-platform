@@ -1,6 +1,10 @@
 use panduza_core::platform_error;
 use panduza_core::FunctionResult;
+use tokio::io::AsyncWriteExt;
 use tokio_serial::SerialStream;
+
+
+use panduza_core::Error as PlatformError;
 
 
 
@@ -9,6 +13,11 @@ use crate::SerialSettings;
 
 
 
+struct TimeLock {
+    duration: tokio::time::Duration,
+    t0: tokio::time::Instant
+}
+
 pub struct Driver {
     logger: ConnectorLogger,
     settings: SerialSettings,
@@ -16,7 +25,7 @@ pub struct Driver {
     
     serial_stream: Option< SerialStream >,
 
-    // time_lock: Option<TimeLock>
+    time_lock: Option<TimeLock>
 }
 
 
@@ -34,7 +43,8 @@ impl Driver {
         Driver {
             logger: ConnectorLogger::new("serial", port_name),
             settings: settings.clone(),
-            serial_stream: None
+            serial_stream: None,
+            time_lock: None
         }
     }
 
@@ -69,7 +79,41 @@ impl Driver {
 
         Ok(())
     }
-    
+
+    /// Write a command on the serial stream
+    /// 
+    async fn time_locked_write(&mut self, command: &[u8])-> Result<usize, PlatformError> {
+
+        // Check if a time lock is set
+        if let Some(lock) = self.time_lock.as_mut() {
+            let elapsed = tokio::time::Instant::now() - lock.t0;
+            if elapsed < lock.duration {
+                let wait_time = lock.duration - elapsed;
+                tokio::time::sleep(wait_time).await;
+            }
+            self.time_lock = None;
+        }
+
+        // Send the command
+        let stream = match self.serial_stream.as_mut() {
+            Some(s) => s,
+            None => return Err(platform_error!("No serial stream"))
+        };
+        let write_result = match stream.write(command).await {
+            Ok(val) => Ok(val),
+            Err(_e) => return Err(platform_error!("Unable to write on serial stream"))
+        };
+
+        // Set the time lock
+        if let Some(duration) = self.settings.time_lock_duration {
+            self.time_lock = Some(TimeLock {
+                duration: duration,
+                t0: tokio::time::Instant::now()
+            });
+        }
+
+        write_result
+    }
 
     
 }
@@ -86,39 +130,6 @@ impl Drop for Driver {
 
 
 
-//     async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>)-> Result<usize, PlatformError> {
-
-
-//         if let Some(lock) = self.time_lock.as_mut() {
-//             let elapsed = tokio::time::Instant::now() - lock.t0;
-//             if elapsed < lock.duration {
-//                 let wait_time = lock.duration - elapsed;
-//                 sleep(wait_time).await;
-//             }
-//             self.time_lock = None;
-//         }
-
-//         // Send the command
-//         let stream = match self.serial_stream.as_mut() {
-//             Some(s) => s,
-//             None => return platform_error_result!("No serial stream")
-//         };
-        
-//         let rrr = match stream.write(command).await {
-//             Ok(val) => Ok(val),
-//             Err(_e) => return platform_error_result!("Unable to write on serial stream")
-//         };
-
-//         // Set the time lock
-//         if let Some(duration) = duration {
-//             self.time_lock = Some(TimeLock {
-//                 duration: duration,
-//                 t0: tokio::time::Instant::now()
-//             });
-//         }
-
-//         rrr
-//     }
 
     
 //     async fn write(&mut self, command: &[u8],
@@ -147,9 +158,3 @@ impl Drop for Driver {
 //         }
 
         
-
-//     }
-
-
-// }
-

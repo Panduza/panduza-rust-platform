@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use panduza_core::platform_error;
 use panduza_core::Error as PlatformError;
 
@@ -33,6 +35,9 @@ pub struct Settings {
     pub parity: Parity,
     /// Number of bits to use to signal the end of a character
     pub stop_bits: StopBits,
+
+    /// Time to wait between 2 operations
+    pub time_lock_duration: Option<Duration>
 }
 
 impl Settings {
@@ -47,7 +52,8 @@ impl Settings {
             data_bits: DataBits::Eight,
             flow_control: FlowControl::None,
             parity: Parity::None,
-            stop_bits: StopBits::One
+            stop_bits: StopBits::One,
+            time_lock_duration: None
         }
     }
 
@@ -182,16 +188,19 @@ impl Settings {
         return match_vid && match_pid && match_serial as bool;
     }
 
-}
+    /// Set the flow control
+    /// 
+    pub fn set_data_bits(mut self, data_bits: DataBits) -> Self {
+        self.data_bits = data_bits;
+        self
+    }
 
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
+    /// Set time lock duration
+    /// 
+    pub fn set_time_lock_duration(mut self, time_lock_duration: Duration) -> Self {
+        self.time_lock_duration = Some(time_lock_duration);
+        self
+    }
 
 }
 
