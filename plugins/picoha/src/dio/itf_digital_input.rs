@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use panduza_connectors::serial::slip::SlipConnector;
 use panduza_connectors::SerialSettings;
 use prost::Message;
 use tokio::sync::Mutex;
@@ -19,12 +20,14 @@ use futures::FutureExt;
 // use panduza_connectors::serial::slip::get as ConnectorSlipGet;
 use panduza_connectors::serial::generic::get as ConnectorSlipGet;
 use panduza_connectors::serial::tty3::get as ConnectorGet;
-use panduza_connectors::serial::slip::Connector as SlipConnector;
+// use panduza_connectors::serial::slip::Connector as SlipConnector;
 use panduza_connectors::serial::tty3::Config as SerialConfig;
 use panduza_connectors::serial::generic::SerialConnector;
 
 use panduza_connectors::serial::generic::garbage_collector;
 
+use panduza_connectors::serial::slip::SlipDriver;
+use panduza_connectors::serial::slip::get as SlipGetConnector;
 
 use super::api_dio::PicohaDioRequest;
 use super::api_dio::RequestType;
@@ -39,7 +42,7 @@ struct InterfaceActions {
 
     config: SerialConfig,
 
-    connector: SerialConnector,
+    connector: SlipConnector,
     
     // pub fake_values: Arc<Mutex<Vec<u64>>>,
 }
@@ -62,11 +65,11 @@ impl digital_input::MetaActions for InterfaceActions {
 
 
         println!("before creatino");
-        self.connector = ConnectorSlipGet(&seee).await?;
+        self.connector = SlipGetConnector(&seee).await?;
         println!("after creatino");
 
 
-        self.connector.init().await?;
+        // self.connector.init().await?;
 
 
         garbage_collector().await;
@@ -175,7 +178,7 @@ impl Builder {
             self.name,
             Box::new(InterfaceActions {
                 config: self.serial_config.unwrap(),
-                connector: SerialConnector::new(),
+                connector: SlipConnector::new(),
             })
         )
     }

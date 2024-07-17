@@ -1,17 +1,13 @@
-
-
 mod gate;
 mod driver;
 mod connector;
-
-
-use panduza_core::Error as PlatformError;
 
 use crate::SerialSettings;
 
 pub type SerialDriver = driver::Driver;
 pub type SerialConnector = connector::Connector;
 
+use panduza_core::Error as PlatformError;
 
 pub async fn get(serial_settings: &SerialSettings)
     -> Result<SerialConnector, PlatformError>

@@ -1,24 +1,29 @@
 
+mod gate;
+mod driver;
 mod connector;
 
-use super::tty3::get as SerialGetFunction;
-use super::tty3::Config as SerialConfig;
-use connector::Connector as SlipConnector;
+// use super::tty3::get as SerialGetFunction;
+// use super::tty3::Config as SerialConfig;
 
-pub type Connector = SlipConnector;
+use crate::SerialSettings;
 
-use panduza_core::interface::logger::Logger as InterfaceLogger;
 
-pub type Config = SerialConfig;
+use panduza_core::Error as PlatformError;
 
-pub async fn get(config: &Config, logger: Option<InterfaceLogger>) -> Option<SlipConnector> {
-    let gate = SerialGetFunction(config).await;
-    return Some(
-        SlipConnector::new(
-            gate.unwrap()
-            , logger
-        )
-    );
+
+pub type SlipDriver = driver::Driver;
+pub type SlipConnector = connector::Connector;
+
+
+pub async fn get(serial_settings: &SerialSettings)
+    -> Result<SlipConnector, PlatformError>
+{
+    gate::get(serial_settings).await
+}
+
+pub async fn garbage_collector() {
+    gate::garbage_collector().await;
 }
 
 
