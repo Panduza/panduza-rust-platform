@@ -3,8 +3,6 @@ mod gate;
 mod driver;
 mod connector;
 
-// use super::tty3::get as SerialGetFunction;
-// use super::tty3::Config as SerialConfig;
 
 use crate::SerialSettings;
 
