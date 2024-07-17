@@ -4,11 +4,15 @@ use async_trait::async_trait;
 use panduza_core::meta::blc::BlcAttributes;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
-use panduza_core::interface::AmInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_core::meta::blc;
 use panduza_connectors::usb::usb::{self, UsbConnector};
 use panduza_connectors::usb::usb::Config as UsbConfig;
+use panduza_core::interface::AmInterface;
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::prelude::ToPrimitive;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 ///
 /// 
@@ -39,13 +43,26 @@ impl LBX488BlcActions {
         }
     }
 
-    /// Parse the data into f64
+    /// Parse the data into f64 using 2 decimals 
     /// 
     async fn ask_float(&mut self, command: &[u8]) -> Result<f64, PlatformError> {
-
         match self.ask(command).await?.trim_end_matches("\0").to_string().parse::<f64>() {
-            Ok(f) => Ok(f),
-            Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
+            Ok(f) => {
+                // Use the decimal library to have a better precision 
+                let value_dec = match Decimal::from_f64(f) {
+                    Some(value) => value,
+                    None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer")
+                };
+
+                let final_value = match (value_dec * dec!(0.001)).to_f64() {
+                    Some(value) => value,
+                    None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer")
+                };
+
+                return Ok(final_value);
+
+            },
+            Err(e) => return platform_error_result!(format!("Unexpected answer from Oxxius LBX488 : could not parse as integer, error message {:?}", e))
         }
     }
 }
@@ -210,12 +227,10 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn read_power_max(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response_float = self.ask_float(b"?MAXLP").await?;
-
-        self.power_max = response_float * 0.001;
+        self.power_max = self.ask_float(b"?MAXLP").await?;
 
         interface.lock().await.log_info(
-            format!("read max power : {}", response_float)
+            format!("read max power : {}", self.power_max)
         );
 
         return Ok(self.power_max);
@@ -225,8 +240,8 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn read_power_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response_float = self.ask_float(b"?SP\r").await?;
-        self.power_value = response_float * 0.001;
+        self.power_value = self.ask_float(b"?SP\r").await?;
+
         println!("Success reading power value : {:?}", self.power_value);
 
         interface.lock().await.log_info(
@@ -240,11 +255,24 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn write_power_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
 
-        let val_mw = ((v * 1000.0) * 100.0).round() / 100.0;
-        let command = format!("PM {}", val_mw);
+        let value_dec = match Decimal::from_f64(v) {
+            Some(value) => value,
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+        };
+        
+        // 3 represent the number of decimal who can manage by the device,
+        // here for oxxius it is 3
+        let val_mw = (value_dec * dec!(1000.0)).round_dp(2);
+        
+        let val_f64 = match val_mw.to_f64() {
+            Some(value) => value,
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+        };
+
+        let command = format!("PM {}", val_f64);
 
         interface.lock().await.log_info(
-            format!("write power : {}", val_mw)
+            format!("write power : {}", command)
         );
 
         self.ask(command.as_bytes()).await?;
@@ -261,11 +289,26 @@ impl blc::BlcActions for LBX488BlcActions {
     
     async fn read_max_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response_float = self.ask_float(b"?MAXLC").await?;
-        self.current_value = response_float * 0.001;
+        let value_max_f64 = self.ask_float(b"?MAXLC").await?;
+
+        println!("max current : {}", value_max_f64);
+
+        // Oxxius give 125% of max current but only 100% can be used else
+        // the laser need something to be reboot
+        let value_max_dec = match Decimal::from_f64(value_max_f64) {
+            Some(value) => (value * dec!(100) / dec!(125)).round_dp(3),
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+        };
+
+        let value_max = match value_max_dec.to_f64() {
+            Some(value) => value,
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+        };
+
+        self.current_value = value_max;
 
         interface.lock().await.log_info(
-            format!("read max current : {}", response_float)
+            format!("read max current : {}", self.current_value)
         );
 
         return Ok(self.current_value);
@@ -275,12 +318,10 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn read_current_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {
 
-        let response_float = self.ask_float(b"?SC").await?;
-        self.current_value = response_float * 0.001;
+        self.current_value = self.ask_float(b"?SC").await?;
 
-        
         interface.lock().await.log_info(
-            format!("read current : {}", response_float)
+            format!("read current : {}", self.current_value)
         );
 
         return Ok(self.current_value);
@@ -290,8 +331,21 @@ impl blc::BlcActions for LBX488BlcActions {
     /// 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
 
-        let val_ma = ((v * 1000.0) * 100.0).round() / 100.0;
-        let command = format!("CM {}", val_ma);
+        let value_dec = match Decimal::from_f64(v) {
+            Some(value) => value,
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+        };
+        
+        // 3 represent the number of decimal who can manage by the device,
+        // here for oxxius it is 3
+        let val_ma = (value_dec * dec!(1000.0)).round_dp(2);
+        
+        let val_f64 = match val_ma.to_f64() {
+            Some(value) => value,
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+        };
+
+        let command = format!("CM {}", val_f64);
 
         interface.lock().await.log_info(
             format!("write current : {}", val_ma)
@@ -316,10 +370,10 @@ pub fn build<A: Into<String>>(
         blc::BlcParams {
             power_min: 0.0,
             // power_max: 0.04,
-            power_decimals: 3,
+            power_decimals: 5,
 
             current_min: 0.0,
-            current_decimals: 3,
+            current_decimals: 5,
         }, 
         Box::new(LBX488BlcActions {
             connector_usb: UsbConnector::new(None),

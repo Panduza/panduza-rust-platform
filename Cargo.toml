@@ -98,6 +98,10 @@ tracing-appender = "0.2.3"
 # To see instrumentation through tokio console
 console-subscriber = { version="0.2.0", optional = true }
 
+# Used for decimal
+rust_decimal = "1.35.0"
+rust_decimal_macros = "1.35"
+
 # Video converting h264
 # ffmpeg-next = "5.0"
 
