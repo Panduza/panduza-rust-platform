@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use panduza_connectors::SerialSettings;
 use prost::Message;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
@@ -15,11 +16,12 @@ use serde_json::Error;
 use futures::FutureExt;
 
 
-use panduza_connectors::serial::slip::get as ConnectorSlipGet;
+// use panduza_connectors::serial::slip::get as ConnectorSlipGet;
+use panduza_connectors::serial::generic::get as ConnectorSlipGet;
 use panduza_connectors::serial::tty3::get as ConnectorGet;
 use panduza_connectors::serial::slip::Connector as SlipConnector;
 use panduza_connectors::serial::tty3::Config as SerialConfig;
-use panduza_connectors::serial::tty3::Connector as SerialConnector;
+use panduza_connectors::serial::generic::SerialConnector;
 
 
 
@@ -36,7 +38,7 @@ struct InterfaceActions {
 
     config: SerialConfig,
 
-    connector: Option<SlipConnector>,
+    connector: Option<SerialConnector>,
     
     // pub fake_values: Arc<Mutex<Vec<u64>>>,
 }
@@ -50,35 +52,51 @@ impl digital_input::MetaActions for InterfaceActions {
 
         let logger = interface.lock().await.clone_logger();
 
-        self.connector = ConnectorSlipGet(&self.config, Some(logger)).await;
-        self.connector.as_mut().unwrap().init().await?;
+
+        // self.connector = 
+
+        let seee = SerialSettings::new()
+            .set_port_name("port_name")
+            .set_baudrate(115200);
 
 
-        let request = PicohaDioRequest {
-            r#type: RequestType::Ping as i32,
-            pin_num: 5,
-            value: 0,
-        };
+        println!("before creatino");
+        self.connector = Some( ConnectorSlipGet(&seee, Some(logger.clone())).await? );
+        println!("after creatino");
+
+        // self.connector =  None;
+
+        
+
+        // self.connector =  None;
+        // self.connector.as_mut().unwrap().init().await?;
+
+
         // let request = PicohaDioRequest {
-        //     r#type: RequestType::GetPinDirection as i32,
-        //     pin_num: 0,
+        //     r#type: RequestType::Ping as i32,
+        //     pin_num: 5,
         //     value: 0,
         // };
+        // // let request = PicohaDioRequest {
+        // //     r#type: RequestType::GetPinDirection as i32,
+        // //     pin_num: 0,
+        // //     value: 0,
+        // // };
         
-        println!("=====");
-        // let mut buf = vec![0;20];
-        let buf = request.encode_to_vec();
-        // if p.is_err() {
-        //     println!("------*** Error: {:?}", p.err());
-        // }
-        // else {
-        //     println!("------*** Ok");
-        // };
-        println!("Sending: {:?}", buf);
-        println!("=====");
+        // println!("=====");
+        // // let mut buf = vec![0;20];
+        // let buf = request.encode_to_vec();
+        // // if p.is_err() {
+        // //     println!("------*** Error: {:?}", p.err());
+        // // }
+        // // else {
+        // //     println!("------*** Ok");
+        // // };
+        // println!("Sending: {:?}", buf);
+        // println!("=====");
 
-        let respond = &mut [0; 20];
-        self.connector.as_mut().unwrap().write_then_read(&buf, respond).await.unwrap();
+        // let respond = &mut [0; 20];
+        // self.connector.as_mut().unwrap().write_then_read(&buf, respond).await.unwrap();
 
         return Ok(());
     }

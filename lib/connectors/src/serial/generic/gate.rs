@@ -24,10 +24,15 @@ pub async fn get(serial_settings: &SerialSettings) -> Result<SerialConnector, Pl
     gate.get(serial_settings)
 }
 
+pub async fn run_garbage_collector() {
+    let mut gate = GATE.lock().await;
+    // gate.run_garbage_collector();
+}
+
 
 /// Main entry point to acces connectors
 /// 
-struct Gate {
+pub struct Gate {
     instances: HashMap<String, SerialConnector>
 }
 
@@ -38,10 +43,6 @@ impl Gate {
         -> Result<SerialConnector, PlatformError>
     {
 
-        let a = Rc::new(5);
-        let b = a.clone();
-        println!("count after creating a = {}", Rc::strong_count(&a));
-
 
         // Get the key
         let key = serial_settings.port_name
@@ -50,21 +51,27 @@ impl Gate {
 
 
         // if the instance is not found, it means that the port is not opened yet
-        // if ! self.instances.contains_key(key) {
+        if ! self.instances.contains_key(key) {
 
-        //     // Create a new instance
-        //     let new_instance = TtyConnector::new(Some(config.clone()));
+            // Create a new instance
+            let new_instance = SerialConnector::new(&self);
 
-        //     // Save the instance
-        //     self.instances.insert(key.to_string(), new_instance.clone());
-        //     tracing::info!(class="Platform", "connector created");
-        // }
+            // Save the instance
+            self.instances.insert(key.to_string(), new_instance.clone());
+            tracing::info!(class="Platform", "connector created");
+
+            
+            return Ok(new_instance.clone());
+        }
 
         // Try to find the instance
         let instance = self.instances.get(key)
             .ok_or(platform_error!(
                 format!("Unable to find the tty connector \"{}\"", key)
             ))?;
+
+
+        println!("c -----> {}", instance.count_refs());
 
         // Return the instance
         Ok(instance.clone())

@@ -43,9 +43,9 @@ impl DeviceActions for PicoHaDio {
             .optional_set_serial_from_json_settings(&json_settings);
 
         // Serial settings
-        let serial_settings = SerialSettings::new()
-            .set_port_name_from_json_or_usb_settings(&json_settings, &usb_settings)?
-            .set_baudrate(115200);
+        // let serial_settings = SerialSettings::new()
+        //     .set_port_name_from_json_or_usb_settings(&json_settings, &usb_settings)?
+        //     .set_baudrate(115200);
 
 
 
