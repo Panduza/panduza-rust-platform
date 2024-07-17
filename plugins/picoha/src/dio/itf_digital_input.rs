@@ -1,46 +1,31 @@
-use std::sync::Arc;
+
 use panduza_connectors::serial::slip::SlipConnector;
 use panduza_connectors::SerialSettings;
 use prost::Message;
-use tokio::sync::Mutex;
-use tokio::time::sleep;
-use tokio::time::Duration;
+
 
 use async_trait::async_trait;
 
-use panduza_core::{interface, Error as PlatformError};
+use panduza_core::Error as PlatformError;
 use panduza_core::meta::digital_input;
 use panduza_core::interface::ThreadSafeInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
-use serde_json::Error;
 
-use futures::FutureExt;
-
-
-// use panduza_connectors::serial::slip::get as ConnectorSlipGet;
-use panduza_connectors::serial::generic::get as ConnectorSlipGet;
-use panduza_connectors::serial::tty3::get as ConnectorGet;
-// use panduza_connectors::serial::slip::Connector as SlipConnector;
-use panduza_connectors::serial::tty3::Config as SerialConfig;
-use panduza_connectors::serial::generic::SerialConnector;
 
 use panduza_connectors::serial::generic::garbage_collector;
 
-use panduza_connectors::serial::slip::SlipDriver;
 use panduza_connectors::serial::slip::get as SlipGetConnector;
 
 use super::api_dio::PicohaDioRequest;
 use super::api_dio::RequestType;
 
 
-use panduza_core::platform_error;
-
 
 ///
 /// 
 struct InterfaceActions {
 
-    config: SerialConfig,
+    config: SerialSettings,
 
     connector: SlipConnector,
     
@@ -74,17 +59,15 @@ impl digital_input::MetaActions for InterfaceActions {
 
         garbage_collector().await;
 
-        
-
+    
         // self.connector =  None;
         // self.connector.as_mut().unwrap().init().await?;
 
-
-        // let request = PicohaDioRequest {
-        //     r#type: RequestType::Ping as i32,
-        //     pin_num: 5,
-        //     value: 0,
-        // };
+        let request = PicohaDioRequest {
+            r#type: RequestType::Ping as i32,
+            pin_num: 5,
+            value: 0,
+        };
         // // let request = PicohaDioRequest {
         // //     r#type: RequestType::GetPinDirection as i32,
         // //     pin_num: 0,
@@ -93,7 +76,7 @@ impl digital_input::MetaActions for InterfaceActions {
         
         // println!("=====");
         // // let mut buf = vec![0;20];
-        // let buf = request.encode_to_vec();
+        let buf = request.encode_to_vec();
         // // if p.is_err() {
         // //     println!("------*** Error: {:?}", p.err());
         // // }
@@ -103,8 +86,8 @@ impl digital_input::MetaActions for InterfaceActions {
         // println!("Sending: {:?}", buf);
         // println!("=====");
 
-        // let respond = &mut [0; 20];
-        // self.connector.as_mut().unwrap().write_then_read(&buf, respond).await.unwrap();
+        let respond = &mut [0; 20];
+        self.connector.write_then_read(&buf, respond).await.unwrap();
 
         return Ok(());
     }
@@ -149,7 +132,7 @@ pub struct Builder {
     /// Name of the interface
     name: String,
     /// Serial configuration
-    serial_config: Option<SerialConfig>,
+    serial_config: Option<SerialSettings>,
 }
 impl Builder {
     /// Create a new builder with default values
@@ -167,7 +150,7 @@ impl Builder {
     }
 
     /// Set the serial configuration
-    pub fn with_serial_config(mut self, serial_config: SerialConfig) -> Self {
+    pub fn with_serial_settings(mut self, serial_config: SerialSettings) -> Self {
         self.serial_config = Some(serial_config);
         self
     }

@@ -1,12 +1,8 @@
-use panduza_connectors::usb;
 use panduza_core::device::traits::DeviceActions;
 use panduza_core::device::Device;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
-use serde_json::de;
 
 use super::itf_digital_input;
-
-use panduza_connectors::serial::tty3::Config as SerialConfig;
 
 use panduza_connectors::UsbSettings;
 use panduza_connectors::SerialSettings;
@@ -34,8 +30,6 @@ impl DeviceActions for PicoHaDio {
         logger.log_info("Build interfaces for \"picoha.dio\" device");
         logger.log_info(format!("settings: {}", json_settings));
 
-
-
         // Usb settings
         let usb_settings = UsbSettings::new()
             .set_vendor(PICOHA_VENDOR_ID)
@@ -43,32 +37,16 @@ impl DeviceActions for PicoHaDio {
             .optional_set_serial_from_json_settings(&json_settings);
 
         // Serial settings
-        // let serial_settings = SerialSettings::new()
-        //     .set_port_name_from_json_or_usb_settings(&json_settings, &usb_settings)?
-        //     .set_baudrate(115200);
+        let serial_settings = SerialSettings::new()
+            .set_port_name_from_json_or_usb_settings(&json_settings, &usb_settings)?
+            .set_baudrate(9600);
 
-
-
-        let mut serial_conf = SerialConfig::new();
-        serial_conf.import_from_json_settings(&json_settings)?;
-
-        serial_conf.serial_baudrate = Some(9600);
-        serial_conf.usb_vendor = Some(PICOHA_VENDOR_ID);
-        serial_conf.usb_model = Some(PICOHA_PRODUCT_ID);
-
-        // const_settings = {
-        //     "usb_vendor": '0416',
-        //     "usb_model": '5011',
-        //     "serial_baudrate": 9600
-        // }
-
-        // serial_conf.serial_baudrate = Some(9600);
-
+        //
         let mut list = Vec::new();
         list.push(
             itf_digital_input::Builder::new()
                 .with_name("io0")
-                .with_serial_config(serial_conf.clone())
+                .with_serial_settings(serial_settings)
                 .build()
         );
         return Ok(list);

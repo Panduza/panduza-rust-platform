@@ -4,6 +4,7 @@ use panduza_core::{platform_error, FunctionResult};
 use tokio::sync::Mutex;
 
 use crate::SerialSettings;
+use panduza_core::Error as PlatformError;
 
 use super::SlipDriver;
 
@@ -47,8 +48,16 @@ impl Connector {
             .init().await
     }
     
-
-
+    /// Write a command to the serial port
+    /// 
+    pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8]) 
+        -> Result<usize, PlatformError> {
+        self.driver
+            .as_ref()
+            .ok_or(platform_error!("Connector is not initialized"))?
+            .lock().await
+            .write_then_read(command, response).await
+    }
 
 }
 
