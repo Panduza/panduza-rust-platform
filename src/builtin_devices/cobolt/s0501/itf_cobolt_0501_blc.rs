@@ -49,7 +49,6 @@ impl S0501BlcActions {
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
             Ok(val) => {
-                println!("strrrrrrrr {:?} strrrrrrrrrrrrrrrrr", val);
                 Ok(val)
             },
             Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
@@ -84,7 +83,6 @@ impl S0501BlcActions {
 
         for resp in response.split("\r\n") {
             if resp == expected_response.as_str() {
-                println!("{:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", resp);
                 return Ok(());
             } else {
                 continue;
@@ -171,18 +169,10 @@ impl blc::BlcActions for S0501BlcActions {
             _ => return platform_error_result!("Unexpected mode command")
         };
 
-        // let response = match self.cmd_ack(command.as_bytes(), "OK".to_string()).await {
-        //     Ok(_r) => "OK".to_string(),
-        //     Err(_e) => return platform_error_result!("Unexpected response from Cobolt S0501")
-        // };
-
-        // println!("{} !!!!!!!!!!!!!!!!!!!!!!!!!!!", response);
-
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await?;
-        // self.ask_string(command.as_bytes()).await?;
         
         // Clean the buffer from previous values
         while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
