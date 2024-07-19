@@ -48,7 +48,10 @@ impl S0501BlcActions {
 
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => Ok(val),
+            Ok(val) => {
+                println!("strrrrrrrr {:?} strrrrrrrrrrrrrrrrr", val);
+                Ok(val)
+            },
             Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
         }
     }
@@ -81,6 +84,7 @@ impl S0501BlcActions {
 
         for resp in response.split("\r\n") {
             if resp == expected_response.as_str() {
+                println!("{:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", resp);
                 return Ok(());
             } else {
                 continue;
@@ -148,7 +152,7 @@ impl blc::BlcActions for S0501BlcActions {
         };
 
         interface.lock().await.log_info(
-            format!("read mode value : {}", self.mode_value.clone())
+            format!("read mode value : {:?}", self.mode_value.clone())
         );
         return Ok(self.mode_value.clone());
     }
@@ -177,14 +181,14 @@ impl blc::BlcActions for S0501BlcActions {
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            })?;
+        ).await?;
+        // self.ask_string(command.as_bytes()).await?;
         
         // Clean the buffer from previous values
         while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
             continue;
         }
+
         return Ok(());
     }
     
@@ -230,10 +234,7 @@ impl blc::BlcActions for S0501BlcActions {
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
-            })?;
+        ).await?;
         
         // Clean the buffer from previous values
 
@@ -326,9 +327,7 @@ impl blc::BlcActions for S0501BlcActions {
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            })?;
+        ).await?;
 
         // Clean the buffer from previous values
         while self.cmd_expect(b"p?\r", "OK".to_string()).await.is_err() {
@@ -375,9 +374,7 @@ impl blc::BlcActions for S0501BlcActions {
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            })?;
+        ).await?;
 
         // Clean the buffer from previous values
         while self.cmd_expect(b"glc?\r", "OK".to_string()).await.is_err() {
