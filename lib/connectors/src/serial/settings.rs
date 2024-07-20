@@ -127,7 +127,7 @@ impl Settings {
         Self::find_serial_port_info_from_usb_settings(usb_settings)
             .map(|info| info.port_name)
     }
-
+    
     /// To try find a serial port that match usb settings
     ///
     pub fn find_serial_port_info_from_usb_settings(usb_settings: &UsbSettings) 
@@ -138,17 +138,34 @@ impl Settings {
                 |e| platform_error!("Enable to get serial ports {:?}", e)
             )
             .and_then(|ports| {
-                    for port in ports {
-                        // Check only usb port type
-                        // Check if the settings match
-                        if let tokio_serial::SerialPortType::UsbPort(info) = &port.port_type {
-                            if Self::usb_info_port_match_usb_settings(info, usb_settings) {
-                                return Ok(port);
-                            }
+                for port in ports {
+                    // Check only usb port type
+                    // Check if the settings match
+                    if let tokio_serial::SerialPortType::UsbPort(info) = &port.port_type {
+                        if Self::usb_info_port_match_usb_settings(info, usb_settings) {
+                            return Ok(port);
                         }
                     }
-                Err(platform_error!("No matching usb device"))
+                }
+                Err(platform_error!("No matching usb device ( availables: {} )", Self::list_all_serial_ports()))
             })
+    }
+
+    /// List all the available serial ports for error message
+    /// 
+    pub fn list_all_serial_ports() -> String {
+        match available_serial_ports() {
+            Err(e) => format!("no serial ports available {:?}", e),
+            Ok(ports) => {
+                let mut data = String::new();
+                for port in ports {
+                    if let tokio_serial::SerialPortType::UsbPort(info) = &port.port_type {
+                        data.push_str(&format!("{}/{:#02x}/{:#02x} ;", port.port_name, info.vid, info.pid));
+                    }
+                }
+                data
+            }
+        }
     }
 
     /// Check if the provided info port match the usb settings
@@ -156,6 +173,9 @@ impl Settings {
     fn usb_info_port_match_usb_settings(usb_info_port: &UsbPortInfo, usb_settings: &UsbSettings)
         -> bool
     {
+        // Logger only for trace
+        let trace_logger = GateLogger::new("serial-settings");
+
         // Match VID
         let match_vid = usb_settings.vendor
             .and_then(
@@ -165,7 +185,7 @@ impl Settings {
             .unwrap_or(true);
             
         // Match PID
-        let match_pid = usb_settings.vendor
+        let match_pid = usb_settings.model
             .and_then(
                 |pid| Some(pid == usb_info_port.pid)
             )
@@ -184,8 +204,18 @@ impl Settings {
             // If here, it means that the user did not provided the SERIAL so pass the check
             .unwrap_or(true);
     
+        // Compute match
+        let matchhh = match_vid && match_pid && match_serial as bool;
+
+        // Trace
+        let trace_message = format!("{} - match: {} vid: {} pid: {} serial: {}",
+            usb_settings, matchhh, match_vid, match_pid, match_serial
+        );
+        // println!("{}", trace_message);
+        trace_logger.log_trace(trace_message);
+
         // Ok only if all the conditions are met
-        return match_vid && match_pid && match_serial as bool;
+        return matchhh;
     }
 
     /// Set the flow control

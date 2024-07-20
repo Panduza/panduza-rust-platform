@@ -25,7 +25,7 @@ use super::api_dio::RequestType;
 /// 
 struct InterfaceActions {
 
-    config: SerialSettings,
+    serial_settings: SerialSettings,
 
     connector: SlipConnector,
     
@@ -42,22 +42,13 @@ impl digital_input::MetaActions for InterfaceActions {
         // let logger = interface.lock().await.clone_logger();
 
 
-        // self.connector = 
-
-        let seee = SerialSettings::new()
-            .set_port_name("port_name")
-            .set_baudrate(115200);
 
 
-        println!("before creatino");
-        self.connector = SlipGetConnector(&seee).await?;
-        println!("after creatino");
-
-
+        self.connector = SlipGetConnector(&self.serial_settings).await?;
         self.connector.init().await?;
 
 
-        garbage_collector().await;
+        // garbage_collector().await;
 
     
         // self.connector =  None;
@@ -132,14 +123,14 @@ pub struct Builder {
     /// Name of the interface
     name: String,
     /// Serial configuration
-    serial_config: Option<SerialSettings>,
+    serial_settings: Option<SerialSettings>,
 }
 impl Builder {
     /// Create a new builder with default values
     pub fn new() -> Builder {
         return Builder {
             name: "digital_input".to_string(),
-            serial_config: None,
+            serial_settings: None,
         }
     }
 
@@ -150,8 +141,8 @@ impl Builder {
     }
 
     /// Set the serial configuration
-    pub fn with_serial_settings(mut self, serial_config: SerialSettings) -> Self {
-        self.serial_config = Some(serial_config);
+    pub fn with_serial_settings(mut self, serial_settings: SerialSettings) -> Self {
+        self.serial_settings = Some(serial_settings);
         self
     }
 
@@ -160,7 +151,7 @@ impl Builder {
         digital_input::build(
             self.name,
             Box::new(InterfaceActions {
-                config: self.serial_config.unwrap(),
+                serial_settings: self.serial_settings.unwrap(),
                 connector: SlipConnector::new(),
             })
         )

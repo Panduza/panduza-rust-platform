@@ -45,7 +45,9 @@ impl Gate {
     fn get(&mut self, serial_settings: &SerialSettings)
         -> Result<SlipConnector, PlatformError>
     {
-
+        // Debug
+        self.logger.log_debug("GET a new serial-slip connector");
+        self.logger.log_debug(format!("- port_name: {:?}", serial_settings.port_name));
 
         // Get the key
         let key = serial_settings.port_name

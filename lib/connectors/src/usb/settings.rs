@@ -108,6 +108,16 @@ impl Settings {
 
 }
 
+
+impl std::fmt::Display for Settings {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let vendor = self.vendor.unwrap_or(0);
+        let model = self.model.unwrap_or(0);
+        write!(f, "Settings {{ vendor: {:#02x}, model: {:#02x}, serial: {:?} }}",
+            vendor, model, self.serial)
+    }
+}
+
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
@@ -122,14 +132,12 @@ mod tests {
         assert_eq!(settings.vendor, None);
         assert_eq!(settings.model, None);
         assert_eq!(settings.serial, None);
-        assert_eq!(settings.serial_port_name, None);
-        assert_eq!(settings.serial_baudrate, None);
     }
 
     #[test]
     fn test_set_serial_from_json_settings() {
         let json_settings = serde_json::json!({
-            "serial": "COM1"
+            "usb_serial": "COM1"
         });
         let mut settings = Settings::new()
             .set_serial_from_json_settings(&json_settings).unwrap();
@@ -139,7 +147,7 @@ mod tests {
     #[test]
     fn test_set_serial_from_json_settings_bad_string() {
         let json_settings = serde_json::json!({
-            "serial": 5
+            "usb_serial": 5
         });
         let mut settings = Settings::new()
             .set_serial_from_json_settings(&json_settings);
@@ -157,7 +165,7 @@ mod tests {
     #[test]
     fn test_set_serial_from_json_settings_or_bad_string() {
         let json_settings = serde_json::json!({
-            "serial": 5
+            "usb_serial": 5
         });
         let mut settings = Settings::new()
             .set_serial_from_json_settings_or(&json_settings, "OK_SERIAL");

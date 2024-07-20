@@ -12,6 +12,9 @@ use crate::GateLogger;
 use super::SerialConnector;
 
 
+static CONNECTOR_CLASS_NAME: &str = "serial-generic";
+
+
 lazy_static! {
     static ref GATE : tokio::sync::Mutex<Gate> 
         = tokio::sync::Mutex::new(Gate {

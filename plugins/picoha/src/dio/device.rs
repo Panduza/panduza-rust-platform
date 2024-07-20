@@ -28,13 +28,14 @@ impl DeviceActions for PicoHaDio {
 
         // Log debug info
         logger.log_info("Build interfaces for \"picoha.dio\" device");
-        logger.log_info(format!("settings: {}", json_settings));
+        logger.log_info(format!("json_settings: {}", json_settings));
 
         // Usb settings
         let usb_settings = UsbSettings::new()
             .set_vendor(PICOHA_VENDOR_ID)
             .set_model(PICOHA_PRODUCT_ID)
             .optional_set_serial_from_json_settings(&json_settings);
+        logger.log_info(format!("usb_settings: {}", usb_settings));
 
         // Serial settings
         let serial_settings = SerialSettings::new()
