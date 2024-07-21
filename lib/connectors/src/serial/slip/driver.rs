@@ -1,7 +1,10 @@
+use std::time::Duration;
+
 use panduza_core::platform_error;
 use panduza_core::FunctionResult;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
+use tokio::time::timeout;
 use tokio_serial::SerialStream;
 
 
@@ -29,7 +32,12 @@ pub struct Driver {
     
     serial_stream: Option< SerialStream >,
 
-    time_lock: Option<TimeLock>
+    time_lock: Option<TimeLock>,
+
+    // Accumulated incoming data buffer
+    in_buf: [u8; 512],
+    // Keep track of number of data in the buffer
+    in_buf_size: usize,
 }
 
 
@@ -48,7 +56,9 @@ impl Driver {
             logger: ConnectorLogger::new("serial", port_name),
             settings: settings.clone(),
             serial_stream: None,
-            time_lock: None
+            time_lock: None,
+            in_buf: [0u8; 512],
+            in_buf_size: 0
         }
     }
 
@@ -120,11 +130,10 @@ impl Driver {
     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8]) 
             -> Result<usize, PlatformError>
     {
-
         // Prepare encoding
         let mut encoded_command = [0u8; 1024];
         let mut slip_encoder = serial_line_ip::Encoder::new();
-        
+
         // Encode the command
         let mut totals = slip_encoder.encode(command, &mut encoded_command)
             .map_err(|e| platform_error!("Unable to encode command: {:?}", e))?;
@@ -136,38 +145,27 @@ impl Driver {
         // Write command slip encoded
         self.write_time_locked(&encoded_command[..totals.written]).await?;
 
-        // Prepare decoding
-        // let mut slip_decoder = serial_line_ip::Decoder::new();
-        // let total_decoded = slip_decoder.decode(&encoded_response[..total_read], response)
-        //     .map_err(|e| platform_error!("Unable to decode response: {:?}", e))?;
-
-        // Ok(total_decoded.0)
-        Ok(3)
-    }
-
-    ///
-    /// 
-    pub async fn write_then_read_until(&mut self, command: &[u8], response: &mut [u8], end: u8)
-            -> Result<usize, PlatformError>
-    {
-        // Write
-        self.write_time_locked(command).await?;
-
         // Read the response until "end"
-        let mut n = 0;
         loop {
-            let mut single_buf = [0u8; 1];
-            self.serial_stream.as_mut()
+
+            // Read a chunck
+            let read_chunk = self.serial_stream.as_mut()
                 .ok_or_else(|| platform_error!("No serial stream"))?
-                .read_exact(&mut single_buf).await
+                .read(&mut self.in_buf[self.in_buf_size..]);
+        
+            self.in_buf_size += timeout(Duration::from_secs(5), read_chunk).await
+                .map_err(|e| platform_error!("Timeout reading {:?}", e))?
                 .map_err(|e| platform_error!("Unable to read on serial stream {:?}", e))?;
-            response[n] = single_buf[0];
-            n += 1;
-            if single_buf[0] == end {
-                break;
+
+            // Try decoding
+            let mut slip_decoder = serial_line_ip::Decoder::new();
+            let (total_decoded, _out_slice, end) = slip_decoder.decode(&self.in_buf[..self.in_buf_size], response)
+                .map_err(|e| platform_error!("Unable to decode response: {:?}", e))?;
+
+            if end {
+                return Ok(total_decoded);
             }
         }
-        Ok(n)
     }
 
 }
@@ -179,8 +177,6 @@ impl Drop for Driver {
         self.serial_stream = None;
     }
 }
-
-
 
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
@@ -216,116 +212,4 @@ mod tests {
 
 
 
-
-// use panduza_core::platform_error;
-// use panduza_core::FunctionResult;
-// use panduza_core::Error as PlatformError;
-
-// use crate::{ConnectorLogger, SerialSettings};
-
-
-
-// use crate::serial::generic::{get as SerialGetFunction, SerialConnector};
-
-
-
-// pub struct Driver {
-
-//     logger: ConnectorLogger,
-//     settings: SerialSettings,
-
-//     serial_connector : SerialConnector
-//     // builder: Option< SerialPortBuilder >,
-    
-//     // serial_stream: Option< SerialStream >,
-
-//     // time_lock: Option<TimeLock>
-// }
-
-
-
-
-// impl Driver {
-
-//     /// Create a new instance of the driver
-//     /// 
-//     pub fn new(settings: &SerialSettings) -> Self {
-//         // Get the port name safely
-//         let port_name = settings.port_name.as_ref()
-//             .map(|val| val.clone())
-//             .unwrap_or("undefined".to_string()).clone();
-
-//         // Create instance
-//         Driver {
-//             logger: ConnectorLogger::new("slip", port_name),
-//             settings: settings.clone(),
-//             serial_connector: SerialConnector::new()
-//         }
-//     }
-
-
-    
-//     /// Initialize the driver
-//     /// 
-//     pub async fn init(&mut self) -> FunctionResult {
-
-//         // Internal driver already initialized by an other entity => OK
-//         if self.serial_connector.is_initialized() {
-//             return Ok(());
-//         }
-
-//         self.serial_connector = SerialGetFunction(&self.settings).await?;
-        
-//         Ok(())
-//     }
-
-//     /// Encode command with SLIP (serial line internet protocol)
-//     /// and write it to the serial port.
-//     /// Then wait for the response and decode it before returning it to the user.
-//     /// 
-//     /// # Arguments
-//     /// 
-//     /// - `command` - Command to be sent to the serial port.
-//     /// - `response` - Buffer to store the response.
-//     /// 
-//     pub async fn write_then_read(&mut self, command: &[u8], response: &mut [u8])
-//             -> Result<usize, PlatformError> {
-        
-//         // Prepare encoding
-//         let mut encoded_command = [0u8; 200];
-//         let mut slip_encoder = serial_line_ip::Encoder::new();
-        
-//         // Encode the command
-//         let mut totals = slip_encoder.encode(command, &mut encoded_command)
-//             .map_err(|e| platform_error!("Unable to encode command: {:?}", e))?;
-
-//         // Finalise the encoding
-//         totals += slip_encoder.finish(&mut encoded_command[totals.written..])
-//             .map_err(|e| platform_error!("Unable to finsh command encoding: {:?}", e))?;
-
-//         // Write the command to the serial port
-//         let mut encoded_response = [0u8; 200];
-//         let total_read = self.serial_connector
-//             .write_then_read_until(&encoded_command, &mut encoded_response, 0xc0 as u8)
-//             .await?;
-
-//         // Prepare decoding
-//         let mut slip_decoder = serial_line_ip::Decoder::new();
-//         let total_decoded = slip_decoder.decode(&encoded_response[..total_read], response)
-//             .map_err(|e| platform_error!("Unable to decode response: {:?}", e))?;
-
-//         Ok(total_decoded.0)
-//     }
-
-
-// }
-
-
-// impl Drop for Driver {
-//     fn drop(&mut self) {
-//         // Close the serial stream
-//         self.logger.log_warn("Closing serial connector");
-//         self.serial_connector.clear();
-//     }
-// }
 

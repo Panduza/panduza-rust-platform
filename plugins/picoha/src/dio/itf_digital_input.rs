@@ -77,8 +77,12 @@ impl digital_input::MetaActions for InterfaceActions {
         // println!("Sending: {:?}", buf);
         // println!("=====");
 
-        let respond = &mut [0; 20];
-        self.connector.write_then_read(&buf, respond).await.unwrap();
+        let respond = &mut [0; 64];
+        
+        // Wrap the future with a `Timeout` set to expire in 10 milliseconds.
+        let size = self.connector.write_then_read(&buf, respond).await.unwrap();
+
+        println!("Respond: {:?}", respond[0..size].to_vec());
 
         return Ok(());
     }
