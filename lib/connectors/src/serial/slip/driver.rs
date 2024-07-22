@@ -15,31 +15,25 @@ use panduza_core::Error as PlatformError;
 use crate::ConnectorLogger;
 use crate::SerialSettings;
 
+use crate::serial::time_lock::TimeLock;
 
 
-struct TimeLock {
-    pub duration: tokio::time::Duration,
-    pub t0: tokio::time::Instant
-}
-
-
-
-
+/// Serial SLIP driver
+/// 
 pub struct Driver {
+    // Logger
     logger: ConnectorLogger,
+    // Serial settings
     settings: SerialSettings,
-    // builder: Option< SerialPortBuilder >,
-    
+    // Serial stream
     serial_stream: Option< SerialStream >,
-
+    // Time lock
     time_lock: Option<TimeLock>,
-
     // Accumulated incoming data buffer
     in_buf: [u8; 512],
     // Keep track of number of data in the buffer
     in_buf_size: usize,
 }
-
 
 impl Driver {
 
@@ -96,7 +90,7 @@ impl Driver {
 
     /// Write a command on the serial stream
     /// 
-    pub async fn write_time_locked(&mut self, command: &[u8])-> Result<usize, PlatformError> {
+    async fn write_time_locked(&mut self, command: &[u8])-> Result<usize, PlatformError> {
 
         // Check if a time lock is set
         if let Some(lock) = self.time_lock.as_mut() {
@@ -147,7 +141,6 @@ impl Driver {
 
         // Read the response until "end"
         loop {
-
             // Read a chunck
             let read_chunk = self.serial_stream.as_mut()
                 .ok_or_else(|| platform_error!("No serial stream"))?
