@@ -1,5 +1,5 @@
 
-use panduza_connectors::serial::slip::SlipConnector;
+use panduza_connectors::serial::slip::Connector as SlipConnector;
 use panduza_connectors::SerialSettings;
 use prost::Message;
 
@@ -14,12 +14,14 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 
 use panduza_connectors::serial::generic::garbage_collector;
 
-use panduza_connectors::serial::slip::get as SlipGetConnector;
+use panduza_connectors::serial::slip::get as get_connector;
+
+use super::api_dio::PicohaDioAnswer;
 
 use super::api_dio::PicohaDioRequest;
 use super::api_dio::RequestType;
 
-
+use panduza_core::platform_error;
 
 ///
 /// 
@@ -27,13 +29,30 @@ struct InterfaceActions {
 
     serial_settings: SerialSettings,
 
-    connector: SlipConnector,
+    connector: Option<SlipConnector>,
     
-    // pub fake_values: Arc<Mutex<Vec<u64>>>,
+}
+
+impl InterfaceActions {
+
+    async fn execute_request(&mut self, request: &PicohaDioRequest) -> Result<PicohaDioAnswer, PlatformError> {
+        let buf = request.encode_to_vec();
+        let respond = &mut [0; 64];        
+        let size = self.connector.as_ref()
+                    .ok_or(platform_error!("Connector is not initialized"))?
+                    .lock().await
+                    .write_then_read(&buf, respond).await?;
+        let answerr = PicohaDioAnswer::decode(&respond[0..size]).unwrap();
+        return Ok(answerr);
+    }
+
 }
 
 #[async_trait]
 impl digital_input::MetaActions for InterfaceActions {
+
+
+
 
     /// Initialize the interface
     /// 
@@ -44,45 +63,51 @@ impl digital_input::MetaActions for InterfaceActions {
 
 
 
-        self.connector = SlipGetConnector(&self.serial_settings).await?;
-        self.connector.init().await?;
+        self.connector = Some(get_connector(&self.serial_settings).await?);
+        self.connector.as_ref()
+            .ok_or(platform_error!("Connector is not initialized"))?
+            .lock().await.init().await?;
 
 
-        // garbage_collector().await;
+        // // garbage_collector().await;
 
     
-        // self.connector =  None;
-        // self.connector.as_mut().unwrap().init().await?;
+        // // self.connector =  None;
+        // // self.connector.as_mut().unwrap().init().await?;
 
-        let request = PicohaDioRequest {
-            r#type: RequestType::Ping as i32,
-            pin_num: 5,
-            value: 0,
-        };
-        // // let request = PicohaDioRequest {
-        // //     r#type: RequestType::GetPinDirection as i32,
-        // //     pin_num: 0,
-        // //     value: 0,
-        // // };
+        // let request = PicohaDioRequest {
+        //     r#type: RequestType::Ping as i32,
+        //     pin_num: 5,
+        //     value: 0,
+        // };
+        // // // let request = PicohaDioRequest {
+        // // //     r#type: RequestType::GetPinDirection as i32,
+        // // //     pin_num: 0,
+        // // //     value: 0,
+        // // // };
         
-        // println!("=====");
-        // // let mut buf = vec![0;20];
-        let buf = request.encode_to_vec();
-        // // if p.is_err() {
-        // //     println!("------*** Error: {:?}", p.err());
-        // // }
-        // // else {
-        // //     println!("------*** Ok");
-        // // };
-        // println!("Sending: {:?}", buf);
-        // println!("=====");
+        // // println!("=====");
+        // // // let mut buf = vec![0;20];
+        // let buf = request.encode_to_vec();
+        // // // if p.is_err() {
+        // // //     println!("------*** Error: {:?}", p.err());
+        // // // }
+        // // // else {
+        // // //     println!("------*** Ok");
+        // // // };
+        // // println!("Sending: {:?}", buf);
+        // // println!("=====");
 
-        let respond = &mut [0; 64];
+        // let respond = &mut [0; 64];
         
-        // Wrap the future with a `Timeout` set to expire in 10 milliseconds.
-        let size = self.connector.write_then_read(&buf, respond).await.unwrap();
+        // // Wrap the future with a `Timeout` set to expire in 10 milliseconds.
+        // let size = self.connector.write_then_read(&buf, respond).await.unwrap();
 
-        println!("Respond: {:?}", respond[0..size].to_vec());
+
+        // let answerr = PicohaDioAnswer::decode(&respond[0..size]).unwrap();
+
+
+        // println!("Respond: {:?}", respond[0..size].to_vec());
 
         return Ok(());
     }
@@ -156,7 +181,7 @@ impl Builder {
             self.name,
             Box::new(InterfaceActions {
                 serial_settings: self.serial_settings.unwrap(),
-                connector: SlipConnector::new(),
+                connector: None,
             })
         )
     }

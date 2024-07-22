@@ -1,29 +1,13 @@
-
+// private
 mod gate;
 mod driver;
-mod connector;
 
-
+// usage
+use panduza_core::Error as PlatformError;
 use crate::SerialSettings;
 
-
-use panduza_core::Error as PlatformError;
-
-
-pub type SlipDriver = driver::Driver;
-pub type SlipConnector = connector::Connector;
-
-
-pub async fn get(serial_settings: &SerialSettings)
-    -> Result<SlipConnector, PlatformError>
-{
+// public interface
+pub type Connector = driver::Connector;
+pub async fn get(serial_settings: &SerialSettings) -> Result<Connector, PlatformError> {
     gate::get(serial_settings).await
 }
-
-pub async fn garbage_collector() {
-    gate::garbage_collector().await;
-}
-
-
-
-

@@ -7,6 +7,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::time::timeout;
 use tokio_serial::SerialStream;
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use panduza_core::Error as PlatformError;
 
@@ -34,6 +36,7 @@ pub struct Driver {
     // Keep track of number of data in the buffer
     in_buf_size: usize,
 }
+pub type Connector = Arc< Mutex< Driver > >;
 
 impl Driver {
 
@@ -54,6 +57,12 @@ impl Driver {
             in_buf: [0u8; 512],
             in_buf_size: 0
         }
+    }
+
+    /// Convert the driver into a connector
+    /// 
+    pub fn into_connector(self) -> Connector {
+        Arc::new(Mutex::new(self))
     }
 
     /// Initialize the driver
