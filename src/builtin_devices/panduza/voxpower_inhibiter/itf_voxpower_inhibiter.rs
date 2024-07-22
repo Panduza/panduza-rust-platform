@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use panduza_core::meta::bpc::BpcAttributes;
+use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::meta::bpc;
@@ -51,15 +52,17 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
+    async fn initializating(&mut self, interface: &AmInterface) -> PlatformFunctionResult {
         
         self.connector_tty = match tty::get(&self.serial_config).await {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
         };
 
+        // let response = self.ask(b"IDN?").await?;
+
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - channel_{} initialized", self.id)
+            format!("Voxpower Inhibiter - channel_{} initializating", self.id)
         );
 
         self.connector_tty.init().await?;
@@ -87,7 +90,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         };
 
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - channel_{} enable value : {}", self.id, self.enable_value)
+            format!("Voxpower Inhibiter - read value : {}", self.enable_value)
         );
 
         return Ok(self.enable_value);
@@ -95,7 +98,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
 
     /// Write the enable value
     /// 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> PlatformFunctionResult {
         
         let command = if v {
             // enable the channel
@@ -105,16 +108,18 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
             format!("I{}\n", self.id)
         };
 
-        let _ = self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await;
+        let response = self.ask(command.as_bytes()).await?;
+
+        // let _ = self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await;
         
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - write enable value; {}", self.enable_value)
+            format!("Voxpower Inhibiter - write enable value {} : {}", self.enable_value, response)
         );
 
-        // Ok(())
+        Ok(())
     }
 
     // ----------------------------------------------------------------------------
