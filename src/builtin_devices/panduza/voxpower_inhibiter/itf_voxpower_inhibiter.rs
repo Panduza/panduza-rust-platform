@@ -41,7 +41,7 @@ impl VoxpowerInhibiterActions {
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
             Ok(val) => Ok(val),
-            Err(_e) => platform_error_result!("Unexpected answer form Voxpower Inhibiter : could not parse as String")
+            Err(e) => platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {}", e))
         }
     }
 }
@@ -51,16 +51,16 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
-
-        println!("serial_config : {:?}", &self.serial_config);
+    async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError> {
         
         self.connector_tty = match tty::get(&self.serial_config).await {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
         };
 
-        println!("Connector successfully created !!!");
+        interface.lock().await.log_info(
+            format!("Voxpower Inhibiter - channel_{} initialized", self.id)
+        );
 
         self.connector_tty.init().await?;
 
@@ -83,7 +83,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         self.enable_value = match self.ask(command.as_bytes()).await?.as_str() {
             "H" => false,
             "L" => true,
-            _ => return platform_error_result!("Unexpected answer form Voxpower Inhibiter")
+            e => return platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {}", e))
         };
 
         interface.lock().await.log_info(
@@ -105,7 +105,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
             format!("I{}\n", self.id)
         };
 
-        let _result = self.connector_tty.write(
+        let _ = self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
         ).await;
@@ -113,6 +113,8 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         interface.lock().await.log_info(
             format!("Voxpower Inhibiter - write enable value; {}", self.enable_value)
         );
+
+        // Ok(())
     }
 
     // ----------------------------------------------------------------------------
