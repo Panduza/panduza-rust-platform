@@ -8,13 +8,11 @@ use crate::__platform_error;
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use rumqttc::AsyncClient;
 
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
-use tokio::time::timeout;
 
 
 use crate::interface::fsm::State;
@@ -251,16 +249,12 @@ impl Interface {
         // HERE the rumqtt copy the payload inside its own buffer
         // It is ok for small payloads but not for big ones, there will be work here for streams
 
-        let publish_result = timeout(
-            Duration::from_secs(2), 
-            self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload)
-        ).await;
+        let publish_result =             self.client.publish(topic, rumqttc::QoS::AtLeastOnce, retain, payload).await;
 
         match publish_result {
-            Ok(Ok(_)) => {},
-            Ok(Err(e)) => println!("Publish error: {:?}", e),
+            Ok(_) => {},
             Err(e) => {
-                println!("Timeout error : {:?}", e);
+                println!("Failed to publish payload : {:?}", e);
             }
         }
 
