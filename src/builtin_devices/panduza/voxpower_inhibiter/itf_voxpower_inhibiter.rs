@@ -41,8 +41,8 @@ impl VoxpowerInhibiterActions {
 
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => Ok(val),
-            Err(e) => platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {}", e))
+            Ok(val) => Ok(val.trim().to_string()),
+            Err(e) => platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
         }
     }
 }
@@ -58,14 +58,13 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
         };
+        self.connector_tty.init().await?;
 
-        // let response = self.ask(b"IDN?").await?;
+        let response = self.ask(b"?").await?;
 
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - channel_{} initializating", self.id)
+            format!("Voxpower Inhibiter - channel_{} initializating : {}", self.id, response)
         );
-
-        self.connector_tty.init().await?;
 
         return Ok(());
     }
@@ -86,7 +85,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         self.enable_value = match self.ask(command.as_bytes()).await?.as_str() {
             "H" => false,
             "L" => true,
-            e => return platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {}", e))
+            e => return platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
         };
 
         interface.lock().await.log_info(
@@ -109,14 +108,9 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         };
 
         let response = self.ask(command.as_bytes()).await?;
-
-        // let _ = self.connector_tty.write(
-        //     command.as_bytes(),
-        //     self.time_lock_duration
-        // ).await;
         
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - write enable value {} : {}", self.enable_value, response)
+            format!("Voxpower Inhibiter - write enable value {} : {}", v, response)
         );
 
         Ok(())

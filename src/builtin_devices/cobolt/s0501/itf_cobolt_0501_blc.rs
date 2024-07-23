@@ -44,7 +44,7 @@ impl S0501BlcActions {
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
             Ok(val) => Ok(val),
-            Err(_e) => platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as String")
+            Err(e) => platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
         }
     }
 
@@ -54,7 +54,7 @@ impl S0501BlcActions {
 
         match self.ask_string(command).await?.trim().to_string().parse::<u16>() {
             Ok(u) => Ok(u),
-            Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
         }
     }
 
@@ -64,7 +64,7 @@ impl S0501BlcActions {
 
         match self.ask_string(command).await?.trim().to_string().parse::<f64>() {
             Ok(f) => Ok(f),
-            Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
         }
     }
 
@@ -82,7 +82,7 @@ impl S0501BlcActions {
             }
         }
 
-        return platform_error_result!("Unexpected answer from Cobolt S0501");
+        return platform_error_result!(format!("Unexpected answer from Cobolt S0501 : {:?} where it should be {:?}", response, expected_response));
     }
 }
 
@@ -269,8 +269,8 @@ impl blc::BlcActions for S0501BlcActions {
                 Ok(power_max) => {
                     self.power_max = power_max * 0.001;
                 },
-                Err(_) => {
-                    return platform_error_result!("Failed to parse max power in Cobolt s0501");
+                Err(e) => {
+                    return platform_error_result!(format!("Failed to parse max power in Cobolt s0501 : {:?}", e));
                 }
             }
 

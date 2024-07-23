@@ -37,10 +37,11 @@ impl LBX488BlcActions {
         cmd[..command.len()].copy_from_slice(command);
 
         self.connector_usb.write(cmd.as_ref()).await?;
-        match self.connector_usb.read().await {
-            Ok(val) => Ok(val),
-            Err(_e) => platform_error_result!("Unable to read")
-        }
+        Ok(self.connector_usb.read().await?)
+        // match self.connector_usb.read().await {
+        //     Ok(val) => Ok(val),
+        //     Err(e) => platform_error_result!(format!("Unable to read usb : {}", e))
+        // }
     }
 
     /// Parse the data into f64 using 2 decimals 
@@ -257,7 +258,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
         let value_dec = match Decimal::from_f64(v) {
             Some(value) => value,
-            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as Decimal")
         };
         
         // 3 represent the number of decimal who can manage by the device,
@@ -266,7 +267,7 @@ impl blc::BlcActions for LBX488BlcActions {
         
         let val_f64 = match val_mw.to_f64() {
             Some(value) => value,
-            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as f64")
         };
 
         let command = format!("PM {}", val_f64);
@@ -297,12 +298,12 @@ impl blc::BlcActions for LBX488BlcActions {
         // the laser need something to be reboot
         let value_max_dec = match Decimal::from_f64(value_max_f64) {
             Some(value) => (value * dec!(100) / dec!(125)).round_dp(3),
-            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as Decimal")
         };
 
         let value_max = match value_max_dec.to_f64() {
             Some(value) => value,
-            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as f64")
         };
 
         self.current_value = value_max;
@@ -333,7 +334,7 @@ impl blc::BlcActions for LBX488BlcActions {
 
         let value_dec = match Decimal::from_f64(v) {
             Some(value) => value,
-            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as Decimal")
         };
         
         // 3 represent the number of decimal who can manage by the device,
@@ -342,7 +343,7 @@ impl blc::BlcActions for LBX488BlcActions {
         
         let val_f64 = match val_ma.to_f64() {
             Some(value) => value,
-            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer, error message")
+            None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as f64")
         };
 
         let command = format!("CM {}", val_f64);
