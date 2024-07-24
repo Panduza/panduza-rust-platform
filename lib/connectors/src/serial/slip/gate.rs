@@ -1,19 +1,21 @@
-use panduza_core::platform_error;
-use panduza_core::Error as PlatformError;
-
 use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
+use panduza_core::platform_error;
+use panduza_core::Error as PlatformError;
+
+use crate::GateLogger;
 use crate::SerialSettings;
 
 use super::driver::Driver;
 use super::Connector;
-use crate::GateLogger;
+
+static CONNECTOR_CLASS_NAME: &str = "serial-generic";
 
 lazy_static! {
     static ref GATE: tokio::sync::Mutex<Gate> = tokio::sync::Mutex::new(Gate {
-        logger: GateLogger::new("serial-slip"),
+        logger: GateLogger::new(CONNECTOR_CLASS_NAME),
         instances: HashMap::new()
     });
 }

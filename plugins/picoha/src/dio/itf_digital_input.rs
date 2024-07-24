@@ -9,8 +9,6 @@ use panduza_core::interface::ThreadSafeInterface;
 use panduza_core::meta::digital_input;
 use panduza_core::Error as PlatformError;
 
-use panduza_connectors::serial::generic::garbage_collector;
-
 use panduza_connectors::serial::slip::get as get_connector;
 
 use super::api_dio::PicohaDioAnswer;
@@ -29,12 +27,6 @@ struct InterfaceActions {
 }
 
 impl InterfaceActions {
-    // // Timeout reading
-    // self.in_buf_size += timeout(Duration::from_secs(5), read_chunk)
-    //     .await
-    //     .map_err(|e| platform_error!("Timeout reading {:?}", e))?
-    //     .map_err(|e| platform_error!("Unable to read on serial stream {:?}", e))?;
-
     async fn execute_request(
         &mut self,
         request: &PicohaDioRequest,
