@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use panduza_core::meta::bpc::BpcAttributes;
+use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::meta::bpc;
@@ -40,8 +41,8 @@ impl VoxpowerInhibiterActions {
 
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => Ok(val),
-            Err(_e) => platform_error_result!("Unexpected answer form Voxpower Inhibiter : could not parse as String")
+            Ok(val) => Ok(val.trim().to_string()),
+            Err(e) => platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
         }
     }
 }
@@ -51,18 +52,19 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
-
-        println!("serial_config : {:?}", &self.serial_config);
+    async fn initializating(&mut self, interface: &AmInterface) -> PlatformFunctionResult {
         
         self.connector_tty = match tty::get(&self.serial_config).await {
             Some(connector) => connector,
             None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
         };
-
-        println!("Connector successfully created !!!");
-
         self.connector_tty.init().await?;
+
+        let response = self.ask(b"?").await?;
+
+        interface.lock().await.log_info(
+            format!("Voxpower Inhibiter - channel_{} initializating : {}", self.id, response)
+        );
 
         return Ok(());
     }
@@ -83,11 +85,11 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
         self.enable_value = match self.ask(command.as_bytes()).await?.as_str() {
             "H" => false,
             "L" => true,
-            _ => return platform_error_result!("Unexpected answer form Voxpower Inhibiter")
+            e => return platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
         };
 
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - channel_{} enable value : {}", self.id, self.enable_value)
+            format!("Voxpower Inhibiter - read value : {}", self.enable_value)
         );
 
         return Ok(self.enable_value);
@@ -95,7 +97,7 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
 
     /// Write the enable value
     /// 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> PlatformFunctionResult {
         
         let command = if v {
             // enable the channel
@@ -105,14 +107,13 @@ impl bpc::BpcActions for VoxpowerInhibiterActions {
             format!("I{}\n", self.id)
         };
 
-        let _result = self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await;
+        let response = self.ask(command.as_bytes()).await?;
         
         interface.lock().await.log_info(
-            format!("Voxpower Inhibiter - write enable value; {}", self.enable_value)
+            format!("Voxpower Inhibiter - write enable value {} : {}", v, response)
         );
+
+        Ok(())
     }
 
     // ----------------------------------------------------------------------------

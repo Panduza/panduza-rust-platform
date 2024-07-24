@@ -37,7 +37,7 @@ impl Hunter for DeviceHunter {
             match port.port_type {
                 tokio_serial::SerialPortType::UsbPort(info) => {
                     if info.vid == VID && info.pid == PID {
-                        println!("Found device : Voxpower Inhibiter");
+                        // println!("Found device : Voxpower Inhibiter");
 
                         bag.push(json!(
                             {
@@ -78,8 +78,8 @@ impl DeviceActions for VoxpowerInhibiter {
 
         let device_settings = device.settings.clone();
 
-        println!("Voxpower Inhibiter::interface_builders");
-        println!("{}", device_settings);
+        // println!("Voxpower Inhibiter::interface_builders");
+        // println!("{}", device_settings);
 
         // Get the serial settings from the tree.json
         let mut serial_conf = SerialConfig::new();

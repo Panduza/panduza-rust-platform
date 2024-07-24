@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::meta::bpc::{self, BpcAttributes};
 use panduza_core::interface::AmInterface;
@@ -17,7 +18,7 @@ impl bpc::BpcActions for FakeBpcActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
+    async fn initializating(&mut self, _interface: &AmInterface) -> PlatformFunctionResult {
         return Ok(());
     }
 
@@ -30,11 +31,13 @@ impl bpc::BpcActions for FakeBpcActions {
         return Ok(self.enable_value);
     }
 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> PlatformFunctionResult {
         interface.lock().await.log_info(
             format!("FakeBpc - write_enable_value: {}", self.enable_value)
         );
         self.enable_value = v;
+
+        Ok(())
     }
 
     async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {

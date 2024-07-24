@@ -36,12 +36,12 @@ impl Hunter for DeviceHunter {
             Err(_e) => return None
         };
         for port in ports {
-            println!("{:?}", port);
+            // println!("{:?}", port);
 
             match port.port_type {
                 tokio_serial::SerialPortType::UsbPort(info) => {
                     if info.vid == VID && info.pid == PID {
-                        println!("Found device");
+                        // println!("Found device");
 
                         bag.push(json!(
                             {

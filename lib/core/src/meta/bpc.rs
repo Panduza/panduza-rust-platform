@@ -6,11 +6,11 @@ use serde_json::Value;
 use tokio::sync::Mutex;
 use tokio::time::{self, sleep};
 
-use crate::attribute::{self, JsonAttribute};
+use crate::attribute::JsonAttribute;
 use crate::interface::{AmInterface, ThreadSafeInterface};
 
 
-use crate::{interface, platform_error, platform_error_result, subscription};
+use crate::{interface, subscription};
 use crate::interface::builder::Builder as InterfaceBuilder;
 
 
@@ -69,11 +69,11 @@ pub trait BpcActions: Send + Sync {
     /// Initialize the interface
     /// The connector initialization must be done here
     ///
-    async fn initializating(&mut self, interface: &AmInterface) -> Result<(), PlatformError>;
+    async fn initializating(&mut self, interface: &AmInterface) -> PlatformFunctionResult;
 
     async fn read_enable_value(&mut self, interface: &AmInterface) -> Result<bool, PlatformError>;
 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool);
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> PlatformFunctionResult;
 
     async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError>;
 
@@ -284,7 +284,7 @@ impl BpcSubscriber {
             None => return __platform_error_result!("Enable value not provided")
         };
         self.bpc_interface.lock().await
-            .actions.write_enable_value(&interface, requested_value).await;
+            .actions.write_enable_value(&interface, requested_value).await?;
 
         let r_value = self.bpc_interface.lock().await
             .actions.read_enable_value(&interface).await?;
