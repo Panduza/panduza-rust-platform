@@ -6,9 +6,11 @@ use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_core::meta::blc;
+use panduza_core::interface::AmInterface;
+
 use panduza_connectors::usb::usb::{self, UsbConnector};
 use panduza_connectors::usb::usb::Config as UsbConfig;
-use panduza_core::interface::AmInterface;
+
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -38,10 +40,6 @@ impl LBX488BlcActions {
 
         self.connector_usb.write(cmd.as_ref()).await?;
         Ok(self.connector_usb.read().await?)
-        // match self.connector_usb.read().await {
-        //     Ok(val) => Ok(val),
-        //     Err(e) => platform_error_result!(format!("Unable to read usb : {}", e))
-        // }
     }
 
     /// Parse the data into f64 using 2 decimals 
@@ -52,18 +50,18 @@ impl LBX488BlcActions {
                 // Use the decimal library to have a better precision 
                 let value_dec = match Decimal::from_f64(f) {
                     Some(value) => value,
-                    None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer")
+                    None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as Decimal")
                 };
 
                 let final_value = match (value_dec * dec!(0.001)).to_f64() {
                     Some(value) => value,
-                    None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as integer")
+                    None => return platform_error_result!("Unexpected answer form Oxxius LBX488 : could not parse as f64")
                 };
 
                 return Ok(final_value);
 
             },
-            Err(e) => return platform_error_result!(format!("Unexpected answer from Oxxius LBX488 : could not parse as integer, error message {:?}", e))
+            Err(e) => return platform_error_result!(format!("Unexpected answer from Oxxius LBX488 : could not parse as float, error message {:?}", e))
         }
     }
 }
