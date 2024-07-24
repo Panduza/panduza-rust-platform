@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::meta::bpc::{self, BpcAttributes};
 use panduza_core::interface::AmInterface;
@@ -26,7 +27,7 @@ impl bpc::BpcActions for Ka3005pBpcActions {
 
     /// Initialize the interface
     /// 
-    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
+    async fn initializating(&mut self, _interface: &AmInterface) -> PlatformFunctionResult {
 
         self.connector_tty = tty2::get(&self.serial_config).await.unwrap();
         let _ = self.connector_tty.init().await;
@@ -73,7 +74,7 @@ impl bpc::BpcActions for Ka3005pBpcActions {
 
     /// Write the enable value
     /// 
-    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, interface: &AmInterface, v: bool) -> PlatformFunctionResult {
 
         let command = format!("OUT{}", if v { 1 } else { 0 });
 
@@ -87,6 +88,8 @@ impl bpc::BpcActions for Ka3005pBpcActions {
         );
 
         self.enable_value = v;
+
+        Ok(())
     }
 
     async fn read_voltage_value(&mut self, interface: &AmInterface) -> Result<f64, PlatformError> {

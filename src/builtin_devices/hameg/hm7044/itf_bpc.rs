@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::meta::bpc::{self, BpcAttributes};
 use panduza_core::interface::AmInterface;
@@ -155,7 +156,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
 
     /// Initialize the interface
     ///
-    async fn initializating(&mut self, _interface: &AmInterface) -> Result<(), PlatformError> {
+    async fn initializating(&mut self, _interface: &AmInterface) -> PlatformFunctionResult {
 
         self.connector_tty = tty::get(&self.serial_config).await.unwrap();
         let _ = self.connector_tty.init().await;
@@ -184,7 +185,7 @@ impl bpc::BpcActions for Hm7044BpcActions {
 
     /// Write the enable value
     ///
-    async fn write_enable_value(&mut self, _interface: &AmInterface, v: bool) {
+    async fn write_enable_value(&mut self, _interface: &AmInterface, v: bool) -> PlatformFunctionResult {
 
         // Debug
         // println!("write_enable_value");
@@ -194,6 +195,8 @@ impl bpc::BpcActions for Hm7044BpcActions {
         if result.is_ok() {
             let _ = self.set_on_off(v).await;
         }
+
+        Ok(())
     }
 
     // / Read the voltage value

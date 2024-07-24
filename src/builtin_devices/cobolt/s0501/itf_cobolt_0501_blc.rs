@@ -48,10 +48,8 @@ impl S0501BlcActions {
 
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => {
-                Ok(val)
-            },
-            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
+            Ok(val) => Ok(val),
+            Err(e) => platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
         }
     }
 
@@ -61,7 +59,7 @@ impl S0501BlcActions {
 
         match self.ask_string(command).await?.trim().to_string().parse::<u16>() {
             Ok(u) => Ok(u),
-            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
         }
     }
 
@@ -71,7 +69,7 @@ impl S0501BlcActions {
 
         match self.ask_string(command).await?.trim().to_string().parse::<f64>() {
             Ok(f) => Ok(f),
-            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
         }
     }
 
@@ -89,7 +87,7 @@ impl S0501BlcActions {
             }
         }
 
-        return platform_error_result!(format!("Unexpected answer from Cobolt S0501 : last message received {}", response));
+        return platform_error_result!(format!("Unexpected answer from Cobolt S0501 : {:?} where it should be {:?}", response, expected_response));
     }
 }
 
@@ -282,7 +280,9 @@ impl blc::BlcActions for S0501BlcActions {
                         None => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as f64")
                     };
                 },
-                Err(e) => return platform_error_result!(format!("Failed to parse max power in Cobolt s0501 : {}", e))
+                Err(e) => {
+                    return platform_error_result!(format!("Failed to parse max power in Cobolt s0501 : {:?}", e));
+                }
             }
 
             interface.lock().await.log_info(
