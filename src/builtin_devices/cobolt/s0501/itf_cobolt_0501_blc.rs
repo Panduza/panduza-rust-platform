@@ -11,6 +11,11 @@ use panduza_core::interface::builder::Builder as InterfaceBuilder;
 use panduza_connectors::serial::tty::{self, TtyConnector};
 use panduza_connectors::serial::tty::Config as SerialConfig;
 
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::prelude::ToPrimitive;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
+
 ///
 /// 
 struct S0501BlcActions {
@@ -43,8 +48,10 @@ impl S0501BlcActions {
 
         // Parse the answer
         match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => Ok(val),
-            Err(_e) => platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as String")
+            Ok(val) => {
+                Ok(val)
+            },
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
         }
     }
 
@@ -54,7 +61,7 @@ impl S0501BlcActions {
 
         match self.ask_string(command).await?.trim().to_string().parse::<u16>() {
             Ok(u) => Ok(u),
-            Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
         }
     }
 
@@ -64,7 +71,7 @@ impl S0501BlcActions {
 
         match self.ask_string(command).await?.trim().to_string().parse::<f64>() {
             Ok(f) => Ok(f),
-            Err(_e) => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as integer")
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {}", e))
         }
     }
 
@@ -82,7 +89,7 @@ impl S0501BlcActions {
             }
         }
 
-        return platform_error_result!("Unexpected answer from Cobolt S0501");
+        return platform_error_result!(format!("Unexpected answer from Cobolt S0501 : last message received {}", response));
     }
 }
 
@@ -143,7 +150,7 @@ impl blc::BlcActions for S0501BlcActions {
         };
 
         interface.lock().await.log_info(
-            format!("read mode value : {}", self.mode_value.clone())
+            format!("read mode value : {:?}", self.mode_value.clone())
         );
         return Ok(self.mode_value.clone());
     }
@@ -162,24 +169,16 @@ impl blc::BlcActions for S0501BlcActions {
             _ => return platform_error_result!("Unexpected mode command")
         };
 
-        // let response = match self.cmd_ack(command.as_bytes(), "OK".to_string()).await {
-        //     Ok(_r) => "OK".to_string(),
-        //     Err(_e) => return platform_error_result!("Unexpected response from Cobolt S0501")
-        // };
-
-        // println!("{} !!!!!!!!!!!!!!!!!!!!!!!!!!!", response);
-
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            })?;
+        ).await?;
         
         // Clean the buffer from previous values
         while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
             continue;
         }
+
         return Ok(());
     }
     
@@ -225,10 +224,7 @@ impl blc::BlcActions for S0501BlcActions {
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|nb_of_bytes| {
-                println!("nb of bytes: {:?}", nb_of_bytes);
-            })?;
+        ).await?;
         
         // Clean the buffer from previous values
 
@@ -275,11 +271,18 @@ impl blc::BlcActions for S0501BlcActions {
             
             match power_max_string.parse::<f64>() {
                 Ok(power_max) => {
-                    self.power_max = power_max * 0.001;
+                    // Use the decimal library to have a better precision 
+                    let val_dec = match Decimal::from_f64(power_max) {
+                        Some(v) => v,
+                        None => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as Decimal")
+                    };
+
+                    self.power_max = match (val_dec * dec!(0.001)).to_f64() {
+                        Some(v) => v,
+                        None => return platform_error_result!("Unexpected answer form Cobolt S0501 : could not parse as f64")
+                    };
                 },
-                Err(_) => {
-                    return platform_error_result!("Failed to parse max power in Cobolt s0501");
-                }
+                Err(e) => return platform_error_result!(format!("Failed to parse max power in Cobolt s0501 : {}", e))
             }
 
             interface.lock().await.log_info(
@@ -293,19 +296,28 @@ impl blc::BlcActions for S0501BlcActions {
     /// Write the power value
     /// 
     async fn write_power_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
+
+        let val_dec = match Decimal::from_f64(v) {
+            Some(v) => v,
+            None => return platform_error_result!("Unexpected answer form Coblolt S0501 : could not parse as Decimal")
+        };
+
+        // Send power with 4 decimals to the Cobolt
+        let val = match val_dec.round_dp(4).to_f64() {
+            Some(v) => v,
+            None => return platform_error_result!("Unexpected answer form Coblolt S0501 : could not parse as f64")
+        };
         
         interface.lock().await.log_info(
-            format!("write power : {}", v)
+            format!("write power : {}", val)
         );
 
-        let command = format!("p {}\r", v);
+        let command = format!("p {}\r", val);
 
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            })?;
+        ).await?;
 
         // Clean the buffer from previous values
         while self.cmd_expect(b"p?\r", "OK".to_string()).await.is_err() {
@@ -342,6 +354,7 @@ impl blc::BlcActions for S0501BlcActions {
     /// Write the current value
     /// 
     async fn write_current_value(&mut self, interface: &AmInterface, v: f64) -> Result<(), PlatformError> {
+
         interface.lock().await.log_info(
             format!("write current : {}", v)
         );
@@ -351,9 +364,7 @@ impl blc::BlcActions for S0501BlcActions {
         self.connector_tty.write(
             command.as_bytes(),
             self.time_lock_duration
-        ).await
-            .map(|_nb_of_bytes| {
-            })?;
+        ).await?;
 
         // Clean the buffer from previous values
         while self.cmd_expect(b"glc?\r", "OK".to_string()).await.is_err() {
