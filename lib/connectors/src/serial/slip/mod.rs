@@ -1,10 +1,10 @@
 // private
-mod gate;
 mod driver;
+mod gate;
 
 // usage
-use panduza_core::Error as PlatformError;
 use crate::SerialSettings;
+use panduza_core::Error as PlatformError;
 
 // public interface
 pub type Connector = driver::Connector;
