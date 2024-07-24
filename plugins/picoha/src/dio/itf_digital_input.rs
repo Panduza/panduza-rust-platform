@@ -1,74 +1,114 @@
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use tokio::time::sleep;
-use tokio::time::Duration;
+use panduza_connectors::serial::slip::Connector as SlipConnector;
+use panduza_connectors::SerialSettings;
+use prost::Message;
 
 use async_trait::async_trait;
 
-use panduza_core::{interface, Error as PlatformError};
-use panduza_core::meta::digital_input;
-use panduza_core::interface::ThreadSafeInterface;
 use panduza_core::interface::builder::Builder as InterfaceBuilder;
-use serde_json::Error;
+use panduza_core::interface::ThreadSafeInterface;
+use panduza_core::meta::digital_input;
+use panduza_core::Error as PlatformError;
 
-use futures::FutureExt;
+use panduza_connectors::serial::slip::get as get_connector;
 
-
-use panduza_connectors::serial::tty3::get as ConnectorGet;
-use panduza_connectors::serial::tty3::Config as SerialConfig;
-use panduza_connectors::serial::tty3::Connector as SerialConnector;
+use super::api_dio::PicohaDioAnswer;
 
 use super::api_dio::PicohaDioRequest;
+use super::api_dio::RequestType;
 
 use panduza_core::platform_error;
 
 ///
-/// 
+///
 struct InterfaceActions {
+    serial_settings: SerialSettings,
 
-    config: SerialConfig,
+    connector: Option<SlipConnector>,
+}
 
-    connector: SerialConnector,
-    
-    // pub fake_values: Arc<Mutex<Vec<u64>>>,
+impl InterfaceActions {
+    async fn execute_request(
+        &mut self,
+        request: &PicohaDioRequest,
+    ) -> Result<PicohaDioAnswer, PlatformError> {
+        let buf = request.encode_to_vec();
+        let respond = &mut [0; 64];
+        let size = self
+            .connector
+            .as_ref()
+            .ok_or(platform_error!("Connector is not initialized"))?
+            .lock()
+            .await
+            .write_then_read(&buf, respond)
+            .await?;
+        let answerr = PicohaDioAnswer::decode(&respond[0..size]).unwrap();
+        return Ok(answerr);
+    }
 }
 
 #[async_trait]
 impl digital_input::MetaActions for InterfaceActions {
-
     /// Initialize the interface
-    /// 
-    async fn initializating(&mut self, interface :&ThreadSafeInterface) -> Result<(), PlatformError> {
+    ///
+    async fn initializating(
+        &mut self,
+        interface: &ThreadSafeInterface,
+    ) -> Result<(), PlatformError> {
+        // let logger = interface.lock().await.clone_logger();
 
+        self.connector = Some(get_connector(&self.serial_settings).await?);
+        self.connector
+            .as_ref()
+            .ok_or(platform_error!("Connector is not initialized"))?
+            .lock()
+            .await
+            .init()
+            .await?;
 
-        self.connector = ConnectorGet(&self.config).await?;
-        self.connector.init().await?;
+        // // garbage_collector().await;
 
+        // // self.connector =  None;
+        // // self.connector.as_mut().unwrap().init().await?;
 
-        // let interface_locked = interface.lock().await;
-        // let mut loader = interface_locked.platform_services.lock().await.task_loader.clone();
+        // let request = PicohaDioRequest {
+        //     r#type: RequestType::Ping as i32,
+        //     pin_num: 5,
+        //     value: 0,
+        // };
+        // // // let request = PicohaDioRequest {
+        // // //     r#type: RequestType::GetPinDirection as i32,
+        // // //     pin_num: 0,
+        // // //     value: 0,
+        // // // };
 
-        // let values = self.fake_values.clone();
-        // loader.load( async move {
-        //     loop {
-        //         sleep(Duration::from_millis(1000)).await;
-        //         values.lock().await[1] += 1;
-        //     }
-        //     // Ok(())
-        // }.boxed()).unwrap();
+        // // println!("=====");
+        // // // let mut buf = vec![0;20];
+        // let buf = request.encode_to_vec();
+        // // // if p.is_err() {
+        // // //     println!("------*** Error: {:?}", p.err());
+        // // // }
+        // // // else {
+        // // //     println!("------*** Ok");
+        // // // };
+        // // println!("Sending: {:?}", buf);
+        // // println!("=====");
 
+        // let respond = &mut [0; 64];
+
+        // // Wrap the future with a `Timeout` set to expire in 10 milliseconds.
+        // let size = self.connector.write_then_read(&buf, respond).await.unwrap();
+
+        // let answerr = PicohaDioAnswer::decode(&respond[0..size]).unwrap();
+
+        // println!("Respond: {:?}", respond[0..size].to_vec());
 
         return Ok(());
     }
-    
-    
-    async fn read(&mut self, interface: &ThreadSafeInterface) -> Result<u8, String>
-    {
+
+    async fn read(&mut self, interface: &ThreadSafeInterface) -> Result<u8, String> {
         // let values = self.fake_values.lock().await;
         return Ok(0 as u8);
     }
-
-
 
     // async fn read(&mut self, interface: &ThreadSafeInterface, index:usize, size:usize) -> Result<Vec<u64>, String>
     // {
@@ -88,28 +128,23 @@ impl digital_input::MetaActions for InterfaceActions {
     //     self.fake_values.lock().await.splice(index..index+v.len(), v.iter().cloned());
     //     println!("InterfaceActions - write: {:?}", v);
     // }
-
-
 }
 
-
-
-
 /// Builder
-/// 
+///
 pub struct Builder {
     /// Name of the interface
     name: String,
     /// Serial configuration
-    serial_config: Option<SerialConfig>,
+    serial_settings: Option<SerialSettings>,
 }
 impl Builder {
     /// Create a new builder with default values
     pub fn new() -> Builder {
         return Builder {
             name: "digital_input".to_string(),
-            serial_config: None,
-        }
+            serial_settings: None,
+        };
     }
 
     /// Set the name of the interface
@@ -119,8 +154,8 @@ impl Builder {
     }
 
     /// Set the serial configuration
-    pub fn with_serial_config(mut self, serial_config: SerialConfig) -> Self {
-        self.serial_config = Some(serial_config);
+    pub fn with_serial_settings(mut self, serial_settings: SerialSettings) -> Self {
+        self.serial_settings = Some(serial_settings);
         self
     }
 
@@ -129,10 +164,9 @@ impl Builder {
         digital_input::build(
             self.name,
             Box::new(InterfaceActions {
-                config: self.serial_config.unwrap(),
-                connector: SerialConnector::new(None),
-            })
+                serial_settings: self.serial_settings.unwrap(),
+                connector: None,
+            }),
         )
     }
 }
-

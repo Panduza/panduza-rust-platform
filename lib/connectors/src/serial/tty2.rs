@@ -265,7 +265,7 @@ impl TtyCore {
         self.builder = Some(serial_builder);
         self.serial_stream = Some(aa);
 
-        if (self.config.time_lock_duration.is_some()) {
+        if self.config.time_lock_duration.is_some() {
             self.time_lock = Some(TimeLock {
                 duration: self.config.time_lock_duration.unwrap(),
                 t0: tokio::time::Instant::now()
@@ -286,7 +286,7 @@ impl TtyCore {
         let rrr = self.serial_stream.as_mut().unwrap().write(command).await;
 
         // Set the time lock
-        if (self.config.time_lock_duration.is_some()) {
+        if self.config.time_lock_duration.is_some() {
             self.time_lock.as_mut().unwrap().t0 = tokio::time::Instant::now();
         }
 

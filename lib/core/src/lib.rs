@@ -21,6 +21,9 @@ macro_rules! platform_error {
     ($msg:expr) => {
         panduza_core::Error::new(file!(), line!(), $msg.to_string())
     };
+    ($msg:expr, $fmt_0:expr) => {
+        panduza_core::Error::new(file!(), line!(), format!($msg, $fmt_0))
+    };
 }
 
 /// Public macro to create a platform Err Result outside of panduza core
