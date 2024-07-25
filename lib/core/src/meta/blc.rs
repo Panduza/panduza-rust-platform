@@ -4,7 +4,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
-use tokio::time::{self, sleep};
+use tokio::time::sleep;
 
 use crate::attribute::JsonAttribute;
 use crate::interface::{AmInterface, ThreadSafeInterface};

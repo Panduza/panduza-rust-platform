@@ -47,10 +47,31 @@ impl S0501BlcActions {
         let response_bytes = &response_buf[0..response_len];
 
         // Parse the answer
-        match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => Ok(val),
-            Err(e) => platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
+        let mut response = match String::from_utf8(response_bytes.to_vec()) {
+            Ok(val) => val,
+            Err(e) => return platform_error_result!(format!("Unexpected answer form Cobolt S0501 : {:?}", e))
+        };
+
+        while !response.contains("\r\n") {
+            
+            let mut resp_buf: &mut [u8] = &mut [0; 1024];
+
+            let resp_len = self.connector_tty.read(
+                &mut resp_buf,
+            ).await?;
+
+            let resp_bytes = &resp_buf[0..resp_len];
+
+            // Parse the answer
+            let r = match String::from_utf8(resp_bytes.to_vec()) {
+                Ok(val) => val,
+                Err(e) => return platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
+            };
+
+            response.push_str(&r);
         }
+
+        Ok(response)
     }
 
     /// Parse the answer into u16
@@ -167,15 +188,16 @@ impl blc::BlcActions for S0501BlcActions {
             _ => return platform_error_result!("Unexpected mode command")
         };
 
-        self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await?;
+        self.cmd_expect(command.as_bytes(), "OK".to_string()).await?;
+        // self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await?;
         
-        // Clean the buffer from previous values
-        while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
-            continue;
-        }
+        // // Clean the buffer from previous values
+        // while self.cmd_expect(b"gam?\r", "OK".to_string()).await.is_err() {
+        //     continue;
+        // }
 
         return Ok(());
     }
@@ -219,19 +241,19 @@ impl blc::BlcActions for S0501BlcActions {
             format!("write enable value : {}", v)
         );
 
-        self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await?;
+        self.cmd_expect(command.as_bytes(), "OK".to_string()).await?;
+        // self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await?;
         
-        // Clean the buffer from previous values
+        // // Clean the buffer from previous values
 
-        while self.cmd_expect(b"l?\r", "OK".to_string()).await.is_err() {
-            continue;
-        }
+        // while self.cmd_expect(b"l?\r", "OK".to_string()).await.is_err() {
+        //     continue;
+        // }
 
         // The laser has an intertia to change to from OFF to ON so waits until it actually change state
-
         while self.cmd_expect(b"l?\r", format!("{val_int}")).await.is_err() {
             continue;
         }
@@ -314,15 +336,16 @@ impl blc::BlcActions for S0501BlcActions {
 
         let command = format!("p {}\r", val);
 
-        self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await?;
+        self.cmd_expect(command.as_bytes(), "OK".to_string()).await?;
+        // self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await?;
 
-        // Clean the buffer from previous values
-        while self.cmd_expect(b"p?\r", "OK".to_string()).await.is_err() {
-            continue;
-        }
+        // // Clean the buffer from previous values
+        // while self.cmd_expect(b"p?\r", "OK".to_string()).await.is_err() {
+        //     continue;
+        // }
         return Ok(());
     }
     
@@ -361,15 +384,16 @@ impl blc::BlcActions for S0501BlcActions {
 
         let command = format!("slc {}\r", v);
 
-        self.connector_tty.write(
-            command.as_bytes(),
-            self.time_lock_duration
-        ).await?;
+        self.cmd_expect(command.as_bytes(), "OK".to_string()).await?;
+        // self.connector_tty.write(
+        //     command.as_bytes(),
+        //     self.time_lock_duration
+        // ).await?;
 
-        // Clean the buffer from previous values
-        while self.cmd_expect(b"glc?\r", "OK".to_string()).await.is_err() {
-            continue;
-        }
+        // // Clean the buffer from previous values
+        // while self.cmd_expect(b"glc?\r", "OK".to_string()).await.is_err() {
+        //     continue;
+        // }
         return Ok(());
     }
 }
