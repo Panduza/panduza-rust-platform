@@ -30,20 +30,41 @@ impl VoxpowerInhibiterActions {
 
         let mut response_buf: &mut [u8] = &mut [0; 1024];
 
-        // Send the command then receive the answer
-        let response_len = self.connector_tty.write_then_read(
-            command,
-            &mut response_buf,
-            self.time_lock_duration
-        ).await?;
+            // Send the command then receive the answer
+            let response_len = self.connector_tty.write_then_read(
+                command,
+                &mut response_buf,
+                self.time_lock_duration
+            ).await?;
 
-        let response_bytes = &response_buf[0..response_len];
+            let response_bytes = &response_buf[0..response_len];
 
-        // Parse the answer
-        match String::from_utf8(response_bytes.to_vec()) {
-            Ok(val) => Ok(val.trim().to_string()),
-            Err(e) => platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
+            // Parse the answer
+            let mut response = match String::from_utf8(response_bytes.to_vec()) {
+                Ok(val) => val,
+                Err(e) => return platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
+            };
+
+        while !response.contains("\n") {
+            
+            let mut resp_buf: &mut [u8] = &mut [0; 1024];
+
+            let resp_len = self.connector_tty.read(
+                &mut resp_buf,
+            ).await?;
+
+            let resp_bytes = &resp_buf[0..resp_len];
+
+            // Parse the answer
+            let r = match String::from_utf8(resp_bytes.to_vec()) {
+                Ok(val) => val,
+                Err(e) => return platform_error_result!(format!("Unexpected answer form Voxpower Inhibiter : {:?}", e))
+            };
+
+            response.push_str(&r);
         }
+
+        Ok(response.trim().to_string())
     }
 }
 

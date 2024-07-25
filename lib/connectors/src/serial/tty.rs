@@ -13,7 +13,6 @@ use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::platform_error;
-use tracing::Value;
 
 
 
@@ -215,6 +214,14 @@ impl TtyConnector {
         Ok(())
     }
 
+    pub async fn read(&mut self, response: &mut [u8]) -> Result<usize, PlatformError> {
+        match self.core.as_ref()
+        {
+            Some(val) => val.lock().await.read(response).await,
+            None => return platform_error_result!("Unable to write")
+        }
+    }
+
     pub async fn write(&mut self, command: &[u8],
         time_lock: Option<Duration>) 
             -> Result<usize, PlatformError> {
@@ -318,8 +325,20 @@ impl TtyCore {
         Ok(())
     }
 
+    async fn read(&mut self, response: &mut [u8]) -> Result<usize, PlatformError> {
+        
+        let stream = match self.serial_stream.as_mut() {
+            Some(s) => s,
+            None => return platform_error_result!("No serial stream")
+        };
 
-    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>)-> Result<usize, PlatformError> {
+        match stream.read(response).await {
+            Ok(val) => Ok(val),
+            Err(e) => return platform_error_result!(format!("Unable to read on serial stream : {}", e))
+        }
+    }
+
+    async fn time_locked_write(&mut self, command: &[u8], duration: Option<Duration>) -> Result<usize, PlatformError> {
 
 
         if let Some(lock) = self.time_lock.as_mut() {
@@ -378,7 +397,7 @@ impl TtyCore {
 
         match stream.read(response).await {
             Ok(val) => Ok(val),
-            Err(_e) => platform_error_result!("Unable to read on serial stream")
+            Err(e) => return platform_error_result!(format!("Unable to read on serial stream : {}", e))
         }
 
         
