@@ -170,7 +170,7 @@ impl interface::fsm::States for BpcStates {
     /// Initialize the interface
     ///
     async fn initializating(&self, interface: &AmInterface)
-    -> Result<(), PlatformError>
+    -> PlatformFunctionResult
     {
         let mut bpc_itf = self.bpc_interface.lock().await;
 
@@ -277,7 +277,7 @@ impl BpcSubscriber {
     /// 
     #[inline(always)]
     async fn process_enable_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
-        -> Result<(), PlatformError>
+        -> PlatformFunctionResult
         {
         let requested_value = match field_data.as_bool() {
             Some(bool) => bool,
@@ -299,7 +299,7 @@ impl BpcSubscriber {
     /// 
     #[inline(always)]
     async fn process_voltage_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
-        -> Result<(), PlatformError>
+        -> PlatformFunctionResult
         {
         let requested_value = match field_data.as_f64(){
             Some(val) => val,
@@ -321,7 +321,7 @@ impl BpcSubscriber {
     /// 
     #[inline(always)]
     async fn process_current_value(&self, interface: &AmInterface, _attribute_name: &str, _field_name: &str, field_data: &Value)
-    -> Result<(), PlatformError>
+    -> PlatformFunctionResult
     {
         let requested_value = match field_data.as_f64(){
             Some(val) => val,

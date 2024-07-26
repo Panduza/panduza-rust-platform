@@ -41,7 +41,7 @@ impl Hm7044BpcActions {
             self.time_lock_duration
         ).await {
             Ok(val) => val,
-            Err(_e) => {return platform_error_result!("Failed to read and write.");}
+            Err(e) => {return platform_error_result!(format!("Failed to read and write : {}", e));}
         };
 
         let pp: &[u8] = &response[0..response_len];
@@ -51,7 +51,11 @@ impl Hm7044BpcActions {
         // let print_response = String::from_utf8(pp.to_vec()).unwrap();
         // println!("HM7044 Send command:\n\t{}\n received response:\n\t{}", print_command, print_response);
 
-        return Ok(String::from_utf8(pp.to_vec()).unwrap());
+        let answer = match String::from_utf8(pp.to_vec()) {
+            Ok(val) => val,
+            Err(e) => {return platform_error_result!(format!("Unexpected answer from HM7044 : {}", e));}
+        };
+        return Ok(answer);
     }
 
     async fn send_cmd_expect_answer(&mut self, command: &[u8], expected_answer: String) -> Result<(), PlatformError> {
@@ -64,7 +68,7 @@ impl Hm7044BpcActions {
             // Debug
             // println!("Expected \n\r{}\n\r  Reveiced \n\r{}", response, expected_answer);
 
-            return platform_error_result!("Unexpected answer from HM7044.");
+            return platform_error_result!(format!("Unexpected answer from HM7044 : expected {}", expected_answer));
         }
     }
 
@@ -84,18 +88,20 @@ impl Hm7044BpcActions {
         let voltage_str = voltages[self.channel as usize];
         let voltage = match voltage_str[..voltage_str.len() - 1].parse() {
             Ok(v) => v,
-            Err(_e) => {return platform_error_result!("Unexpected answer from HM7044.") }
+            Err(e) => {return platform_error_result!(format!("Unexpected answer from HM7044 : {}", e)) }
         };
 
         let current_str = currents[self.channel as usize];
         let current = match current_str[..current_str.len() - 1].parse() {
             Ok(v) => v,
-            Err(_e) => {return platform_error_result!("Unexpected answer from HM7044.") }
+            Err(e) => {return platform_error_result!(format!("Unexpected answer from HM7044 : {}", e)) }
         };
 
-        let reg = Regex::new(r"(?i:CV|CC|OFF)");
+        let reg = match Regex::new(r"(?i:CV|CC|OFF)") {
+            Ok(val) => val,
+            Err(e) => return platform_error_result!(format!("Regex error : {}", e))
+        };
         let extract: Vec<String> = reg
-            .unwrap()
             .captures_iter(v_a_e[2])
             .map(|cap| cap[0].to_string())
             .collect();
@@ -158,8 +164,11 @@ impl bpc::BpcActions for Hm7044BpcActions {
     ///
     async fn initializating(&mut self, _interface: &AmInterface) -> PlatformFunctionResult {
 
-        self.connector_tty = tty::get(&self.serial_config).await.unwrap();
-        let _ = self.connector_tty.init().await;
+        self.connector_tty = match tty::get(&self.serial_config).await {
+            Some(connector) => connector,
+            None => return platform_error_result!("Unable to create TTY connector for Voxpower Inhibiter")
+        };
+        self.connector_tty.init().await?;
 
         // Send '\r' to close any incomplete command sent previously.
         self.send_cmd_read_answer(b"\r").await?;
