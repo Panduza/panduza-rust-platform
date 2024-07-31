@@ -47,7 +47,9 @@ impl Hunter for DeviceHunter {
                     }
                 ))
             }
-            None => {}
+            None => {
+                println!("Oxxius not connected");
+            }
         }
 
         if bag.is_empty() {
