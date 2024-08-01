@@ -10,13 +10,6 @@ panduza-core = { path = "lib/core" }
 panduza-connectors = { path = "lib/connectors" }
 
 
-plugin-std = { path = "plugins/std" }
-plugin-fake = { path = "plugins/fake" }
-# plugin-video = { path = "plugins/video" }
-
-pza-plugin-picoha = { path = "plugins/picoha" }
-
-
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
 
@@ -77,14 +70,14 @@ tracing = { version = "0.1", features = [
     # "max_level_error",
     # "max_level_warn",
     # "max_level_info",
-    "max_level_debug",
-    # "max_level_trace",
+    #"max_level_debug",
+     "max_level_trace",
     # "release_max_level_off",
     # "release_max_level_error",
     # "release_max_level_warn",
-    "release_max_level_info",
+    #"release_max_level_info",
     # "release_max_level_debug",
-    # "release_max_level_trace"
+    "release_max_level_trace"
 ]}
 
 # 
@@ -116,5 +109,3 @@ broker-log = [ ]
 
 # Enable tracing in tokio console
 trac-console = [ "console-subscriber" ]
-
-

@@ -11,8 +11,7 @@ pub trait DeviceActions : Send + Sync {
 
     /// The device must provides a list of interface builders
     /// 
-    fn interface_builders(&self, device: &Device)
-        -> Result<Vec<InterfaceBuilder>, PlatformError>;
+    fn interface_builders(&self, device: &Device) -> Result<Vec<InterfaceBuilder>, PlatformError>;
 
 }
 
@@ -39,8 +38,3 @@ pub trait Hunter : Send + Sync {
     async fn hunt(&self) -> Option<Vec<serde_json::Value>>;
 
 }
-
-
-
-
-

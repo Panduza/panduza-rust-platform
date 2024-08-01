@@ -8,9 +8,6 @@ use crate::FunctionResult;
 use crate::TaskResult;
 use crate::Error as PlatformError;
 
-use tokio::time::sleep;
-use tokio::time::Duration;
-
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
@@ -126,11 +123,8 @@ impl Fsm {
     pub async fn run_task(mut self) -> TaskResult {
 
         loop {
-            self.run_once().await;
+            let _ = self.run_once().await;
         }
-        
-
-        Ok(())
     }
 
     ///
@@ -246,4 +240,3 @@ impl Fsm {
     }
 
 }
-

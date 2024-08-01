@@ -6,15 +6,14 @@ use panduza_core::Error as PlatformError;
 // use panduza_core::interface;
 use panduza_core::device::{ traits::DeviceActions, traits::Producer };
 
-use panduza_core::interface::builder::Builder as InterfaceBuilder;
+use panduza_core::attribute::*;
+use tracing::instrument::WithSubscriber;
 
+use panduza_core::interface::interface::*;
 
-mod itf_fake_bpc;
-mod itf_fake_voltmeter;
-
-
-struct FakePowerSupply;
-
+pub struct FakePowerSupply  {
+    base: Device
+}
 
 impl DeviceActions for FakePowerSupply {
 
@@ -22,10 +21,22 @@ impl DeviceActions for FakePowerSupply {
     fn interface_builders(&self, _device: &Device) 
     -> Result<Vec<InterfaceBuilder>, PlatformError>
     {
-        let mut list = Vec::new();
-        list.push(
-            itf_fake_bpc::build("channel")
-        );
+
+        let enable: AttributeBool = AttributeBoolBuilder::new()
+            .with_name("enable")
+            .build();
+
+        let control: InterfaceControl = InterfaceBuilder::new()
+            .with_name("control")
+            .with_attribute(enable)
+            .build();
+
+        
+
+        let list = Vec::new();
+        //list.push(
+        //    itf_fake_bpc::build("channel")
+        //);
 
         return Ok(list);
     }
@@ -48,6 +59,4 @@ impl Producer for DeviceProducer {
     fn produce(&self) -> Result<Box<dyn DeviceActions>, PlatformError> {
         return Ok(Box::new(FakePowerSupply{}));
     }
-
 }
-

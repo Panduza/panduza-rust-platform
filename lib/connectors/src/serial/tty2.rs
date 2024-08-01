@@ -41,13 +41,13 @@ impl Config {
         }
     }
 
-    pub fn fill(&mut self, Config: Config) {
-        self.usb_vendor = Config.usb_vendor;
-        self.usb_model = Config.usb_model;
-        self.usb_serial = Config.usb_serial.clone();
-        self.serial_port_name = Config.serial_port_name.clone();
-        self.serial_baudrate = Config.serial_baudrate;
-        self.time_lock_duration = Config.time_lock_duration;
+    pub fn fill(&mut self, config: Config) {
+        self.usb_vendor = config.usb_vendor;
+        self.usb_model = config.usb_model;
+        self.usb_serial = config.usb_serial.clone();
+        self.serial_port_name = config.serial_port_name.clone();
+        self.serial_baudrate = config.serial_baudrate;
+        self.time_lock_duration = config.time_lock_duration;
     }
 
     pub fn import_from_json_settings(&mut self, settings: &serde_json::Value) {
@@ -265,7 +265,7 @@ impl TtyCore {
         self.builder = Some(serial_builder);
         self.serial_stream = Some(aa);
 
-        if (self.config.time_lock_duration.is_some()) {
+        if self.config.time_lock_duration.is_some() {
             self.time_lock = Some(TimeLock {
                 duration: self.config.time_lock_duration.unwrap(),
                 t0: tokio::time::Instant::now()
@@ -286,7 +286,7 @@ impl TtyCore {
         let rrr = self.serial_stream.as_mut().unwrap().write(command).await;
 
         // Set the time lock
-        if (self.config.time_lock_duration.is_some()) {
+        if self.config.time_lock_duration.is_some() {
             self.time_lock.as_mut().unwrap().t0 = tokio::time::Instant::now();
         }
 
@@ -295,7 +295,7 @@ impl TtyCore {
 
     
     async fn write(&mut self, command: &[u8],
-        time_lock: Option<Duration>) 
+        _time_lock: Option<Duration>) 
             -> Result<usize> {
 
         self.time_locked_write(command).await

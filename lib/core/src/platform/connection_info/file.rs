@@ -25,12 +25,11 @@ pub fn system_file_path() -> PathBuf {
     let filename = "connection.json";
     let unix_path =
         PathBuf::from("/etc/panduza").join(filename);
-    let windows_path = 
-        PathBuf::from(dirs::public_dir().unwrap()).join("panduza").join(filename);
+   // let windows_path = 
+   //     PathBuf::from(dirs::public_dir().unwrap()).join("panduza").join(filename);
 
     // Return the file path depeding on the OS
     match env::consts::OS {
-        "windows" => { return windows_path; }
         "unix"    => { return unix_path; }
         "linux"   => { return unix_path; }
         _ => {

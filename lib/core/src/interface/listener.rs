@@ -41,8 +41,6 @@ impl Listener {
                 self.interface.lock().await.set_event_error(e.to_string());
             }
         }
-        Ok(())
     }
 
 }
-

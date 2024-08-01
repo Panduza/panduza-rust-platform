@@ -13,9 +13,6 @@ use panduza_core::FunctionResult as PlatformFunctionResult;
 use panduza_core::Error as PlatformError;
 use panduza_core::platform_error_result;
 use panduza_core::platform_error;
-use tracing::Value;
-
-
 
 lazy_static! {
     static ref GATE : tokio::sync::Mutex<Gate> 
@@ -443,4 +440,3 @@ impl TtyCore {
 
 
 }
-

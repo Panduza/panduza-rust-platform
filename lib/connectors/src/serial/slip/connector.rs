@@ -1,10 +1,8 @@
 
 
-use nusb::Error;
-
 use super::tty::TtyConnector;
 
-use panduza_core::interface::logger::{self, Logger as InterfaceLogger};
+use panduza_core::interface::logger::{Logger as InterfaceLogger};
 use panduza_core::Error as PlatformError;
 
 
@@ -25,7 +23,7 @@ impl Connector {
     }
 
     pub async fn init(&mut self) {
-        self.parent_connector
+        let _ = self.parent_connector
             .init()
             .await;
     }
@@ -43,14 +41,8 @@ impl Connector {
             -> Result<usize, PlatformError> {
         
 
-        let mut encoded_command = [0u8; 1024];
-        let mut slip_encoder = serial_line_ip::Encoder::new();
-        
-        let res = slip_encoder.encode(command, &mut encoded_command);
-
-
-        let slip_decoder = serial_line_ip::Decoder::new();
-
+        let mut _encoded_command = [0u8; 1024];
+        let mut _slip_encoder = serial_line_ip::Encoder::new();
         
         self.parent_connector
             .write_then_read(command, response, None)
@@ -60,6 +52,3 @@ impl Connector {
     }
 
 }
-
-
-

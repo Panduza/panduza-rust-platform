@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use dirs;
 use futures::future::BoxFuture;
 use futures::Future;
 use serde_json::json;
@@ -267,7 +266,8 @@ impl Platform {
     async fn load_tree_file(services: AmServices) -> Result<(), crate::Error> {
 
         // Get the tree file path
-        let mut tree_file_path = PathBuf::from(dirs::public_dir().unwrap()).join("panduza").join("tree.json");
+       // let mut tree_file_path = PathBuf::from(dirs::public_dir().unwrap()).join("panduza").join("tree.json");
+        let mut tree_file_path: PathBuf = <PathBuf as std::default::Default>::default();
         match env::consts::OS {
             "linux" => {
                 tree_file_path = PathBuf::from("/etc/panduza/tree.json");
@@ -403,4 +403,3 @@ impl Platform {
 
 
 }
-

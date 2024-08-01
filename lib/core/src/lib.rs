@@ -1,5 +1,4 @@
 pub mod link;
-pub mod meta;
 pub mod device;
 pub mod interface;
 pub mod attribute;
