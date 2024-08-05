@@ -1,5 +1,5 @@
 mod inner;
-use std::{fmt::Display, sync::Arc};
+use std::{fmt::Display, future::Future, sync::Arc};
 use tokio::task::JoinHandle;
 
 pub use inner::DeviceInner;
@@ -107,6 +107,14 @@ impl Device {
     }
 
     pub async fn store_handle(&mut self, h: JoinHandle<TaskResult>) {
+        self.inner.lock().await.store_handle(h);
+    }
+
+    pub async fn spawn<F>(&mut self, future: F)
+    where
+        F: Future<Output = TaskResult> + Send + 'static,
+    {
+        let h = tokio::spawn(future);
         self.inner.lock().await.store_handle(h);
     }
 

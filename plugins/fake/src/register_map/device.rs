@@ -27,23 +27,26 @@ impl DeviceOperations for RegisterMapDevice {
         //
         device.logger.info("pooook 2 ");
         // Task that run an action every time the value of the attribute change
-        let h = tokio::spawn(async move {
-            println!("start loop");
-            loop {
-                println!("start wait");
-                let attribut_bis = attribut.clone();
-                attribut
-                    .wait_one_command_then(async move {
-                        println!("cooucou");
-                        let _dat = attribut_bis.get().await.unwrap();
-                        println!("cooucou {} ", _dat);
-                    })
-                    .await;
-            }
-        });
+
+        device
+            .spawn(async move {
+                println!("start loop");
+                loop {
+                    println!("start wait");
+                    let attribut_bis = attribut.clone();
+                    attribut
+                        .wait_one_command_then(async move {
+                            println!("cooucou");
+                            let _dat = attribut_bis.get().await.unwrap();
+                            println!("cooucou {} ", _dat);
+                        })
+                        .await;
+                }
+            })
+            .await;
 
         // we have to store the handle in an object that will survive the function
-        device.store_handle(h).await;
+        // device.store_handle(h).await;
 
         device.logger.info("pooook 3 ");
 
