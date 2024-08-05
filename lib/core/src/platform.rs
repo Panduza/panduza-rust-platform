@@ -7,7 +7,7 @@ use std::sync::Arc;
 // use futures::future::BoxFuture;
 // use futures::Future;
 // use serde_json::json;
-// use tokio::signal;
+use tokio::signal;
 use tokio::sync::Mutex;
 // use tokio::task::JoinSet;
 // use tokio::net::UdpSocket;
@@ -97,6 +97,34 @@ impl Platform {
     pub async fn run(&mut self) {
         // Info log
         self.logger.info("Platform Version ...");
+
+        // Main tasks
+        - 
+
+        // Main loop
+        // Run forever and wait for:
+        // - ctrl-c: to stop the platform after the user request it
+        // - a new task to start in the task pool
+        // - all tasks to complete
+        // let task_pool_rx_clone = self.task_pool_rx.clone();
+        // let mut task_pool_rx = task_pool_rx_clone.lock().await;
+        loop {
+            tokio::select! {
+                _ = signal::ctrl_c() => {
+                    self.logger.warn("User ctrl-c, abort requested");
+                    // self.task_pool.abort_all();
+                },
+                task = task_pool_rx.recv() => {
+                    // Function to effectily spawn tasks requested by the system
+                    // let ah = self.task_pool.spawn(task.unwrap());
+                    self.logger.debug("New task created ! [{:?}]", ah );
+                },
+                // _ = self.end_of_all_tasks() => {
+                //     tracing::warn!(class="Platform", "All tasks completed, stop the platform");
+                //     break;
+                // }
+            }
+        }
     }
 }
 
@@ -120,31 +148,6 @@ impl Platform {
 //         self.task_pool.spawn(
 //             local_broker_discovery_task(plbd_platform_services)
 //         );
-
-//         // Main loop
-//         // Run forever and wait for:
-//         // - ctrl-c: to stop the platform after the user request it
-//         // - a new task to start in the task pool
-//         // - all tasks to complete
-//         let task_pool_rx_clone = self.task_pool_rx.clone();
-//         let mut task_pool_rx = task_pool_rx_clone.lock().await;
-//         loop {
-//             tokio::select! {
-//                 _ = signal::ctrl_c() => {
-//                     tracing::warn!(class="Platform", "User ctrl-c, abort requested");
-//                     self.task_pool.abort_all();
-//                 },
-//                 task = task_pool_rx.recv() => {
-//                     // Function to effectily spawn tasks requested by the system
-//                     let ah = self.task_pool.spawn(task.unwrap());
-//                     tracing::debug!(class="Platform", "New task created ! [{:?}]", ah );
-//                 },
-//                 _ = self.end_of_all_tasks() => {
-//                     tracing::warn!(class="Platform", "All tasks completed, stop the platform");
-//                     break;
-//                 }
-//             }
-//         }
 
 //     }
 

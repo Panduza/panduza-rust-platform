@@ -29,16 +29,16 @@ impl GenericLogger {
     //     tracing::error!(class=CLASS_NAME, bname=self.bname, dname=self.dname, iname=self.iname, "{}", text.into());
     // }
 
-    // #[inline]
-    // pub fn log_warn<A: Into<String>>(&self, text: A) {
-    //     tracing::warn!(
-    //         class = CLASS_NAME,
-    //         bname = self.bname,
-    //         dname = self.dname,
-    //         "{}",
-    //         text.into()
-    //     );
-    // }
+    pub fn warn<A: Into<String>>(&self, text: A) {
+        tracing::warn!(
+            class = self.class,
+            i1 = self.i1,
+            i2 = self.i2,
+            i3 = self.i3,
+            "{}",
+            text.into()
+        );
+    }
 
     pub fn info<A: Into<String>>(&self, text: A) {
         tracing::info!(
@@ -51,16 +51,16 @@ impl GenericLogger {
         );
     }
 
-    // #[inline]
-    // pub fn log_trace<A: Into<String>>(&self, text: A) {
-    //     tracing::trace!(
-    //         class = CLASS_NAME,
-    //         bname = self.bname,
-    //         dname = self.dname,
-    //         "{}",
-    //         text.into()
-    //     );
-    // }
+    pub fn debug<A: Into<String>>(&self, text: A) {
+        tracing::debug!(
+            class = self.class,
+            i1 = self.i1,
+            i2 = self.i2,
+            i3 = self.i3,
+            "{}",
+            text.into()
+        );
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -77,8 +77,14 @@ impl PlatformLogger {
             base: GenericLogger::new("Platform", "", "", ""),
         }
     }
+    pub fn warn<A: Into<String>>(&self, text: A) {
+        self.base.warn(text);
+    }
     pub fn info<A: Into<String>>(&self, text: A) {
         self.base.info(text);
+    }
+    pub fn debug<A: Into<String>>(&self, text: A) {
+        self.base.debug(text);
     }
 }
 
