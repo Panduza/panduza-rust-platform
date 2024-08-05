@@ -1,4 +1,15 @@
+mod inner;
+use std::sync::Arc;
+
+pub use inner::DeviceInner;
+
+use crate::{
+    reactor::{self, Reactor},
+    DeviceOperations, Node,
+};
+
 use serde_json;
+use tokio::sync::Mutex;
 
 use crate::InterfaceBuilder;
 
@@ -22,13 +33,24 @@ use crate::InterfaceBuilder;
 /// A device manage a set of interfaces
 ///
 pub struct Device {
-    /// Device name
-    dev_name: String,
-    bench_name: String,
+    // /// Device name
+    // dev_name: String,
+    // bench_name: String,
 
-    pub settings: serde_json::Value,
+    // pub settings: serde_json::Value,
 
-    started: bool,
+    //
+    reactor: Reactor,
+
+    // started: bool,
+    /// Inner object
+    inner: Arc<Mutex<Node>>,
+
+    ///
+    topic: String,
+
+    ///
+    operations: Box<dyn DeviceOperations>,
     // actions: Box<dyn DeviceActions>,
 
     // // interfaces: Vec<AmRunner>,
@@ -41,46 +63,25 @@ pub struct Device {
 }
 
 impl Device {
+    //
+    // reactor
+
     /// Create a new instance of the Device
     ///
-    pub fn new<A: Into<String>, B: Into<String>>(
-        dev_name: A,
-        bench_name: B,
-        settings: serde_json::Value,
-    ) -> Device {
-        let dev_name = dev_name.into();
-        let bench_name = bench_name.into();
-
+    pub fn new(reactor: Reactor, operations: Box<dyn DeviceOperations>) -> Device {
         // Create the object
-        let obj = Device {
-            dev_name: dev_name.clone(),
-            bench_name: bench_name.clone(),
-
-            settings: settings,
-
-            started: false,
-        };
-
-        // Return the object
-        return obj;
+        Device {
+            reactor: reactor,
+            inner: DeviceInner::new().into(),
+            topic: String::new(),
+            operations: operations,
+        }
     }
 
-    /// Get the device name
     ///
-    #[inline]
-    pub fn dev_name(&self) -> &String {
-        return &self.dev_name;
-    }
-
-    /// Get the bench name
     ///
-    #[inline]
-    pub fn bench_name(&self) -> &String {
-        return &self.bench_name;
-    }
-
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
-        InterfaceBuilder::new(name)
+        InterfaceBuilder::new(self.reactor.clone(), Arc::downgrade(&self.inner), name)
     }
 
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) {}

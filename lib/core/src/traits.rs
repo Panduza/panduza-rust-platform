@@ -1,5 +1,6 @@
 use crate::{Device, Error};
 use async_trait::async_trait;
+use bytes::Bytes;
 
 /// Actions that are specific for each device type
 ///
@@ -32,4 +33,18 @@ pub trait Producer: Send {
     /// Produce a new instance of the device actions
     ///
     fn produce(&self) -> Result<Box<dyn DeviceOperations>, Error>;
+}
+
+/// Trait to manage an message attribute (MQTT)
+/// Sync version
+#[async_trait]
+pub trait MessageHandler: Send + Sync {
+    async fn on_message(&mut self, data: &Bytes);
+}
+
+/// Encoder Decoder for message payload
+///
+pub trait MessageCodec:
+    Into<Vec<u8>> + From<Vec<u8>> + PartialEq + Copy + Sync + Send + 'static
+{
 }

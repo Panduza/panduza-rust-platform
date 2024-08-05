@@ -18,40 +18,41 @@ pub use platform::Platform;
 //
 mod device;
 pub use device::Device;
-
+pub use device::DeviceInner;
 //
 mod interface;
 pub use interface::builder::InterfaceBuilder;
 pub use interface::Interface;
 
+//
+mod attribute;
+pub use attribute::builder::AttributeBuilder;
+pub use attribute::ro_msg_att::RoMessageAttribute;
+pub use attribute::rw_msg_att::RwMessageAttribute;
+
 // public traits
 mod traits;
 pub use traits::DeviceOperations;
+pub use traits::MessageCodec;
+pub use traits::MessageHandler;
 pub use traits::Producer;
 
 //
 pub enum Node {
     Interface(Interface),
-    Device(Device),
+    Device(DeviceInner),
 }
 
-// pub type TaskResult = Result<(), crate::error::Error>;
-// pub type FunctionResult = Result<(), crate::error::Error>;
+//
+mod reactor;
+pub use reactor::message_dispatcher::MessageDispatcher;
+pub use reactor::settings::ReactorSettings;
+pub use reactor::Reactor;
 
-// // Public macro to create a platform Error outside of panduza core
-// //
-// #[macro_export]
-// macro_rules! platform_error {
-//     ($msg:expr) => {
-//         panduza_core::Error::new(file!(), line!(), $msg.to_string())
-//     };
-// }
+// This module manage the message attributes (MQTT/TCP)
+// pub mod msg;
+pub type MessageClient = rumqttc::AsyncClient;
 
-// // Public macro to create a platform Err Result outside of panduza core
-// //
-// #[macro_export]
-// macro_rules! platform_error_result {
-//     ($msg:expr) => {
-//         Err(panduza_core::Error::new(file!(), line!(), $msg.to_string()))
-//     };
-// }
+//
+mod codec;
+pub use codec::boolean::BooleanCodec;

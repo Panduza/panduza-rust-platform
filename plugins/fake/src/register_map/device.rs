@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use panduza_platform_core::{Device, DeviceOperations, Error};
+use panduza_platform_core::{BooleanCodec, Device, DeviceOperations, Error};
 
 pub struct RegisterMapDevice {}
 
@@ -8,7 +8,18 @@ impl DeviceOperations for RegisterMapDevice {
     /// Mount the device
     ///
     async fn mount(&self, device: &mut Device) -> Result<(), Error> {
-        device.create_interface("pok").with_tags("examples;tests");
+        let mut interface = device
+            .create_interface("pok")
+            .with_tags("examples;tests")
+            .finish();
+
+        let attribut = interface
+            .create_attribute("test")
+            .message()
+            .with_ro_access()
+            .finish_with_codec::<BooleanCodec>()
+            .await;
+
         Ok(())
     }
 }

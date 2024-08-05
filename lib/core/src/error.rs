@@ -2,12 +2,15 @@ use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug)]
 pub enum Error {
-
+    #[error("Cannot publish to the message attribute topic")]
+    MessageAttributePublishError(String),
+    #[error("Cannot subscribe to the message attribute topic")]
+    MessageAttributeSubscribeError(String),
+    #[error("Internal weak pointer cannot be upgraded")]
+    InternalPointerUpgrade,
     #[error("We just don't know what happened")]
     Wtf,
 }
-
-
 
 // /// Common Error type for the platform
 // /// Just a simple error type that holds a message and it's location in sources
