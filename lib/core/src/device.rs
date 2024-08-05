@@ -79,7 +79,9 @@ impl Device {
         return &self.bench_name;
     }
 
-    pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {}
+    pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
+        InterfaceBuilder::new(name)
+    }
 
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) {}
 

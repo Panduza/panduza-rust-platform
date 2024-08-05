@@ -8,7 +8,7 @@ impl DeviceOperations for RegisterMapDevice {
     /// Mount the device
     ///
     async fn mount(&self, device: &mut Device) -> Result<(), Error> {
-        device.create_interface("pok");
+        device.create_interface("pok").with_tags("examples;tests");
         Ok(())
     }
 }

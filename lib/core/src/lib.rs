@@ -22,11 +22,18 @@ pub use device::Device;
 //
 mod interface;
 pub use interface::builder::InterfaceBuilder;
+pub use interface::Interface;
 
 // public traits
 mod traits;
 pub use traits::DeviceOperations;
 pub use traits::Producer;
+
+//
+pub enum Node {
+    Interface(Interface),
+    Device(Device),
+}
 
 // pub type TaskResult = Result<(), crate::error::Error>;
 // pub type FunctionResult = Result<(), crate::error::Error>;
