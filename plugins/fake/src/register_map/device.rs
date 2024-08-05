@@ -3,6 +3,21 @@ use panduza_platform_core::{BooleanCodec, Device, DeviceOperations, Error};
 
 pub struct RegisterMapDevice {}
 
+macro_rules! on_command_event {
+    ($source:expr, $cb:expr) => {{
+        device
+            .spawn(async move {
+                println!("start loop");
+                loop {
+                    println!("start wait");
+                    let attribut_bis = attribut.clone();
+                    attribut.wait_one_command_then(async move { $cb }).await;
+                }
+            })
+            .await;
+    }};
+}
+
 #[async_trait]
 impl DeviceOperations for RegisterMapDevice {
     /// Mount the device
@@ -44,6 +59,12 @@ impl DeviceOperations for RegisterMapDevice {
                 }
             })
             .await;
+
+        on_command_event!("", {
+            println!("cooucou");
+            let _dat = attribut_bis.get().await.unwrap();
+            println!("cooucou {} ", _dat);
+        });
 
         // we have to store the handle in an object that will survive the function
         // device.store_handle(h).await;
