@@ -1,5 +1,5 @@
 [package]
-name = "panduza-core"
+name = "panduza-platform-core"
 edition = "2021"
 version = "0.1.0"
 
@@ -41,17 +41,11 @@ hostname = "0.3.1"
 chrono = "0.4"
 
 
-# SHOULD BE REMOVED, ALL THOSE INTERACTION SHOULD BE IN CONNECTORS
-tokio-serial = "5.4.1"
+thiserror = "1.0.0"
 
 
 serde = { version = "1.0", features = ["derive"] }
 
-# backtrace = "0.3.61"
-
-# To managed logs in colored format
-# colored = { version="2.0.0", optional = true }
-colored = "2.0.0"
 
 # Trace instrumentation at disabled levels will be skipped and will not even be present
 # in the resulting binary unless the verbosity level is specified dynamically.
@@ -69,15 +63,4 @@ tracing = { version = "0.1", features = [
     "release_max_level_info",
     # "release_max_level_debug",
     # "release_max_level_trace"
-]}
-
-# 
-tracing-core = { version = "0.1.32" }
-
-# Fmt subscriber
-tracing-subscriber = "0.3"
-
-tracing-appender = "0.2.3"
-
-# To see instrumentation through tokio console
-console-subscriber = { version="0.2.0", optional = true }
+] }

@@ -103,7 +103,7 @@ where
             match class_opt {
                 Some(class_name) => {
                     // Log platform except broker
-                    if cfg!(feature = "trac-fmt") {
+                    if cfg!(feature = "log") {
                         match class_name.trim_matches('"') {
                             "Platform" => {
                                 write!(&mut writer, "{}", "[P] ".to_string().red() )?;
@@ -152,7 +152,7 @@ where
                 }
             } else {
                 // Level
-                if cfg!(feature = "trac-fmt") {
+                if cfg!(feature = "log") {
                     return write_log_message(metadata, writer, res);
                 }    
             }         

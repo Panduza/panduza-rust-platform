@@ -5,9 +5,9 @@ edition = "2021"
 [dependencies]
 
 # The panduza core library
-panduza-core = { path = "../../lib/core" }
+panduza-platform-core = { path = "../../lib/core" }
 # The panduza connectors library
-panduza-connectors = { path = "../../lib/connectors" }
+# panduza-connectors = { path = "../../lib/connectors" }
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
 # Json serialization & deserialization

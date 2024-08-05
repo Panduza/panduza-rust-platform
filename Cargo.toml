@@ -6,15 +6,15 @@ edition = "2021"
 
 [dependencies]
 
-panduza-core = { path = "lib/core" }
-panduza-connectors = { path = "lib/connectors" }
+panduza-platform-core = { path = "lib/core" }
+# panduza-connectors = { path = "lib/connectors" }
 
 
-plugin-std = { path = "plugins/std" }
+# plugin-std = { path = "plugins/std" }
 plugin-fake = { path = "plugins/fake" }
 # plugin-video = { path = "plugins/video" }
 
-pza-plugin-picoha = { path = "plugins/picoha" }
+# pza-plugin-picoha = { path = "plugins/picoha" }
 
 
 # Main async framework for the platform
@@ -58,11 +58,6 @@ hostname = "0.4.0"
 chrono = "0.4"
 
 
-# SHOULD BE REMOVED, ALL THOSE INTERACTION SHOULD BE IN CONNECTORS
-tokio-serial = "5.4.1"
-
-
-
 # backtrace = "0.3.61"
 
 # To managed logs in colored format
@@ -85,7 +80,7 @@ tracing = { version = "0.1", features = [
     "release_max_level_info",
     # "release_max_level_debug",
     # "release_max_level_trace"
-]}
+] }
 
 # 
 tracing-core = { version = "0.1.32" }
@@ -96,7 +91,7 @@ tracing-subscriber = "0.3"
 tracing-appender = "0.2.3"
 
 # To see instrumentation through tokio console
-console-subscriber = { version="0.2.0", optional = true }
+# console-subscriber = { version="0.2.0", optional = true }
 
 # Used for decimal
 rust_decimal = "1.35.0"
@@ -110,11 +105,9 @@ rust_decimal_macros = "1.35"
 [features]
 
 # Enable tracing in stdout
-trac-fmt = [ ]
-log-issue = [ ]
-broker-log = [ ]
+log = []
+log-issue = []
+broker-log = []
 
 # Enable tracing in tokio console
-trac-console = [ "console-subscriber" ]
-
-
+# trac-console = [ "console-subscriber" ]

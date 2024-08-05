@@ -1,66 +1,53 @@
 use serde_json;
 
-use crate::interface::listener::Listener;
+use crate::InterfaceBuilder;
 
-use crate::interface::fsm::Fsm;
-use crate::platform::TaskPoolLoader;
+// use crate::interface::listener::Listener;
 
-use futures::FutureExt;
-// use crate::device::traits::DeviceActions;
-use crate::link::AmManager as AmLinkManager;
+// use crate::interface::fsm::Fsm;
+// use crate::platform::TaskPoolLoader;
 
-use crate::interface::Builder as InterfaceBuilder;
+// use futures::FutureExt;
+// // use crate::device::traits::DeviceActions;
+// use crate::link::AmManager as AmLinkManager;
 
-use crate::{subscription, FunctionResult, __platform_error_result};
+// use crate::interface::Builder as InterfaceBuilder;
 
-use crate::interface::Interface;
+// use crate::{subscription, FunctionResult, __platform_error_result};
+
+// use crate::interface::Interface;
 
 // use super::logger::{self, Logger};
 
 /// A device manage a set of interfaces
-/// 
+///
 pub struct Device {
-
     /// Device name
     dev_name: String,
     bench_name: String,
 
-
     pub settings: serde_json::Value,
 
     started: bool,
-
-    
     // actions: Box<dyn DeviceActions>,
 
-    // interfaces: Vec<AmRunner>,
+    // // interfaces: Vec<AmRunner>,
+    // /// Connection link manager
+    // /// To generate connection links for the interfaces
+    // connection_link_manager: AmLinkManager,
 
-    /// Connection link manager
-    /// To generate connection links for the interfaces
-    connection_link_manager: AmLinkManager,
-
-    platform_services: crate::platform::services::AmServices,
-
-    // logger: Logger,
+    // platform_services: crate::platform::services::AmServices,
+    // // logger: Logger,
 }
 
 impl Device {
-
     /// Create a new instance of the Device
-    /// 
-    pub fn new<
-        A: Into<String>,
-        B: Into<String>,
-    >
-    (
+    ///
+    pub fn new<A: Into<String>, B: Into<String>>(
         dev_name: A,
         bench_name: B,
         settings: serde_json::Value,
-
-        connection_link_manager: AmLinkManager,
-        platform_services: crate::platform::services::AmServices
-    ) -> Device 
-    {
+    ) -> Device {
         let dev_name = dev_name.into();
         let bench_name = bench_name.into();
 
@@ -72,51 +59,32 @@ impl Device {
             settings: settings,
 
             started: false,
-
-            // actions: actions,
-            // interfaces: Vec::new(),
-
-            connection_link_manager: connection_link_manager,
-            platform_services: platform_services,
-
-            // logger: Logger::new(bench_name.clone(), dev_name.clone())
         };
-
-        // Info log
-        obj.log_info("Device created");
 
         // Return the object
         return obj;
     }
 
     /// Get the device name
-    /// 
+    ///
     #[inline]
     pub fn dev_name(&self) -> &String {
         return &self.dev_name;
     }
 
     /// Get the bench name
-    /// 
+    ///
     #[inline]
     pub fn bench_name(&self) -> &String {
         return &self.bench_name;
     }
 
+    pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {}
 
-    async fn create_interface<N: Into<String>>(name: N) {
+    pub fn create_attribute<N: Into<String>>(&mut self, name: N) {}
 
-    }
-
-    async fn create_attribute<N: Into<String>>(name: N) {
-
-    }
-
-
-
-
-    /// Attach default connection
-    ///
+    // Attach default connection
+    //
     // async fn attach_default_connection(&mut self, interface: AmRunner) {
 
     //     let c = self.default_connection.as_ref().unwrap();
@@ -141,9 +109,8 @@ impl Device {
 
     // }
 
-
     // /// Create and Start the interfaces
-    // /// 
+    // ///
     // pub async fn start_interfaces(&mut self, task_loader: &mut TaskPoolLoader)
     //     -> FunctionResult
     // {
@@ -195,19 +162,16 @@ impl Device {
     //     Ok(())
     // }
 
-
-
     // /// Build & Start an interface
-    // /// 
+    // ///
     // pub async fn start_interface(&self, interface_builder: InterfaceBuilder, task_loader: &mut TaskPoolLoader) {
 
-    
     //     // Build Interface Base Topic name
     //     let topic = format!("pza/{}/{}/{}", self.bench_name, self.dev_name, interface_builder.name);
-    
+
     //     // Get attributes names
     //     let att_names = interface_builder.subscriber.attributes_names().await;
-    
+
     //     // Build subscriptions requests
     //     let mut requests = vec![
     //         subscription::Request::new( subscription::ID_PZA, "pza" ),
@@ -217,28 +181,21 @@ impl Device {
     //         let request = subscription::Request::new( att_name.0, &format!("{}/cmds/{}", topic, att_name.1) );
     //         requests.push(request);
     //     }
-    
+
     //     // Create the link with the connection
     //     let link = self.connection_link_manager.lock().await.request_link(requests).await.unwrap();
 
-
-
-    //     let interface = 
+    //     let interface =
     //         Interface::new(interface_builder.name, self.dev_name.clone(), self.bench_name.clone(), interface_builder.itype, interface_builder.version, link.client(), self.platform_services.clone())
     //             .as_thread_safe();
-
 
     //     // // TODO ! mutex on FSM and listener is useless... only interface must have a lock
     //     // let fsm = self.fsm.clone();
     //     // // let listener = self.listener.clone();
 
-
-
     //     // FSM Task
     //     let fsm = Fsm::new(interface.clone(), interface_builder.states);
     //     task_loader.load(fsm.run_task().boxed()).unwrap();
-
-
 
     //     let listener = Listener::new(interface.clone(), interface_builder.subscriber, link);
     //     // // Listener Task
@@ -251,35 +208,12 @@ impl Device {
     //     // // Log success
     //     // self.interface.lock().await.log_info("Interface started");
 
-
-
     // }
-
-    /// Log warning
-    /// 
-    #[deprecated(since = "0.1.0", note = "use clone_logger() instead")]
-    #[inline]
-    pub fn log_warn<A: Into<String>>(&self, text: A) {
-        // println!("DEPRECATED: Device::log_warn() is deprecated, use Device::clone_logger() instead !");
-        tracing::warn!(class="Device", bname=self.bench_name, dname=self.dev_name, "{}", text.into());
-    }
-
-    /// Log info
-    /// 
-    #[deprecated(since = "0.1.0", note = "use clone_logger() instead")]
-    #[inline]
-    pub fn log_info<A: Into<String>>(&self, text: A) {
-        // println!("DEPRECATED: Device::log_info() is deprecated, use Device::clone_logger() instead !");
-        tracing::info!(class="Device", bname=self.bench_name, dname=self.dev_name, "{}", text.into());
-    }
 
     // /// This function allow an external module to use the device logger
     // /// The logger is threadsafe and can also safely be cloned
-    // /// 
+    // ///
     // pub fn clone_logger(&self) -> Logger {
     //     return self.logger.clone();
     // }
-
 }
-
-

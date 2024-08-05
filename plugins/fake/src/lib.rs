@@ -1,8 +1,11 @@
 mod register_map;
 
-/// Import the producers of the plugin
-/// 
-pub fn import_plugin_producers(factory: &mut panduza_core::device::Factory)
-{
-    factory.add_producer("fake.register_map", register_map::DeviceProducer::new_boxed());
+use panduza_platform_core::Producer;
+
+// Export the producers of the plugin
+//
+pub fn plugin_producers() -> Vec<Box<dyn Producer>> {
+    let mut producers: Vec<Box<dyn Producer>> = vec![];
+    producers.push(register_map::producer::RegisterMapProducer::new());
+    return producers;
 }
