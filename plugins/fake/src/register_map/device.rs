@@ -7,7 +7,10 @@ pub struct RegisterMapDevice {}
 impl DeviceOperations for RegisterMapDevice {
     /// Mount the device
     ///
-    async fn mount(&self, device: &mut Device) -> Result<(), Error> {
+    async fn mount(&self, mut device: Device) -> Result<(), Error> {
+        //
+        device.logger.info("pooook");
+
         let mut interface = device
             .create_interface("pok")
             .with_tags("examples;tests")

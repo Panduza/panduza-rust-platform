@@ -6,15 +6,14 @@ use tracing::Metadata;
 use tracing_core::{Event, Subscriber};
 use tracing_subscriber::fmt::{
     format::{self, FormatEvent, FormatFields, Writer},
-    FmtContext
+    FmtContext,
 };
 use tracing_subscriber::registry::LookupSpan;
 
 use crate::log::hash_visitor::HashVisitor;
 
-
 /// Color words in quotes
-/// 
+///
 fn color_words_in_quotes(input: &str) -> String {
     let mut in_quotes = false;
     let mut result = String::new();
@@ -46,8 +45,12 @@ fn color_words_in_quotes(input: &str) -> String {
 }
 
 /// Send in stdout content and level of log message
-/// 
-fn write_log_message(metadata: &Metadata<'static>, mut writer: Writer, res: Option<&String>) -> fmt::Result {
+///
+fn write_log_message(
+    metadata: &Metadata<'static>,
+    mut writer: Writer,
+    res: Option<&String>,
+) -> fmt::Result {
     // Level
     if metadata.level() == &tracing_core::Level::ERROR {
         write!(&mut writer, "{}: ", "ERROR".red())?;
@@ -59,11 +62,11 @@ fn write_log_message(metadata: &Metadata<'static>, mut writer: Writer, res: Opti
     let message = res.unwrap();
     write!(&mut writer, "{}", color_words_in_quotes(message))?;
 
-    return writeln!(writer); 
+    return writeln!(writer);
 }
 
 /// A custom event formatter that formats events in a platform-specific way.
-/// 
+///
 pub struct PlatformFormatter;
 
 impl<S, N> FormatEvent<S, N> for PlatformFormatter
@@ -77,7 +80,6 @@ where
         mut writer: format::Writer<'_>,
         event: &Event<'_>,
     ) -> fmt::Result {
-
         //
         let mut visitor = HashVisitor::new();
         event.record(&mut visitor);
@@ -85,7 +87,6 @@ where
         // Format the event, if it has at least one message
         let res = visitor.entries().get("message");
         if res.is_some() {
-
             // Format values from the event's metadata:
             let metadata = event.metadata();
 
@@ -106,37 +107,35 @@ where
                     if cfg!(feature = "log") {
                         match class_name.trim_matches('"') {
                             "Platform" => {
-                                write!(&mut writer, "{}", "[P] ".to_string().red() )?;
-                            },
+                                write!(&mut writer, "{}", "[P] ".to_string().red())?;
+                            }
                             "Factory" => {
-                                write!(&mut writer, "{}", "[F] ".to_string().magenta() )?;
-                            },
+                                write!(&mut writer, "{}", "[F] ".to_string().magenta())?;
+                            }
                             "Connector" => {
-                                write!(&mut writer, "{}", "[C] ".to_string().purple() )?;
-                            },
-                            "Connection" => {
-                                let f = format!("[{}] ", visitor.entries().get("cname").unwrap().trim_matches('"'));
-                                write!(&mut writer, "{}", f.blue() )?;
-                            },
+                                write!(&mut writer, "{}", "[C] ".to_string().purple())?;
+                            }
                             "Device" => {
-                                let f = format!("[{}/{}] ", 
-                                    visitor.entries().get("bname").unwrap().trim_matches('"'),
-                                    visitor.entries().get("dname").unwrap().trim_matches('"')
+                                let f = format!(
+                                    "[{}/{}] ",
+                                    visitor.entries().get("i1").unwrap().trim_matches('"'),
+                                    visitor.entries().get("i2").unwrap().trim_matches('"')
                                 );
-                                write!(&mut writer, "{}", f.green() )?;
-                            },
+                                write!(&mut writer, "{}", f.green())?;
+                            }
                             "Interface" => {
-                                let f = format!("[{}/{}/{}] ",
-                                    visitor.entries().get("bname").unwrap().trim_matches('"'),
-                                    visitor.entries().get("dname").unwrap().trim_matches('"'),
+                                let f = format!(
+                                    "[{}/{}/{}] ",
+                                    visitor.entries().get("i1").unwrap().trim_matches('"'),
+                                    visitor.entries().get("i2").unwrap().trim_matches('"'),
                                     visitor.entries().get("iname").unwrap().trim_matches('"')
                                 );
-                                write!(&mut writer, "{}", f.bright_cyan() )?;
-                            },
-                            _ => { }
+                                write!(&mut writer, "{}", f.bright_cyan())?;
+                            }
+                            _ => {}
                         }
                     }
-                },
+                }
                 None => {
                     // Broker message
                     if cfg!(feature = "broker-log") {
@@ -154,8 +153,8 @@ where
                 // Level
                 if cfg!(feature = "log") {
                     return write_log_message(metadata, writer, res);
-                }    
-            }         
+                }
+            }
         }
 
         // Return the formatted event

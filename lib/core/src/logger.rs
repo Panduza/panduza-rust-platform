@@ -106,3 +106,22 @@ impl FactoryLogger {
         self.base.info(text);
     }
 }
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+#[derive(Clone)]
+pub struct DeviceLogger {
+    base: GenericLogger,
+}
+impl DeviceLogger {
+    pub fn new() -> DeviceLogger {
+        DeviceLogger {
+            base: GenericLogger::new("Device", "", "", ""),
+        }
+    }
+    pub fn info<A: Into<String>>(&self, text: A) {
+        self.base.info(text);
+    }
+}

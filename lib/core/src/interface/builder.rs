@@ -2,7 +2,7 @@ use std::sync::Weak;
 
 use tokio::sync::Mutex;
 
-use crate::{Node, Reactor};
+use crate::{DeviceInner, Reactor};
 
 use super::Interface;
 
@@ -10,13 +10,17 @@ pub struct InterfaceBuilder {
     //
     pub reactor: Reactor,
     ///
-    pub parent: Weak<Mutex<Node>>,
+    pub parent: Weak<Mutex<DeviceInner>>,
     ///
     pub name: String,
 }
 
 impl InterfaceBuilder {
-    pub fn new<N: Into<String>>(reactor: Reactor, parent: Weak<Mutex<Node>>, name: N) -> Self {
+    pub fn new<N: Into<String>>(
+        reactor: Reactor,
+        parent: Weak<Mutex<DeviceInner>>,
+        name: N,
+    ) -> Self {
         Self {
             reactor: reactor,
             parent: parent,

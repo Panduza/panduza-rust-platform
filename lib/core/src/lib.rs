@@ -4,6 +4,7 @@ pub use error::Error;
 
 /// Loggers
 mod logger;
+pub use logger::DeviceLogger;
 pub use logger::FactoryLogger;
 pub use logger::PlatformLogger;
 
@@ -36,12 +37,6 @@ pub use traits::DeviceOperations;
 pub use traits::MessageCodec;
 pub use traits::MessageHandler;
 pub use traits::Producer;
-
-//
-pub enum Node {
-    Interface(Interface),
-    Device(DeviceInner),
-}
 
 //
 mod reactor;

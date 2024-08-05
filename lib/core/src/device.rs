@@ -1,11 +1,11 @@
 mod inner;
-use std::sync::Arc;
+use std::{fmt::Display, sync::Arc};
 
 pub use inner::DeviceInner;
 
 use crate::{
     reactor::{self, Reactor},
-    DeviceOperations, Node,
+    DeviceLogger, DeviceOperations,
 };
 
 use serde_json;
@@ -30,27 +30,52 @@ use crate::InterfaceBuilder;
 
 // use super::logger::{self, Logger};
 
+/// States of the main Interface FSM
+///
+#[derive(Clone, Debug)]
+pub enum State {
+    Connecting,
+    Initializating,
+    Running,
+    Warning,
+    Cleaning,
+    Stopping,
+}
+
+impl Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            State::Connecting => write!(f, "Connecting"),
+            State::Initializating => write!(f, "Initializating"),
+            State::Running => write!(f, "Running"),
+            State::Warning => write!(f, "Warning"),
+            State::Cleaning => write!(f, "Cleaning"),
+            State::Stopping => write!(f, "Stopping"),
+        }
+    }
+}
+
 /// A device manage a set of interfaces
 ///
+#[derive(Clone)]
 pub struct Device {
     // /// Device name
     // dev_name: String,
     // bench_name: String,
 
     // pub settings: serde_json::Value,
+    pub logger: DeviceLogger,
 
     //
     reactor: Reactor,
 
     // started: bool,
     /// Inner object
-    inner: Arc<Mutex<Node>>,
+    inner: Arc<Mutex<DeviceInner>>,
 
     ///
     topic: String,
 
-    ///
-    operations: Box<dyn DeviceOperations>,
     // actions: Box<dyn DeviceActions>,
 
     // // interfaces: Vec<AmRunner>,
@@ -60,6 +85,7 @@ pub struct Device {
 
     // platform_services: crate::platform::services::AmServices,
     // // logger: Logger,
+    state: State,
 }
 
 impl Device {
@@ -71,10 +97,11 @@ impl Device {
     pub fn new(reactor: Reactor, operations: Box<dyn DeviceOperations>) -> Device {
         // Create the object
         Device {
-            reactor: reactor,
-            inner: DeviceInner::new().into(),
+            logger: DeviceLogger::new(),
+            reactor: reactor.clone(),
+            inner: DeviceInner::new(reactor, operations).into(),
             topic: String::new(),
-            operations: operations,
+            state: State::Initializating,
         }
     }
 
@@ -85,6 +112,35 @@ impl Device {
     }
 
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) {}
+
+    pub async fn run(&mut self) {
+        // wait for notify event
+        // then lock inner
+        // use inner once
+        // loop
+        loop {
+            // Perform state task
+            match self.state {
+                State::Connecting => {} // wait for reactor signal
+                State::Initializating => {
+                    self.inner
+                        .lock()
+                        .await
+                        .operations
+                        .mount(self.clone())
+                        .await
+                        .unwrap();
+
+                    self.state = State::Running
+                }
+
+                State::Running => {} // do nothing, watch for inner tasks
+                State::Warning => {}
+                State::Cleaning => {}
+                State::Stopping => {}
+            }
+        }
+    }
 
     // Attach default connection
     //

@@ -4,6 +4,7 @@ pub use settings::ReactorSettings;
 //
 mod message_engine;
 use message_engine::MessageEngine;
+use tokio::task::JoinHandle;
 
 //
 pub mod message_dispatcher;
@@ -49,7 +50,7 @@ impl Reactor {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self) -> JoinHandle<()> {
         println!("ReactorCore is running");
         let mut mqttoptions = MqttOptions::new("rumqtt-sync", "localhost", 1883);
         mqttoptions.set_keep_alive(Duration::from_secs(3));
@@ -62,7 +63,7 @@ impl Reactor {
         tokio::spawn(async move {
             message_engine.run().await;
             println!("ReactorCore is not runiing !!!!!!!!!!!!!!!!!!!!!!");
-        });
+        })
     }
 
     pub fn create_new_attribute(&self) -> AttributeBuilder {

@@ -38,16 +38,17 @@ use tokio::sync::Mutex;
 mod inner;
 use inner::PlatformInner;
 
-use crate::PlatformLogger;
+use crate::{Factory, PlatformLogger, Reactor, ReactorSettings};
 
 /// Platform
 ///
 /// Shareable wrapper around its inner implementation
 ///
-#[derive(Clone)]
 pub struct Platform {
     /// Main logger
     logger: PlatformLogger,
+
+    factory: Factory,
 
     /// Internal implementation
     inner: Arc<Mutex<PlatformInner>>, // Task pool to manage all tasks
@@ -72,7 +73,7 @@ pub struct Platform {
 impl Platform {
     /// Create a new instance of the Platform
     ///
-    pub fn new() -> Platform {
+    pub fn new(factory: Factory) -> Platform {
         // // Create the channel
         // let (tx, rx) =
         //     tokio::sync::mpsc::channel::<BoxFuture<'static, PlatformTaskResult>>(100);
@@ -83,6 +84,7 @@ impl Platform {
 
         return Platform {
             logger: PlatformLogger::new(),
+            factory: factory,
             inner: PlatformInner::new().into(), // task_pool: JoinSet::new(),
                                                 // task_loader: tl.clone(),
                                                 // task_pool_rx: Arc::new(Mutex::new(rx)),
@@ -99,7 +101,19 @@ impl Platform {
         self.logger.info("Platform Version ...");
 
         // Main tasks
-        - 
+        // - reactor
+        // - services
+
+        let settings = ReactorSettings::new("localhost", 1883);
+        let mut reactor = Reactor::new(settings);
+
+        let reactor_handle = reactor.start();
+
+        let mut dev = self.factory.produce(reactor, &serde_json::Value::Null);
+
+        tokio::spawn(async move { dev.run().await });
+
+        reactor_handle.await.unwrap();
 
         // Main loop
         // Run forever and wait for:
@@ -108,23 +122,23 @@ impl Platform {
         // - all tasks to complete
         // let task_pool_rx_clone = self.task_pool_rx.clone();
         // let mut task_pool_rx = task_pool_rx_clone.lock().await;
-        loop {
-            tokio::select! {
-                _ = signal::ctrl_c() => {
-                    self.logger.warn("User ctrl-c, abort requested");
-                    // self.task_pool.abort_all();
-                },
-                task = task_pool_rx.recv() => {
-                    // Function to effectily spawn tasks requested by the system
-                    // let ah = self.task_pool.spawn(task.unwrap());
-                    self.logger.debug("New task created ! [{:?}]", ah );
-                },
-                // _ = self.end_of_all_tasks() => {
-                //     tracing::warn!(class="Platform", "All tasks completed, stop the platform");
-                //     break;
-                // }
-            }
-        }
+        // loop {
+        //     tokio::select! {
+        //         _ = signal::ctrl_c() => {
+        //             self.logger.warn("User ctrl-c, abort requested");
+        //             // self.task_pool.abort_all();
+        //         },
+        //         task = task_pool_rx.recv() => {
+        //             // Function to effectily spawn tasks requested by the system
+        //             // let ah = self.task_pool.spawn(task.unwrap());
+        //             self.logger.debug("New task created ! [{:?}]", ah );
+        //         },
+        //         // _ = self.end_of_all_tasks() => {
+        //         //     tracing::warn!(class="Platform", "All tasks completed, stop the platform");
+        //         //     break;
+        //         // }
+        //     }
+        // }
     }
 }
 
@@ -298,25 +312,26 @@ impl Platform {
 //         }
 //     }
 
-//     /// Load a tree string into service data
-//     ///
-//     async fn load_tree_string(services: AmServices, content: &String) -> Result<(), crate::Error> {
-//         // Parse the JSON content
-//         let json_content = serde_json::from_str::<serde_json::Value>(&content);
-//         match json_content {
-//             Ok(json) => {
-//                 // log
-//                 tracing::info!(class="Platform", " - Tree Json content -\n{}", serde_json::to_string_pretty(&json).unwrap());
-//                 services.lock().await.set_tree_content(json);
+// /// Load a tree string into service data
+// ///
+// async fn load_tree_string(services: AmServices, content: &String) -> Result<(), crate::Error> {
+//     // Parse the JSON content
+//     let json_content = serde_json::from_str::<serde_json::Value>(&content);
+//     match json_content {
+//         Ok(json) => {
+//             // log
+//             tracing::info!(
+//                 class = "Platform",
+//                 " - Tree Json content -\n{}",
+//                 serde_json::to_string_pretty(&json).unwrap()
+//             );
+//             services.lock().await.set_tree_content(json);
 
-//                 return Ok(());
-//             },
-//             Err(e) => {
-//                 return __platform_error_result!(
-//                     format!("Failed to parse JSON content: {}", e))
-//             }
+//             return Ok(());
 //         }
+//         Err(e) => return __platform_error_result!(format!("Failed to parse JSON content: {}", e)),
 //     }
+// }
 
 //     /// Boot default connection and platform device
 //     ///

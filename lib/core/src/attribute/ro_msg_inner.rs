@@ -56,7 +56,7 @@ impl<TYPE: MessageCodec> RoMessageAttributeInner<TYPE> {
         self.message_client
             .subscribe(topic_att, QoS::AtMostOnce)
             .await
-            .map_err(|e| Error::MessageAttributeSubscribeError(e))
+            .map_err(|e| Error::MessageAttributeSubscribeError(e.to_string()))
     }
 
     /// Register the attribute to the reactor

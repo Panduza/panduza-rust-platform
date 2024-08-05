@@ -75,7 +75,7 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
             .message_client
             .publish(&self.topic_cmd, QoS::AtMostOnce, true, value)
             .await
-            .map_err(|e| Error::MessageAttributePublishError(e))
+            .map_err(|e| Error::MessageAttributePublishError(e.to_string()))
     }
 }
 

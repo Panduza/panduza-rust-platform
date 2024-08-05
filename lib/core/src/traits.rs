@@ -5,9 +5,9 @@ use bytes::Bytes;
 /// Actions that are specific for each device type
 ///
 #[async_trait]
-pub trait DeviceOperations: Send {
+pub trait DeviceOperations: Send + Sync {
     /// Mount device and give him its structure
-    async fn mount(&self, device: &mut Device) -> Result<(), Error>;
+    async fn mount(&self, mut device: Device) -> Result<(), Error>;
 
     // /// The device must provides a list of interface builders
     // ///

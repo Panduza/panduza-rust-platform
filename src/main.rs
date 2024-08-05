@@ -102,7 +102,7 @@ async fn main() {
     factory.add_producers(plugin_fake::plugin_producers());
 
     // Create platform runner
-    let mut platform = Platform::new();
+    let mut platform = Platform::new(factory);
     std::thread::spawn(move || {
         broker.start().unwrap();
     });
