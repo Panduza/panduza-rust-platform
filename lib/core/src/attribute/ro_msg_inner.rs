@@ -50,9 +50,10 @@ impl<TYPE: MessageCodec> RoMessageAttributeInner<TYPE> {
     }
 
     /// Subscribe to the topic
+    ///
     pub async fn subscribe(&self) -> Result<(), Error> {
         // no need to store the att topic
-        let topic_att = format!("{}/att", self.topic);
+        let topic_att = format!("{}/cmd", self.topic);
         self.message_client
             .subscribe(topic_att, QoS::AtMostOnce)
             .await
@@ -63,7 +64,7 @@ impl<TYPE: MessageCodec> RoMessageAttributeInner<TYPE> {
     ///
     pub async fn register(&self, attribute: Arc<Mutex<dyn MessageHandler>>) -> Result<(), Error> {
         // no need to store the att topic
-        let topic_att = format!("{}/att", self.topic);
+        let topic_att = format!("{}/cmd", self.topic);
         self.message_dispatcher
             .upgrade()
             .ok_or(Error::InternalPointerUpgrade)?
@@ -74,7 +75,7 @@ impl<TYPE: MessageCodec> RoMessageAttributeInner<TYPE> {
         Ok(())
     }
 
-    ///
+    /// Clone the change notifier
     ///
     pub fn clone_change_notifier(&self) -> Arc<Notify> {
         self.change_notifier.clone()
@@ -106,7 +107,7 @@ impl<TYPE: MessageCodec> Into<Arc<Mutex<RoMessageAttributeInner<TYPE>>>>
 #[async_trait]
 impl<TYPE: MessageCodec> MessageHandler for RoMessageAttributeInner<TYPE> {
     async fn on_message(&mut self, data: &Bytes) {
-        // println!("ro_inner::on_message");
+        println!("ro_inner::on_message");
         let new_value = TYPE::from(data.to_vec());
         self.value = Some(new_value);
         self.change_notifier.notify_waiters();

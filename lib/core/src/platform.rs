@@ -104,7 +104,7 @@ impl Platform {
         // - reactor
         // - services
 
-        let settings = ReactorSettings::new("localhost", 1883);
+        let settings = ReactorSettings::new("localhost", 1883, None);
         let mut reactor = Reactor::new(settings);
 
         let reactor_handle = reactor.start();

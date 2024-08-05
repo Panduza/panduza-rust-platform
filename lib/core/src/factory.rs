@@ -60,7 +60,7 @@ impl Factory {
 
         // Box<dyn DeviceOperations>
 
-        Device::new(reactor.clone(), device_operations)
+        Device::new(reactor.clone(), "dev".to_string(), device_operations)
     }
 
     // /// Set the connection link manager

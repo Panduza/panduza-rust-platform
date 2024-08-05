@@ -2,7 +2,9 @@ use std::sync::Weak;
 
 use tokio::sync::Mutex;
 
-use crate::{MessageClient, MessageCodec, MessageDispatcher, RoMessageAttribute};
+use crate::{
+    MessageClient, MessageCodec, MessageDispatcher, RoMessageAttribute, RwMessageAttribute,
+};
 
 /// Object that allow to build an generic attribute
 ///
@@ -84,4 +86,16 @@ impl RoMessageAttributeBuilder {
 /// Builder specialisation for Rw Attribute
 pub struct RwMessageAttributeBuilder {
     base: AttributeBuilder,
+}
+
+impl RwMessageAttributeBuilder {
+    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> RwMessageAttribute<TYPE> {
+        RwMessageAttribute::from(self.base)
+            .init()
+            .await
+            .unwrap()
+            .init()
+            .await
+            .unwrap()
+    }
 }

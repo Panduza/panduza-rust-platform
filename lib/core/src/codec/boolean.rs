@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::MessageCodec;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct BooleanCodec {
     value: bool,
 }

@@ -23,7 +23,7 @@ pub struct RwMessageAttributeInner<TYPE: MessageCodec> {
     pub base: RoMessageAttributeInner<TYPE>,
 
     /// The topic for commands
-    topic_cmd: String,
+    topic_att: String,
 
     /// Requested value of the attribute (set by the user)
     requested_value: Option<TYPE>,
@@ -52,15 +52,16 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
         //     }
         // }
 
-        // // Set the requested value and publish the request
-        // self.requested_value = Some(new_value);
-        // match self.requested_value {
-        //     Some(requested_value) => {
-        //         self.publish(requested_value.into()).await;
-        //         Ok(())
-        //     }
-        //     None => Err(AttributeError::Unkonwn),
-        // }
+        // Set the requested value and publish the request
+        self.requested_value = Some(new_value);
+        match self.requested_value {
+            Some(requested_value) => {
+                self.publish(requested_value.into()).await.unwrap();
+            }
+            None => {
+                return Err(Error::Wtf);
+            }
+        }
 
         Ok(())
     }
@@ -73,7 +74,7 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
     {
         self.base
             .message_client
-            .publish(&self.topic_cmd, QoS::AtMostOnce, true, value)
+            .publish(&self.topic_att, QoS::AtMostOnce, true, value)
             .await
             .map_err(|e| Error::MessageAttributePublishError(e.to_string()))
     }
@@ -82,10 +83,10 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
 /// Allow creation from the builder
 impl<TYPE: MessageCodec> From<AttributeBuilder> for RwMessageAttributeInner<TYPE> {
     fn from(builder: AttributeBuilder) -> Self {
-        let topic_cmd = format!("{}/cmd", builder.topic.as_ref().unwrap());
+        let topic_att = format!("{}/att", builder.topic.as_ref().unwrap());
         RwMessageAttributeInner {
             base: RoMessageAttributeInner::from(builder),
-            topic_cmd: topic_cmd,
+            topic_att: topic_att,
             requested_value: None,
         }
     }
@@ -104,6 +105,9 @@ impl<TYPE: MessageCodec> Into<Arc<Mutex<RwMessageAttributeInner<TYPE>>>>
 impl<TYPE: MessageCodec> MessageHandler for RwMessageAttributeInner<TYPE> {
     async fn on_message(&mut self, data: &Bytes) {
         let new_value = TYPE::from(data.to_vec());
+
+        println!("on_message {:?}", new_value);
+
         self.base.value = Some(new_value);
         self.base.change_notifier.notify_waiters();
     }

@@ -51,3 +51,6 @@ pub type MessageClient = rumqttc::AsyncClient;
 //
 mod codec;
 pub use codec::boolean::BooleanCodec;
+
+/// Return type for spawned task
+pub type TaskResult = Result<(), Error>;

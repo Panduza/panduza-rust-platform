@@ -31,12 +31,14 @@ impl<TYPE: MessageCodec> RwMessageAttribute<TYPE> {
         Ok(self)
     }
 
-    pub async fn wait_change(&self) {
+    pub async fn wait_one_command(&self) {
         let change_notifier = self.inner.lock().await.base.clone_change_notifier();
         change_notifier.notified().await
     }
 
-    pub async fn wait_change_then<F>(&self, function: F)
+    /// Wait an input command then execute the callback
+    ///
+    pub async fn wait_one_command_then<F>(&self, function: F)
     where
         F: Future<Output = ()> + Send + 'static,
     {

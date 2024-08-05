@@ -27,6 +27,9 @@ use crate::MessageClient;
 ///
 #[derive(Clone)]
 pub struct Reactor {
+    /// Root topic (namespace/pza)
+    root_topic: String,
+
     /// The mqtt client
     message_client: Option<MessageClient>,
 
@@ -44,10 +47,18 @@ impl Reactor {
     pub fn new(settings: ReactorSettings) -> Self {
         // let data = ;
 
+        // Server hostname
+        let hostname = hostname::get().unwrap().to_string_lossy().to_string();
+
         Reactor {
+            root_topic: format!("pza/{}", hostname),
             message_client: None,
             message_dispatcher: Arc::new(Mutex::new(MessageDispatcher::new())),
         }
+    }
+
+    pub fn root_topic(&self) -> String {
+        self.root_topic.clone()
     }
 
     pub fn start(&mut self) -> JoinHandle<()> {

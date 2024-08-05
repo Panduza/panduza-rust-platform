@@ -1,11 +1,12 @@
 mod inner;
 use std::{fmt::Display, sync::Arc};
+use tokio::task::JoinHandle;
 
 pub use inner::DeviceInner;
 
 use crate::{
     reactor::{self, Reactor},
-    DeviceLogger, DeviceOperations,
+    DeviceLogger, DeviceOperations, TaskResult,
 };
 
 use serde_json;
@@ -94,21 +95,29 @@ impl Device {
 
     /// Create a new instance of the Device
     ///
-    pub fn new(reactor: Reactor, operations: Box<dyn DeviceOperations>) -> Device {
+    pub fn new(reactor: Reactor, name: String, operations: Box<dyn DeviceOperations>) -> Device {
         // Create the object
         Device {
             logger: DeviceLogger::new(),
             reactor: reactor.clone(),
-            inner: DeviceInner::new(reactor, operations).into(),
-            topic: String::new(),
+            inner: DeviceInner::new(reactor.clone(), operations).into(),
+            topic: format!("{}/{}", reactor.root_topic(), name),
             state: State::Initializating,
         }
+    }
+
+    pub async fn store_handle(&mut self, h: JoinHandle<TaskResult>) {
+        self.inner.lock().await.store_handle(h);
     }
 
     ///
     ///
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
-        InterfaceBuilder::new(self.reactor.clone(), Arc::downgrade(&self.inner), name)
+        InterfaceBuilder::new(
+            self.reactor.clone(),
+            Arc::downgrade(&self.inner),
+            format!("{}/{}", self.reactor.root_topic(), name.into()),
+        )
     }
 
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) {}

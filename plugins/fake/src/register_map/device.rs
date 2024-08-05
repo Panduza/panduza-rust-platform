@@ -19,9 +19,33 @@ impl DeviceOperations for RegisterMapDevice {
         let attribut = interface
             .create_attribute("test")
             .message()
-            .with_ro_access()
+            .with_rw_access()
             .finish_with_codec::<BooleanCodec>()
             .await;
+
+        attribut.set(true).await.unwrap();
+        //
+        device.logger.info("pooook 2 ");
+        // Task that run an action every time the value of the attribute change
+        let h = tokio::spawn(async move {
+            println!("start loop");
+            loop {
+                println!("start wait");
+                let attribut_bis = attribut.clone();
+                attribut
+                    .wait_one_command_then(async move {
+                        println!("cooucou");
+                        let _dat = attribut_bis.get().await.unwrap();
+                        println!("cooucou {} ", _dat);
+                    })
+                    .await;
+            }
+        });
+
+        // we have to store the handle in an object that will survive the function
+        device.store_handle(h).await;
+
+        device.logger.info("pooook 3 ");
 
         Ok(())
     }

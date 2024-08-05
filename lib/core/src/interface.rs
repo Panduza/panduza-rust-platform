@@ -21,7 +21,7 @@ impl From<builder::InterfaceBuilder> for Interface {
     fn from(builder: builder::InterfaceBuilder) -> Self {
         Interface {
             reactor: builder.reactor,
-            topic: builder.name,
+            topic: builder.topic,
         }
     }
 }
