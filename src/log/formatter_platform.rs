@@ -113,7 +113,13 @@ where
                                 write!(&mut writer, "{}", "[F] ".to_string().magenta())?;
                             }
                             "Connector" => {
-                                write!(&mut writer, "{}", "[C] ".to_string().purple())?;
+                                let f = format!(
+                                    "[{}/{}/{}] ",
+                                    visitor.entries().get("i1").unwrap().trim_matches('"'),
+                                    visitor.entries().get("i2").unwrap().trim_matches('"'),
+                                    visitor.entries().get("i3").unwrap().trim_matches('"')
+                                );
+                                write!(&mut writer, "{}", f.purple())?;
                             }
                             "Device" => {
                                 let f = format!(
@@ -128,7 +134,7 @@ where
                                     "[{}/{}/{}] ",
                                     visitor.entries().get("i1").unwrap().trim_matches('"'),
                                     visitor.entries().get("i2").unwrap().trim_matches('"'),
-                                    visitor.entries().get("iname").unwrap().trim_matches('"')
+                                    visitor.entries().get("i3").unwrap().trim_matches('"')
                                 );
                                 write!(&mut writer, "{}", f.bright_cyan())?;
                             }

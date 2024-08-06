@@ -1,7 +1,7 @@
 /// Generic way to build logs on the platform
 ///
 #[derive(Clone)]
-struct GenericLogger {
+pub struct GenericLogger {
     class: String,
     i1: String,
     i2: String,
@@ -59,6 +59,17 @@ impl GenericLogger {
 
     pub fn debug<A: Into<String>>(&self, text: A) {
         tracing::debug!(
+            class = self.class,
+            i1 = self.i1,
+            i2 = self.i2,
+            i3 = self.i3,
+            "{}",
+            text.into()
+        );
+    }
+
+    pub fn trace<A: Into<String>>(&self, text: A) {
+        tracing::trace!(
             class = self.class,
             i1 = self.i1,
             i2 = self.i2,

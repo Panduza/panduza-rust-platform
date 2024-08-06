@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use panduza_core::platform_error;
-use panduza_core::Error as PlatformError;
+use nusb::Error;
+use panduza_platform_core::Error as PlatformError;
 
 use tokio_serial::available_ports as available_serial_ports;
 use tokio_serial::DataBits;
@@ -11,7 +11,7 @@ use tokio_serial::SerialPortInfo;
 use tokio_serial::StopBits;
 use tokio_serial::UsbPortInfo;
 
-use crate::GateLogger;
+use crate::ConnectorLogger;
 use crate::UsbSettings;
 
 /// Key for the usb serial in the json settings
@@ -20,9 +20,9 @@ static SERIAL_PORT_NAME_KEY: &str = "usb_serial";
 /// Settings for the serial connector
 ///
 #[derive(Clone)]
-pub struct Settings {
+pub struct SerialSettings {
     /// Local logger
-    pub logger: GateLogger,
+    pub logger: ConnectorLogger,
     /// The serial port name
     pub port_name: Option<String>,
     /// The baud rate in symbols-per-second
@@ -42,12 +42,12 @@ pub struct Settings {
     pub time_lock_duration: Option<Duration>,
 }
 
-impl Settings {
+impl SerialSettings {
     /// Creates a new Settings instance
     ///
-    pub fn new() -> Settings {
-        Settings {
-            logger: GateLogger::new("serial-settings"),
+    pub fn new() -> SerialSettings {
+        SerialSettings {
+            logger: ConnectorLogger::new("serial", "settings", ""),
             port_name: None,
             baudrate: 9600,
             data_bits: DataBits::Eight,
@@ -99,12 +99,15 @@ impl Settings {
     ) -> Result<String, PlatformError> {
         Ok(json_settings
             .get(SERIAL_PORT_NAME_KEY)
-            .ok_or(platform_error!(
+            .ok_or(PlatformError::BadSettings(format!(
                 "Unable to get \"{}\"",
                 SERIAL_PORT_NAME_KEY
-            ))?
+            )))?
             .as_str()
-            .ok_or(platform_error!("\"{}\" not a string", SERIAL_PORT_NAME_KEY))?
+            .ok_or(PlatformError::BadSettings(format!(
+                "\"{}\" not a string",
+                SERIAL_PORT_NAME_KEY
+            )))?
             .to_string())
     }
 
@@ -139,7 +142,7 @@ impl Settings {
         usb_settings: &UsbSettings,
     ) -> Result<SerialPortInfo, PlatformError> {
         available_serial_ports()
-            .map_err(|e| platform_error!("Enable to get serial ports {:?}", e))
+            .map_err(|e| PlatformError::BadSettings(format!("Enable to get serial ports {:?}", e)))
             .and_then(|ports| {
                 for port in ports {
                     // Check only usb port type
@@ -150,10 +153,10 @@ impl Settings {
                         }
                     }
                 }
-                Err(platform_error!(
+                Err(PlatformError::BadSettings(format!(
                     "No matching usb device ( availables: {} )",
                     Self::list_all_serial_ports()
-                ))
+                )))
             })
     }
 
@@ -184,7 +187,7 @@ impl Settings {
         usb_settings: &UsbSettings,
     ) -> bool {
         // Logger only for trace
-        let trace_logger = GateLogger::new("serial-settings");
+        let trace_logger = ConnectorLogger::new("serial", "settings", "");
 
         // Match VID
         let match_vid = usb_settings
@@ -223,7 +226,7 @@ impl Settings {
             usb_settings, matchhh, match_vid, match_pid, match_serial
         );
         // println!("{}", trace_message);
-        trace_logger.log_trace(trace_message);
+        trace_logger.trace(trace_message);
 
         // Ok only if all the conditions are met
         return matchhh;

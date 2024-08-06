@@ -10,6 +10,8 @@ pub enum Error {
     InternalPointerUpgrade,
     #[error("Error when trying to spawn a task")]
     Spawn(String),
+    #[error("One of the provided settings is wrong")]
+    BadSettings(String),
     #[error("We just don't know what happened")]
     Wtf,
 }

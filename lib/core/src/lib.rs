@@ -6,6 +6,7 @@ pub use error::Error;
 mod logger;
 pub use logger::DeviceLogger;
 pub use logger::FactoryLogger;
+pub use logger::GenericLogger;
 pub use logger::PlatformLogger;
 
 ///
