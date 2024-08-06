@@ -61,7 +61,7 @@ pub struct Platform {
     factory: Factory,
 
     /// Internal implementation
-    inner: Arc<Mutex<PlatformInner>>,
+    inner: Arc<Mutex<PlatformInner>>, // useless
 
     // Task pool to manage all tasks
     task_pool: JoinSet<MainTaskResult>,

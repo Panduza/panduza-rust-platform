@@ -56,7 +56,7 @@ pub use codec::boolean::BooleanCodec;
 
 mod taskpool;
 pub use taskpool::TaskPoolSpawner;
-pub type DeviceTaskSpawner = TaskPoolSpawner<Result<(), ()>>;
+pub type DeviceTaskSpawner = TaskPoolSpawner<Result<(), Error>>;
 
 /// Return type for spawned task
 pub type TaskResult = Result<(), Error>;

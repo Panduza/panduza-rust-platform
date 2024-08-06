@@ -6,14 +6,14 @@ pub use inner::DeviceInner;
 
 use crate::{
     reactor::{self, Reactor},
-    DeviceLogger, DeviceOperations, DeviceTaskSpawner, TaskResult,
+    DeviceLogger, DeviceOperations, DeviceTaskSpawner, Error, TaskPoolSpawner, TaskResult,
 };
 
 use serde_json;
 use tokio::sync::Mutex;
 
 use crate::InterfaceBuilder;
-
+use futures::FutureExt;
 pub mod runner;
 
 // use crate::interface::listener::Listener;
@@ -91,7 +91,7 @@ pub struct Device {
     state: State,
     //
     //
-    spawner: DeviceTaskSpawner,
+    spawner: TaskPoolSpawner<Result<(), Error>>,
 }
 
 impl Device {
@@ -125,17 +125,9 @@ impl Device {
     where
         F: Future<Output = TaskResult> + Send + 'static,
     {
-        let h = tokio::spawn(future);
-        self.inner.lock().await.store_handle(h);
+        self.spawner.spawn(future.boxed()).unwrap();
     }
 
-    pub async fn spawn2<F>(&mut self, future: F)
-    where
-        F: Future<Output = TaskResult> + Send + 'static,
-    {
-        // let h = tokio::spawn(future);
-        self.inner.lock().await.spawn(future);
-    }
     ///
     ///
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {

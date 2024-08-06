@@ -2,6 +2,7 @@
 // to run the fsm
 // and to run the task monitoring
 
+use crate::Error;
 use std::sync::Arc;
 
 use crate::{taskpool::TaskPool, DeviceOperations, Reactor};
@@ -13,8 +14,8 @@ use tokio::{sync::Mutex, task::JoinSet};
 pub struct DeviceRunner {
     device: Device,
 
-    pool: JoinSet<Result<(), ()>>,
-    taskpool: Arc<Mutex<TaskPool<Result<(), ()>>>>,
+    pool: JoinSet<Result<(), Error>>,
+    taskpool: Arc<Mutex<TaskPool<Result<(), Error>>>>,
 }
 
 impl DeviceRunner {
@@ -23,7 +24,7 @@ impl DeviceRunner {
         name: String,
         operations: Box<dyn DeviceOperations>,
     ) -> (DeviceRunner, Device) {
-        let (taskpool, spawner) = TaskPool::create();
+        let (taskpool, spawner) = TaskPool::<Result<(), Error>>::create();
 
         let device = Device::new(reactor.clone(), spawner, "dev".to_string(), operations);
 

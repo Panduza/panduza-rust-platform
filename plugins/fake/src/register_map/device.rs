@@ -37,7 +37,7 @@ impl DeviceOperations for RegisterMapDevice {
 
         let _aa = attribut.clone();
         device
-            .spawn2(async move {
+            .spawn(async move {
                 loop {
                     println!("start wait");
                     let attribut_bis = _aa.clone();
