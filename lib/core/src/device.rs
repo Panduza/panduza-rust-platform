@@ -6,7 +6,7 @@ pub use inner::DeviceInner;
 
 use crate::{
     reactor::{self, Reactor},
-    DeviceLogger, DeviceOperations, DeviceTaskSpawner, Error, TaskPoolSpawner, TaskResult,
+    DeviceLogger, DeviceOperations, Error, TaskResult, TaskSender,
 };
 
 use serde_json;
@@ -19,7 +19,7 @@ pub mod runner;
 // use crate::interface::listener::Listener;
 
 // use crate::interface::fsm::Fsm;
-// use crate::platform::TaskPoolLoader;
+// use crate::platform::TaskReceiverLoader;
 
 // use futures::FutureExt;
 // // use crate::device::traits::DeviceActions;
@@ -91,7 +91,7 @@ pub struct Device {
     state: State,
     //
     //
-    spawner: TaskPoolSpawner<Result<(), Error>>,
+    spawner: TaskSender<Result<(), Error>>,
 }
 
 impl Device {
@@ -102,7 +102,7 @@ impl Device {
     ///
     pub fn new(
         reactor: Reactor,
-        spawner: DeviceTaskSpawner,
+        spawner: TaskSender<Result<(), Error>>,
         name: String,
         operations: Box<dyn DeviceOperations>,
     ) -> Device {
@@ -201,7 +201,7 @@ impl Device {
 
     // /// Create and Start the interfaces
     // ///
-    // pub async fn start_interfaces(&mut self, task_loader: &mut TaskPoolLoader)
+    // pub async fn start_interfaces(&mut self, task_loader: &mut TaskReceiverLoader)
     //     -> FunctionResult
     // {
     //     // Do nothing if already started
@@ -254,7 +254,7 @@ impl Device {
 
     // /// Build & Start an interface
     // ///
-    // pub async fn start_interface(&self, interface_builder: InterfaceBuilder, task_loader: &mut TaskPoolLoader) {
+    // pub async fn start_interface(&self, interface_builder: InterfaceBuilder, task_loader: &mut TaskReceiverLoader) {
 
     //     // Build Interface Base Topic name
     //     let topic = format!("pza/{}/{}/{}", self.bench_name, self.dev_name, interface_builder.name);

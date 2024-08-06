@@ -12,7 +12,7 @@ pub type MainTaskResult = Result<(), Error>;
 // pub type MainTask = Pin<Box<dyn Future<Output = MainTaskResult> + Send>>;
 pub type MainTask = BoxFuture<'static, MainTaskResult>;
 
-// TaskPool -> Spawner
+// TaskReceiver -> Spawner
 
 /// Platform Spawner
 ///

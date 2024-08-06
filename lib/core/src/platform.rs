@@ -32,7 +32,7 @@ use crate::Error;
 // use self::services::boot::execute_service_boot;
 // use self::services::hunt::execute_service_hunt;
 
-// pub type TaskPoolLoader = task_pool_loader::TaskPoolLoader;
+// pub type TaskReceiverLoader = task_pool_loader::TaskReceiverLoader;
 
 // /// Platform result type
 // ///
@@ -89,7 +89,7 @@ impl Platform {
         // let (tx, rx) =
         //     tokio::sync::mpsc::channel::<BoxFuture<'static, PlatformTaskResult>>(100);
 
-        // let tl = TaskPoolLoader::new(tx);
+        // let tl = TaskReceiverLoader::new(tx);
 
         // let srvs = Services::new(tl.clone());
 

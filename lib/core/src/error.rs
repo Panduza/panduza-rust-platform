@@ -8,6 +8,8 @@ pub enum Error {
     MessageAttributeSubscribeError(String),
     #[error("Internal weak pointer cannot be upgraded")]
     InternalPointerUpgrade,
+    #[error("Error when trying to spawn a task")]
+    Spawn(String),
     #[error("We just don't know what happened")]
     Wtf,
 }

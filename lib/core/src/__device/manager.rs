@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::link;
 use crate::platform::services::AmServices;
-use crate::platform::TaskPoolLoader;
+use crate::platform::TaskReceiverLoader;
 
 use crate::Error as PlatformError;
 
@@ -24,7 +24,7 @@ pub struct Manager {
     instances: HashMap<String, Device>,
 
     // Task pool loader
-    task_loader: TaskPoolLoader
+    task_loader: TaskReceiverLoader
 }
 pub type AmManager = Arc<Mutex<Manager>>;
 
@@ -32,7 +32,7 @@ impl Manager {
 
     /// Create a new manager
     /// 
-    pub fn new(task_loader: TaskPoolLoader, platform_services: AmServices) -> AmManager {
+    pub fn new(task_loader: TaskReceiverLoader, platform_services: AmServices) -> AmManager {
         return Arc::new(Mutex::new(Manager {
             factory: Factory::new(platform_services),
             instances: HashMap::new(),

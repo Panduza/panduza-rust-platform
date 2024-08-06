@@ -12,7 +12,7 @@ use crate::platform::connection_info::export_file;
 pub mod boot;
 pub mod hunt;
 
-use super::TaskPoolLoader;
+use super::TaskReceiverLoader;
 use super::connection_info::Info as ConnectionInfo;
 
 bitflags! {
@@ -62,7 +62,7 @@ pub struct Services {
 
     connection_info: Option<ConnectionInfo>,
 
-    pub task_loader: TaskPoolLoader,
+    pub task_loader: TaskReceiverLoader,
 
 }
 pub type AmServices = Arc<Mutex<Services>>;
@@ -71,7 +71,7 @@ pub type ThreadSafeServices = Arc<Mutex<Services>>;
 impl Services {
 
     /// Create a new instance of the Services
-    pub fn new(task_loader: TaskPoolLoader) -> AmServices {
+    pub fn new(task_loader: TaskReceiverLoader) -> AmServices {
         // create the requests_change_notifier and start a first notification
         let notify = Arc::new(Notify::new());
         notify.notify_one();

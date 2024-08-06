@@ -9,7 +9,7 @@ use super::task::task as ConnectionTask;
 use super::Connection;
 use super::AmConnection;
 
-use crate::platform::TaskPoolLoader;
+use crate::platform::TaskReceiverLoader;
 
 /// Object to manage and run multiple named connections
 ///
@@ -21,7 +21,7 @@ pub struct Manager {
     connection: Option<AmConnection>,
 
     /// Task pool loader
-    task_loader: TaskPoolLoader
+    task_loader: TaskReceiverLoader
 }
 pub type AmManager = Arc<Mutex<Manager>>;
 
@@ -29,7 +29,7 @@ impl Manager {
 
     /// Create a new manager
     ///
-    pub fn new(task_loader: TaskPoolLoader, platform_name: &str) -> AmManager {
+    pub fn new(task_loader: TaskReceiverLoader, platform_name: &str) -> AmManager {
         return Arc::new(Mutex::new(Manager {
             platform_name: platform_name.to_string(),
             connection: None,

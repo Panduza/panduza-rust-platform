@@ -54,9 +54,9 @@ pub type MessageClient = rumqttc::AsyncClient;
 mod codec;
 pub use codec::boolean::BooleanCodec;
 
-mod taskpool;
-pub use taskpool::TaskPoolSpawner;
-pub type DeviceTaskSpawner = TaskPoolSpawner<Result<(), Error>>;
+mod task_channel;
+pub use task_channel::TaskReceiver;
+pub use task_channel::TaskSender;
 
 /// Return type for spawned task
 pub type TaskResult = Result<(), Error>;
