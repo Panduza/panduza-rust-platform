@@ -46,6 +46,6 @@ pub trait MessageHandler: Send + Sync {
 /// Encoder Decoder for message payload
 ///
 pub trait MessageCodec:
-    Into<Vec<u8>> + From<Vec<u8>> + PartialEq + Debug + Copy + Sync + Send + 'static
+    Into<Vec<u8>> + From<Vec<u8>> + PartialEq + Debug + Sync + Send + Clone + 'static
 {
 }

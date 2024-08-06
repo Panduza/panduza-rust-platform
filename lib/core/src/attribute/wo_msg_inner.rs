@@ -11,37 +11,27 @@ use tokio::sync::Notify;
 
 use crate::AttributeBuilder;
 use crate::Error;
+use crate::MessageClient;
 use crate::MessageCodec;
 use crate::MessageHandler;
 
-use super::RoMessageAttributeInner;
-
 /// Read Only Inner implementation of the message attribute
 /// This inner implementation allow the public part to be cloneable easly
-pub struct RwMessageAttributeInner<TYPE: MessageCodec> {
-    /// Rw is based on Ro
-    pub base: RoMessageAttributeInner<TYPE>,
+pub struct WoMessageAttributeInner<TYPE: MessageCodec> {
+    /// The message client (MQTT)
+    pub message_client: MessageClient,
 
-    /// The topic for commands
+    /// The topic of the attribute
+    topic: String,
+
+    /// The topic
     topic_att: String,
 
     /// Requested value of the attribute (set by the user)
     requested_value: Option<TYPE>,
 }
 
-impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
-    /// Initialize the attribute
-    pub async fn init(&self, attribute: Arc<Mutex<dyn MessageHandler>>) -> Result<(), Error> {
-        self.base.init(attribute).await
-    }
-
-    /// Get the value of the attribute
-    /// If None, the first value is not yet received
-    ///
-    pub fn get(&self) -> Option<TYPE> {
-        return self.base.get();
-    }
-
+impl<TYPE: MessageCodec> WoMessageAttributeInner<TYPE> {
     /// Set the value of the attribute
     ///
     pub async fn set(&mut self, new_value: TYPE) -> Result<(), Error> {
@@ -72,8 +62,7 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
     where
         V: Into<Vec<u8>>,
     {
-        self.base
-            .message_client
+        self.message_client
             .publish(&self.topic_att, QoS::AtMostOnce, true, value)
             .await
             .map_err(|e| Error::MessageAttributePublishError(e.to_string()))
@@ -81,11 +70,12 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
 }
 
 /// Allow creation from the builder
-impl<TYPE: MessageCodec> From<AttributeBuilder> for RwMessageAttributeInner<TYPE> {
+impl<TYPE: MessageCodec> From<AttributeBuilder> for WoMessageAttributeInner<TYPE> {
     fn from(builder: AttributeBuilder) -> Self {
         let topic_att = format!("{}/att", builder.topic.as_ref().unwrap());
-        RwMessageAttributeInner {
-            base: RoMessageAttributeInner::from(builder),
+        WoMessageAttributeInner {
+            message_client: builder.message_client,
+            topic: builder.topic.as_ref().unwrap().clone(),
             topic_att: topic_att,
             requested_value: None,
         }
@@ -93,22 +83,10 @@ impl<TYPE: MessageCodec> From<AttributeBuilder> for RwMessageAttributeInner<TYPE
 }
 
 /// Allow mutation into Arc pointer
-impl<TYPE: MessageCodec> Into<Arc<Mutex<RwMessageAttributeInner<TYPE>>>>
-    for RwMessageAttributeInner<TYPE>
+impl<TYPE: MessageCodec> Into<Arc<Mutex<WoMessageAttributeInner<TYPE>>>>
+    for WoMessageAttributeInner<TYPE>
 {
-    fn into(self) -> Arc<Mutex<RwMessageAttributeInner<TYPE>>> {
+    fn into(self) -> Arc<Mutex<WoMessageAttributeInner<TYPE>>> {
         Arc::new(Mutex::new(self))
-    }
-}
-
-#[async_trait]
-impl<TYPE: MessageCodec> MessageHandler for RwMessageAttributeInner<TYPE> {
-    async fn on_message(&mut self, data: &Bytes) {
-        let new_value = TYPE::from(data.to_vec());
-
-        println!("on_message {:?}", new_value);
-
-        self.base.value = Some(new_value);
-        self.base.change_notifier.notify_waiters();
     }
 }

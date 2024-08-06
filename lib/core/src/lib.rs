@@ -10,6 +10,7 @@ pub use logger::PlatformLogger;
 
 ///
 mod factory;
+pub use factory::production_order::ProductionOrder;
 pub use factory::Factory;
 
 // The heavy machine
@@ -52,6 +53,8 @@ pub type MessageClient = rumqttc::AsyncClient;
 //
 mod codec;
 pub use codec::boolean::BooleanCodec;
+pub use codec::json::JsonCodec;
+pub use codec::numeric::NumericCodec;
 
 mod task_channel;
 pub use task_channel::TaskReceiver;

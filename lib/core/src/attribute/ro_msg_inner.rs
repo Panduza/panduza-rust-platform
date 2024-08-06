@@ -46,7 +46,7 @@ impl<TYPE: MessageCodec> RoMessageAttributeInner<TYPE> {
     /// Get the value of the attribute
     /// If None, the first value is not yet received
     pub fn get(&self) -> Option<TYPE> {
-        return self.value;
+        return self.value.clone();
     }
 
     /// Subscribe to the topic

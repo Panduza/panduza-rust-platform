@@ -17,7 +17,7 @@ use tokio::task::JoinSet;
 
 use crate::{task_channel::create_task_channel, Error, TaskReceiver, TaskResult, TaskSender};
 
-use crate::{Device, Factory, PlatformLogger, Reactor, ReactorSettings};
+use crate::{Device, Factory, PlatformLogger, ProductionOrder, Reactor, ReactorSettings};
 
 /// Platform
 ///
@@ -90,7 +90,8 @@ impl Platform {
         reactor.start(self.main_task_sender.clone()).unwrap();
 
         //
-        let (mut monitor, mut dev) = self.factory.produce(reactor, &serde_json::Value::Null);
+        let production_order = ProductionOrder::new("panduza.fake_register_map", "testdevice");
+        let (mut monitor, mut dev) = self.factory.produce(reactor, production_order);
 
         // state machine + subtask monitoring
 

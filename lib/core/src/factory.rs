@@ -1,6 +1,8 @@
+pub mod production_order;
+
 use std::collections::HashMap;
 
-use crate::{Device, DeviceMonitor, FactoryLogger, Producer, Reactor};
+use crate::{Device, DeviceMonitor, FactoryLogger, Producer, ProductionOrder, Reactor};
 
 /// Factory to create devices from a configuration json
 ///
@@ -55,11 +57,9 @@ impl Factory {
     pub fn produce(
         &self,
         reactor: Reactor,
-        production_order: &serde_json::Value,
+        production_order: ProductionOrder,
     ) -> (DeviceMonitor, Device) {
-        let _ref = "panduza.fake_register_map";
-
-        let producer = self.producers.get(_ref).unwrap();
+        let producer = self.producers.get(production_order.device_ref()).unwrap();
         let device_operations = producer.produce().unwrap();
 
         // Box<dyn DeviceOperations>

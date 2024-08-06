@@ -6,6 +6,8 @@ use crate::{
     MessageClient, MessageCodec, MessageDispatcher, RoMessageAttribute, RwMessageAttribute,
 };
 
+use super::wo_msg_att::WoMessageAttribute;
+
 /// Object that allow to build an generic attribute
 ///
 pub struct AttributeBuilder {
@@ -62,6 +64,10 @@ impl MessageAttributeBuilder {
     pub fn with_rw_access(self) -> RwMessageAttributeBuilder {
         RwMessageAttributeBuilder { base: self.base }
     }
+
+    pub fn with_wo_access(self) -> WoMessageAttributeBuilder {
+        WoMessageAttributeBuilder { base: self.base }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -97,5 +103,20 @@ impl RwMessageAttributeBuilder {
             .init()
             .await
             .unwrap()
+    }
+}
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+/// Builder specialisation for Wo Attribute
+pub struct WoMessageAttributeBuilder {
+    base: AttributeBuilder,
+}
+
+impl WoMessageAttributeBuilder {
+    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> WoMessageAttribute<TYPE> {
+        WoMessageAttribute::from(self.base)
     }
 }
