@@ -43,6 +43,7 @@ impl DeviceOperations for RegisterMapDevice {
                     let attribut_bis = _aa.clone();
 
                     _aa.wait_one_command_then(async move {
+                        return Err(Error::Wtf);
                         println!("cooucou");
                         let _dat = attribut_bis.get().await.unwrap();
                         println!("cooucou {} ", _dat);
