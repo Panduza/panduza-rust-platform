@@ -14,12 +14,11 @@ pub use factory::Factory;
 
 // The heavy machine
 mod platform;
-pub use platform::spawner::{MainTask, MainTaskResult, PlatformTaskSpawner};
 pub use platform::Platform;
 
 //
 mod device;
-pub use device::runner::DeviceRunner;
+pub use device::monitor::DeviceMonitor;
 pub use device::Device;
 pub use device::DeviceInner;
 //

@@ -13,7 +13,7 @@ pub mod message_dispatcher;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::{AttributeBuilder, MessageDispatcher, PlatformTaskSpawner};
+use crate::{AttributeBuilder, MessageDispatcher, TaskResult, TaskSender};
 
 use rumqttc::AsyncClient;
 use rumqttc::{Client, MqttOptions, QoS};
@@ -62,7 +62,10 @@ impl Reactor {
         self.root_topic.clone()
     }
 
-    pub fn start(&mut self, mut spawner: PlatformTaskSpawner) -> Result<(), crate::Error> {
+    pub fn start(
+        &mut self,
+        mut main_task_sender: TaskSender<TaskResult>,
+    ) -> Result<(), crate::Error> {
         println!("ReactorCore is running");
         let mut mqttoptions = MqttOptions::new("rumqtt-sync", "localhost", 1883);
         mqttoptions.set_keep_alive(Duration::from_secs(3));
@@ -72,7 +75,7 @@ impl Reactor {
         self.message_client = Some(client);
 
         let mut message_engine = MessageEngine::new(self.message_dispatcher.clone(), event_loop);
-        spawner.spawn(
+        main_task_sender.spawn(
             async move {
                 message_engine.run().await;
                 println!("ReactorCore is not runiing !!!!!!!!!!!!!!!!!!!!!!");

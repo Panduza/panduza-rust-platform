@@ -46,7 +46,7 @@ impl<O> From<Sender<BoxFuture<'static, O>>> for TaskSender<O> {
 
 /// Create the task channel
 ///
-pub fn create_task_channel<O>() -> (TaskSender<O>, TaskReceiver<O>) {
-    let (tx, rx) = channel::<BoxFuture<'static, O>>(100);
+pub fn create_task_channel<O>(buffer: usize) -> (TaskSender<O>, TaskReceiver<O>) {
+    let (tx, rx) = channel::<BoxFuture<'static, O>>(buffer);
     return (TaskSender::<O>::from(tx), TaskReceiver::<O>::from(rx));
 }

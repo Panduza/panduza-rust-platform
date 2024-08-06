@@ -21,24 +21,24 @@ pub type DeviceTaskResult = Result<(), Error>;
 /// Object to manage device subtasks
 /// It is important to check when a task has failed
 ///
-pub struct DeviceRunner {
+pub struct DeviceMonitor {
     device: Device,
 
     pool: JoinSet<DeviceTaskResult>,
     task_rx: Arc<Mutex<TaskReceiver<DeviceTaskResult>>>,
 }
 
-impl DeviceRunner {
+impl DeviceMonitor {
     pub fn new(
         reactor: Reactor,
         name: String,
         operations: Box<dyn DeviceOperations>,
-    ) -> (DeviceRunner, Device) {
-        let (task_tx, task_rx) = create_task_channel::<DeviceTaskResult>();
+    ) -> (DeviceMonitor, Device) {
+        let (task_tx, task_rx) = create_task_channel::<DeviceTaskResult>(50);
 
         let device = Device::new(reactor.clone(), task_tx, "dev".to_string(), operations);
 
-        let runner = DeviceRunner {
+        let runner = DeviceMonitor {
             device: device.clone(),
             pool: JoinSet::new(),
             task_rx: Arc::new(Mutex::new(task_rx)),

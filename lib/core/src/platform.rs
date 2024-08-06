@@ -15,40 +15,9 @@ use tokio::task::JoinSet;
 // use crate::device;
 // use crate::connection;
 
-use crate::Error;
+use crate::{task_channel::create_task_channel, Error, TaskReceiver, TaskResult, TaskSender};
 
-// mod connection_info;
-
-// pub mod services;
-// mod task_pool_loader;
-// mod local_broker_discovery;
-
-// use services::{Services, AmServices};
-
-// use crate::__platform_error_result;
-
-// use local_broker_discovery::task as local_broker_discovery_task;
-
-// use self::services::boot::execute_service_boot;
-// use self::services::hunt::execute_service_hunt;
-
-// pub type TaskReceiverLoader = task_pool_loader::TaskReceiverLoader;
-
-// /// Platform result type
-// ///
-// pub type PlatformTaskResult = crate::TaskResult;
-
-mod inner;
-use inner::PlatformInner;
-
-pub mod spawner;
-
-use tokio::sync::mpsc::Receiver;
-
-use crate::{
-    Factory, MainTask, MainTaskResult, PlatformLogger, PlatformTaskSpawner, Reactor,
-    ReactorSettings,
-};
+use crate::{Device, Factory, PlatformLogger, Reactor, ReactorSettings};
 
 /// Platform
 ///
@@ -58,51 +27,52 @@ pub struct Platform {
     /// Main logger
     logger: PlatformLogger,
 
+    /// Factory
     factory: Factory,
 
-    /// Internal implementation
-    inner: Arc<Mutex<PlatformInner>>, // useless
+    // Main tasks management
+    /// Pool
+    main_task_pool: JoinSet<TaskResult>,
+    /// Sender
+    main_task_sender: TaskSender<TaskResult>,
+    /// Receiver
+    main_task_receiver: Arc<Mutex<TaskReceiver<TaskResult>>>,
 
-    // Task pool to manage all tasks
-    task_pool: JoinSet<MainTaskResult>,
-
-    spawner: PlatformTaskSpawner,
-
-    //   Task pool receiver
-    // spawn_requests: Arc<Mutex<Receiver<MainTask>>>,
-    spawn_requests: Arc<Mutex<Receiver<MainTask>>>,
-    // Services
-    // services: AmServices,
-
-    // /// Device manager
-    // devices: device::AmManager,
-
-    // /// Connection manager
-    // connection: connection::AmManager
+    // Device tasks management
+    // make it possible to cancel only device task when needed
+    /// Devices
+    devices: Vec<Device>,
+    /// Pool
+    device_task_pool: JoinSet<TaskResult>,
+    /// Sender
+    device_task_sender: TaskSender<TaskResult>,
+    /// Receiver
+    device_task_receiver: Arc<Mutex<TaskReceiver<TaskResult>>>,
 }
 
 impl Platform {
     /// Create a new instance of the Platform
     ///
     pub fn new(factory: Factory) -> Platform {
-        // // Create the channel
-        // let (tx, rx) =
-        //     tokio::sync::mpsc::channel::<BoxFuture<'static, PlatformTaskResult>>(100);
+        // Main
+        let (main_tx, main_rx) = create_task_channel::<TaskResult>(20);
 
-        // let tl = TaskReceiverLoader::new(tx);
+        // Device
+        let (device_tx, device_rx) = create_task_channel::<TaskResult>(50);
 
-        // let srvs = Services::new(tl.clone());
-
-        let (tx, rx) = PlatformTaskSpawner::create();
-
+        // Create object
         return Platform {
             logger: PlatformLogger::new(),
             factory: factory,
-            inner: PlatformInner::new().into(),
 
-            task_pool: JoinSet::new(),
-            spawner: tx,
-            spawn_requests: Arc::new(Mutex::new(rx)),
+            main_task_pool: JoinSet::new(),
+            main_task_sender: main_tx,
+            main_task_receiver: Arc::new(Mutex::new(main_rx)),
+
+            devices: Vec::new(),
+            device_task_pool: JoinSet::new(),
+            device_task_sender: device_tx,
+            device_task_receiver: Arc::new(Mutex::new(device_rx)),
         };
     }
 
@@ -112,21 +82,20 @@ impl Platform {
         // Info log
         self.logger.info("Platform Version ...");
 
-        // Main tasks
-        // - reactor
-        // - services
-
+        // TODO: should be done thorugh connection.json
         let settings = ReactorSettings::new("localhost", 1883, None);
+
+        //
         let mut reactor = Reactor::new(settings);
+        reactor.start(self.main_task_sender.clone()).unwrap();
 
-        reactor.start(self.spawner.clone()).unwrap();
-
-        let (mut runner, mut dev) = self.factory.produce(reactor, &serde_json::Value::Null);
+        //
+        let (mut monitor, mut dev) = self.factory.produce(reactor, &serde_json::Value::Null);
 
         // state machine + subtask monitoring
 
         let mut dddddd2 = dev.clone();
-        self.spawner
+        self.main_task_sender
             .spawn(
                 async move {
                     dddddd2.run().await;
@@ -136,11 +105,10 @@ impl Platform {
             )
             .unwrap();
 
-        let mut dddddd = dev.clone();
-        self.spawner
+        self.main_task_sender
             .spawn(
                 async move {
-                    runner.run().await;
+                    monitor.run().await;
                     Ok(())
                 }
                 .boxed(),
@@ -156,17 +124,17 @@ impl Platform {
         // - ctrl-c: to stop the platform after the user request it
         // - a new task to start in the task pool
         // - all tasks to complete
-        let local_spawn_requests = self.spawn_requests.clone();
-        let mut spawn_requests = local_spawn_requests.lock().await;
+        let main_task_receiver_clone = self.main_task_receiver.clone();
+        let mut main_task_receiver_clone_lock = main_task_receiver_clone.lock().await;
         loop {
             tokio::select! {
                 _ = signal::ctrl_c() => {
                     self.logger.warn("User ctrl-c, abort requested");
-                    self.task_pool.abort_all();
+                    self.main_task_pool.abort_all();
                 },
-                task = spawn_requests.recv() => {
+                task = main_task_receiver_clone_lock.rx.recv() => {
                     // Function to effectily spawn tasks requested by the system
-                    let ah = self.task_pool.spawn(task.unwrap());
+                    let ah = self.main_task_pool.spawn(task.unwrap());
                     self.logger.debug(format!( "New task created ! [{:?}]", ah ));
                 },
                 _ = self.end_of_all_tasks() => {
@@ -180,7 +148,7 @@ impl Platform {
     /// Wait for all tasks to complete
     ///
     async fn end_of_all_tasks(&mut self) {
-        while let Some(join_result) = self.task_pool.join_next().await {
+        while let Some(join_result) = self.main_task_pool.join_next().await {
             // self.services.lock().await.stop_requested();
 
             match join_result {
@@ -190,7 +158,7 @@ impl Platform {
                     }
                     Err(e) => {
                         self.logger.error(format!("Task failed: {}", e));
-                        self.task_pool.abort_all();
+                        self.main_task_pool.abort_all();
                     }
                 },
                 Err(e) => {

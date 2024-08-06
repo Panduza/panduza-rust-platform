@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Device, DeviceRunner, FactoryLogger, Producer, Reactor};
+use crate::{Device, DeviceMonitor, FactoryLogger, Producer, Reactor};
 
 /// Factory to create devices from a configuration json
 ///
@@ -56,7 +56,7 @@ impl Factory {
         &self,
         reactor: Reactor,
         production_order: &serde_json::Value,
-    ) -> (DeviceRunner, Device) {
+    ) -> (DeviceMonitor, Device) {
         let _ref = "panduza.fake_register_map";
 
         let producer = self.producers.get(_ref).unwrap();
@@ -64,7 +64,7 @@ impl Factory {
 
         // Box<dyn DeviceOperations>
 
-        DeviceRunner::new(reactor.clone(), "dev".to_string(), device_operations)
+        DeviceMonitor::new(reactor.clone(), "dev".to_string(), device_operations)
     }
 
     // /// Set the connection link manager
