@@ -3,16 +3,19 @@
 // use std::pin::Pin;
 use std::sync::Arc;
 
+use futures::FutureExt;
 // use dirs;
 // use futures::future::BoxFuture;
 // use futures::Future;
 // use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
-// use tokio::task::JoinSet;
+use tokio::task::JoinSet;
 // use tokio::net::UdpSocket;
 // use crate::device;
 // use crate::connection;
+
+use crate::Error;
 
 // mod connection_info;
 
@@ -38,7 +41,14 @@ use tokio::sync::Mutex;
 mod inner;
 use inner::PlatformInner;
 
-use crate::{Factory, PlatformLogger, Reactor, ReactorSettings};
+pub mod spawner;
+
+use tokio::sync::mpsc::Receiver;
+
+use crate::{
+    Factory, MainTask, MainTaskResult, PlatformLogger, PlatformTaskSpawner, Reactor,
+    ReactorSettings,
+};
 
 /// Platform
 ///
@@ -51,23 +61,24 @@ pub struct Platform {
     factory: Factory,
 
     /// Internal implementation
-    inner: Arc<Mutex<PlatformInner>>, // Task pool to manage all tasks
-                                      // task_pool: JoinSet<PlatformTaskResult>,
+    inner: Arc<Mutex<PlatformInner>>,
 
-                                      // Task loader
-                                      // task_loader: TaskPoolLoader,
+    // Task pool to manage all tasks
+    task_pool: JoinSet<MainTaskResult>,
 
-                                      // Task pool receiver
-                                      // task_pool_rx: Arc<Mutex< tokio::sync::mpsc::Receiver<Pin<Box<dyn Future<Output = PlatformTaskResult> + Send>>> >>,
+    spawner: PlatformTaskSpawner,
 
-                                      // Services
-                                      // services: AmServices,
+    //   Task pool receiver
+    // spawn_requests: Arc<Mutex<Receiver<MainTask>>>,
+    spawn_requests: Arc<Mutex<Receiver<MainTask>>>,
+    // Services
+    // services: AmServices,
 
-                                      // /// Device manager
-                                      // devices: device::AmManager,
+    // /// Device manager
+    // devices: device::AmManager,
 
-                                      // /// Connection manager
-                                      // connection: connection::AmManager
+    // /// Connection manager
+    // connection: connection::AmManager
 }
 
 impl Platform {
@@ -82,15 +93,16 @@ impl Platform {
 
         // let srvs = Services::new(tl.clone());
 
+        let (tx, rx) = PlatformTaskSpawner::create();
+
         return Platform {
             logger: PlatformLogger::new(),
             factory: factory,
-            inner: PlatformInner::new().into(), // task_pool: JoinSet::new(),
-                                                // task_loader: tl.clone(),
-                                                // task_pool_rx: Arc::new(Mutex::new(rx)),
-                                                // services: srvs.clone(),
-                                                // devices: device::Manager::new(tl.clone(), srvs.clone()),
-                                                // connection: connection::Manager::new(tl.clone(), name)
+            inner: PlatformInner::new().into(),
+
+            task_pool: JoinSet::new(),
+            spawner: tx,
+            spawn_requests: Arc::new(Mutex::new(rx)),
         };
     }
 
@@ -107,38 +119,81 @@ impl Platform {
         let settings = ReactorSettings::new("localhost", 1883, None);
         let mut reactor = Reactor::new(settings);
 
-        let reactor_handle = reactor.start();
+        reactor.start(self.spawner.clone()).unwrap();
 
         let mut dev = self.factory.produce(reactor, &serde_json::Value::Null);
 
-        tokio::spawn(async move { dev.run().await });
+        // state machine + subtask monitoring
 
-        reactor_handle.await.unwrap();
+        let mut dddddd2 = dev.clone();
+        self.spawner
+            .spawn(
+                async move {
+                    dddddd2.run().await;
+                    Ok(())
+                }
+                .boxed(),
+            )
+            .unwrap();
 
+        let mut dddddd = dev.clone();
+        self.spawner
+            .spawn(
+                async move {
+                    return Err(Error::Wtf);
+                    dddddd.run().await;
+                    Ok(())
+                }
+                .boxed(),
+            )
+            .unwrap();
         // Main loop
         // Run forever and wait for:
         // - ctrl-c: to stop the platform after the user request it
         // - a new task to start in the task pool
         // - all tasks to complete
-        // let task_pool_rx_clone = self.task_pool_rx.clone();
-        // let mut task_pool_rx = task_pool_rx_clone.lock().await;
-        // loop {
-        //     tokio::select! {
-        //         _ = signal::ctrl_c() => {
-        //             self.logger.warn("User ctrl-c, abort requested");
-        //             // self.task_pool.abort_all();
-        //         },
-        //         task = task_pool_rx.recv() => {
-        //             // Function to effectily spawn tasks requested by the system
-        //             // let ah = self.task_pool.spawn(task.unwrap());
-        //             self.logger.debug("New task created ! [{:?}]", ah );
-        //         },
-        //         // _ = self.end_of_all_tasks() => {
-        //         //     tracing::warn!(class="Platform", "All tasks completed, stop the platform");
-        //         //     break;
-        //         // }
-        //     }
-        // }
+        let local_spawn_requests = self.spawn_requests.clone();
+        let mut spawn_requests = local_spawn_requests.lock().await;
+        loop {
+            tokio::select! {
+                _ = signal::ctrl_c() => {
+                    self.logger.warn("User ctrl-c, abort requested");
+                    self.task_pool.abort_all();
+                },
+                task = spawn_requests.recv() => {
+                    // Function to effectily spawn tasks requested by the system
+                    let ah = self.task_pool.spawn(task.unwrap());
+                    self.logger.debug(format!( "New task created ! [{:?}]", ah ));
+                },
+                _ = self.end_of_all_tasks() => {
+                    self.logger.warn("All tasks completed, stop the platform");
+                    break;
+                }
+            }
+        }
+    }
+
+    /// Wait for all tasks to complete
+    ///
+    async fn end_of_all_tasks(&mut self) {
+        while let Some(join_result) = self.task_pool.join_next().await {
+            // self.services.lock().await.stop_requested();
+
+            match join_result {
+                Ok(task_result) => match task_result {
+                    Ok(_) => {
+                        self.logger.warn("Task completed");
+                    }
+                    Err(e) => {
+                        self.logger.error(format!("Task failed: {}", e));
+                        self.task_pool.abort_all();
+                    }
+                },
+                Err(e) => {
+                    self.logger.error(format!("Join failed: {}", e));
+                }
+            }
+        }
     }
 }
 
@@ -163,35 +218,6 @@ impl Platform {
 //             local_broker_discovery_task(plbd_platform_services)
 //         );
 
-//     }
-
-//     /// Wait for all tasks to complete
-//     ///
-//     async fn end_of_all_tasks( &mut self) {
-//         while let Some(join_result) = self.task_pool.join_next().await {
-
-//             // self.services.lock().await.stop_requested();
-
-//             match join_result {
-
-//                 Ok(task_result) => {
-//                     match task_result {
-//                         Ok(_) => {
-//                             tracing::warn!("Task completed");
-//                         },
-//                         Err(e) => {
-//                             tracing::error!("Task failed: {}", e);
-//                             self.task_pool.abort_all();
-
-//                         }
-//                     }
-//                 },
-//                 Err(e) => {
-//                     tracing::error!("Join failed: {}", e);
-//                 }
-//             }
-
-//         }
 //     }
 
 //     /// Services task

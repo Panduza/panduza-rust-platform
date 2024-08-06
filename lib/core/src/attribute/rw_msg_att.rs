@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
-use crate::{AttributeBuilder, Error, MessageCodec};
+use crate::{AttributeBuilder, Error, MessageCodec, TaskResult};
 
 use super::RwMessageAttributeInner;
 
@@ -38,13 +38,13 @@ impl<TYPE: MessageCodec> RwMessageAttribute<TYPE> {
 
     /// Wait an input command then execute the callback
     ///
-    pub async fn wait_one_command_then<F>(&self, function: F)
+    pub async fn wait_one_command_then<F>(&self, function: F) -> TaskResult
     where
-        F: Future<Output = ()> + Send + 'static,
+        F: Future<Output = TaskResult> + Send + 'static,
     {
         let change_notifier = self.inner.lock().await.base.clone_change_notifier();
         change_notifier.notified().await;
-        function.await;
+        function.await
     }
 
     /// Set the value of the attribute

@@ -14,6 +14,7 @@ pub use factory::Factory;
 
 // The heavy machine
 mod platform;
+pub use platform::spawner::{MainTask, MainTaskResult, PlatformTaskSpawner};
 pub use platform::Platform;
 
 //

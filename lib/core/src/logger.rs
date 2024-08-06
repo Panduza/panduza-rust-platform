@@ -24,10 +24,16 @@ impl GenericLogger {
         };
     }
 
-    // #[inline]
-    // pub fn log_error<A: Into<String>>(&self, text: A) {
-    //     tracing::error!(class=CLASS_NAME, bname=self.bname, dname=self.dname, iname=self.iname, "{}", text.into());
-    // }
+    pub fn error<A: Into<String>>(&self, text: A) {
+        tracing::error!(
+            class = self.class,
+            i1 = self.i1,
+            i2 = self.i2,
+            i3 = self.i3,
+            "{}",
+            text.into()
+        );
+    }
 
     pub fn warn<A: Into<String>>(&self, text: A) {
         tracing::warn!(
@@ -76,6 +82,9 @@ impl PlatformLogger {
         PlatformLogger {
             base: GenericLogger::new("Platform", "", "", ""),
         }
+    }
+    pub fn error<A: Into<String>>(&self, text: A) {
+        self.base.error(text);
     }
     pub fn warn<A: Into<String>>(&self, text: A) {
         self.base.warn(text);

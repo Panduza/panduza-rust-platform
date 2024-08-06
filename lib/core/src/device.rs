@@ -118,6 +118,13 @@ impl Device {
         self.inner.lock().await.store_handle(h);
     }
 
+    pub async fn spawn2<F>(&mut self, future: F)
+    where
+        F: Future<Output = TaskResult> + Send + 'static,
+    {
+        // let h = tokio::spawn(future);
+        self.inner.lock().await.spawn(future);
+    }
     ///
     ///
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
@@ -129,6 +136,8 @@ impl Device {
     }
 
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) {}
+
+    // pub async fn run(&mut self) {}
 
     pub async fn run(&mut self) {
         // wait for notify event

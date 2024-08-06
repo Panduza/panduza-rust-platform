@@ -1,28 +1,20 @@
+use core::sync;
+
 use async_trait::async_trait;
 use panduza_platform_core::{BooleanCodec, Device, DeviceOperations, Error};
 
 pub struct RegisterMapDevice {}
-
-macro_rules! on_command_event {
-    ($source:expr, $cb:expr) => {{
-        device
-            .spawn(async move {
-                println!("start loop");
-                loop {
-                    println!("start wait");
-                    let attribut_bis = attribut.clone();
-                    attribut.wait_one_command_then(async move { $cb }).await;
-                }
-            })
-            .await;
-    }};
-}
 
 #[async_trait]
 impl DeviceOperations for RegisterMapDevice {
     /// Mount the device
     ///
     async fn mount(&self, mut device: Device) -> Result<(), Error> {
+        let test = std::sync::Arc::new(std::sync::Mutex::new(0u8));
+
+        // commands [json Codec] (Ro)
+        // N topic avec 1 valeur de registre [int or array codec] (Wo -> write only)
+
         //
         device.logger.info("pooook");
 
@@ -43,31 +35,23 @@ impl DeviceOperations for RegisterMapDevice {
         device.logger.info("pooook 2 ");
         // Task that run an action every time the value of the attribute change
 
+        let _aa = attribut.clone();
         device
-            .spawn(async move {
-                println!("start loop");
+            .spawn2(async move {
                 loop {
                     println!("start wait");
-                    let attribut_bis = attribut.clone();
-                    attribut
-                        .wait_one_command_then(async move {
-                            println!("cooucou");
-                            let _dat = attribut_bis.get().await.unwrap();
-                            println!("cooucou {} ", _dat);
-                        })
-                        .await;
+                    let attribut_bis = _aa.clone();
+
+                    _aa.wait_one_command_then(async move {
+                        println!("cooucou");
+                        let _dat = attribut_bis.get().await.unwrap();
+                        println!("cooucou {} ", _dat);
+                        Ok(())
+                    })
+                    .await?
                 }
             })
             .await;
-
-        on_command_event!("", {
-            println!("cooucou");
-            let _dat = attribut_bis.get().await.unwrap();
-            println!("cooucou {} ", _dat);
-        });
-
-        // we have to store the handle in an object that will survive the function
-        // device.store_handle(h).await;
 
         device.logger.info("pooook 3 ");
 
