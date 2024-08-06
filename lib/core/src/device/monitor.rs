@@ -22,10 +22,12 @@ pub type DeviceTaskResult = Result<(), Error>;
 /// It is important to check when a task has failed
 ///
 pub struct DeviceMonitor {
+    /// To allow the communication with the state machine
+    ///
     device: Device,
 
-    pool: JoinSet<DeviceTaskResult>,
-    task_rx: Arc<Mutex<TaskReceiver<DeviceTaskResult>>>,
+    subtask_pool: JoinSet<DeviceTaskResult>,
+    subtask_receiver: Arc<Mutex<TaskReceiver<DeviceTaskResult>>>,
 }
 
 impl DeviceMonitor {
@@ -40,22 +42,22 @@ impl DeviceMonitor {
 
         let runner = DeviceMonitor {
             device: device.clone(),
-            pool: JoinSet::new(),
-            task_rx: Arc::new(Mutex::new(task_rx)),
+            subtask_pool: JoinSet::new(),
+            subtask_receiver: Arc::new(Mutex::new(task_rx)),
         };
 
         (runner, device)
     }
 
     pub async fn run(&mut self) {
-        let task_rx = self.task_rx.clone();
-        let mut task_rx_lock = task_rx.lock().await;
+        let subtask_receiver_clone = self.subtask_receiver.clone();
+        let mut subtask_receiver_clone_lock = subtask_receiver_clone.lock().await;
         loop {
             tokio::select! {
 
-                task = task_rx_lock.rx.recv() => {
+                task = subtask_receiver_clone_lock.rx.recv() => {
                     // Function to effectily spawn tasks requested by the system
-                    let ah = self.pool.spawn(task.unwrap());
+                    let ah = self.subtask_pool.spawn(task.unwrap());
                     println!("New task created ! [{:?}]", ah );
                 },
                 _ = self.end_of_all_tasks() => {
@@ -70,7 +72,7 @@ impl DeviceMonitor {
     /// Wait for all tasks to complete
     ///
     async fn end_of_all_tasks(&mut self) {
-        while let Some(join_result) = self.pool.join_next().await {
+        while let Some(join_result) = self.subtask_pool.join_next().await {
             // self.services.lock().await.stop_requested();
 
             match join_result {
@@ -80,7 +82,7 @@ impl DeviceMonitor {
                     }
                     Err(e) => {
                         println!("Task failed: {}", e);
-                        self.pool.abort_all();
+                        self.subtask_pool.abort_all();
                     }
                 },
                 Err(e) => {
