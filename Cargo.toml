@@ -7,14 +7,14 @@ edition = "2021"
 [dependencies]
 
 panduza-platform-core = { path = "lib/core" }
-# panduza-connectors = { path = "lib/connectors" }
+panduza-platform-connectors = { path = "lib/connectors" }
 
 
 # plugin-std = { path = "plugins/std" }
-plugin-fake = { path = "plugins/fake" }
 # plugin-video = { path = "plugins/video" }
 
-# pza-plugin-picoha = { path = "plugins/picoha" }
+pza-plugin-fake = { path = "plugins/fake" }
+pza-plugin-picoha = { path = "plugins/picoha" }
 
 
 # Main async framework for the platform

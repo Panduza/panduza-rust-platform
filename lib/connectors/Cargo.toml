@@ -1,5 +1,5 @@
 [package]
-name = "panduza-connectors"
+name = "panduza-platform-connectors"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 
 # The panduza connectors library
-panduza-core = { path = "../core" }
+panduza-platform-core = { path = "../core" }
 
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
@@ -24,7 +24,7 @@ serde_json = "1.0.114"
 nusb = "0.1.9"
 
 #
-usbtmc-message = { git = "https://github.com/Panduza/pza-rust-usbtmc-message", tag="0.0.0" }
+usbtmc-message = { git = "https://github.com/Panduza/pza-rust-usbtmc-message", tag = "0.0.0" }
 
 #
 futures-lite = "2.3.0"
@@ -51,4 +51,4 @@ tracing = { version = "0.1", features = [
     "release_max_level_info",
     # "release_max_level_debug",
     # "release_max_level_trace"
-]}
+] }

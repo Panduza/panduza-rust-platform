@@ -107,19 +107,6 @@ async fn main() {
         broker.start().unwrap();
     });
 
-    // Load plugins section
-    {
-        // let mut devices = platform.devices().lock().await;
-        // let factory = &mut devices.factory;
-
-        // builtin_devices::import_plugin_producers(factory);
-
-        // plugin_std::import_plugin_producers(factory);
-
-        // plugin_video::import_plugin_producers(factory);
-        // pza_plugin_picoha::import_plugin_producers(factory);
-    }
-
     // Platform loop
     platform.run().await;
 }

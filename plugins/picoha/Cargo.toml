@@ -5,9 +5,9 @@ edition = "2021"
 [dependencies]
 
 # The panduza core library
-panduza-core = { path = "../../lib/core" }
+panduza-platform-core = { path = "../../lib/core" }
 # The panduza connectors library
-panduza-connectors = { path = "../../lib/connectors" }
+panduza-platform-connectors = { path = "../../lib/connectors" }
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
 # Json serialization & deserialization
@@ -18,12 +18,11 @@ async-trait = "0.1.77"
 futures = "0.3.17"
 
 
-prost = "0.12"
+prost = "0.13.1"
 # Only necessary if using Protobuf well-known types:
-prost-types = "0.12"
+prost-types = "0.13.1"
 
 bytes = "1.0.1"
 
 [build-dependencies]
-prost-build = { version = "0.12" }
-
+prost-build = { version = "0.13.1" }

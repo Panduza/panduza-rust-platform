@@ -1,5 +1,5 @@
 [package]
-name = "plugin-fake"
+name = "pza-plugin-fake"
 edition = "2021"
 
 [dependencies]
