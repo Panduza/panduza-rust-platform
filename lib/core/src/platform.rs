@@ -136,7 +136,7 @@ impl Platform {
             )
             .unwrap();
 
-        // let mut dddddd = dev.clone();
+        let mut dddddd = dev.clone();
         self.spawner
             .spawn(
                 async move {
@@ -146,6 +146,11 @@ impl Platform {
                 .boxed(),
             )
             .unwrap();
+
+        //
+        // need to spawn the idle task
+        //
+
         // Main loop
         // Run forever and wait for:
         // - ctrl-c: to stop the platform after the user request it

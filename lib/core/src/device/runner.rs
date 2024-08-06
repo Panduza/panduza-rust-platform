@@ -5,10 +5,12 @@
 use crate::Error;
 use std::sync::Arc;
 
-use crate::{taskpool::TaskPool, DeviceOperations, Reactor};
-
 use super::Device;
+use crate::{taskpool::TaskPool, DeviceOperations, Reactor};
 use futures::future::Join;
+use std::time::Duration;
+
+use tokio::time::sleep;
 use tokio::{sync::Mutex, task::JoinSet};
 
 pub struct DeviceRunner {
@@ -49,8 +51,9 @@ impl DeviceRunner {
                     println!("New task created ! [{:?}]", ah );
                 },
                 _ = self.end_of_all_tasks() => {
-                    println!("All tasks completed, stop the platform");
-                    break;
+                    println!("All tasks completed, stop the device");
+
+                    sleep(Duration::from_secs(1)).await;
                 }
             }
         }
@@ -65,15 +68,15 @@ impl DeviceRunner {
             match join_result {
                 Ok(task_result) => match task_result {
                     Ok(_) => {
-                        // self.logger.warn("Task completed");
+                        println!("Task completed");
                     }
                     Err(e) => {
-                        // self.logger.error(format!("Task failed: {}", e));
+                        println!("Task failed: {}", e);
                         self.pool.abort_all();
                     }
                 },
                 Err(e) => {
-                    // self.logger.error(format!("Join failed: {}", e));
+                    println!("Join failed: {}", e);
                 }
             }
         }

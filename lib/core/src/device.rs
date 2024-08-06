@@ -1,6 +1,6 @@
 mod inner;
-use std::{fmt::Display, future::Future, sync::Arc};
-use tokio::task::JoinHandle;
+use std::{fmt::Display, future::Future, sync::Arc, time::Duration};
+use tokio::{task::JoinHandle, time::sleep};
 
 pub use inner::DeviceInner;
 
@@ -168,6 +168,8 @@ impl Device {
                 State::Cleaning => {}
                 State::Stopping => {}
             }
+
+            sleep(Duration::from_secs(1)).await;
         }
     }
 
