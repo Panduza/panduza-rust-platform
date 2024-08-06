@@ -31,6 +31,7 @@ pub struct Platform {
     factory: Factory,
 
     // Main tasks management
+    // All the task that should never be stopped
     /// Pool
     main_task_pool: JoinSet<TaskResult>,
     /// Sender
