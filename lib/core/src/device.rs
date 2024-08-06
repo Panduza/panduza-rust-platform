@@ -6,13 +6,15 @@ pub use inner::DeviceInner;
 
 use crate::{
     reactor::{self, Reactor},
-    DeviceLogger, DeviceOperations, TaskResult,
+    DeviceLogger, DeviceOperations, DeviceTaskSpawner, TaskResult,
 };
 
 use serde_json;
 use tokio::sync::Mutex;
 
 use crate::InterfaceBuilder;
+
+pub mod runner;
 
 // use crate::interface::listener::Listener;
 
@@ -87,6 +89,9 @@ pub struct Device {
     // platform_services: crate::platform::services::AmServices,
     // // logger: Logger,
     state: State,
+    //
+    //
+    spawner: DeviceTaskSpawner,
 }
 
 impl Device {
@@ -95,7 +100,12 @@ impl Device {
 
     /// Create a new instance of the Device
     ///
-    pub fn new(reactor: Reactor, name: String, operations: Box<dyn DeviceOperations>) -> Device {
+    pub fn new(
+        reactor: Reactor,
+        spawner: DeviceTaskSpawner,
+        name: String,
+        operations: Box<dyn DeviceOperations>,
+    ) -> Device {
         // Create the object
         Device {
             logger: DeviceLogger::new(),
@@ -103,6 +113,7 @@ impl Device {
             inner: DeviceInner::new(reactor.clone(), operations).into(),
             topic: format!("{}/{}", reactor.root_topic(), name),
             state: State::Initializating,
+            spawner: spawner,
         }
     }
 

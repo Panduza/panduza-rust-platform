@@ -12,6 +12,8 @@ pub type MainTaskResult = Result<(), Error>;
 // pub type MainTask = Pin<Box<dyn Future<Output = MainTaskResult> + Send>>;
 pub type MainTask = BoxFuture<'static, MainTaskResult>;
 
+// TaskPool -> Spawner
+
 /// Platform Spawner
 ///
 /// Allow main tasks of the system to be monitored by the platform main thread
@@ -33,10 +35,7 @@ impl PlatformTaskSpawner {
 
     /// Load a future into the task pool
     ///
-    pub fn spawn(
-        &mut self,
-        future: Pin<Box<dyn Future<Output = MainTaskResult> + Send>>,
-    ) -> Result<(), crate::Error> {
+    pub fn spawn(&mut self, future: MainTask) -> Result<(), crate::Error> {
         let r = self.tx.try_send(future);
         match r {
             Ok(_) => {

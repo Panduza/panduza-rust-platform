@@ -19,6 +19,7 @@ pub use platform::Platform;
 
 //
 mod device;
+pub use device::runner::DeviceRunner;
 pub use device::Device;
 pub use device::DeviceInner;
 //
@@ -52,6 +53,10 @@ pub type MessageClient = rumqttc::AsyncClient;
 //
 mod codec;
 pub use codec::boolean::BooleanCodec;
+
+mod taskpool;
+pub use taskpool::TaskPoolSpawner;
+pub type DeviceTaskSpawner = TaskPoolSpawner<Result<(), ()>>;
 
 /// Return type for spawned task
 pub type TaskResult = Result<(), Error>;

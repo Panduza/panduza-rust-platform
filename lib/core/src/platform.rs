@@ -121,7 +121,7 @@ impl Platform {
 
         reactor.start(self.spawner.clone()).unwrap();
 
-        let mut dev = self.factory.produce(reactor, &serde_json::Value::Null);
+        let (mut runner, mut dev) = self.factory.produce(reactor, &serde_json::Value::Null);
 
         // state machine + subtask monitoring
 
@@ -136,12 +136,11 @@ impl Platform {
             )
             .unwrap();
 
-        let mut dddddd = dev.clone();
+        // let mut dddddd = dev.clone();
         self.spawner
             .spawn(
                 async move {
-                    return Err(Error::Wtf);
-                    dddddd.run().await;
+                    runner.run().await;
                     Ok(())
                 }
                 .boxed(),
