@@ -32,6 +32,7 @@ mod attribute;
 pub use attribute::builder::AttributeBuilder;
 pub use attribute::ro_msg_att::RoMessageAttribute;
 pub use attribute::rw_msg_att::RwMessageAttribute;
+pub use attribute::wo_msg_att::WoMessageAttribute;
 
 // public traits
 mod traits;
@@ -54,7 +55,7 @@ pub type MessageClient = rumqttc::AsyncClient;
 mod codec;
 pub use codec::boolean::BooleanCodec;
 pub use codec::json::JsonCodec;
-pub use codec::numeric::NumericCodec;
+pub use codec::uinterger::UIntergerCodec;
 
 mod task_channel;
 pub use task_channel::TaskReceiver;

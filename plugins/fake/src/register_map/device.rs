@@ -1,15 +1,25 @@
 use core::sync;
 
 use async_trait::async_trait;
-use panduza_platform_core::{BooleanCodec, Device, DeviceOperations, Error};
+use panduza_platform_core::{
+    BooleanCodec, Device, DeviceOperations, Error, UIntergerCodec, WoMessageAttribute,
+};
 
-pub struct RegisterMapDevice {}
+pub struct RegisterMapDevice {
+    array: Vec<WoMessageAttribute<UIntergerCodec>>,
+}
+
+impl RegisterMapDevice {
+    pub fn new() -> RegisterMapDevice {
+        RegisterMapDevice { array: Vec::new() }
+    }
+}
 
 #[async_trait]
 impl DeviceOperations for RegisterMapDevice {
     /// Mount the device
     ///
-    async fn mount(&self, mut device: Device) -> Result<(), Error> {
+    async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         let test = std::sync::Arc::new(std::sync::Mutex::new(0u8));
 
         // commands [json Codec] (Ro)
@@ -22,6 +32,17 @@ impl DeviceOperations for RegisterMapDevice {
             .create_interface("pok")
             .with_tags("examples;tests")
             .finish();
+
+        for n in 1..20 {
+            let a = interface
+                .create_attribute(format!("cell_{}", n))
+                .message()
+                .with_wo_access()
+                .finish_with_codec::<UIntergerCodec>()
+                .await;
+            a.set(2).await.unwrap();
+            self.array.push(a);
+        }
 
         let attribut = interface
             .create_attribute("test")

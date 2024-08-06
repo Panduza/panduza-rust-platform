@@ -19,7 +19,7 @@ impl Producer for RegisterMapProducer {
     }
 
     fn produce(&self) -> Result<Box<dyn DeviceOperations>, panduza_platform_core::Error> {
-        return Ok(Box::new(RegisterMapDevice {}));
+        return Ok(Box::new(RegisterMapDevice::new()));
     }
 }
 
