@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use nusb::Error;
 use panduza_platform_core::Error as PlatformError;
 
 use tokio_serial::available_ports as available_serial_ports;

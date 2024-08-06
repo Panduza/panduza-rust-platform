@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use panduza_core::platform_error;
-use panduza_core::Error as PlatformError;
-use panduza_core::FunctionResult;
+use panduza_platform_core::Error as PlatformError;
 
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
@@ -42,7 +40,7 @@ impl Driver {
 
         // Create instance
         Driver {
-            logger: ConnectorLogger::new("serial", port_name),
+            logger: ConnectorLogger::new("serial", port_name, ""),
             settings: settings.clone(),
             serial_stream: None,
             time_lock: None,
@@ -57,18 +55,16 @@ impl Driver {
 
     /// Initialize the driver
     ///
-    pub async fn init(&mut self) -> FunctionResult {
+    pub async fn init(&mut self) -> Result<(), PlatformError> {
         // Internal driver already initialized by an other entity => OK
         if self.serial_stream.is_some() {
             return Ok(());
         }
 
         // Get the port name
-        let port_name = self
-            .settings
-            .port_name
-            .as_ref()
-            .ok_or_else(|| platform_error!("Port name is not set in settings"))?;
+        let port_name = self.settings.port_name.as_ref().ok_or_else(|| {
+            PlatformError::BadSettings("Port name is not set in settings".to_string())
+        })?;
 
         // Setup builder
         let serial_builder = tokio_serial::new(port_name, self.settings.baudrate)
@@ -78,10 +74,9 @@ impl Driver {
             .flow_control(self.settings.flow_control);
 
         // Build the stream
-        self.serial_stream = Some(
-            SerialStream::open(&serial_builder)
-                .map_err(|e| platform_error!("Unable to open serial stream: {}", e))?,
-        );
+        self.serial_stream = Some(SerialStream::open(&serial_builder).map_err(|e| {
+            PlatformError::BadSettings(format!("Unable to open serial stream: {}", e))
+        })?);
 
         Ok(())
     }
@@ -103,10 +98,12 @@ impl Driver {
         let write_result = self
             .serial_stream
             .as_mut()
-            .ok_or_else(|| platform_error!("No serial stream"))?
+            .ok_or_else(|| PlatformError::BadSettings(format!("No serial stream")))?
             .write(command)
             .await
-            .map_err(|e| platform_error!("Unable to write on serial stream: {}", e));
+            .map_err(|e| {
+                PlatformError::BadSettings(format!("Unable to write on serial stream: {}", e))
+            });
 
         // Set the time lock
         if let Some(duration) = self.settings.time_lock_duration {
@@ -132,10 +129,12 @@ impl Driver {
         // Read the response
         self.serial_stream
             .as_mut()
-            .ok_or_else(|| platform_error!("No serial stream"))?
+            .ok_or_else(|| PlatformError::BadSettings("No serial stream".to_string()))?
             .read(response)
             .await
-            .map_err(|e| platform_error!("Unable to read on serial stream {:?}", e))
+            .map_err(|e| {
+                PlatformError::BadSettings(format!("Unable to read on serial stream {:?}", e))
+            })
     }
 
     ///
@@ -155,10 +154,12 @@ impl Driver {
             let mut single_buf = [0u8; 1];
             self.serial_stream
                 .as_mut()
-                .ok_or_else(|| platform_error!("No serial stream"))?
+                .ok_or_else(|| PlatformError::BadSettings("No serial stream".to_string()))?
                 .read_exact(&mut single_buf)
                 .await
-                .map_err(|e| platform_error!("Unable to read on serial stream {:?}", e))?;
+                .map_err(|e| {
+                    PlatformError::BadSettings(format!("Unable to read on serial stream {:?}", e))
+                })?;
             response[n] = single_buf[0];
             n += 1;
             if single_buf[0] == end {
@@ -172,7 +173,7 @@ impl Driver {
 impl Drop for Driver {
     fn drop(&mut self) {
         // Close the serial stream
-        self.logger.log_warn("Closing serial stream");
+        self.logger.warn("Closing serial stream");
         self.serial_stream = None;
     }
 }

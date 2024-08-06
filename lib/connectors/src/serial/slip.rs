@@ -4,7 +4,7 @@ mod gate;
 
 // usage
 use crate::SerialSettings;
-use panduza_core::Error as PlatformError;
+use panduza_platform_core::Error as PlatformError;
 
 // public interface
 pub type Connector = driver::Connector;
