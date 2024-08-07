@@ -7,18 +7,18 @@ use crate::{Device, DeviceOperations, Error};
 
 ///
 /// Main device of the platform
-/// Provides the root informations about the platform
+/// Provides the informations about the platform
 ///
-pub struct RootDevice {}
+pub struct InfoDevice {}
 
-impl RootDevice {
-    pub fn new() -> RootDevice {
-        RootDevice {}
+impl InfoDevice {
+    pub fn new() -> InfoDevice {
+        InfoDevice {}
     }
 }
 
 #[async_trait]
-impl DeviceOperations for RootDevice {
+impl DeviceOperations for InfoDevice {
     ///
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
