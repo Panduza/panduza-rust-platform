@@ -1,7 +1,7 @@
 mod inner;
 
-use std::{fmt::Display, future::Future, sync::Arc, time::Duration};
-use tokio::time::sleep;
+use std::{fmt::Display, future::Future, sync::Arc};
+use tokio::sync::Notify;
 
 pub use inner::DeviceInner;
 
@@ -75,6 +75,7 @@ pub struct Device {
     // platform_services: crate::platform::services::AmServices,
     // // logger: Logger,
     state: State,
+    state_change_notifier: Arc<Notify>,
     //
     //
     spawner: TaskSender<Result<(), Error>>,
@@ -104,6 +105,7 @@ impl Device {
             inner_operations: Arc::new(Mutex::new(operations)),
             topic: format!("{}/{}", reactor.root_topic(), name),
             state: State::Booting,
+            state_change_notifier: Arc::new(Notify::new()),
             spawner: spawner,
         }
     }
@@ -133,12 +135,17 @@ impl Device {
     /// Run the FSM of the device
     ///
     pub async fn run_fsm(&mut self) {
-        // wait for notify event
-        // then lock inner
-        // use inner once
-        // loop
+        //
+        // First start by booting the device to give him a connection with the info_pack
+        // and allow the InfoDevice to send device information on MQTT
+        self.move_to_state(State::Booting);
 
+        //
+        // Start the main loop of the device
+        // TODO => Maybe we should give a way to stop properly this task instead of canceling the task brutally
         loop {
+            self.state_change_notifier.notified().await;
+
             // Helper log
             self.logger.debug(format!("FSM State {}", self.state));
 
@@ -146,9 +153,11 @@ impl Device {
             match self.state {
                 State::Booting => {
                     if let Some(mut info_pack) = self.info_pack.clone() {
+                        self.logger.debug("FSM try to add_deivce in info pack");
                         self.info_dev = Some(info_pack.add_device(self.name()).await);
+                        self.logger.debug("FSM finish info pack");
                     }
-                    self.state = State::Initializating;
+                    self.move_to_state(State::Initializating);
                 }
                 State::Connecting => {} // wait for reactor signal
                 State::Initializating => {
@@ -160,11 +169,11 @@ impl Device {
                     match mount_result {
                         Ok(_) => {
                             self.logger.debug("FSM Mount Success ");
-                            self.state = State::Running;
+                            self.move_to_state(State::Running);
                         }
                         Err(e) => {
                             self.logger.error(format!("FSM Mount Failure {}", e));
-                            self.state = State::Error;
+                            self.move_to_state(State::Error);
                         }
                     }
                 }
@@ -178,14 +187,12 @@ impl Device {
                         .wait_reboot_event(self.clone())
                         .await;
                     self.logger.info("try to reboot");
-                    self.state = State::Initializating;
+                    self.move_to_state(State::Initializating);
                 }
                 State::Warning => {}
                 State::Cleaning => {}
                 State::Stopping => {}
             }
-
-            sleep(Duration::from_secs(1)).await;
         }
 
         // Ok(())
@@ -203,5 +210,13 @@ impl Device {
             Some(value) => value.to_string(),
             None => "noname".to_string(),
         }
+    }
+
+    ///
+    /// Function to change the current state of the device FSM
+    ///
+    pub fn move_to_state(&mut self, new_state: State) {
+        self.state = new_state;
+        self.state_change_notifier.notify_one();
     }
 }

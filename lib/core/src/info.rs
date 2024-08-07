@@ -43,14 +43,36 @@ impl DeviceOperations for InfoDevice {
         //
         let mut interface_devices = device.create_interface("devices").finish();
 
-        // spawn loop
-        //      wait notify on devices structure
-        //      add request => create attribute for the device name
-        //      validate request in info pack => info pack must have a fifo of request
-
-        // Chaque nouvelle interface pour le nouveau device attend la notif de sa structure
-
         //
+        // Here the device interface must provide an attribute for each device mounted on the platform
+        // When the device boot, it must send a creation request to this task and wait for the 'InfoDevice'
+        // a validation. Once validated, the device can continue to run and report its status through an 'Arc<Mutex<InfoDev"
+        //
+        let pack_clone = self.pack.clone();
+        device
+            .spawn(async move {
+                let new_request = pack_clone.new_request_notifier().await;
+
+                loop {
+                    let devices = pack_clone.devices();
+                    let request = devices.lock().await.pop_next_request();
+                    match request {
+                        Some(r) => {
+                            // Here I must create a attribute inside interface_devices
+                            // when the request is a creation request
+                            // else delete the object
+                            devices.lock().await.validate_request(r);
+                        }
+                        None => {}
+                    }
+                    //
+                    // Wait for more request
+                    new_request.notified().await;
+                }
+
+                Ok(())
+            })
+            .await;
 
         Ok(())
     }

@@ -10,6 +10,7 @@ use super::Device;
 use crate::{DeviceOperations, Reactor, TaskReceiver};
 use std::time::Duration;
 
+use tokio::sync::Notify;
 use tokio::time::sleep;
 use tokio::{sync::Mutex, task::JoinSet};
 
@@ -27,6 +28,8 @@ pub struct DeviceMonitor {
 
     subtask_pool: JoinSet<DeviceTaskResult>,
     subtask_receiver: Arc<Mutex<TaskReceiver<DeviceTaskResult>>>,
+
+    subtask_pool_not_empty_notifier: Arc<Notify>,
 }
 
 impl DeviceMonitor {
@@ -61,6 +64,7 @@ impl DeviceMonitor {
             device: device.clone(),
             subtask_pool: JoinSet::new(),
             subtask_receiver: Arc::new(Mutex::new(task_rx)),
+            subtask_pool_not_empty_notifier: Arc::new(Notify::new()),
         };
         //
         // Ok
@@ -70,6 +74,7 @@ impl DeviceMonitor {
     pub async fn run(&mut self) {
         let subtask_receiver_clone = self.subtask_receiver.clone();
         let mut subtask_receiver_clone_lock = subtask_receiver_clone.lock().await;
+        let subtask_pool_not_empty_notifier_clone = self.subtask_pool_not_empty_notifier.clone();
         loop {
             tokio::select! {
 
@@ -77,6 +82,7 @@ impl DeviceMonitor {
                     // Function to effectily spawn tasks requested by the system
                     let ah = self.subtask_pool.spawn(task.unwrap());
                     println!("New task created ! [{:?}]", ah );
+                    subtask_pool_not_empty_notifier_clone.notify_one();
                 },
                 _ = self.end_of_all_tasks() => {
                     // Juste alert the user, but it can be not important
@@ -91,6 +97,12 @@ impl DeviceMonitor {
     /// Wait for all tasks to complete
     ///
     async fn end_of_all_tasks(&mut self) {
+        //
+        // Wait for some task in the pool if the pool is empty
+        if self.subtask_pool.is_empty() {
+            self.subtask_pool_not_empty_notifier.notified().await;
+        }
+
         while let Some(join_result) = self.subtask_pool.join_next().await {
             // self.services.lock().await.stop_requested();
 

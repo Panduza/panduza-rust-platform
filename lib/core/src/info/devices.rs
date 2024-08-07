@@ -31,6 +31,13 @@ pub struct InfoDev {
 }
 
 impl InfoDev {
+    pub fn new() -> InfoDev {
+        InfoDev {
+            state: State::Booting,
+            notifications: Vec::new(),
+        }
+    }
+
     ///
     ///
     ///  
@@ -118,10 +125,16 @@ impl InfoDevs {
         }
     }
 
-    // ///
-    // ///
-    // pub fn change_state(&mut self, device: String, new_state: State) {
-    //     // self.devs.get_mut(device).
-    //     self.new_request_notifier.notify_waiters();
-    // }
+    ///
+    ///
+    ///
+    pub fn pop_next_request(&mut self) -> Option<InfoDevRequest> {
+        self.requests.pop()
+    }
+
+    pub fn validate_request(&mut self, request: InfoDevRequest) {
+        self.devs
+            .insert(request.name, Arc::new(Mutex::new(InfoDev::new())));
+        self.request_validation_notifier.notify_waiters();
+    }
 }

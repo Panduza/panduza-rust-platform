@@ -7,7 +7,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 
 use super::devices::{self, InfoDev, InfoDevs};
 
@@ -27,6 +27,16 @@ impl InfoPack {
         InfoPack {
             devices: Arc::new(Mutex::new(InfoDevs::new())),
         }
+    }
+
+    pub fn devices(&self) -> Arc<Mutex<InfoDevs>> {
+        self.devices.clone()
+    }
+
+    ///
+    ///
+    pub async fn new_request_notifier(&self) -> Arc<Notify> {
+        self.devices.lock().await.new_request_notifier()
     }
 
     pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDev>> {
