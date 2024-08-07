@@ -5,7 +5,6 @@ pub use settings::ReactorSettings;
 //
 mod message_engine;
 use message_engine::MessageEngine;
-use tokio::task::JoinHandle;
 
 //
 pub mod message_dispatcher;
@@ -16,7 +15,7 @@ use tokio::sync::Mutex;
 use crate::{AttributeBuilder, MessageDispatcher, TaskResult, TaskSender};
 
 use rumqttc::AsyncClient;
-use rumqttc::{Client, MqttOptions, QoS};
+use rumqttc::{MqttOptions, QoS};
 
 use std::time::Duration;
 
