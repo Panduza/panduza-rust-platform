@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::device::State;
 use std::collections::HashMap;
-use tokio::sync::Notify;
+use tokio::sync::{Mutex, Notify};
 
 ///
 ///
@@ -39,19 +39,89 @@ impl InfoDev {
     }
 }
 
+pub enum RequestType {
+    Create,
+    Delete,
+}
+
+pub struct InfoDevRequest {
+    rtype: RequestType,
+    name: String,
+}
+
+impl InfoDevRequest {
+    pub fn new(rtype: RequestType, name: String) -> InfoDevRequest {
+        InfoDevRequest {
+            rtype: rtype,
+            name: name,
+        }
+    }
+}
+
 pub struct InfoDevs {
+    ///
+    ///
     devs: HashMap<String, Arc<Mutex<InfoDev>>>,
-    // requests: Vec<Request>
-    notifier: Arc<Notify>,
+
+    ///
+    ///
+    requests: Vec<InfoDevRequest>,
+
+    ///
+    /// Notified when a new request is pending
+    ///
+    new_request_notifier: Arc<Notify>,
+
+    ///
+    /// Notified when a request has been managed by the InfoDevice
+    ///
+    request_validation_notifier: Arc<Notify>,
 }
 
 impl InfoDevs {
     ///
+    ///
+    pub fn new() -> InfoDevs {
+        InfoDevs {
+            devs: HashMap::new(),
+            requests: Vec::new(),
+            new_request_notifier: Arc::new(Notify::new()),
+            request_validation_notifier: Arc::new(Notify::new()),
+        }
+    }
 
     ///
     ///
-    pub fn change_state(&mut self, device: String, new_state: State) {
-        // self.devs.get_mut(device).
-        self.notifier.notify_waiters();
+    pub fn new_request_notifier(&self) -> Arc<Notify> {
+        self.new_request_notifier.clone()
     }
+
+    ///
+    ///
+    pub fn request_validation_notifier(&self) -> Arc<Notify> {
+        self.request_validation_notifier.clone()
+    }
+
+    ///
+    pub fn push_device_creation_request(&mut self, name: String) {
+        self.requests
+            .push(InfoDevRequest::new(RequestType::Create, name));
+        self.new_request_notifier.notify_waiters();
+    }
+
+    ///
+    ///
+    pub fn get_dev_info(&self, name: &String) -> Option<Arc<Mutex<InfoDev>>> {
+        match self.devs.get(name) {
+            Some(o) => Some(o.clone()),
+            None => None,
+        }
+    }
+
+    // ///
+    // ///
+    // pub fn change_state(&mut self, device: String, new_state: State) {
+    //     // self.devs.get_mut(device).
+    //     self.new_request_notifier.notify_waiters();
+    // }
 }

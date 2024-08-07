@@ -9,6 +9,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::Mutex;
 
+use super::devices::{self, InfoDev, InfoDevs};
+
 #[derive(Clone)]
 pub struct InfoPack {
     ///
@@ -23,10 +25,20 @@ impl InfoPack {
     ///
     pub fn new() -> InfoPack {
         InfoPack {
-            devices: HashMap::new(),
+            devices: Arc::new(Mutex::new(InfoDevs::new())),
         }
     }
 
-    // add_device -> creation d'une interface associée
-    // del_device
+    pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDev>> {
+        let request_validated_notifier = self.devices.lock().await.request_validation_notifier();
+
+        self.devices
+            .lock()
+            .await
+            .push_device_creation_request(name.clone());
+
+        request_validated_notifier.notified().await;
+
+        self.devices.lock().await.get_dev_info(&name).unwrap()
+    }
 }

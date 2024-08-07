@@ -18,9 +18,12 @@ use tokio::time::sleep;
 // use crate::device;
 // use crate::connection;
 
+use crate::info::InfoDevice;
 use crate::{task_channel::create_task_channel, Error, TaskReceiver, TaskResult, TaskSender};
 
-use crate::{Device, Factory, PlatformLogger, ProductionOrder, Reactor, ReactorSettings};
+use crate::{
+    Device, DeviceMonitor, Factory, PlatformLogger, ProductionOrder, Reactor, ReactorSettings,
+};
 
 /// Platform
 ///
@@ -95,11 +98,43 @@ impl Platform {
 
         // create the root device inside main task
 
+        // Creation à la mano du device de gestion de la platform
+        let (info_device_operations, info_pack) = InfoDevice::new();
+        let (mut info_monitor, info_device) = DeviceMonitor::new(
+            reactor.clone(),
+            None,
+            Box::new(info_device_operations),
+            ProductionOrder::new("_", "_"),
+        );
+
+        let mut info_device_clone = info_device.clone();
+        self.main_task_sender
+            .spawn(
+                async move {
+                    info_device_clone.run_fsm().await;
+                    Ok(())
+                }
+                .boxed(),
+            )
+            .unwrap();
+
+        self.main_task_sender
+            .spawn(
+                async move {
+                    info_monitor.run().await;
+                    Ok(())
+                }
+                .boxed(),
+            )
+            .unwrap();
+
         //
         // let production_order = ProductionOrder::new("panduza.fake_register_map", "testdevice");
         let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
         production_order.device_settings = json!({});
-        let (mut monitor, mut dev) = self.factory.produce(reactor, production_order);
+        let (mut monitor, mut dev) =
+            self.factory
+                .produce(reactor, Some(info_pack.clone()), production_order);
 
         // state machine + subtask monitoring
 
@@ -141,28 +176,39 @@ impl Platform {
         // - all tasks to complete
         let main_task_receiver_clone = self.main_task_receiver.clone();
         let mut main_task_receiver_clone_lock = main_task_receiver_clone.lock().await;
+        let device_task_receiver_clone = self.device_task_receiver.clone();
+        let mut device_task_receiver_clone_lock = device_task_receiver_clone.lock().await;
         loop {
             tokio::select! {
                 _ = signal::ctrl_c() => {
                     self.logger.warn("User ctrl-c, abort requested");
                     self.main_task_pool.abort_all();
                 },
-                task = main_task_receiver_clone_lock.rx.recv() => {
+                main_task = main_task_receiver_clone_lock.rx.recv() => {
                     // Function to effectily spawn tasks requested by the system
-                    let ah = self.main_task_pool.spawn(task.unwrap());
+                    let ah = self.main_task_pool.spawn(main_task.unwrap());
                     self.logger.debug(format!( "New task created ! [{:?}]", ah ));
                 },
-                _ = self.end_of_all_tasks() => {
+                device_task = device_task_receiver_clone_lock.rx.recv() => {
+                    // Function to effectily spawn tasks requested by the system
+                    let ah = self.device_task_pool.spawn(device_task.unwrap());
+                    self.logger.debug(format!( "New task created ! [{:?}]", ah ));
+                },
+                _ = self.end_of_all_main_tasks() => {
                     self.logger.warn("All tasks completed, stop the platform");
                     break;
                 }
+                // _ = self.end_of_all_device_tasks() => {
+                //     // self.logger.warn("All tasks completed, stop the platform");
+                //     break;
+                // }
             }
         }
     }
 
     /// Wait for all tasks to complete
     ///
-    async fn end_of_all_tasks(&mut self) {
+    async fn end_of_all_main_tasks(&mut self) {
         while let Some(join_result) = self.main_task_pool.join_next().await {
             // self.services.lock().await.stop_requested();
 
@@ -174,6 +220,27 @@ impl Platform {
                     Err(e) => {
                         self.logger.error(format!("Task failed: {}", e));
                         self.main_task_pool.abort_all();
+                    }
+                },
+                Err(e) => {
+                    self.logger.error(format!("Join failed: {}", e));
+                }
+            }
+        }
+    }
+
+    async fn end_of_all_device_tasks(&mut self) {
+        while let Some(join_result) = self.device_task_pool.join_next().await {
+            // self.services.lock().await.stop_requested();
+
+            match join_result {
+                Ok(task_result) => match task_result {
+                    Ok(_) => {
+                        self.logger.warn("Task completed");
+                    }
+                    Err(e) => {
+                        self.logger.error(format!("Task failed: {}", e));
+                        self.device_task_pool.abort_all();
                     }
                 },
                 Err(e) => {

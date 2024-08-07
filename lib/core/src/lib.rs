@@ -55,6 +55,7 @@ pub type MessageClient = rumqttc::AsyncClient;
 
 //
 mod info;
+pub use info::pack::InfoPack;
 
 //
 mod codec;

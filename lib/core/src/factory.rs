@@ -2,7 +2,7 @@ pub mod production_order;
 
 use std::collections::HashMap;
 
-use crate::{Device, DeviceMonitor, FactoryLogger, Producer, ProductionOrder, Reactor};
+use crate::{Device, DeviceMonitor, FactoryLogger, InfoPack, Producer, ProductionOrder, Reactor};
 
 /// Factory to create devices from a configuration json
 ///
@@ -57,6 +57,7 @@ impl Factory {
     pub fn produce(
         &self,
         reactor: Reactor,
+        info_pack: Option<InfoPack>,
         production_order: ProductionOrder,
     ) -> (DeviceMonitor, Device) {
         let producer = self.producers.get(production_order.device_ref()).unwrap();
@@ -64,24 +65,13 @@ impl Factory {
 
         // Box<dyn DeviceOperations>
 
-        DeviceMonitor::new(reactor.clone(), device_operations, production_order)
+        DeviceMonitor::new(
+            reactor.clone(),
+            info_pack,
+            device_operations,
+            production_order,
+        )
     }
-
-    // /// Set the connection link manager
-    // ///
-    // pub fn set_connection_link_manager(&mut self, connection_link_manager: link::AmManager) {
-    //     self.connection_link_manager = Some(connection_link_manager);
-    // }
-
-    // /// Add a hunter to the factory
-    // ///
-    // pub fn add_hunter(&mut self, hunter: Box<dyn Hunter>) {
-    //     // Info log
-    //     tracing::info!(class = "Factory", "  - new hunter");
-
-    //     // Append the producer
-    //     self.hunters.push(hunter);
-    // }
 
     // /// Create a new device instance
     // ///
@@ -125,34 +115,6 @@ impl Factory {
     //         &ref_string,
     //         settings,
     //     );
-    // }
-
-    // /// Find the producer and produce the device
-    // ///
-    // fn find_producer_and_produce_device(
-    //     &self,
-    //     dev_name: &String,
-    //     bench_name: &String,
-    //     device_ref: &String,
-    //     settings: serde_json::Value,
-    // ) -> Result<Device, PlatformError> {
-    //     let producer = self.producers.get(device_ref);
-    //     match producer {
-    //         None => {
-    //             let error_text = format!("Producer not found for {}", device_ref);
-    //             return __platform_error_result!(error_text);
-    //         }
-    //         Some(producer) => {
-    //             return Self::produce_device(
-    //                 dev_name,
-    //                 bench_name,
-    //                 producer,
-    //                 self.connection_link_manager.as_ref().unwrap(),
-    //                 settings,
-    //                 self.platform_services.clone(),
-    //             );
-    //         }
-    //     }
     // }
 
     // /// Create a new device instance with all the required data

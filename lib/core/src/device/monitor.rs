@@ -3,7 +3,7 @@
 // and to run the task monitoring
 
 use crate::task_channel::create_task_channel;
-use crate::{DeviceSettings, Error, ProductionOrder};
+use crate::{DeviceSettings, Error, InfoPack, ProductionOrder};
 use std::sync::Arc;
 
 use super::Device;
@@ -34,6 +34,7 @@ impl DeviceMonitor {
     /// Constructor
     pub fn new(
         reactor: Reactor,
+        info_pack: Option<InfoPack>,
         operations: Box<dyn DeviceOperations>,
         production_order: ProductionOrder,
     ) -> (DeviceMonitor, Device) {
@@ -46,7 +47,14 @@ impl DeviceMonitor {
         let (task_tx, task_rx) = create_task_channel::<DeviceTaskResult>(50);
         //
         // Create the device object
-        let device = Device::new(reactor.clone(), task_tx, name, operations, settings);
+        let device = Device::new(
+            reactor.clone(),
+            info_pack,
+            task_tx,
+            name,
+            operations,
+            settings,
+        );
         //
         // Create the monitoring object
         let monitor = DeviceMonitor {

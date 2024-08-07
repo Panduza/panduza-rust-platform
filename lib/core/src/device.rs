@@ -1,43 +1,26 @@
 mod inner;
 
 use std::{fmt::Display, future::Future, sync::Arc, time::Duration};
-use tokio::{task::JoinHandle, time::sleep};
+use tokio::time::sleep;
 
 pub use inner::DeviceInner;
 
 use crate::{
-    reactor::{self, Reactor},
-    DeviceLogger, DeviceOperations, DeviceSettings, Error, TaskResult, TaskSender,
+    info::devices::InfoDev, reactor::Reactor, DeviceLogger, DeviceOperations, DeviceSettings,
+    Error, InfoPack, TaskResult, TaskSender,
 };
 
-use serde_json;
 use tokio::sync::Mutex;
 
 use crate::InterfaceBuilder;
 use futures::FutureExt;
 pub mod monitor;
 
-// use crate::interface::listener::Listener;
-
-// use crate::interface::fsm::Fsm;
-// use crate::platform::TaskReceiverLoader;
-
-// use futures::FutureExt;
-// // use crate::device::traits::DeviceActions;
-// use crate::link::AmManager as AmLinkManager;
-
-// use crate::interface::Builder as InterfaceBuilder;
-
-// use crate::{subscription, FunctionResult, __platform_error_result};
-
-// use crate::interface::Interface;
-
-// use super::logger::{self, Logger};
-
 /// States of the main Interface FSM
 ///
 #[derive(Clone, Debug)]
 pub enum State {
+    Booting,
     Connecting,
     Initializating,
     Running,
@@ -50,6 +33,7 @@ pub enum State {
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            State::Booting => write!(f, "Booting"),
             State::Connecting => write!(f, "Connecting"),
             State::Initializating => write!(f, "Initializating"),
             State::Running => write!(f, "Running"),
@@ -70,6 +54,12 @@ pub struct Device {
 
     //
     reactor: Reactor,
+
+    // Object to provide data to the info device
+    /// Main pack
+    info_pack: Option<InfoPack>,
+    /// Specific for device info
+    info_dev: Option<Arc<Mutex<InfoDev>>>,
 
     // started: bool,
     /// Inner object
@@ -98,6 +88,7 @@ impl Device {
     ///
     pub fn new(
         reactor: Reactor,
+        info_pack: Option<InfoPack>,
         spawner: TaskSender<Result<(), Error>>,
         name: String,
         operations: Box<dyn DeviceOperations>,
@@ -107,10 +98,12 @@ impl Device {
         Device {
             logger: DeviceLogger::new(name.clone()),
             reactor: reactor.clone(),
+            info_pack: info_pack,
+            info_dev: None,
             inner: DeviceInner::new(reactor.clone(), settings).into(),
             inner_operations: Arc::new(Mutex::new(operations)),
             topic: format!("{}/{}", reactor.root_topic(), name),
-            state: State::Initializating,
+            state: State::Booting,
             spawner: spawner,
         }
     }
@@ -151,6 +144,12 @@ impl Device {
 
             // Perform state task
             match self.state {
+                State::Booting => {
+                    if let Some(mut info_pack) = self.info_pack.clone() {
+                        self.info_dev = Some(info_pack.add_device(self.name()).await);
+                    }
+                    self.state = State::Initializating;
+                }
                 State::Connecting => {} // wait for reactor signal
                 State::Initializating => {
                     //
@@ -197,5 +196,12 @@ impl Device {
     ///
     pub async fn settings(&self) -> DeviceSettings {
         self.inner.lock().await.settings.clone()
+    }
+
+    pub fn name(&self) -> String {
+        match self.topic.split('/').last() {
+            Some(value) => value.to_string(),
+            None => "noname".to_string(),
+        }
     }
 }
