@@ -41,6 +41,7 @@ pub enum State {
     Initializating,
     Running,
     Warning,
+    Error,
     Cleaning,
     Stopping,
 }
@@ -51,6 +52,7 @@ impl Display for State {
             State::Connecting => write!(f, "Connecting"),
             State::Initializating => write!(f, "Initializating"),
             State::Running => write!(f, "Running"),
+            State::Error => write!(f, "Error"),
             State::Warning => write!(f, "Warning"),
             State::Cleaning => write!(f, "Cleaning"),
             State::Stopping => write!(f, "Stopping"),
@@ -158,16 +160,26 @@ impl Device {
                     match mount_result {
                         Ok(_) => {
                             self.logger.debug("FSM Mount Success ");
+                            self.state = State::Running;
                         }
                         Err(e) => {
                             self.logger.error(format!("FSM Mount Failure {}", e));
+                            self.state = State::Error;
                         }
                     }
-
-                    self.state = State::Running
                 }
-
                 State::Running => {} // do nothing, watch for inner tasks
+                State::Error => {
+                    //
+                    // Wait before reboot
+                    self.inner_operations
+                        .lock()
+                        .await
+                        .wait_reboot_event(self.clone())
+                        .await;
+                    self.logger.info("try to reboot");
+                    self.state = State::Initializating;
+                }
                 State::Warning => {}
                 State::Cleaning => {}
                 State::Stopping => {}

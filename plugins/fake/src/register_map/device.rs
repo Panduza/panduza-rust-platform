@@ -1,7 +1,10 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
 use panduza_platform_core::{
     BooleanCodec, Device, DeviceOperations, Error, UIntergerCodec, WoMessageAttribute,
 };
+use tokio::time::sleep;
 
 pub struct RegisterMapDevice {
     array: Vec<WoMessageAttribute<UIntergerCodec>>,
@@ -106,6 +109,13 @@ impl DeviceOperations for RegisterMapDevice {
         device.logger.info("pooook 3 ");
 
         Ok(())
+    }
+
+    ///
+    /// Easiest way to implement the reboot event
+    ///
+    async fn wait_reboot_event(&mut self, mut device: Device) {
+        sleep(Duration::from_secs(5)).await;
     }
 }
 

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
 
 use panduza_platform_connectors::serial::slip::get as get_connector;
@@ -6,6 +8,7 @@ use panduza_platform_connectors::serial::slip::Connector;
 use panduza_platform_connectors::SerialSettings;
 use panduza_platform_connectors::UsbSettings;
 use panduza_platform_core::{Device, DeviceOperations, Error};
+use tokio::time::sleep;
 
 static PICOHA_VENDOR_ID: u16 = 0x16c0;
 static PICOHA_PRODUCT_ID: u16 = 0x05e1;
@@ -89,11 +92,18 @@ impl PicoHaDioDevice {
 
 #[async_trait]
 impl DeviceOperations for PicoHaDioDevice {
-    /// Mount device and give him its structure
+    ///
+    ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         self.prepare_settings(device.clone()).await?;
-        // self.mount_connector().await?;
+        self.mount_connector().await?;
         Ok(())
+    }
+    ///
+    /// Easiest way to implement the reboot event
+    ///
+    async fn wait_reboot_event(&mut self, mut device: Device) {
+        sleep(Duration::from_secs(5)).await;
     }
 }
 // impl DeviceActions for PicoHaDio {

@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use super::Device;
 use crate::{DeviceOperations, Reactor, TaskReceiver};
-use futures::future::Join;
 use std::time::Duration;
 
 use tokio::time::sleep;
