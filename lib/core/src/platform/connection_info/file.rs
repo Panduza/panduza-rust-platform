@@ -2,6 +2,8 @@ use std::env;
 use std::io::Write;
 use std::path::PathBuf;
 
+use serde_json::json;
+
 use super::Info;
 use super::Error;
 use super::serde;
@@ -76,8 +78,14 @@ pub fn export_file(info: &Info) -> FunctionResult {
     // Create the JSON string
     let json_string = serde::serialize(info)?;
 
+    // Transform the json string in pretty json string
+    let json_value: serde_json::Value = serde_json::from_str(&json_string)
+        .map_err(|e| __platform_error!(e.to_string()))?;
+    let pretty_json_string = serde_json::to_string_pretty(&json_value)
+        .map_err(|e| __platform_error!(e.to_string()) )?;
+
     // Write file
-    file.write_all(json_string.as_bytes())
+    file.write_all(pretty_json_string.as_bytes())
         .map_err(|e| __platform_error!(e.to_string()) )?;
 
     Ok(())

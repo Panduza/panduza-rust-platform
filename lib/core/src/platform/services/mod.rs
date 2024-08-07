@@ -1,4 +1,5 @@
 use serde_json;
+use std::env::var;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use bitflags::bitflags;
@@ -7,6 +8,7 @@ use std::cmp::PartialEq;
 
 
 use crate::platform::connection_info::export_file;
+use crate::{FunctionResult, __platform_error_result};
 
 
 pub mod boot;
@@ -189,10 +191,17 @@ impl Services {
 
     /// Set the default connection info
     ///
-    pub fn generate_default_connection_info(&mut self) -> Result<(), std::io::Error> {
+    pub fn generate_default_connection_info(&mut self) -> FunctionResult {
         self.connection_info = Some(ConnectionInfo::default());
         
-        export_file(self.connection_info.as_ref().unwrap()).unwrap();
+        match self.connection_info.as_ref() {
+            None => return __platform_error_result!("Default ConnectionInfo is None ???"),
+            Some(connection_info_ref) => {
+                if let Err(err) = export_file(connection_info_ref) {
+                    return __platform_error_result!(format!("Export file failed : {:?}", err));
+                }
+            }
+        }
 
         Ok(())
     }

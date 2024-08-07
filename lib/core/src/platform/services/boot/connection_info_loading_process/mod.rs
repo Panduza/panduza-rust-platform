@@ -1,4 +1,6 @@
 use std::io::{self, Read};
+use crate::platform_error;
+use crate::platform_error_result;
 use crate::FunctionResult;
 use crate::platform::services::Services;
 
@@ -62,7 +64,10 @@ fn ask_user_about_default_connection_info_creation(services: &mut Services)
 
     // Get input from user
     let mut input = [0; 1];
-    io::stdin().read(&mut input).unwrap();
+    if let Err(err) = io::stdin().read(&mut input) {
+        return __platform_error_result!(format!("Read failed : {:?}", err));
+    }
+
     let char = input[0] as char;
 
     // Check if user answer Yes
