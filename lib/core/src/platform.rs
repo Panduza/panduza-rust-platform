@@ -93,6 +93,8 @@ impl Platform {
         let mut reactor = Reactor::new(settings);
         reactor.start(self.main_task_sender.clone()).unwrap();
 
+        // create the root device inside main task
+
         //
         // let production_order = ProductionOrder::new("panduza.fake_register_map", "testdevice");
         let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");

@@ -1,4 +1,6 @@
 mod inner;
+pub mod root;
+
 use std::{fmt::Display, future::Future, sync::Arc, time::Duration};
 use tokio::{task::JoinHandle, time::sleep};
 
