@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use crate::device::State;
+use tokio::sync::Notify;
 
 ///
 ///
@@ -22,12 +25,17 @@ struct Notification {
 ///
 ///
 struct InfoDevice {
-    state: State, // notifications
+    state: State,
+    notifications: Vec<Notification>,
+    notifier: Arc<Notify>,
 }
 
-///
-///
-///
-struct InfoDevices {
-    // map<string, Arc<Mutex<InfoDevice>>
+impl InfoDevice {
+    ///
+    ///
+    ///  
+    pub fn change_state(&mut self, new_state: State) {
+        self.state = new_state;
+        self.notifier.notify_waiters();
+    }
 }
