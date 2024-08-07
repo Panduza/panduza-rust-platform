@@ -39,6 +39,19 @@ impl DeviceOperations for InfoDevice {
     ///
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
+        //
+        //
+        let mut interface_devices = device.create_interface("devices").finish();
+
+        // spawn loop
+        //      wait notify on devices structure
+        //      add request => create attribute for the device name
+        //      validate request in info pack => info pack must have a fifo of request
+
+        // Chaque nouvelle interface pour le nouveau device attend la notif de sa structure
+
+        //
+
         Ok(())
     }
     ///

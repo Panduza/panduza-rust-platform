@@ -9,14 +9,12 @@ use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::Mutex;
 
-use super::InfoDevice;
-
 #[derive(Clone)]
 pub struct InfoPack {
     ///
     /// Devices infos, one for each instanciated device
     ///
-    devices: HashMap<String, Arc<Mutex<InfoDevice>>>,
+    devices: Arc<Mutex<InfoDevs>>,
 }
 
 impl InfoPack {
@@ -28,4 +26,7 @@ impl InfoPack {
             devices: HashMap::new(),
         }
     }
+
+    // add_device -> creation d'une interface associée
+    // del_device
 }
