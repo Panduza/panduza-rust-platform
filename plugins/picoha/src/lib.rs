@@ -1,4 +1,4 @@
-// mod register_map;
+mod dio;
 
 use panduza_platform_core::Producer;
 
@@ -6,6 +6,6 @@ use panduza_platform_core::Producer;
 //
 pub fn plugin_producers() -> Vec<Box<dyn Producer>> {
     let mut producers: Vec<Box<dyn Producer>> = vec![];
-    // producers.push(register_map::producer::RegisterMapProducer::new());
+    producers.push(dio::producer::PiochaDio::new());
     return producers;
 }

@@ -11,6 +11,7 @@ pub use logger::PlatformLogger;
 
 ///
 mod factory;
+pub use factory::production_order::DeviceSettings;
 pub use factory::production_order::ProductionOrder;
 pub use factory::Factory;
 

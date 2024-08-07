@@ -100,6 +100,7 @@ async fn main() {
     //
     let mut factory = Factory::new();
     factory.add_producers(pza_plugin_fake::plugin_producers());
+    factory.add_producers(pza_plugin_picoha::plugin_producers());
 
     // Create platform runner
     let mut platform = Platform::new(factory);

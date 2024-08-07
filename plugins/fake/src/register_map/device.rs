@@ -1,5 +1,3 @@
-use core::sync;
-
 use async_trait::async_trait;
 use panduza_platform_core::{
     BooleanCodec, Device, DeviceOperations, Error, UIntergerCodec, WoMessageAttribute,
@@ -14,37 +12,37 @@ impl RegisterMapDevice {
         RegisterMapDevice { array: Vec::new() }
     }
 
-    async fn create_channel_n(&mut self, mut device: Device, i: u32) {
-        let mut channel_0 = device
-            .create_interface("channel_0")
-            .with_tags("examples;tests")
-            .finish();
+    // async fn create_channel_n(&mut self, mut device: Device, i: u32) {
+    //     let mut channel_0 = device
+    //         .create_interface("channel_0")
+    //         .with_tags("examples;tests")
+    //         .finish();
 
-        let enable = channel_0
-            .create_attribute("enable")
-            .message()
-            .with_rw_access()
-            .finish_with_codec::<BooleanCodec>()
-            .await;
+    //     let enable = channel_0
+    //         .create_attribute("enable")
+    //         .message()
+    //         .with_rw_access()
+    //         .finish_with_codec::<BooleanCodec>()
+    //         .await;
 
-        let _clone = enable.clone();
-        device
-            .spawn(async move {
-                loop {
-                    println!("start wait");
-                    let attribut_bis = _clone.clone();
+    //     let _clone = enable.clone();
+    //     device
+    //         .spawn(async move {
+    //             loop {
+    //                 println!("start wait");
+    //                 let attribut_bis = _clone.clone();
 
-                    _clone
-                        .wait_one_command_then(async move {
-                            // return Err(Error::Wtf);
-                            println!("enable 0");
-                            Ok(())
-                        })
-                        .await?
-                }
-            })
-            .await;
-    }
+    //                 _clone
+    //                     .wait_one_command_then(async move {
+    //                         // return Err(Error::Wtf);
+    //                         println!("enable 0");
+    //                         Ok(())
+    //                     })
+    //                     .await?
+    //             }
+    //         })
+    //         .await;
+    // }
 }
 
 #[async_trait]
@@ -52,8 +50,6 @@ impl DeviceOperations for RegisterMapDevice {
     /// Mount the device
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
-        let test = std::sync::Arc::new(std::sync::Mutex::new(0u8));
-
         // commands [json Codec] (Ro)
         // N topic avec 1 valeur de registre [int or array codec] (Wo -> write only)
 

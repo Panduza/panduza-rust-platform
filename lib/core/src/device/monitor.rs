@@ -3,7 +3,7 @@
 // and to run the task monitoring
 
 use crate::task_channel::create_task_channel;
-use crate::Error;
+use crate::{DeviceSettings, Error, ProductionOrder};
 use std::sync::Arc;
 
 use super::Device;
@@ -31,22 +31,33 @@ pub struct DeviceMonitor {
 }
 
 impl DeviceMonitor {
+    ///
+    /// Constructor
     pub fn new(
         reactor: Reactor,
-        name: String,
         operations: Box<dyn DeviceOperations>,
+        production_order: ProductionOrder,
     ) -> (DeviceMonitor, Device) {
+        //
+        // Move in data and consume production order
+        let name = production_order.device_name;
+        let settings = production_order.device_settings;
+        //
+        // Create the task channel between the device and its monitoring object
         let (task_tx, task_rx) = create_task_channel::<DeviceTaskResult>(50);
-
-        let device = Device::new(reactor.clone(), task_tx, "dev".to_string(), operations);
-
-        let runner = DeviceMonitor {
+        //
+        // Create the device object
+        let device = Device::new(reactor.clone(), task_tx, name, operations, settings);
+        //
+        // Create the monitoring object
+        let monitor = DeviceMonitor {
             device: device.clone(),
             subtask_pool: JoinSet::new(),
             subtask_receiver: Arc::new(Mutex::new(task_rx)),
         };
-
-        (runner, device)
+        //
+        // Ok
+        (monitor, device)
     }
 
     pub async fn run(&mut self) {

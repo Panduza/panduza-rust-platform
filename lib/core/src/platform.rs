@@ -4,6 +4,7 @@
 use std::sync::Arc;
 
 use futures::FutureExt;
+use serde_json::json;
 // use dirs;
 // use futures::future::BoxFuture;
 // use futures::Future;
@@ -91,7 +92,9 @@ impl Platform {
         reactor.start(self.main_task_sender.clone()).unwrap();
 
         //
-        let production_order = ProductionOrder::new("panduza.fake_register_map", "testdevice");
+        // let production_order = ProductionOrder::new("panduza.fake_register_map", "testdevice");
+        let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
+        production_order.device_settings = json!({});
         let (mut monitor, mut dev) = self.factory.produce(reactor, production_order);
 
         // state machine + subtask monitoring
