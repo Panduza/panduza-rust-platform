@@ -72,6 +72,10 @@ pub struct Device {
     /// Inner object
     inner: Arc<Mutex<DeviceInner>>,
 
+    /// Operations of the devices
+    ///
+    inner_operations: Arc<Mutex<Box<dyn DeviceOperations>>>,
+
     ///
     topic: String,
 
@@ -98,9 +102,10 @@ impl Device {
     ) -> Device {
         // Create the object
         Device {
-            logger: DeviceLogger::new(),
+            logger: DeviceLogger::new(name.clone()),
             reactor: reactor.clone(),
-            inner: DeviceInner::new(reactor.clone(), operations, settings).into(),
+            inner: DeviceInner::new(reactor.clone(), settings).into(),
+            inner_operations: Arc::new(Mutex::new(operations)),
             topic: format!("{}/{}", reactor.root_topic(), name),
             state: State::Initializating,
             spawner: spawner,
@@ -128,23 +133,36 @@ impl Device {
 
     // pub async fn run(&mut self) {}
 
-    pub async fn run(&mut self) {
+    ///
+    /// Run the FSM of the device
+    ///
+    pub async fn run_fsm(&mut self) {
         // wait for notify event
         // then lock inner
         // use inner once
         // loop
+
         loop {
+            // Helper log
+            self.logger.debug(format!("FSM State {}", self.state));
+
             // Perform state task
             match self.state {
                 State::Connecting => {} // wait for reactor signal
                 State::Initializating => {
-                    self.inner
-                        .lock()
-                        .await
-                        .operations
-                        .mount(self.clone())
-                        .await
-                        .unwrap();
+                    //
+                    // Try to mount the device
+                    let mount_result = self.inner_operations.lock().await.mount(self.clone()).await;
+                    //
+                    // Manage mount result
+                    match mount_result {
+                        Ok(_) => {
+                            self.logger.debug("FSM Mount Success ");
+                        }
+                        Err(e) => {
+                            self.logger.error(format!("FSM Mount Failure {}", e));
+                        }
+                    }
 
                     self.state = State::Running
                 }
@@ -157,6 +175,8 @@ impl Device {
 
             sleep(Duration::from_secs(1)).await;
         }
+
+        // Ok(())
     }
 
     ///

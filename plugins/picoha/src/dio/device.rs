@@ -32,7 +32,7 @@ impl PicoHaDioDevice {
     ///
     /// Prepare settings of the device
     ///
-    pub async fn prepare_settings(&mut self, device: &mut Device) -> Result<(), Error> {
+    pub async fn prepare_settings(&mut self, device: Device) -> Result<(), Error> {
         // Get the device logger
         let logger = device.logger.clone();
 
@@ -91,8 +91,8 @@ impl PicoHaDioDevice {
 impl DeviceOperations for PicoHaDioDevice {
     /// Mount device and give him its structure
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
-        self.prepare_settings(&mut device).await?;
-        self.mount_connector().await?;
+        self.prepare_settings(device.clone()).await?;
+        // self.mount_connector().await?;
         Ok(())
     }
 }

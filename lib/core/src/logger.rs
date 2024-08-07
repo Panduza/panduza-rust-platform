@@ -136,12 +136,21 @@ pub struct DeviceLogger {
     base: GenericLogger,
 }
 impl DeviceLogger {
-    pub fn new() -> DeviceLogger {
+    pub fn new<A: Into<String>>(name: A) -> DeviceLogger {
         DeviceLogger {
-            base: GenericLogger::new("Device", "", "", ""),
+            base: GenericLogger::new("Device", name.into(), "", ""),
         }
+    }
+    pub fn error<A: Into<String>>(&self, text: A) {
+        self.base.error(text);
+    }
+    pub fn warn<A: Into<String>>(&self, text: A) {
+        self.base.warn(text);
     }
     pub fn info<A: Into<String>>(&self, text: A) {
         self.base.info(text);
+    }
+    pub fn debug<A: Into<String>>(&self, text: A) {
+        self.base.debug(text);
     }
 }

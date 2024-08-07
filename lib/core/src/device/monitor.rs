@@ -72,7 +72,8 @@ impl DeviceMonitor {
                     println!("New task created ! [{:?}]", ah );
                 },
                 _ = self.end_of_all_tasks() => {
-                    println!("All tasks completed, stop the device");
+                    // Juste alert the user, but it can be not important
+                    self.device.logger.warn("No sub task anymore");
 
                     sleep(Duration::from_secs(1)).await;
                 }

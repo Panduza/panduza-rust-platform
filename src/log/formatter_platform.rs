@@ -123,9 +123,8 @@ where
                             }
                             "Device" => {
                                 let f = format!(
-                                    "[{}/{}] ",
-                                    visitor.entries().get("i1").unwrap().trim_matches('"'),
-                                    visitor.entries().get("i2").unwrap().trim_matches('"')
+                                    "[{}] ",
+                                    visitor.entries().get("i1").unwrap().trim_matches('"')
                                 );
                                 write!(&mut writer, "{}", f.green())?;
                             }

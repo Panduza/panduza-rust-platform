@@ -11,24 +11,15 @@ pub struct DeviceInner {
     ///
     pub reactor: Reactor,
 
-    /// Operations of the devices
-    ///
-    pub operations: Box<dyn DeviceOperations>,
-
     /// Settings of the device, provided by the user
     ///
     pub settings: DeviceSettings,
 }
 
 impl DeviceInner {
-    pub fn new(
-        reactor: Reactor,
-        operations: Box<dyn DeviceOperations>,
-        settings: DeviceSettings,
-    ) -> DeviceInner {
+    pub fn new(reactor: Reactor, settings: DeviceSettings) -> DeviceInner {
         DeviceInner {
             reactor: reactor,
-            operations: operations,
             settings: settings,
         }
     }

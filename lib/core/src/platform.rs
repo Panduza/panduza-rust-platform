@@ -2,6 +2,7 @@
 // use std::path::PathBuf;
 // use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 use futures::FutureExt;
 use serde_json::json;
@@ -12,6 +13,7 @@ use serde_json::json;
 use tokio::signal;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
+use tokio::time::sleep;
 // use tokio::net::UdpSocket;
 // use crate::device;
 // use crate::connection;
@@ -103,7 +105,7 @@ impl Platform {
         self.main_task_sender
             .spawn(
                 async move {
-                    dddddd2.run().await;
+                    dddddd2.run_fsm().await;
                     Ok(())
                 }
                 .boxed(),
@@ -123,6 +125,12 @@ impl Platform {
         //
         // need to spawn the idle task
         //
+        // ugly but...
+        self.main_task_pool.spawn(async move {
+            loop {
+                sleep(Duration::from_secs(10)).await
+            }
+        });
 
         // Main loop
         // Run forever and wait for:
