@@ -18,6 +18,9 @@ use tokio::time::sleep;
 // use crate::device;
 // use crate::connection;
 
+pub mod config_manager;
+use config_manager::*;
+
 use crate::info::InfoDevice;
 use crate::{task_channel::create_task_channel, TaskReceiver, TaskResult, TaskSender};
 
@@ -35,6 +38,7 @@ pub struct Platform {
 
     /// Factory
     factory: Factory,
+    config_manager: ConfigManager,
 
     // Main tasks management
     // All the task that should never be stopped
@@ -72,6 +76,8 @@ impl Platform {
             logger: PlatformLogger::new(),
             factory: factory,
 
+            config_manager: ConfigManager::new(),
+
             main_task_pool: JoinSet::new(),
             main_task_sender: main_tx,
             main_task_receiver: Arc::new(Mutex::new(main_rx)),
@@ -89,8 +95,21 @@ impl Platform {
         // Info log
         self.logger.info("Platform Version ...");
 
+        // call load_config on cfg_manager and print error if any
+        if let Err(e) = self.config_manager.load_config() {
+            panic!("Error with config file: {}", e);
+        }
+
+        let addr = &self.config_manager.get_broker_info().addr;
+        let port = self.config_manager.get_broker_info().port;
+        let name = self
+            .config_manager
+            .get_platform_info()
+            .and_then(|p| p.name.as_deref())
+            .unwrap_or("Noname");
+
         // TODO: should be done thorugh connection.json
-        let settings = ReactorSettings::new("localhost", 1883, None);
+        let settings = ReactorSettings::new(addr, port, None);
 
         //
         let mut reactor = Reactor::new(settings);
