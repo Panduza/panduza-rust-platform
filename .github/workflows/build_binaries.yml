@@ -39,8 +39,7 @@ jobs:
                 client-payload: '{"ref": "${{ github.ref }}"}'
 
     
-    # Fast hook test, send a message to windows installer repo to start his workflow
-    # d
+    # Fast hook tests, send a message to windows installer repo to start his workflow
     test_hook:
 
         runs-on: windows-latest
