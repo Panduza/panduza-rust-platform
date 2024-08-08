@@ -30,6 +30,14 @@ jobs:
                   name: windows_binaries
                   path: target/release/panduza-rust-platform.exe
 
+            - name: Start Windows installer workflow
+              uses: peter-evans/repository-dispatch@v1
+              with:
+                token: ${{ secrets.TOKEN_WINDOWS_INSTALLER }}
+                repository: Panduza/panduza_windows_installer 
+                event-type: update-windows-installer
+                client-payload: '{"ref": "${{ github.ref }}"}'
+
     
     # Fast hook test, send a message to windows installer repo to start his workflow
     test_hook:
@@ -43,5 +51,5 @@ jobs:
           with:
             token: ${{ secrets.TOKEN_WINDOWS_INSTALLER }}
             repository: Panduza/panduza_windows_installer 
-            event-type: windows-installer  # Event name must be the same at the place where it must be hook
+            event-type: update-windows-installer
             client-payload: '{"ref": "${{ github.ref }}"}'
