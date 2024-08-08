@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::MessageCodec;
+use crate::{Error, MessageCodec};
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MemoryCommandCodec {
@@ -57,11 +57,19 @@ impl Display for MemoryCommandCodec {
 }
 
 impl MessageCodec for MemoryCommandCodec {
-    fn from_message_payload(data: &bytes::Bytes) -> Result<MemoryCommandCodec, crate::Error> {
-        todo!()
+    ///
+    ///
+    ///
+    fn from_message_payload(data: &bytes::Bytes) -> Result<MemoryCommandCodec, Error> {
+        let p: Self =
+            serde_json::from_str(String::from_utf8(data.to_vec()).unwrap().as_str()).unwrap();
+        Ok(p)
     }
-
-    fn into_message_payload(&self) -> Result<Vec<u8>, crate::Error> {
-        todo!()
+    ///
+    ///
+    ///
+    fn into_message_payload(&self) -> Result<Vec<u8>, Error> {
+        let v = serde_json::to_string(self).map_err(|e| Error::SerializeFailure(e.to_string()))?;
+        Ok(v.into_bytes())
     }
 }

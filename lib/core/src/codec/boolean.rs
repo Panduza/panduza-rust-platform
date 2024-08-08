@@ -5,7 +5,7 @@ use std::fmt::Display;
 ///
 /// Codec for a simple Boolean
 ///
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct BooleanCodec {
     pub value: bool,
 }
@@ -58,13 +58,17 @@ impl<'de> Deserialize<'de> for BooleanCodec {
 /// To apply all the required trait
 ///
 impl MessageCodec for BooleanCodec {
+    ///
+    ///
+    ///
     fn from_message_payload(data: &bytes::Bytes) -> Result<BooleanCodec, Error> {
         let p: BooleanCodec =
             serde_json::from_str(String::from_utf8(data.to_vec()).unwrap().as_str()).unwrap();
-
         Ok(p)
     }
-
+    ///
+    ///
+    ///
     fn into_message_payload(&self) -> Result<Vec<u8>, Error> {
         let v = serde_json::to_string(self).map_err(|e| Error::SerializeFailure(e.to_string()))?;
         Ok(v.into_bytes())
