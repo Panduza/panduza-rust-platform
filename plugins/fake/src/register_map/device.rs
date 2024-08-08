@@ -2,8 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use panduza_platform_core::{
-    spawn_on_command, Device, DeviceLogger, DeviceOperations, Error, MemoryCommandCodec,
-    NumberCodec, RwMessageAttribute, TaskResult, WoMessageAttribute,
+    spawn_on_command, BidirMsgAtt, Device, DeviceLogger, DeviceOperations, Error,
+    MemoryCommandCodec, NumberCodec, TaskResult, WoMessageAttribute,
 };
 use tokio::time::sleep;
 
@@ -32,11 +32,12 @@ impl RegisterMapDevice {
     async fn on_command_action(
         logger: DeviceLogger,
         array: Arc<Vec<WoMessageAttribute<NumberCodec>>>,
-        attr_command: RwMessageAttribute<MemoryCommandCodec>,
+        mut attr_command: BidirMsgAtt<MemoryCommandCodec>,
     ) -> TaskResult {
         logger.info("new incoming command");
-        let command = attr_command.get().await.unwrap();
-        // println!("cooucou {} ", command);
+        while let Some(command) = attr_command.pop_cmd().await {
+            println!("cooucou {} ", command);
+        }
 
         array[1].set(14).await?;
 

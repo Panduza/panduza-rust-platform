@@ -14,7 +14,7 @@ macro_rules! spawn_loop {
 #[macro_export]
 macro_rules! on_command {
     ($attribute:ident, $body:expr) => {
-        $attribute.wait_one_command_then($body).await?
+        $attribute.wait_commands_then($body).await?
     };
 }
 
@@ -24,7 +24,7 @@ macro_rules! spawn_on_command {
         $device
             .spawn(async move {
                 loop {
-                    $attribute.wait_one_command_then($callback).await?
+                    $attribute.wait_commands_then($callback).await?
                 }
             })
             .await

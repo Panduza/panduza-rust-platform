@@ -2,11 +2,9 @@ use std::sync::Weak;
 
 use tokio::sync::Mutex;
 
-use crate::{
-    MessageClient, MessageCodec, MessageDispatcher, RoMessageAttribute, RwMessageAttribute,
-};
+use crate::{BidirMsgAtt, MessageClient, MessageCodec, MessageDispatcher};
 
-use super::wo_msg_att::WoMessageAttribute;
+use super::{cmd_only_msg_att::CmdOnlyMsgAtt, wo_msg_att::WoMessageAttribute};
 
 /// Object that allow to build an generic attribute
 ///
@@ -57,12 +55,12 @@ pub struct MessageAttributeBuilder {
 }
 
 impl MessageAttributeBuilder {
-    pub fn with_ro_access(self) -> RoMessageAttributeBuilder {
-        RoMessageAttributeBuilder { base: self.base }
+    pub fn with_ro_access(self) -> CmdOnlyMsgAttBuilder {
+        CmdOnlyMsgAttBuilder { base: self.base }
     }
 
-    pub fn with_rw_access(self) -> RwMessageAttributeBuilder {
-        RwMessageAttributeBuilder { base: self.base }
+    pub fn with_rw_access(self) -> BidirMsgAttBuilder {
+        BidirMsgAttBuilder { base: self.base }
     }
 
     pub fn with_wo_access(self) -> WoMessageAttributeBuilder {
@@ -75,13 +73,13 @@ impl MessageAttributeBuilder {
 // ----------------------------------------------------------------------------
 
 /// Builder specialisation for Ro Attribute
-pub struct RoMessageAttributeBuilder {
+pub struct CmdOnlyMsgAttBuilder {
     base: AttributeBuilder,
 }
 
-impl RoMessageAttributeBuilder {
-    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> RoMessageAttribute<TYPE> {
-        RoMessageAttribute::from(self.base).init().await.unwrap()
+impl CmdOnlyMsgAttBuilder {
+    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> CmdOnlyMsgAtt<TYPE> {
+        CmdOnlyMsgAtt::from(self.base).init().await.unwrap()
     }
 }
 
@@ -90,13 +88,13 @@ impl RoMessageAttributeBuilder {
 // ----------------------------------------------------------------------------
 
 /// Builder specialisation for Rw Attribute
-pub struct RwMessageAttributeBuilder {
+pub struct BidirMsgAttBuilder {
     base: AttributeBuilder,
 }
 
-impl RwMessageAttributeBuilder {
-    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> RwMessageAttribute<TYPE> {
-        RwMessageAttribute::from(self.base)
+impl BidirMsgAttBuilder {
+    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> BidirMsgAtt<TYPE> {
+        BidirMsgAtt::from(self.base)
             .init()
             .await
             .unwrap()

@@ -36,9 +36,12 @@ impl MessageDispatcher {
     pub async fn trigger_on_change(&self, topic: &str, new_value: &Bytes) {
         if let Some(attribute) = self.message_attributes.get(topic) {
             match attribute.upgrade() {
-                Some(attribute) => {
-                    attribute.lock().await.on_message(new_value).await;
-                }
+                Some(attribute) => match attribute.lock().await.on_message(new_value).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("cannot deserialize message {:?}", e)
+                    }
+                },
                 None => {
                     println!("Attribute not found");
                 }

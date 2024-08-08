@@ -33,9 +33,9 @@ pub use interface::Interface;
 
 //
 mod attribute;
+pub use attribute::bidir_msg_att::BidirMsgAtt;
 pub use attribute::builder::AttributeBuilder;
-pub use attribute::ro_msg_att::RoMessageAttribute;
-pub use attribute::rw_msg_att::RwMessageAttribute;
+pub use attribute::cmd_only_msg_att::CmdOnlyMsgAtt;
 pub use attribute::wo_msg_att::WoMessageAttribute;
 
 // public traits

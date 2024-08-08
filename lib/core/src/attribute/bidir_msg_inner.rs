@@ -1,45 +1,70 @@
-use rumqttc::QoS;
-use std::sync::Arc;
-use std::sync::Weak;
-use tokio::sync::Mutex;
-
-use bytes::Bytes;
-
-use async_trait::async_trait;
-
-use tokio::sync::Notify;
-
+use super::CmdOnlyMsgAttInner;
 use crate::AttributeBuilder;
 use crate::Error;
 use crate::MessageCodec;
 use crate::MessageHandler;
+use async_trait::async_trait;
+use bytes::Bytes;
+use rumqttc::QoS;
+use std::sync::Arc;
+use std::sync::Weak;
+use tokio::sync::Mutex;
+use tokio::sync::Notify;
 
-use super::RoMessageAttributeInner;
-
+///
 /// Read Only Inner implementation of the message attribute
 /// This inner implementation allow the public part to be cloneable easly
-pub struct RwMessageAttributeInner<TYPE: MessageCodec> {
-    /// Rw is based on Ro
-    pub base: RoMessageAttributeInner<TYPE>,
+///
+pub struct BidirMsgAttInner<TYPE: MessageCodec> {
+    ///
+    /// Bidir is based on CmdOnly for message reception
+    ///
+    pub base: CmdOnlyMsgAttInner<TYPE>,
 
-    /// The topic for commands
+    ///
+    /// The topic for 'att' topic to send data to user
+    ///
     topic_att: String,
 
+    ///
     /// Requested value of the attribute (set by the user)
+    ///
     requested_value: Option<TYPE>,
 }
 
-impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
+impl<TYPE: MessageCodec> BidirMsgAttInner<TYPE> {
+    ///
     /// Initialize the attribute
+    ///
     pub async fn init(&self, attribute: Arc<Mutex<dyn MessageHandler>>) -> Result<(), Error> {
         self.base.init(attribute).await
     }
 
+    ///
     /// Get the value of the attribute
     /// If None, the first value is not yet received
     ///
-    pub fn get(&self) -> Option<TYPE> {
-        return self.base.get();
+    pub fn pop_cmd(&mut self) -> Option<TYPE> {
+        let next = self.base.in_queue.pop();
+        if next.is_some() {
+            self.base.last_popped_value = next.clone();
+        }
+        return next;
+    }
+
+    ///
+    /// Get the value of the attribute
+    /// If None, the first value is not yet received
+    ///
+    pub fn get_last_cmd(&self) -> Option<TYPE> {
+        return self.base.last_popped_value.clone();
+    }
+
+    ///
+    /// Clone the change notifier
+    ///
+    pub fn in_notifier(&self) -> Arc<Notify> {
+        self.base.in_notifier()
     }
 
     /// Set the value of the attribute
@@ -83,11 +108,11 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
 }
 
 /// Allow creation from the builder
-impl<TYPE: MessageCodec> From<AttributeBuilder> for RwMessageAttributeInner<TYPE> {
+impl<TYPE: MessageCodec> From<AttributeBuilder> for BidirMsgAttInner<TYPE> {
     fn from(builder: AttributeBuilder) -> Self {
         let topic_att = format!("{}/att", builder.topic.as_ref().unwrap());
-        RwMessageAttributeInner {
-            base: RoMessageAttributeInner::from(builder),
+        BidirMsgAttInner {
+            base: CmdOnlyMsgAttInner::from(builder),
             topic_att: topic_att,
             requested_value: None,
         }
@@ -95,19 +120,21 @@ impl<TYPE: MessageCodec> From<AttributeBuilder> for RwMessageAttributeInner<TYPE
 }
 
 /// Allow mutation into Arc pointer
-impl<TYPE: MessageCodec> Into<Arc<Mutex<RwMessageAttributeInner<TYPE>>>>
-    for RwMessageAttributeInner<TYPE>
-{
-    fn into(self) -> Arc<Mutex<RwMessageAttributeInner<TYPE>>> {
+impl<TYPE: MessageCodec> Into<Arc<Mutex<BidirMsgAttInner<TYPE>>>> for BidirMsgAttInner<TYPE> {
+    fn into(self) -> Arc<Mutex<BidirMsgAttInner<TYPE>>> {
         Arc::new(Mutex::new(self))
     }
 }
 
+///
+///
+///
 #[async_trait]
-impl<TYPE: MessageCodec> MessageHandler for RwMessageAttributeInner<TYPE> {
-    async fn on_message(&mut self, data: &Bytes) {
-        // let new_value = TYPE::from(data.to_vec());
-        // self.base.value = Some(new_value);
-        self.base.change_notifier.notify_waiters();
+impl<TYPE: MessageCodec> MessageHandler for BidirMsgAttInner<TYPE> {
+    async fn on_message(&mut self, data: &Bytes) -> Result<(), Error> {
+        let in_value = TYPE::from_message_payload(data)?;
+        self.base.in_queue.push(in_value);
+        self.base.in_notifier.notify_waiters();
+        Ok(())
     }
 }

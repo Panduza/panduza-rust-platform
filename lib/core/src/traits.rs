@@ -46,7 +46,10 @@ pub trait Producer: Send {
 /// Sync version
 #[async_trait]
 pub trait MessageHandler: Send + Sync {
-    async fn on_message(&mut self, data: &Bytes);
+    ///
+    /// Triggered on each incoming message
+    ///
+    async fn on_message(&mut self, data: &Bytes) -> Result<(), Error>;
 }
 
 /// Encoder Decoder for message payload
