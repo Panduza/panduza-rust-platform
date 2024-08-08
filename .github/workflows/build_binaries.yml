@@ -30,7 +30,7 @@ jobs:
                   name: windows_binaries
                   path: target/release/panduza-rust-platform.exe
             
-            # Once binaries has been artifacted then we can start workflow of windows installer giving
+            # Once binaries has been artifacted then we can start workflow of Windows installer giving
             # binaries of platform
 
             - name: Start Windows installer workflow
