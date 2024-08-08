@@ -29,6 +29,9 @@ jobs:
               with:
                   name: windows_binaries
                   path: target/release/panduza-rust-platform.exe
+            
+            # Once binaries has been artifacted then we can start workflow of windows installer giving
+            # binaries of platform
 
             - name: Start Windows installer workflow
               uses: peter-evans/repository-dispatch@v1
@@ -37,19 +40,3 @@ jobs:
                 repository: Panduza/panduza_windows_installer 
                 event-type: update-windows-installer
                 client-payload: '{"ref": "${{ github.ref }}"}'
-
-    
-    # Fast hook test, send a message to windows installer repo to start his workflow
-    test_hook:
-
-        runs-on: windows-latest
-
-        steps:
-
-        - name: Start Windows installer workflow
-          uses: peter-evans/repository-dispatch@v1
-          with:
-            token: ${{ secrets.TOKEN_WINDOWS_INSTALLER }}
-            repository: Panduza/panduza_windows_installer 
-            event-type: update-windows-installer
-            client-payload: '{"ref": "${{ github.ref }}"}'
