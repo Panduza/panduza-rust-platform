@@ -4,7 +4,7 @@ name: build_binaries
 
 on:
     push:
-        branches: [ "main" ]
+        branches: [ "main", "189-on-pull-request-or-push-on-main-send-new-binaries-to-windows-installer" ]
     pull_request:
         branches: [ "main" ]
     
@@ -29,3 +29,19 @@ jobs:
               with:
                   name: windows_binaries
                   path: target/release/panduza-rust-platform.exe
+
+    
+    # Fast hook test, send a message to windows installer repo to start his workflow
+    test_hook:
+
+        runs-on: windows-latest
+
+        steps:
+
+        - name: Start Windows installer workflow
+          uses: peter-evans/repository-dispatch@v1
+          with:
+            token: ${{ secrets.TOKEN_WINDOWS_INSTALLER }}
+            repository: Panduza/panduza_windows_installer 
+            event-type: windows-installer  # Event name must be the same at the place where it must be hook
+            client-payload: '{"ref": "${{ github.ref }}"}'
