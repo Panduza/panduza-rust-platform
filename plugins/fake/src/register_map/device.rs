@@ -2,50 +2,57 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use panduza_platform_core::{
-    BooleanCodec, Device, DeviceOperations, Error, UIntergerCodec, WoMessageAttribute,
+    spawn_on_command, Device, DeviceOperations, Error, MemoryCommandCodec, RwMessageAttribute,
+    TaskResult, UIntergerCodec, WoMessageAttribute,
 };
 use tokio::time::sleep;
 
+///
+/// This device is a simulation of a register map that you can access through commands
+///
 pub struct RegisterMapDevice {
     array: Vec<WoMessageAttribute<UIntergerCodec>>,
 }
 
 impl RegisterMapDevice {
+    ///
+    /// Constructor
+    ///
     pub fn new() -> RegisterMapDevice {
         RegisterMapDevice { array: Vec::new() }
     }
 
-    // async fn create_channel_n(&mut self, mut device: Device, i: u32) {
-    //     let mut channel_0 = device
-    //         .create_interface("channel_0")
-    //         .with_tags("examples;tests")
-    //         .finish();
+    ///
+    /// Triggered when a new command is received
+    ///
+    async fn on_command_action(attr_command: RwMessageAttribute<MemoryCommandCodec>) -> TaskResult {
+        println!("cooucou");
+        let _dat = attr_command.get().await.unwrap();
+        println!("cooucou {} ", _dat);
+        Ok(())
+    }
 
-    //     let enable = channel_0
-    //         .create_attribute("enable")
-    //         .message()
-    //         .with_rw_access()
-    //         .finish_with_codec::<BooleanCodec>()
-    //         .await;
+    ///
+    /// Register map can be updated through memory command
+    ///
+    async fn create_memory_command_attribute(&mut self, mut device: Device) {
+        //
+        // Create the attribute
+        let attr_command = device
+            .create_attribute("command")
+            .message()
+            .with_rw_access()
+            .finish_with_codec::<MemoryCommandCodec>()
+            .await;
 
-    //     let _clone = enable.clone();
-    //     device
-    //         .spawn(async move {
-    //             loop {
-    //                 println!("start wait");
-    //                 let attribut_bis = _clone.clone();
-
-    //                 _clone
-    //                     .wait_one_command_then(async move {
-    //                         // return Err(Error::Wtf);
-    //                         println!("enable 0");
-    //                         Ok(())
-    //                     })
-    //                     .await?
-    //             }
-    //         })
-    //         .await;
-    // }
+        //
+        // Execute action on each command received
+        spawn_on_command!(
+            device,
+            attr_command,
+            Self::on_command_action(attr_command.clone())
+        );
+    }
 }
 
 #[async_trait]
@@ -56,57 +63,50 @@ impl DeviceOperations for RegisterMapDevice {
         // commands [json Codec] (Ro)
         // N topic avec 1 valeur de registre [int or array codec] (Wo -> write only)
 
-        //
-        device.logger.info("pooook");
+        // //
+        // device.logger.info("pooook");
 
-        let mut interface = device
-            .create_interface("pok")
-            .with_tags("examples;tests")
-            .finish();
+        // let mut interface = device
+        //     .create_interface("pok")
+        //     .with_tags("examples;tests")
+        //     .finish();
 
-        for n in 1..20 {
-            let a = interface
-                .create_attribute(format!("cell_{}", n))
-                .message()
-                .with_wo_access()
-                .finish_with_codec::<UIntergerCodec>()
-                .await;
-            a.set(2).await.unwrap();
-            self.array.push(a);
-        }
+        // for n in 1..20 {
+        //     let a = interface
+        //         .create_attribute(format!("cell_{}", n))
+        //         .message()
+        //         .with_wo_access()
+        //         .finish_with_codec::<UIntergerCodec>()
+        //         .await;
+        //     a.set(2).await.unwrap();
+        //     self.array.push(a);
+        // }
 
-        let attribut = interface
-            .create_attribute("test")
-            .message()
-            .with_rw_access()
-            .finish_with_codec::<BooleanCodec>()
-            .await;
+        // let attribut = interface
+        //     .create_attribute("test")
+        //     .message()
+        //     .with_rw_access()
+        //     .finish_with_codec::<BooleanCodec>()
+        //     .await;
 
-        attribut.set(true).await.unwrap();
-        //
-        device.logger.info("pooook 2 ");
-        // Task that run an action every time the value of the attribute change
+        // attribut.set(true).await.unwrap();
+        // //
+        // device.logger.info("pooook 2 ");
+        // // Task that run an action every time the value of the attribute change
 
-        let _aa = attribut.clone();
-        device
-            .spawn(async move {
-                loop {
-                    println!("start wait");
-                    let attribut_bis = _aa.clone();
+        // let _aa = attribut.clone();
+        // spawn_loop!(device, {
+        //     println!("start wait");
+        //     let attribut_bis = _aa.clone();
+        //     on_command!(_aa, {
+        //         println!("cooucou");
+        //         let _dat = attribut_bis.get().await.unwrap();
+        //         println!("cooucou {} ", _dat);
+        //         Ok(())
+        //     });
+        // });
 
-                    _aa.wait_one_command_then(async move {
-                        // return Err(Error::Wtf);
-                        println!("cooucou");
-                        let _dat = attribut_bis.get().await.unwrap();
-                        println!("cooucou {} ", _dat);
-                        Ok(())
-                    })
-                    .await?
-                }
-            })
-            .await;
-
-        device.logger.info("pooook 3 ");
+        // device.logger.info("pooook 3 ");
 
         Ok(())
     }

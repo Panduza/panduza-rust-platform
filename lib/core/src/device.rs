@@ -6,8 +6,8 @@ use tokio::sync::Notify;
 pub use inner::DeviceInner;
 
 use crate::{
-    info::devices::InfoDev, reactor::Reactor, DeviceLogger, DeviceOperations, DeviceSettings,
-    Error, InfoPack, TaskResult, TaskSender,
+    info::devices::InfoDev, reactor::Reactor, AttributeBuilder, DeviceLogger, DeviceOperations,
+    DeviceSettings, Error, InfoPack, TaskResult, TaskSender,
 };
 
 use tokio::sync::Mutex;
@@ -127,7 +127,14 @@ impl Device {
         )
     }
 
-    pub fn create_attribute<N: Into<String>>(&mut self, name: N) {}
+    ///
+    /// Device can directly create some attribute on its root
+    ///
+    pub fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
+        self.reactor
+            .create_new_attribute()
+            .with_topic(format!("{}/{}", self.topic, name.into()))
+    }
 
     // pub async fn run(&mut self) {}
 

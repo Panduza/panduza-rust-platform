@@ -1,3 +1,5 @@
+pub mod pmacro;
+
 // Main error crate for Panduza Platform
 mod error;
 pub use error::Error;
@@ -61,6 +63,7 @@ pub use info::pack::InfoPack;
 mod codec;
 pub use codec::boolean::BooleanCodec;
 pub use codec::json::JsonCodec;
+pub use codec::memory_command::MemoryCommandCodec;
 pub use codec::uinterger::UIntergerCodec;
 
 mod task_channel;
