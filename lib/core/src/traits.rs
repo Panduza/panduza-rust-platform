@@ -51,7 +51,13 @@ pub trait MessageHandler: Send + Sync {
 
 /// Encoder Decoder for message payload
 ///
-pub trait MessageCodec:
-    Serialize + Deserialize<'static> + PartialEq + Debug + Sync + Send + Clone + 'static
-{
+pub trait MessageCodec: PartialEq + Debug + Sync + Send + Clone + 'static {
+    ///
+    /// Decode data
+    ///
+    fn from_message_payload(data: &Bytes) -> Result<Self, Error>;
+    ///
+    /// Encode data
+    ///
+    fn into_message_payload(&self) -> Result<Vec<u8>, Error>;
 }

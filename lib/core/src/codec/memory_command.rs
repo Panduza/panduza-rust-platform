@@ -56,4 +56,12 @@ impl Display for MemoryCommandCodec {
     }
 }
 
-impl MessageCodec for MemoryCommandCodec {}
+impl MessageCodec for MemoryCommandCodec {
+    fn from_message_payload(data: &bytes::Bytes) -> Result<MemoryCommandCodec, crate::Error> {
+        todo!()
+    }
+
+    fn into_message_payload(&self) -> Result<Vec<u8>, crate::Error> {
+        todo!()
+    }
+}

@@ -46,9 +46,9 @@ impl<TYPE: MessageCodec> WoMessageAttributeInner<TYPE> {
         self.requested_value = Some(new_value);
         match self.requested_value.clone() {
             Some(requested_value) => {
-                let v = serde_json::to_string(&requested_value)
-                    .map_err(|e| Error::SerializeFailure(e.to_string()))?;
-                self.publish(v).await.unwrap();
+                self.publish(requested_value.into_message_payload()?)
+                    .await
+                    .unwrap();
             }
             None => {
                 return Err(Error::Wtf);

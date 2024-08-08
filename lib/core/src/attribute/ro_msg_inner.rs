@@ -109,12 +109,8 @@ impl<TYPE: MessageCodec> Into<Arc<Mutex<RoMessageAttributeInner<TYPE>>>>
 #[async_trait]
 impl<TYPE: MessageCodec> MessageHandler for RoMessageAttributeInner<TYPE> {
     async fn on_message(&mut self, data: &Bytes) {
-        let p = String::from_utf8(data.to_vec()).unwrap();
-        // let string: String =
-        // let p = data.as_ref().to_string();
-        let d: TYPE = serde_json::from_str(p.as_str()).unwrap();
-        // let new_value = TYPE::serialize  ::from(data.to_vec());
-        // self.value = Some(new_value);
+        let new_value = TYPE::from_message_payload(data).unwrap();
+        self.value = Some(new_value);
         self.change_notifier.notify_waiters();
     }
 }

@@ -29,4 +29,12 @@ impl From<Vec<u8>> for U64Codec {
     }
 }
 
-impl MessageCodec for U64Codec {}
+impl MessageCodec for U64Codec {
+    fn from_message_payload(data: &bytes::Bytes) -> Result<U64Codec, crate::Error> {
+        todo!()
+    }
+
+    fn into_message_payload(&self) -> Result<Vec<u8>, crate::Error> {
+        todo!()
+    }
+}
