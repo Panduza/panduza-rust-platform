@@ -4,7 +4,7 @@ name: build_binaries
 
 on:
     push:
-        branches: [ "main" ]
+        branches: [ "main", "189-on-pull-request-or-push-on-main-send-new-binaries-to-windows-installer" ]
     pull_request:
         branches: [ "main" ]
     
@@ -29,3 +29,14 @@ jobs:
               with:
                   name: windows_binaries
                   path: target/release/panduza-rust-platform.exe
+            
+            # Once binaries has been artifacted then we can start workflow of Windows installer giving
+            # binaries of platform
+
+            - name: Start Windows installer workflow
+              uses: peter-evans/repository-dispatch@v1
+              with:
+                token: ${{ secrets.TOKEN_WINDOWS_INSTALLER }}
+                repository: Panduza/panduza_windows_installer 
+                event-type: update-windows-installer
+                client-payload: '{"ref": "${{ github.ref }}"}'
