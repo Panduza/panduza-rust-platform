@@ -40,7 +40,6 @@ jobs:
 
     
     # Fast hook test, send a message to windows installer repo to start his workflow
-    # p
     test_hook:
 
         runs-on: windows-latest
