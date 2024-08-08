@@ -2,6 +2,7 @@ use serde_json::json;
 
 pub type DeviceSettings = serde_json::Value;
 
+#[derive(Debug)]
 pub struct ProductionOrder {
     /// Name of the device to be produced
     pub device_name: String,
@@ -10,17 +11,21 @@ pub struct ProductionOrder {
     pub device_ref: String,
 
     ///
-    pub device_settings: DeviceSettings,
+    pub device_settings: Option<DeviceSettings>,
 }
 
 impl ProductionOrder {
     /// Constructor
     ///
-    pub fn new<A: Into<String>, B: Into<String>>(d_ref: A, d_name: B) -> ProductionOrder {
+    pub fn new<A: Into<String>, B: Into<String>>(
+        d_ref: A,
+        d_name: B,
+        d_settings: Option<serde_json::Value>,
+    ) -> ProductionOrder {
         ProductionOrder {
             device_name: d_name.into(),
             device_ref: d_ref.into(),
-            device_settings: serde_json::Value::Null,
+            device_settings: d_settings,
         }
     }
 
@@ -30,7 +35,7 @@ impl ProductionOrder {
         ProductionOrder {
             device_name: "test".to_string(),
             device_ref: "rtok".to_string(),
-            device_settings: json!({}),
+            device_settings: None,
         }
     }
 

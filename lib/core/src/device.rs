@@ -95,7 +95,7 @@ impl Device {
         spawner: TaskSender<Result<(), Error>>,
         name: String,
         operations: Box<dyn DeviceOperations>,
-        settings: DeviceSettings,
+        settings: Option<DeviceSettings>,
     ) -> Device {
         // Create the object
         Device {
@@ -214,7 +214,7 @@ impl Device {
     /// Clone settings of the device
     ///
     pub async fn settings(&self) -> DeviceSettings {
-        self.inner.lock().await.settings.clone()
+        self.inner.lock().await.settings.as_ref().unwrap().clone()
     }
 
     pub fn name(&self) -> String {
