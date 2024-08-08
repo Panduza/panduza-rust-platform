@@ -43,15 +43,15 @@ impl<TYPE: MessageCodec> WoMessageAttributeInner<TYPE> {
         // }
 
         // Set the requested value and publish the request
-        self.requested_value = Some(new_value);
-        match self.requested_value.clone() {
-            Some(requested_value) => {
-                self.publish(requested_value.into()).await.unwrap();
-            }
-            None => {
-                return Err(Error::Wtf);
-            }
-        }
+        // self.requested_value = Some(new_value);
+        // match self.requested_value.clone() {
+        //     Some(requested_value) => {
+        //         self.publish(requested_value.into()).await.unwrap();
+        //     }
+        //     None => {
+        //         return Err(Error::Wtf);
+        //     }
+        // }
 
         Ok(())
     }

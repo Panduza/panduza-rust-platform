@@ -52,16 +52,16 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
         //     }
         // }
 
-        // Set the requested value and publish the request
-        self.requested_value = Some(new_value);
-        match self.requested_value.clone() {
-            Some(requested_value) => {
-                self.publish(requested_value.into()).await.unwrap();
-            }
-            None => {
-                return Err(Error::Wtf);
-            }
-        }
+        // // Set the requested value and publish the request
+        // self.requested_value = Some(new_value);
+        // match self.requested_value.clone() {
+        //     Some(requested_value) => {
+        //         self.publish(requested_value.into()).await.unwrap();
+        //     }
+        //     None => {
+        //         return Err(Error::Wtf);
+        //     }
+        // }
 
         Ok(())
     }
@@ -104,8 +104,8 @@ impl<TYPE: MessageCodec> Into<Arc<Mutex<RwMessageAttributeInner<TYPE>>>>
 #[async_trait]
 impl<TYPE: MessageCodec> MessageHandler for RwMessageAttributeInner<TYPE> {
     async fn on_message(&mut self, data: &Bytes) {
-        let new_value = TYPE::from(data.to_vec());
-        self.base.value = Some(new_value);
+        // let new_value = TYPE::from(data.to_vec());
+        // self.base.value = Some(new_value);
         self.base.change_notifier.notify_waiters();
     }
 }

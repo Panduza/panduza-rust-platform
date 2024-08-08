@@ -18,6 +18,7 @@
 mod log;
 // mod builtin_devices;
 
+use panduza_platform_core::BooleanCodec;
 use panduza_platform_core::Factory;
 use panduza_platform_core::Platform;
 
@@ -96,6 +97,12 @@ async fn main() {
     // this is where we deserialize it into Config
     let rumqttd_config: Config = config.try_deserialize().unwrap();
     let mut broker = Broker::new(rumqttd_config);
+
+    println!("{}", serde_json::json!(5).to_string());
+    println!("{}", serde_json::json!(2.665).to_string());
+
+    let p = BooleanCodec { value: false };
+    println!("{:?}", serde_json::to_string(&p));
 
     //
     let mut factory = Factory::new();

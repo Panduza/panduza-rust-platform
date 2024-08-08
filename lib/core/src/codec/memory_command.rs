@@ -1,9 +1,11 @@
 use serde_json::json;
 use std::fmt::Display;
 
+use serde::{Deserialize, Serialize};
+
 use crate::MessageCodec;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MemoryCommandCodec {
     command: String,
     index: u64,

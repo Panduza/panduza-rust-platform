@@ -1,6 +1,8 @@
 use crate::{Device, Error};
 use async_trait::async_trait;
 use bytes::Bytes;
+use serde::Deserialize;
+use serde::Serialize;
 use std::fmt::Debug;
 
 /// Actions that are specific for each device type
@@ -50,6 +52,6 @@ pub trait MessageHandler: Send + Sync {
 /// Encoder Decoder for message payload
 ///
 pub trait MessageCodec:
-    Into<Vec<u8>> + From<Vec<u8>> + PartialEq + Debug + Sync + Send + Clone + 'static
+    Serialize + Deserialize<'static> + PartialEq + Debug + Sync + Send + Clone + 'static
 {
 }
