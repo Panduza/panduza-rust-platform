@@ -1,9 +1,9 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use panduza_platform_core::{
-    spawn_on_command, Device, DeviceOperations, Error, MemoryCommandCodec, RwMessageAttribute,
-    TaskResult, UIntergerCodec, WoMessageAttribute,
+    spawn_on_command, Device, DeviceLogger, DeviceOperations, Error, MemoryCommandCodec,
+    RwMessageAttribute, TaskResult, U64Codec, WoMessageAttribute,
 };
 use tokio::time::sleep;
 
@@ -11,7 +11,8 @@ use tokio::time::sleep;
 /// This device is a simulation of a register map that you can access through commands
 ///
 pub struct RegisterMapDevice {
-    array: Vec<WoMessageAttribute<UIntergerCodec>>,
+    logger: Option<DeviceLogger>,
+    array: Arc<Vec<WoMessageAttribute<U64Codec>>>,
 }
 
 impl RegisterMapDevice {
@@ -19,16 +20,26 @@ impl RegisterMapDevice {
     /// Constructor
     ///
     pub fn new() -> RegisterMapDevice {
-        RegisterMapDevice { array: Vec::new() }
+        RegisterMapDevice {
+            logger: None,
+            array: Arc::new(Vec::new()),
+        }
     }
 
     ///
     /// Triggered when a new command is received
     ///
-    async fn on_command_action(attr_command: RwMessageAttribute<MemoryCommandCodec>) -> TaskResult {
-        println!("cooucou");
-        let _dat = attr_command.get().await.unwrap();
-        println!("cooucou {} ", _dat);
+    async fn on_command_action(
+        logger: DeviceLogger,
+        array: Arc<Vec<WoMessageAttribute<U64Codec>>>,
+        attr_command: RwMessageAttribute<MemoryCommandCodec>,
+    ) -> TaskResult {
+        logger.info("new incoming command");
+        let command = attr_command.get().await.unwrap();
+        // println!("cooucou {} ", command);
+
+        array[1].set(14).await?;
+
         Ok(())
     }
 
@@ -47,67 +58,56 @@ impl RegisterMapDevice {
 
         //
         // Execute action on each command received
+        let logger = self.logger.as_ref().unwrap().clone();
+        let array = self.array.clone();
         spawn_on_command!(
             device,
             attr_command,
-            Self::on_command_action(attr_command.clone())
+            Self::on_command_action(logger.clone(), array.clone(), attr_command.clone())
         );
+    }
+
+    ///
+    ///
+    ///
+    async fn create_registers(&mut self, mut device: Device) {
+        //
+        // Get the logger
+        self.logger = Some(device.logger.clone());
+
+        //
+        // Register interface
+        let mut interface = device.create_interface("registers").finish();
+
+        //
+        // Create 20 register
+        let mut array = Vec::new();
+        for n in 1..20 {
+            let a = interface
+                .create_attribute(format!("{}", n))
+                .message()
+                .with_wo_access()
+                .finish_with_codec::<U64Codec>()
+                .await;
+            a.set(2).await.unwrap();
+            array.push(a);
+        }
+        self.array = Arc::new(array);
     }
 }
 
 #[async_trait]
 impl DeviceOperations for RegisterMapDevice {
+    ///
     /// Mount the device
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
-        // commands [json Codec] (Ro)
-        // N topic avec 1 valeur de registre [int or array codec] (Wo -> write only)
-
-        // //
-        // device.logger.info("pooook");
-
-        // let mut interface = device
-        //     .create_interface("pok")
-        //     .with_tags("examples;tests")
-        //     .finish();
-
-        // for n in 1..20 {
-        //     let a = interface
-        //         .create_attribute(format!("cell_{}", n))
-        //         .message()
-        //         .with_wo_access()
-        //         .finish_with_codec::<UIntergerCodec>()
-        //         .await;
-        //     a.set(2).await.unwrap();
-        //     self.array.push(a);
-        // }
-
-        // let attribut = interface
-        //     .create_attribute("test")
-        //     .message()
-        //     .with_rw_access()
-        //     .finish_with_codec::<BooleanCodec>()
-        //     .await;
-
-        // attribut.set(true).await.unwrap();
-        // //
-        // device.logger.info("pooook 2 ");
-        // // Task that run an action every time the value of the attribute change
-
-        // let _aa = attribut.clone();
-        // spawn_loop!(device, {
-        //     println!("start wait");
-        //     let attribut_bis = _aa.clone();
-        //     on_command!(_aa, {
-        //         println!("cooucou");
-        //         let _dat = attribut_bis.get().await.unwrap();
-        //         println!("cooucou {} ", _dat);
-        //         Ok(())
-        //     });
-        // });
-
-        // device.logger.info("pooook 3 ");
-
+        //
+        // First create registers because command will need them
+        self.create_registers(device.clone()).await;
+        //
+        // Create command
+        self.create_memory_command_attribute(device.clone()).await;
         Ok(())
     }
 

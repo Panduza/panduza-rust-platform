@@ -34,12 +34,9 @@ impl MessageDispatcher {
     /// Trigger the on_message of the attribute
     ///
     pub async fn trigger_on_change(&self, topic: &str, new_value: &Bytes) {
-        println!("{:?}", self.message_attributes.keys());
         if let Some(attribute) = self.message_attributes.get(topic) {
-            println!("------");
             match attribute.upgrade() {
                 Some(attribute) => {
-                    println!("pok here");
                     attribute.lock().await.on_message(new_value).await;
                 }
                 None => {

@@ -118,12 +118,13 @@ impl Device {
     }
 
     ///
+    /// Create a new interface from this device
     ///
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
         InterfaceBuilder::new(
             self.reactor.clone(),
             Arc::downgrade(&self.inner),
-            format!("{}/{}", self.reactor.root_topic(), name.into()),
+            format!("{}/{}", self.topic, name.into()), // take the device topic as root
         )
     }
 
@@ -133,7 +134,7 @@ impl Device {
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
         self.reactor
             .create_new_attribute()
-            .with_topic(format!("{}/{}", self.topic, name.into()))
+            .with_topic(format!("{}/{}", self.topic, name.into())) // take the device topic as root
     }
 
     // pub async fn run(&mut self) {}

@@ -107,7 +107,6 @@ impl<TYPE: MessageCodec> Into<Arc<Mutex<RoMessageAttributeInner<TYPE>>>>
 #[async_trait]
 impl<TYPE: MessageCodec> MessageHandler for RoMessageAttributeInner<TYPE> {
     async fn on_message(&mut self, data: &Bytes) {
-        println!("ro_inner::on_message");
         let new_value = TYPE::from(data.to_vec());
         self.value = Some(new_value);
         self.change_notifier.notify_waiters();

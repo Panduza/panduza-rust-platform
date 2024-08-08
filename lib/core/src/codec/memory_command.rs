@@ -1,32 +1,56 @@
+use serde_json::json;
 use std::fmt::Display;
 
 use crate::MessageCodec;
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct MemoryCommandCodec {
-    value: u64,
+    command: String,
+    index: u64,
+    values: Vec<u64>,
+    repeat_ms: u64,
+}
+
+impl MemoryCommandCodec {
+    pub fn new() -> Self {
+        Self {
+            command: "read".to_string(),
+            index: 0,
+            values: Vec::new(),
+            repeat_ms: 0,
+        }
+    }
 }
 
 impl Into<MemoryCommandCodec> for u64 {
     fn into(self) -> MemoryCommandCodec {
-        return MemoryCommandCodec { value: 0 };
+        return MemoryCommandCodec::new();
     }
 }
 
 impl From<Vec<u8>> for MemoryCommandCodec {
     fn from(value: Vec<u8>) -> Self {
-        return MemoryCommandCodec { value: 0 };
+        return MemoryCommandCodec::new();
     }
 }
+
 impl Into<Vec<u8>> for MemoryCommandCodec {
     fn into(self) -> Vec<u8> {
-        return vec![1];
+        return json!({
+            "command": self.command,
+            "index": self.index,
+            "values": self.values,
+            "repeat_ms": self.repeat_ms,
+        })
+        .to_string()
+        .as_bytes()
+        .to_vec();
     }
 }
 
 impl Display for MemoryCommandCodec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.value))
+        f.write_fmt(format_args!("{}", self.command))
     }
 }
 

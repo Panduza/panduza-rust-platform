@@ -64,7 +64,7 @@ mod codec;
 pub use codec::boolean::BooleanCodec;
 pub use codec::json::JsonCodec;
 pub use codec::memory_command::MemoryCommandCodec;
-pub use codec::uinterger::UIntergerCodec;
+pub use codec::u64::U64Codec;
 
 mod task_channel;
 pub use task_channel::TaskReceiver;
