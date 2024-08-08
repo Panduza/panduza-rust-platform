@@ -52,16 +52,18 @@ impl<TYPE: MessageCodec> RwMessageAttributeInner<TYPE> {
         //     }
         // }
 
-        // // Set the requested value and publish the request
-        // self.requested_value = Some(new_value);
-        // match self.requested_value.clone() {
-        //     Some(requested_value) => {
-        //         self.publish(requested_value.into()).await.unwrap();
-        //     }
-        //     None => {
-        //         return Err(Error::Wtf);
-        //     }
-        // }
+        // Set the requested value and publish the request
+        self.requested_value = Some(new_value);
+        match self.requested_value.clone() {
+            Some(requested_value) => {
+                let v = serde_json::to_string(&requested_value)
+                    .map_err(|e| Error::SerializeFailure(e.to_string()))?;
+                self.publish(v).await.unwrap();
+            }
+            None => {
+                return Err(Error::Wtf);
+            }
+        }
 
         Ok(())
     }

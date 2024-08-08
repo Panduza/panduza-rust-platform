@@ -104,6 +104,9 @@ async fn main() {
     let p = BooleanCodec { value: false };
     println!("{:?}", serde_json::to_string(&p));
 
+    let b: BooleanCodec = serde_json::from_str("true").unwrap();
+    println!("{:?}", b);
+
     //
     let mut factory = Factory::new();
     factory.add_producers(pza_plugin_fake::plugin_producers());

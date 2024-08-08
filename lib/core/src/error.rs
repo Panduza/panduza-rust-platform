@@ -12,6 +12,10 @@ pub enum Error {
     Spawn(String),
     #[error("One of the provided settings is wrong")]
     BadSettings(String),
+    #[error("Error during serialization")]
+    SerializeFailure(String),
+    #[error("Error during deserialization")]
+    DeserializeFailure(String),
     #[error("We just don't know what happened")]
     Wtf,
 }
