@@ -7,6 +7,9 @@ use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
 
 ///
+///
+static mut COUNTER: u16 = 0;
+///
 /// This device is a simulation of a register map that you can access through commands
 ///
 pub struct RegisterMapDevice {
@@ -35,10 +38,14 @@ impl RegisterMapDevice {
     ) -> TaskResult {
         while let Some(command) = attr_command.pop_cmd().await {
             logger.debug(format!("New command {:?}", command));
+
             match command.mode {
                 MemoryCommandMode::Read => {
                     let idx = command.address;
-                    array[idx as usize].set(14).await?;
+                    unsafe {
+                        COUNTER += 1;
+                        array[idx as usize].set(COUNTER).await?;
+                    }
                 }
                 MemoryCommandMode::Write => {}
                 _ => {}
@@ -87,7 +94,7 @@ impl RegisterMapDevice {
         //
         // Create 20 register
         let mut array = Vec::new();
-        for n in 1..20 {
+        for n in 0..20 {
             let a = interface
                 .create_attribute(format!("{}", n))
                 .message()
