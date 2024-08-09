@@ -98,15 +98,6 @@ async fn main() {
     let rumqttd_config: Config = config.try_deserialize().unwrap();
     let mut broker = Broker::new(rumqttd_config);
 
-    println!("{}", serde_json::json!(5).to_string());
-    println!("{}", serde_json::json!(2.665).to_string());
-
-    let p = BooleanCodec { value: false };
-    println!("{:?}", serde_json::to_string(&p));
-
-    let b: BooleanCodec = serde_json::from_str("true").unwrap();
-    println!("{:?}", b);
-
     //
     let mut factory = Factory::new();
     factory.add_producers(pza_plugin_fake::plugin_producers());

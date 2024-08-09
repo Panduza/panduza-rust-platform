@@ -64,6 +64,7 @@ mod codec;
 pub use codec::boolean::BooleanCodec;
 // pub use codec::json::JsonCodec;
 pub use codec::memory_command::MemoryCommandCodec;
+pub use codec::memory_command::MemoryCommandMode;
 pub use codec::number::NumberCodec;
 
 mod task_channel;

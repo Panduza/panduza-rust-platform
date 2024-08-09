@@ -1,58 +1,73 @@
+use crate::{Error, MessageCodec};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fmt::Display;
 
-use serde::{Deserialize, Serialize};
+///
+/// Available actions for a memory command
+///
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum MemoryCommandMode {
+    Read,
+    Write,
+    Erase,
+}
 
-use crate::{Error, MessageCodec};
+///
+///
+///
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum AccessSize {
+    _8Bits,
+    _16Bits,
+    _32Bits,
+    _64Bits,
+}
 
+///
+/// Memory Command
+/// Standardized command to request action on a memory
+///
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct MemoryCommandCodec {
-    command: String,
-    index: u64,
-    values: Vec<u64>,
-    repeat_ms: u64,
+    // Manage att return for a status ?
+    ///
+    /// Which action must be done
+    ///
+    pub mode: MemoryCommandMode,
+    ///
+    /// Target starting address
+    ///
+    pub address: u64,
+    ///
+    ///
+    ///
+    pub size: Option<u64>,
+    pub values: Option<Vec<u64>>,
+    pub repeat_ms: Option<u64>,
 }
 
 impl MemoryCommandCodec {
-    pub fn new() -> Self {
+    pub fn new(mode: MemoryCommandMode, address: u64) -> Self {
         Self {
-            command: "read".to_string(),
-            index: 0,
-            values: Vec::new(),
-            repeat_ms: 0,
+            mode: mode,
+            address: address,
+            size: None,
+            values: None,
+            repeat_ms: None,
         }
     }
 }
 
-impl Into<MemoryCommandCodec> for u64 {
-    fn into(self) -> MemoryCommandCodec {
-        return MemoryCommandCodec::new();
-    }
-}
-
-impl From<Vec<u8>> for MemoryCommandCodec {
-    fn from(value: Vec<u8>) -> Self {
-        return MemoryCommandCodec::new();
-    }
-}
-
-impl Into<Vec<u8>> for MemoryCommandCodec {
-    fn into(self) -> Vec<u8> {
-        return json!({
-            "command": self.command,
-            "index": self.index,
-            "values": self.values,
-            "repeat_ms": self.repeat_ms,
-        })
-        .to_string()
-        .as_bytes()
-        .to_vec();
-    }
-}
+// impl Into<MemoryCommandCodec> for u64 {
+//     fn into(self) -> MemoryCommandCodec {
+//         return MemoryCommandCodec::new();
+//     }
+// }
 
 impl Display for MemoryCommandCodec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.command))
+        f.write_fmt(format_args!("{:?}", self.mode))
     }
 }
 

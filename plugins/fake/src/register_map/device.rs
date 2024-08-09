@@ -1,10 +1,9 @@
-use std::{sync::Arc, time::Duration};
-
 use async_trait::async_trait;
 use panduza_platform_core::{
     spawn_on_command, BidirMsgAtt, Device, DeviceLogger, DeviceOperations, Error,
-    MemoryCommandCodec, NumberCodec, TaskResult, WoMessageAttribute,
+    MemoryCommandCodec, MemoryCommandMode, NumberCodec, TaskResult, WoMessageAttribute,
 };
+use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
 
 ///
@@ -34,12 +33,17 @@ impl RegisterMapDevice {
         array: Arc<Vec<WoMessageAttribute<NumberCodec>>>,
         mut attr_command: BidirMsgAtt<MemoryCommandCodec>,
     ) -> TaskResult {
-        logger.info("new incoming command");
         while let Some(command) = attr_command.pop_cmd().await {
-            println!("cooucou {} ", command);
+            logger.debug(format!("New command {:?}", command));
+            match command.mode {
+                MemoryCommandMode::Read => {
+                    let idx = command.address;
+                    array[idx as usize].set(14).await?;
+                }
+                MemoryCommandMode::Write => {}
+                _ => {}
+            }
         }
-
-        array[1].set(14).await?;
 
         Ok(())
     }
@@ -102,7 +106,7 @@ impl DeviceOperations for RegisterMapDevice {
     ///
     /// Mount the device
     ///
-    async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
+    async fn mount(&mut self, device: Device) -> Result<(), Error> {
         //
         // First create registers because command will need them
         self.create_registers(device.clone()).await;
@@ -115,43 +119,7 @@ impl DeviceOperations for RegisterMapDevice {
     ///
     /// Easiest way to implement the reboot event
     ///
-    async fn wait_reboot_event(&mut self, mut device: Device) {
+    async fn wait_reboot_event(&mut self, _: Device) {
         sleep(Duration::from_secs(5)).await;
     }
 }
-
-// use panduza_core::device::traits::DeviceActions;
-// use panduza_core::device::Device;
-// use panduza_core::interface::builder::Builder as InterfaceBuilder;
-
-// use super::itf_registers;
-
-// pub struct RegisterMap;
-// impl DeviceActions for RegisterMap {
-
-//     /// Create the interfaces
-//     fn interface_builders(&self, device: &Device)
-//         -> Result<Vec<InterfaceBuilder>, panduza_core::Error>
-//     {
-
-//         // println!("Ka3005::interface_builders");
-//         // println!("{}", device_settings);
-
-//         // let mut serial_conf = SerialConfig::new();
-//         // serial_conf.import_from_json_settings(device_settings);
-
-//         // const_settings = {
-//         //     "usb_vendor": '0416',
-//         //     "usb_model": '5011',
-//         //     "serial_baudrate": 9600
-//         // }
-
-//         // serial_conf.serial_baudrate = Some(9600);
-
-//         let mut list = Vec::new();
-//         list.push(
-//             itf_registers::build("map")
-//         );
-//         return Ok(list);
-//     }
-// }
