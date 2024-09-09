@@ -102,7 +102,9 @@ impl DeviceOperations for PicoHaDioDevice {
 
         // une interface pour chaque io_%d
         //
-        // io_%d/direction       (enum/string) set/get
+        // io_%d/direction              meta : enum
+        // io_%d/direction/choices      list of string
+        // io_%d/direction/value        string
         // io_%d/value           (enum/string) set/get (when input cannot be set)
         // io_%d/trigger_read    (boolean) start an input reading (oneshot)
         //
