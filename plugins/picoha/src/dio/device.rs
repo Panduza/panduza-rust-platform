@@ -14,6 +14,7 @@ static PICOHA_VENDOR_ID: u16 = 0x16c0;
 static PICOHA_PRODUCT_ID: u16 = 0x05e1;
 static PICOHA_SERIAL_BAUDRATE: u32 = 9600; // We do not care... it is USB serial
 
+///
 /// Device to control PicoHA Dio Board
 ///
 pub struct PicoHaDioDevice {
@@ -44,14 +45,14 @@ impl PicoHaDioDevice {
 
         // Log debug info
         logger.info("Build interfaces for \"picoha.dio\" device");
-        logger.info(format!("json_settings: {}", json_settings));
+        logger.info(format!("JSON settings: {}", json_settings));
 
         // Usb settings
         let usb_settings = UsbSettings::new()
             .set_vendor(PICOHA_VENDOR_ID)
             .set_model(PICOHA_PRODUCT_ID)
             .optional_set_serial_from_json_settings(&json_settings);
-        logger.info(format!("usb_settings: {}", usb_settings));
+        logger.info(format!("USB settings: {}", usb_settings));
 
         // Serial settings
         self.serial_settings = Some(
@@ -94,9 +95,18 @@ impl PicoHaDioDevice {
 impl DeviceOperations for PicoHaDioDevice {
     ///
     ///
+    ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         self.prepare_settings(device.clone()).await?;
         self.mount_connector().await?;
+
+        // une interface pour chaque io_%d
+        //
+        // io_%d/direction       (enum/string) set/get
+        // io_%d/value           (enum/string) set/get (when input cannot be set)
+        // io_%d/trigger_read    (boolean) start an input reading (oneshot)
+        //
+
         Ok(())
     }
     ///
@@ -106,44 +116,3 @@ impl DeviceOperations for PicoHaDioDevice {
         sleep(Duration::from_secs(5)).await;
     }
 }
-// impl DeviceActions for PicoHaDio {
-
-//     /// Create the interfaces
-//     fn interface_builders(&self, device: &Device)
-//         -> Result<Vec<InterfaceBuilder>, panduza_core::Error>
-//     {
-//         // Get the device logger
-//         let logger = device.clone_logger().clone();
-
-//         // Get the device settings
-//         let device_settings = device.settings.clone();
-
-//         // Log debug info
-//         logger.log_info("Build interfaces for \"picoha.dio\" device");
-//         logger.log_info(format!("settings: {}", device_settings));
-
-//         let mut serial_conf = SerialConfig::new();
-//         serial_conf.import_from_json_settings(&device_settings)?;
-
-//         serial_conf.serial_baudrate = Some(9600);
-//         serial_conf.usb_vendor = Some(PICOHA_VENDOR_ID);
-//         serial_conf.usb_model = Some(PICOHA_PRODUCT_ID);
-
-//         // const_settings = {
-//         //     "usb_vendor": '0416',
-//         //     "usb_model": '5011',
-//         //     "serial_baudrate": 9600
-//         // }
-
-//         // serial_conf.serial_baudrate = Some(9600);
-
-//         let mut list = Vec::new();
-//         list.push(
-//             itf_digital_input::Builder::new()
-//                 .with_name("io0")
-//                 .with_serial_config(serial_conf.clone())
-//                 .build()
-//         );
-//         return Ok(list);
-//     }
-// }
