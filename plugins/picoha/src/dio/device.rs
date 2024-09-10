@@ -13,7 +13,13 @@ use panduza_platform_core::Interface;
 use panduza_platform_core::StringCodec;
 use panduza_platform_core::StringListCodec;
 use panduza_platform_core::{Device, DeviceOperations, Error};
+use prost::Message;
 use tokio::time::sleep;
+
+use crate::dio::api_dio::PicohaDioAnswer;
+
+use super::api_dio::PicohaDioRequest;
+use super::api_dio::RequestType;
 
 static PICOHA_VENDOR_ID: u16 = 0x16c0;
 static PICOHA_PRODUCT_ID: u16 = 0x05e1;
@@ -92,6 +98,38 @@ impl PicoHaDioDevice {
             .await
             .init()
             .await?;
+        Ok(())
+    }
+
+    ///
+    ///
+    ///
+    pub async fn pico_get_direction(&self) -> Result<(), Error> {
+        //
+        let mut request = PicohaDioRequest::default();
+        request.set_type(RequestType::GetPinDirection);
+        request.pin_num = 2;
+
+        //
+        let answer_buffer = &mut [0u8; 1024];
+        let size = self
+            .connector
+            .as_ref()
+            .ok_or(Error::BadSettings(
+                "Connector is not initialized".to_string(),
+            ))?
+            .lock()
+            .await
+            .write_then_read(&request.encode_to_vec(), answer_buffer)
+            .await?;
+
+        // Decode the answer
+        let answer_slice = answer_buffer[..size].as_ref();
+        println!("Received {} bytes -> {:?}", size, answer_slice);
+        let answer = PicohaDioAnswer::decode(answer_slice).unwrap();
+
+        println!("{:?}", answer);
+
         Ok(())
     }
 
