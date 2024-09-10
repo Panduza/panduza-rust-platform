@@ -11,11 +11,22 @@ pub struct StringCodec {
 }
 
 ///
-/// Implicit conversion from bool
+/// Implicit conversion from String
 ///
 impl Into<StringCodec> for String {
     fn into(self) -> StringCodec {
         return StringCodec { value: self };
+    }
+}
+
+///
+/// Implicit conversion from str
+///
+impl Into<StringCodec> for &str {
+    fn into(self) -> StringCodec {
+        return StringCodec {
+            value: self.to_string(),
+        };
     }
 }
 

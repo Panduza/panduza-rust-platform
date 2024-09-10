@@ -116,12 +116,17 @@ impl PicoHaDioDevice {
             .finish_with_codec::<StringListCodec>()
             .await;
 
+        // choices.set(["input", "output"]);
+
         let value = direction
             .create_attribute("value")
             .message()
             .with_wo_access()
             .finish_with_codec::<StringCodec>()
             .await;
+
+        // read a first time here then only set when a new value arrive
+        value.set("input").await?;
 
         Ok(())
     }
