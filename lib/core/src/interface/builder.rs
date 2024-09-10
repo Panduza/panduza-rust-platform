@@ -10,7 +10,7 @@ pub struct InterfaceBuilder {
     //
     pub reactor: Reactor,
     ///
-    pub parent: Weak<Mutex<DeviceInner>>,
+    // pub parent: Weak<Mutex<DeviceInner>>,
     ///
     pub topic: String,
 }
@@ -18,12 +18,12 @@ pub struct InterfaceBuilder {
 impl InterfaceBuilder {
     pub fn new<N: Into<String>>(
         reactor: Reactor,
-        parent: Weak<Mutex<DeviceInner>>,
+        // parent: Weak<Mutex<DeviceInner>>,
         topic: N,
     ) -> Self {
         Self {
             reactor: reactor,
-            parent: parent,
+            // parent: parent,
             topic: topic.into(),
         }
     }

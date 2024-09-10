@@ -1,30 +1,30 @@
 use crate::{Error, MessageCodec};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::Display;
 
 ///
 /// Codec for a simple Boolean
 ///
 #[derive(Clone, PartialEq, Debug)]
-pub struct BooleanCodec {
-    pub value: bool,
+pub struct StringListCodec {
+    pub list: Vec<String>,
 }
 
 ///
 /// Implicit conversion from bool
 ///
-impl Into<BooleanCodec> for bool {
-    fn into(self) -> BooleanCodec {
-        return BooleanCodec { value: self };
+impl Into<StringListCodec> for Vec<String> {
+    fn into(self) -> StringListCodec {
+        return StringListCodec { list: self };
     }
 }
 
 ///
 /// To ease display
 ///
-impl Display for BooleanCodec {
+impl Display for StringListCodec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", self.value))
+        f.write_fmt(format_args!("{}", self.list.len()))
     }
 }
 
@@ -32,37 +32,41 @@ impl Display for BooleanCodec {
 /// Do not use derive because we do not want { "value": true }
 /// But only true or false on the payload
 ///
-impl Serialize for BooleanCodec {
+impl Serialize for StringListCodec {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_bool(self.value)
+        let mut seq = serializer.serialize_seq(Some(self.list.len()))?;
+        for element in &self.list {
+            seq.serialize_element(&element)?;
+        }
+        seq.end()
     }
 }
 
 ///
 /// See Serialize
 ///
-impl<'de> Deserialize<'de> for BooleanCodec {
+impl<'de> Deserialize<'de> for StringListCodec {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let value = bool::deserialize(deserializer)?;
-        Ok(BooleanCodec { value })
+        let list = Vec::<String>::deserialize(deserializer)?;
+        Ok(StringListCodec { list })
     }
 }
 
 ///
 /// To apply all the required trait
 ///
-impl MessageCodec for BooleanCodec {
+impl MessageCodec for StringListCodec {
     ///
     ///
     ///
-    fn from_message_payload(data: &bytes::Bytes) -> Result<BooleanCodec, Error> {
-        let p: BooleanCodec =
+    fn from_message_payload(data: &bytes::Bytes) -> Result<StringListCodec, Error> {
+        let p: StringListCodec =
             serde_json::from_str(String::from_utf8(data.to_vec()).unwrap().as_str()).unwrap();
         Ok(p)
     }
