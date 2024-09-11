@@ -9,6 +9,7 @@ use panduza_platform_connectors::serial::slip::Connector;
 
 use panduza_platform_connectors::SerialSettings;
 use panduza_platform_connectors::UsbSettings;
+use panduza_platform_core::DeviceLogger;
 use panduza_platform_core::Interface;
 use panduza_platform_core::StringCodec;
 use panduza_platform_core::StringListCodec;
@@ -29,7 +30,16 @@ static PICOHA_SERIAL_BAUDRATE: u32 = 9600; // We do not care... it is USB serial
 /// Device to control PicoHA Dio Board
 ///
 pub struct PicoHaDioDevice {
+    ///
+    /// Device logger
+    logger: Option<DeviceLogger>,
+
+    ///
+    /// Serial settings to connect to the pico
     serial_settings: Option<SerialSettings>,
+
+    ///
+    /// Connector to communicate with the pico
     connector: Option<Connector>,
 }
 
@@ -39,6 +49,7 @@ impl PicoHaDioDevice {
     ///
     pub fn new() -> Self {
         PicoHaDioDevice {
+            logger: None,
             serial_settings: None,
             connector: None,
         }
@@ -102,13 +113,19 @@ impl PicoHaDioDevice {
     }
 
     ///
+    /// Communicate with the pico to get the pin direction
     ///
-    ///
-    pub async fn pico_get_direction(&self) -> Result<(), Error> {
+    pub async fn pico_get_direction(&self, pin_num: u32) -> Result<(), Error> {
         //
+        // Create the request
         let mut request = PicohaDioRequest::default();
         request.set_type(RequestType::GetPinDirection);
-        request.pin_num = 2;
+        request.pin_num = pin_num;
+
+        // Debug log
+        if let Some(logger) = self.logger.as_ref() {
+            logger.debug(format!("Send request data {:?}", &request.encode_to_vec()))
+        }
 
         //
         let answer_buffer = &mut [0u8; 1024];
@@ -125,7 +142,12 @@ impl PicoHaDioDevice {
 
         // Decode the answer
         let answer_slice = answer_buffer[..size].as_ref();
-        println!("Received {} bytes -> {:?}", size, answer_slice);
+
+        // Debug log
+        if let Some(logger) = self.logger.as_ref() {
+            logger.debug(format!("Received {} bytes -> {:?}", size, answer_slice))
+        }
+
         let answer = PicohaDioAnswer::decode(answer_slice).unwrap();
 
         println!("{:?}", answer);
@@ -244,8 +266,14 @@ impl DeviceOperations for PicoHaDioDevice {
     ///
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
+        //
+        // Init logger
+        self.logger = Some(device.logger.clone());
+
         self.prepare_settings(device.clone()).await?;
         self.mount_connector().await?;
+
+        self.pico_get_direction(2).await?;
 
         // une interface pour chaque io_%d
         //

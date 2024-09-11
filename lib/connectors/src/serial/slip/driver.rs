@@ -158,7 +158,9 @@ impl Driver {
         command: &[u8],
         response: &mut [u8],
     ) -> Result<usize, PlatformError> {
-        // Prepare encoding
+        // Prepare SLIP encoding
+        // Prepare a buffer of 1024 Bytes (need to be change later TODO)
+        // and prepare the encoder object
         let mut encoded_command = [0u8; 1024];
         let mut slip_encoder = serial_line_ip::Encoder::new();
 
@@ -195,14 +197,18 @@ impl Driver {
 
             // Try decoding
             let mut slip_decoder = serial_line_ip::Decoder::new();
-            let (total_decoded, _out_slice, end) = slip_decoder
+            let (_total_decoded, out_slice, end) = slip_decoder
                 .decode(&self.in_buf[..self.in_buf_size], response)
                 .map_err(|e| {
                     PlatformError::BadSettings(format!("Unable to decode response: {:?}", e))
                 })?;
 
+            // If a valid packet has been found, then we must return the out_slice len
+            //      which is the len a the decoded data
+            // Not '_total_decoded'
+            //      because it is the number of byte processed from the encoded buffer
             if end {
-                return Ok(total_decoded);
+                return Ok(out_slice.len());
             }
         }
     }
