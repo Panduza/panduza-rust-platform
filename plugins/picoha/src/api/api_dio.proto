@@ -28,5 +28,6 @@ enum AnswerType {
 
 message PicohaDioAnswer {
     AnswerType type = 1;
-    optional PinValue value = 3;
+    optional PinValue value = 2;
+    optional string error_message = 3;
 }
