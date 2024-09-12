@@ -56,6 +56,13 @@ impl<TYPE: MessageCodec> BidirMsgAtt<TYPE> {
     pub async fn get_last_cmd(&self) -> Option<TYPE> {
         return self.inner.lock().await.get_last_cmd();
     }
+
+    /// Set the value of the attribute
+    ///
+    pub async fn set<I: Into<TYPE>>(&self, value: I) -> Result<(), Error> {
+        self.inner.lock().await.set(value.into()).await?;
+        Ok(())
+    }
 }
 
 /// Allow creation from the builder

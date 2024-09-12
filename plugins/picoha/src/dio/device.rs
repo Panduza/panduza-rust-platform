@@ -9,13 +9,18 @@ use panduza_platform_connectors::serial::slip::Connector;
 
 use panduza_platform_connectors::SerialSettings;
 use panduza_platform_connectors::UsbSettings;
+use panduza_platform_core::spawn_on_command;
+use panduza_platform_core::BidirMsgAtt;
 use panduza_platform_core::DeviceLogger;
 use panduza_platform_core::Interface;
 use panduza_platform_core::StringCodec;
 use panduza_platform_core::StringListCodec;
+use panduza_platform_core::TaskResult;
 use panduza_platform_core::{Device, DeviceOperations, Error};
 use prost::Message;
 use tokio::time::sleep;
+
+use super::connector::PicoHaDioConnector;
 
 use crate::dio::api_dio::PicohaDioAnswer;
 use crate::dio::api_dio::PinValue;
@@ -42,6 +47,10 @@ pub struct PicoHaDioDevice {
     ///
     /// Connector to communicate with the pico
     connector: Option<Connector>,
+
+    ///
+    ///
+    pico_connector: Option<PicoHaDioConnector>,
 }
 
 impl PicoHaDioDevice {
@@ -53,6 +62,7 @@ impl PicoHaDioDevice {
             logger: None,
             serial_settings: None,
             connector: None,
+            pico_connector: None,
         }
     }
 
@@ -110,50 +120,34 @@ impl PicoHaDioDevice {
             .await
             .init()
             .await?;
+
+        //
+        self.pico_connector = Some(PicoHaDioConnector::new(
+            self.logger.as_ref().unwrap().clone(),
+            self.connector.as_ref().unwrap().clone(),
+        ));
+
         Ok(())
     }
 
     ///
-    /// Communicate with the pico to get the pin direction
     ///
-    pub async fn pico_get_direction(&self, pin_num: u32) -> Result<(), Error> {
-        //
-        // Create the request
-        let mut request = PicohaDioRequest::default();
-        request.set_type(RequestType::GetPinDirection);
-        request.pin_num = pin_num;
+    ///
+    async fn on_direction_value_change_action(
+        logger: DeviceLogger,
+        connector: PicoHaDioConnector,
+        mut value_attr: BidirMsgAtt<StringCodec>,
+        pin_num: u32,
+    ) -> TaskResult {
+        while let Some(command) = value_attr.pop_cmd().await {
+            logger.debug(format!("set direction command {:?}", command));
 
-        // Debug log
-        if let Some(logger) = self.logger.as_ref() {
-            logger.debug(format!("Send request data {:?}", &request.encode_to_vec()))
+            if command.value == "input".to_string() {
+                connector.pico_set_direction(pin_num, command.value);
+            } else if command.value == "output".to_string() {
+                connector.pico_set_direction(pin_num, command.value);
+            }
         }
-
-        //
-        let answer_buffer = &mut [0u8; 1024];
-        let size = self
-            .connector
-            .as_ref()
-            .ok_or(Error::BadSettings(
-                "Connector is not initialized".to_string(),
-            ))?
-            .lock()
-            .await
-            .write_then_read(&request.encode_to_vec(), answer_buffer)
-            .await?;
-
-        // Decode the answer
-        let answer_slice = answer_buffer[..size].as_ref();
-
-        // Debug log
-        if let Some(logger) = self.logger.as_ref() {
-            logger.debug(format!("Received {} bytes -> {:?}", size, answer_slice))
-        }
-
-        let answer = PicohaDioAnswer::decode(answer_slice).unwrap();
-
-        println!("{:?}", answer);
-        println!("{:?}", PinValue::try_from(answer.value.unwrap()));
-
         Ok(())
     }
 
@@ -164,12 +158,15 @@ impl PicoHaDioDevice {
         &mut self,
         mut device: Device,
         mut parent_interface: Interface,
+        pin_num: u32,
     ) -> Result<(), Error> {
         //
         // Create interface direction
         let mut direction = parent_interface.create_interface("direction").finish();
 
         // meta : enum ?
+
+        println!("creation direction");
 
         let choices = direction
             .create_attribute("choices")
@@ -178,14 +175,31 @@ impl PicoHaDioDevice {
             .finish_with_codec::<StringListCodec>()
             .await;
 
-        // choices.set(["input", "output"]);
+        choices
+            .set(vec!["input".to_string(), "output".to_string()])
+            .await?;
 
-        let value = direction
+        let mut value = direction
             .create_attribute("value")
             .message()
-            .with_wo_access()
+            .with_bidir_access()
             .finish_with_codec::<StringCodec>()
             .await;
+
+        //
+        // Execute action on each command received
+        let logger = self.logger.as_ref().unwrap().clone();
+        let value_attr = value.clone();
+        spawn_on_command!(
+            device,
+            value_attr,
+            Self::on_direction_value_change_action(
+                logger.clone(),
+                self.pico_connector.as_ref().unwrap().clone(),
+                value_attr.clone(),
+                pin_num
+            )
+        );
 
         // read a first time here then only set when a new value arrive
         value.set("input").await?;
@@ -213,12 +227,17 @@ impl PicoHaDioDevice {
         &mut self,
         mut device: Device,
         mut parent_interface: Interface,
+        pin_num: u32,
     ) -> Result<(), Error> {
+        // Register interface
+        let mut io_interface = parent_interface
+            .create_interface(format!("{}", pin_num))
+            .finish();
+
         //
-        //
-        // io_%d/direction              meta : enum
-        // io_%d/direction/choices      list of string
-        // io_%d/direction/value        string
+        self.create_io_interface_enum_direction(device, io_interface, pin_num)
+            .await?;
+
         // io_%d/value           (enum/string) set/get (when input cannot be set)
         // io_%d/trigger_read    (boolean) start an input reading (oneshot)
 
@@ -244,7 +263,7 @@ impl PicoHaDioDevice {
             logger.debug(format!("Create io_{}", n));
 
             //
-            self.create_io_interface(device.clone(), interface.clone())
+            self.create_io_interface(device.clone(), interface.clone(), n)
                 .await?;
 
             // let a = interface
@@ -275,7 +294,9 @@ impl DeviceOperations for PicoHaDioDevice {
         self.prepare_settings(device.clone()).await?;
         self.mount_connector().await?;
 
-        self.pico_get_direction(2).await?;
+        self.create_io_interfaces(device.clone()).await?;
+
+        // self.pico_get_direction(2).await?;
 
         // une interface pour chaque io_%d
         //

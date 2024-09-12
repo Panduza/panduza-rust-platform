@@ -59,7 +59,7 @@ impl MessageAttributeBuilder {
         CmdOnlyMsgAttBuilder { base: self.base }
     }
 
-    pub fn with_rw_access(self) -> BidirMsgAttBuilder {
+    pub fn with_bidir_access(self) -> BidirMsgAttBuilder {
         BidirMsgAttBuilder { base: self.base }
     }
 

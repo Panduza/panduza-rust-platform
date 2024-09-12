@@ -64,7 +64,7 @@ impl RegisterMapDevice {
         let attr_command = device
             .create_attribute("command")
             .message()
-            .with_rw_access()
+            .with_bidir_access()
             .finish_with_codec::<MemoryCommandCodec>()
             .await;
 

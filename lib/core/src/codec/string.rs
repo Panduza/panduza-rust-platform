@@ -70,11 +70,19 @@ impl<'de> Deserialize<'de> for StringCodec {
 ///
 impl MessageCodec for StringCodec {
     ///
-    ///
+    /// Manage deserialization
     ///
     fn from_message_payload(data: &bytes::Bytes) -> Result<StringCodec, Error> {
-        let p: StringCodec =
-            serde_json::from_str(String::from_utf8(data.to_vec()).unwrap().as_str()).unwrap();
+        // Convert incoming bytes into a str
+        let data_as_string = String::from_utf8(data.to_vec())
+            .map_err(|e| Error::DeserializeFailure(e.to_string()))?;
+
+        // Deserialize the string
+        let p: StringCodec = serde_json::from_str(data_as_string.as_str()).map_err(|e| {
+            Error::DeserializeFailure(format!("serde_json fail on : {}", e.to_string()))
+        })?;
+
+        // Return
         Ok(p)
     }
     ///
@@ -83,5 +91,18 @@ impl MessageCodec for StringCodec {
     fn into_message_payload(&self) -> Result<Vec<u8>, Error> {
         let v = serde_json::to_string(self).map_err(|e| Error::SerializeFailure(e.to_string()))?;
         Ok(v.into_bytes())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deserialization() {
+        // Warning: string must be around "string" in json
+        let serialized_data = bytes::Bytes::from("\"test value\"");
+        let deserialized_codec = StringCodec::from_message_payload(&serialized_data).unwrap();
+        assert_eq!(deserialized_codec.value, "test value");
     }
 }
