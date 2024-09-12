@@ -197,11 +197,14 @@ impl Driver {
 
             // Try decoding
             let mut slip_decoder = serial_line_ip::Decoder::new();
-            let (_total_decoded, out_slice, end) = slip_decoder
+            let (total_decoded, out_slice, end) = slip_decoder
                 .decode(&self.in_buf[..self.in_buf_size], response)
                 .map_err(|e| {
                     PlatformError::BadSettings(format!("Unable to decode response: {:?}", e))
                 })?;
+
+            // Reste counter
+            self.in_buf_size -= total_decoded;
 
             // If a valid packet has been found, then we must return the out_slice len
             //      which is the len a the decoded data

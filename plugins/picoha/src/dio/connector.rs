@@ -35,7 +35,10 @@ impl PicoHaDioConnector {
     /// Communicate with the pico to get the pin direction
     ///
     pub async fn pico_get_direction(&self, pin_num: u32) -> Result<String, Error> {
-        //
+        // Debug log
+        self.logger
+            .debug(format!("pico_get_direction({:?})", pin_num));
+
         // Create the request
         let mut request = PicohaDioRequest::default();
         request.set_type(RequestType::GetPinDirection);
@@ -64,8 +67,12 @@ impl PicoHaDioConnector {
         let answer = PicohaDioAnswer::decode(answer_slice)
             .map_err(|_| Error::Generic("invalid direction value".to_string()))?;
 
-        // println!("{:?}", answer);
-        // println!("{:?}", PinValue::try_from(answer.value.unwrap()));
+        // Debug log
+        self.logger.debug(format!("decoded {:?}", answer));
+
+        if answer.value.is_none() {
+            return Err(Error::Generic("Answer from pico has no value".to_string()));
+        }
 
         // Convert direction answer into a string value
         match PinValue::try_from(answer.value.unwrap()) {
@@ -83,6 +90,12 @@ impl PicoHaDioConnector {
     ///
     ///
     pub async fn pico_set_direction(&self, pin_num: u32, direction: String) -> Result<(), Error> {
+        // Debug log
+        self.logger.debug(format!(
+            "pico_set_direction({:?}, {:?})",
+            pin_num, direction
+        ));
+
         //
         // Create the request
         let mut request = PicohaDioRequest::default();

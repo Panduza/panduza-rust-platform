@@ -136,17 +136,21 @@ impl PicoHaDioDevice {
     async fn on_direction_value_change_action(
         logger: DeviceLogger,
         connector: PicoHaDioConnector,
-        mut value_attr: BidirMsgAtt<StringCodec>,
+        mut direction_value_attr: BidirMsgAtt<StringCodec>,
         pin_num: u32,
     ) -> TaskResult {
-        while let Some(command) = value_attr.pop_cmd().await {
+        while let Some(command) = direction_value_attr.pop_cmd().await {
             logger.debug(format!("set direction command {:?}", command));
 
             if command.value == "input".to_string() {
-                connector.pico_set_direction(pin_num, command.value);
+                connector.pico_set_direction(pin_num, command.value).await?;
             } else if command.value == "output".to_string() {
-                connector.pico_set_direction(pin_num, command.value);
+                connector.pico_set_direction(pin_num, command.value).await?;
             }
+
+            let read_direction = connector.pico_get_direction(pin_num).await?;
+
+            direction_value_attr.set(read_direction).await?;
         }
         Ok(())
     }
@@ -190,12 +194,13 @@ impl PicoHaDioDevice {
         // Execute action on each command received
         let logger = self.logger.as_ref().unwrap().clone();
         let value_attr = value.clone();
+        let connector = self.pico_connector.as_ref().unwrap().clone();
         spawn_on_command!(
             device,
             value_attr,
             Self::on_direction_value_change_action(
                 logger.clone(),
-                self.pico_connector.as_ref().unwrap().clone(),
+                connector.clone(),
                 value_attr.clone(),
                 pin_num
             )
