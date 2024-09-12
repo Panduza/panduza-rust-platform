@@ -18,6 +18,7 @@ use prost::Message;
 use tokio::time::sleep;
 
 use crate::dio::api_dio::PicohaDioAnswer;
+use crate::dio::api_dio::PinValue;
 
 use super::api_dio::PicohaDioRequest;
 use super::api_dio::RequestType;
@@ -151,6 +152,7 @@ impl PicoHaDioDevice {
         let answer = PicohaDioAnswer::decode(answer_slice).unwrap();
 
         println!("{:?}", answer);
+        println!("{:?}", PinValue::try_from(answer.value.unwrap()));
 
         Ok(())
     }
