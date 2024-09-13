@@ -1,37 +1,68 @@
-// use std::fmt::Display;
+use crate::{Error, MessageCodec};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::Display;
 
-// use crate::MessageCodec;
+#[derive(Clone, PartialEq, Debug)]
+pub struct JsonCodec {
+    value: serde_json::Value,
+}
 
-// #[derive(Clone, PartialEq, Debug)]
-// pub struct JsonCodec {
-//     value: serde_json::Value,
-// }
+///
+///
+///
+impl From<serde_json::Value> for JsonCodec {
+    fn from(value: serde_json::Value) -> Self {
+        return JsonCodec { value: value };
+    }
+}
 
-// impl Into<JsonCodec> for bool {
-//     fn into(self) -> JsonCodec {
-//         return JsonCodec {
-//             value: serde_json::Value::Null,
-//         };
-//     }
-// }
+///
+///
+///
+impl Serialize for JsonCodec {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.value.serialize(serializer)
+    }
+}
 
-// impl From<Vec<u8>> for JsonCodec {
-//     fn from(value: Vec<u8>) -> Self {
-//         return JsonCodec {
-//             value: serde_json::Value::Null,
-//         };
-//     }
-// }
-// impl Into<Vec<u8>> for JsonCodec {
-//     fn into(self) -> Vec<u8> {
-//         return vec![1];
-//     }
-// }
+///
+/// See Serialize
+///
+impl<'de> Deserialize<'de> for JsonCodec {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        Ok(JsonCodec { value })
+    }
+}
 
-// impl Display for JsonCodec {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         f.write_fmt(format_args!("{}", self.value))
-//     }
-// }
+impl MessageCodec for JsonCodec {
+    ///
+    ///
+    ///
+    fn from_message_payload(data: &bytes::Bytes) -> Result<Self, Error> {
+        // Convert incoming bytes into a str
+        let data_as_string = String::from_utf8(data.to_vec())
+            .map_err(|e| Error::DeserializeFailure(e.to_string()))?;
 
-// impl MessageCodec for JsonCodec {}
+        // Deserialize the string
+        let p: JsonCodec = serde_json::from_str(data_as_string.as_str()).map_err(|e| {
+            Error::DeserializeFailure(format!("serde_json fail on : {}", e.to_string()))
+        })?;
+
+        // Return
+        Ok(p)
+    }
+    ///
+    ///
+    ///
+    fn into_message_payload(&self) -> Result<Vec<u8>, Error> {
+        let v = serde_json::to_string(self).map_err(|e| Error::SerializeFailure(e.to_string()))?;
+        Ok(v.into_bytes())
+    }
+}

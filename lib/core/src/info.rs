@@ -40,7 +40,11 @@ impl DeviceOperations for InfoDevice {
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         //
+        // Structure of the devices
+        // let mut interface_devices = device.create_interface("structures").finish();
+
         //
+        // state of each devices
         let mut interface_devices = device.create_interface("devices").finish();
 
         //
@@ -58,6 +62,17 @@ impl DeviceOperations for InfoDevice {
                     let request = devices.lock().await.pop_next_request();
                     match request {
                         Some(r) => {
+                            //
+                            //
+                            println!("********{:?}", r);
+
+                            // interface_devices
+                            //     .create_attribute(r.name)
+                            //     .message()
+                            //     .with_bidir_access()
+                            //     .finish_with_codec::<StringCodec>()
+                            //     .await;
+
                             // Here I must create a attribute inside interface_devices
                             // when the request is a creation request
                             // else delete the object

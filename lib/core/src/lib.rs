@@ -62,13 +62,12 @@ pub use info::pack::InfoPack;
 //
 mod codec;
 pub use codec::boolean::BooleanCodec;
-// pub use codec::json::JsonCodec;
+pub use codec::json::JsonCodec;
 pub use codec::memory_command::MemoryCommandCodec;
 pub use codec::memory_command::MemoryCommandMode;
 pub use codec::number::NumberCodec;
 pub use codec::string::StringCodec;
 pub use codec::string_list::StringListCodec;
-
 
 mod task_channel;
 pub use task_channel::TaskReceiver;

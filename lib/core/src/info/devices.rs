@@ -46,14 +46,16 @@ impl InfoDev {
     }
 }
 
+#[derive(Debug)]
 pub enum RequestType {
     Create,
     Delete,
 }
 
+#[derive(Debug)]
 pub struct InfoDevRequest {
-    rtype: RequestType,
-    name: String,
+    pub rtype: RequestType,
+    pub name: String,
 }
 
 impl InfoDevRequest {
