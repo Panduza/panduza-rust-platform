@@ -112,8 +112,10 @@ impl DeviceMonitor {
                         println!("Task completed");
                     }
                     Err(e) => {
-                        println!("Task failed: {}", e);
+                        println!("Sub Task failed: {}", e.to_string());
                         self.subtask_pool.abort_all();
+
+                        // TODO HERE we have to alert the device for a reboot
                     }
                 },
                 Err(e) => {

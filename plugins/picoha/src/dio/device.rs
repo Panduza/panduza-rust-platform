@@ -170,8 +170,6 @@ impl PicoHaDioDevice {
 
         // meta : enum ?
 
-        println!("creation direction");
-
         let choices = direction
             .create_attribute("choices")
             .message()
@@ -183,7 +181,7 @@ impl PicoHaDioDevice {
             .set(vec!["input".to_string(), "output".to_string()])
             .await?;
 
-        let mut value = direction
+        let value = direction
             .create_attribute("value")
             .message()
             .with_bidir_access()
@@ -215,12 +213,79 @@ impl PicoHaDioDevice {
     ///
     ///
     ///
+    async fn on_value_value_change_action(
+        logger: DeviceLogger,
+        connector: PicoHaDioConnector,
+        mut value_value_attr: BidirMsgAtt<StringCodec>,
+        pin_num: u32,
+    ) -> TaskResult {
+        while let Some(command) = value_value_attr.pop_cmd().await {
+            logger.debug(format!("set value command {:?}", command));
+
+            if command.value == "low".to_string() {
+                connector.pico_set_value(pin_num, command.value).await?;
+            } else if command.value == "high".to_string() {
+                connector.pico_set_value(pin_num, command.value).await?;
+            }
+
+            let read_value = connector.pico_get_value(pin_num).await?;
+
+            value_value_attr.set(read_value).await?;
+        }
+        Ok(())
+    }
+
+    ///
+    ///
+    ///
     pub async fn create_io_interface_enum_value(
         &mut self,
         mut device: Device,
         mut parent_interface: Interface,
+        pin_num: u32,
     ) -> Result<(), Error> {
-        // io_%d/value           (enum/string) set/get (when input cannot be set)
+        //
+        // Create interface direction
+        let mut io_value_attr = parent_interface.create_interface("value").finish();
+
+        // meta : enum ?
+
+        let choices = io_value_attr
+            .create_attribute("choices")
+            .message()
+            .with_wo_access()
+            .finish_with_codec::<StringListCodec>()
+            .await;
+
+        choices
+            .set(vec!["low".to_string(), "high".to_string()])
+            .await?;
+
+        let value = io_value_attr
+            .create_attribute("value")
+            .message()
+            .with_bidir_access()
+            .finish_with_codec::<StringCodec>()
+            .await;
+
+        //
+        // Execute action on each command received
+        let logger = self.logger.as_ref().unwrap().clone();
+        let value_attr = value.clone();
+        let connector = self.pico_connector.as_ref().unwrap().clone();
+        spawn_on_command!(
+            device,
+            value_attr,
+            Self::on_value_value_change_action(
+                logger.clone(),
+                connector.clone(),
+                value_attr.clone(),
+                pin_num
+            )
+        );
+
+        // read a first time here then only set when a new value arrive
+        value.set("low").await?;
 
         Ok(())
     }
@@ -230,20 +295,21 @@ impl PicoHaDioDevice {
     ///
     pub async fn create_io_interface(
         &mut self,
-        mut device: Device,
+        device: Device,
         mut parent_interface: Interface,
         pin_num: u32,
     ) -> Result<(), Error> {
         // Register interface
-        let mut io_interface = parent_interface
+        let io_interface = parent_interface
             .create_interface(format!("{}", pin_num))
             .finish();
 
         //
-        self.create_io_interface_enum_direction(device, io_interface, pin_num)
+        self.create_io_interface_enum_direction(device.clone(), io_interface.clone(), pin_num)
+            .await?;
+        self.create_io_interface_enum_value(device.clone(), io_interface.clone(), pin_num)
             .await?;
 
-        // io_%d/value           (enum/string) set/get (when input cannot be set)
         // io_%d/trigger_read    (boolean) start an input reading (oneshot)
 
         Ok(())
