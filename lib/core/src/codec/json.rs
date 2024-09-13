@@ -1,6 +1,5 @@
 use crate::{Error, MessageCodec};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct JsonCodec {

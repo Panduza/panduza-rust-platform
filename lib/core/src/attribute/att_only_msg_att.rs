@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 
 use crate::{AttributeBuilder, Error, MessageCodec, TaskResult};
 
-use super::WoMessageAttributeInner;
+use super::AttOnlyMsgAttInner;
 
 // use super::att::Att;
 // pub use super::CoreMembers;
@@ -15,12 +15,12 @@ use super::WoMessageAttributeInner;
 
 /// Attribute to manage a boolean
 #[derive(Clone)]
-pub struct WoMessageAttribute<TYPE: MessageCodec> {
+pub struct AttOnlyMsgAtt<TYPE: MessageCodec> {
     ///
-    inner: Arc<Mutex<WoMessageAttributeInner<TYPE>>>,
+    inner: Arc<Mutex<AttOnlyMsgAttInner<TYPE>>>,
 }
 
-impl<TYPE: MessageCodec> WoMessageAttribute<TYPE> {
+impl<TYPE: MessageCodec> AttOnlyMsgAtt<TYPE> {
     /// Initialize the attribute
     ///
     pub async fn init(self) -> Result<Self, Error> {
@@ -36,10 +36,10 @@ impl<TYPE: MessageCodec> WoMessageAttribute<TYPE> {
 }
 
 /// Allow creation from the builder
-impl<TYPE: MessageCodec> From<AttributeBuilder> for WoMessageAttribute<TYPE> {
+impl<TYPE: MessageCodec> From<AttributeBuilder> for AttOnlyMsgAtt<TYPE> {
     fn from(builder: AttributeBuilder) -> Self {
-        WoMessageAttribute {
-            inner: WoMessageAttributeInner::from(builder).into(),
+        AttOnlyMsgAtt {
+            inner: AttOnlyMsgAttInner::from(builder).into(),
         }
     }
 }

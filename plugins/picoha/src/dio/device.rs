@@ -17,16 +17,9 @@ use panduza_platform_core::StringCodec;
 use panduza_platform_core::StringListCodec;
 use panduza_platform_core::TaskResult;
 use panduza_platform_core::{Device, DeviceOperations, Error};
-use prost::Message;
 use tokio::time::sleep;
 
 use super::connector::PicoHaDioConnector;
-
-use crate::dio::api_dio::PicohaDioAnswer;
-use crate::dio::api_dio::PinValue;
-
-use super::api_dio::PicohaDioRequest;
-use super::api_dio::RequestType;
 
 static PICOHA_VENDOR_ID: u16 = 0x16c0;
 static PICOHA_PRODUCT_ID: u16 = 0x05e1;
@@ -173,7 +166,7 @@ impl PicoHaDioDevice {
         let choices = direction
             .create_attribute("choices")
             .message()
-            .with_wo_access()
+            .with_att_only_access()
             .finish_with_codec::<StringListCodec>()
             .await;
 
@@ -253,7 +246,7 @@ impl PicoHaDioDevice {
         let choices = io_value_attr
             .create_attribute("choices")
             .message()
-            .with_wo_access()
+            .with_att_only_access()
             .finish_with_codec::<StringListCodec>()
             .await;
 

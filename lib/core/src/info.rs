@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use pack::InfoPack;
 use tokio::time::sleep;
 
-use crate::{device, Device, DeviceOperations, Error};
+use crate::{device, Device, DeviceOperations, Error, JsonCodec};
 
 ///
 /// Main device of the platform
@@ -38,6 +38,7 @@ impl InfoDevice {
 impl DeviceOperations for InfoDevice {
     ///
     ///
+    ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         //
         // Structure of the devices
@@ -66,17 +67,21 @@ impl DeviceOperations for InfoDevice {
                             //
                             println!("********{:?}", r);
 
-                            // interface_devices
-                            //     .create_attribute(r.name)
-                            //     .message()
-                            //     .with_bidir_access()
-                            //     .finish_with_codec::<StringCodec>()
-                            //     .await;
+                            let att = interface_devices
+                                .create_attribute(r.name.clone())
+                                .message()
+                                .with_att_only_access()
+                                .finish_with_codec::<JsonCodec>()
+                                .await;
+
+                            // att => att only
+
+                            // att.set(value)
 
                             // Here I must create a attribute inside interface_devices
                             // when the request is a creation request
                             // else delete the object
-                            devices.lock().await.validate_request(r);
+                            let info = devices.lock().await.validate_creation_request(r);
                         }
                         None => {}
                     }

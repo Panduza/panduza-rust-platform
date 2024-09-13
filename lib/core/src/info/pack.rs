@@ -5,11 +5,11 @@
 // On peut aussi faire un notifier par device state pour update qu'un topic pour chaque device
 //
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use tokio::sync::{Mutex, Notify};
 
-use super::devices::{self, InfoDev, InfoDevs};
+use super::devices::{InfoDevs, InfoDynamicDeviceStatus};
 
 #[derive(Clone)]
 pub struct InfoPack {
@@ -39,7 +39,7 @@ impl InfoPack {
         self.devices.lock().await.new_request_notifier()
     }
 
-    pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDev>> {
+    pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDynamicDeviceStatus>> {
         let request_validated_notifier = self.devices.lock().await.request_validation_notifier();
 
         self.devices

@@ -17,7 +17,7 @@ use crate::MessageHandler;
 
 /// Read Only Inner implementation of the message attribute
 /// This inner implementation allow the public part to be cloneable easly
-pub struct WoMessageAttributeInner<TYPE: MessageCodec> {
+pub struct AttOnlyMsgAttInner<TYPE: MessageCodec> {
     /// The message client (MQTT)
     pub message_client: MessageClient,
 
@@ -31,7 +31,7 @@ pub struct WoMessageAttributeInner<TYPE: MessageCodec> {
     requested_value: Option<TYPE>,
 }
 
-impl<TYPE: MessageCodec> WoMessageAttributeInner<TYPE> {
+impl<TYPE: MessageCodec> AttOnlyMsgAttInner<TYPE> {
     /// Set the value of the attribute
     ///
     pub async fn set(&mut self, new_value: TYPE) -> Result<(), Error> {
@@ -72,10 +72,10 @@ impl<TYPE: MessageCodec> WoMessageAttributeInner<TYPE> {
 }
 
 /// Allow creation from the builder
-impl<TYPE: MessageCodec> From<AttributeBuilder> for WoMessageAttributeInner<TYPE> {
+impl<TYPE: MessageCodec> From<AttributeBuilder> for AttOnlyMsgAttInner<TYPE> {
     fn from(builder: AttributeBuilder) -> Self {
         let topic_att = format!("{}/att", builder.topic.as_ref().unwrap());
-        WoMessageAttributeInner {
+        AttOnlyMsgAttInner {
             message_client: builder.message_client,
             topic: builder.topic.as_ref().unwrap().clone(),
             topic_att: topic_att,
@@ -85,10 +85,8 @@ impl<TYPE: MessageCodec> From<AttributeBuilder> for WoMessageAttributeInner<TYPE
 }
 
 /// Allow mutation into Arc pointer
-impl<TYPE: MessageCodec> Into<Arc<Mutex<WoMessageAttributeInner<TYPE>>>>
-    for WoMessageAttributeInner<TYPE>
-{
-    fn into(self) -> Arc<Mutex<WoMessageAttributeInner<TYPE>>> {
+impl<TYPE: MessageCodec> Into<Arc<Mutex<AttOnlyMsgAttInner<TYPE>>>> for AttOnlyMsgAttInner<TYPE> {
+    fn into(self) -> Arc<Mutex<AttOnlyMsgAttInner<TYPE>>> {
         Arc::new(Mutex::new(self))
     }
 }

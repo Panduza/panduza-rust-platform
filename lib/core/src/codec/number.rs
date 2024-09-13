@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{Error, MessageCodec};

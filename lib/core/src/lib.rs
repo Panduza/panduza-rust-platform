@@ -33,10 +33,10 @@ pub use interface::Interface;
 
 //
 mod attribute;
+pub use attribute::att_only_msg_att::AttOnlyMsgAtt;
 pub use attribute::bidir_msg_att::BidirMsgAtt;
 pub use attribute::builder::AttributeBuilder;
 pub use attribute::cmd_only_msg_att::CmdOnlyMsgAtt;
-pub use attribute::wo_msg_att::WoMessageAttribute;
 
 // public traits
 mod traits;

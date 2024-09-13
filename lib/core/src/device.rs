@@ -6,8 +6,8 @@ use tokio::sync::Notify;
 pub use inner::DeviceInner;
 
 use crate::{
-    info::devices::InfoDev, reactor::Reactor, AttributeBuilder, DeviceLogger, DeviceOperations,
-    DeviceSettings, Error, InfoPack, TaskResult, TaskSender,
+    info::devices::InfoDynamicDeviceStatus, reactor::Reactor, AttributeBuilder, DeviceLogger,
+    DeviceOperations, DeviceSettings, Error, InfoPack, TaskResult, TaskSender,
 };
 
 use tokio::sync::Mutex;
@@ -59,7 +59,7 @@ pub struct Device {
     /// Main pack
     info_pack: Option<InfoPack>,
     /// Specific for device info
-    info_dev: Option<Arc<Mutex<InfoDev>>>,
+    info_dev: Option<Arc<Mutex<InfoDynamicDeviceStatus>>>,
 
     // started: bool,
     /// Inner object

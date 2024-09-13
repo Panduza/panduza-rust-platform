@@ -23,16 +23,30 @@ pub struct Notification {
 }
 
 ///
+/// Dynamic information that must be provided by the device to maintain a status inside
+/// the main platform device "_".
 ///
+/// The device "_" will always be up and will be able to display state and notification
+/// if the device crash and is no longer able to communicate.
 ///
-pub struct InfoDev {
+pub struct InfoDynamicDeviceStatus {
+    ///
+    /// Current state of the device
     state: State,
+
+    ///
+    /// Main Notifications from the device to the user
     notifications: Vec<Notification>,
 }
 
-impl InfoDev {
-    pub fn new() -> InfoDev {
-        InfoDev {
+///
+/// Thread safe wrapper
+///
+pub type ThreadSafeInfoDynamicDeviceStatus = Arc<Mutex<InfoDynamicDeviceStatus>>;
+
+impl InfoDynamicDeviceStatus {
+    pub fn new() -> InfoDynamicDeviceStatus {
+        InfoDynamicDeviceStatus {
             state: State::Booting,
             notifications: Vec::new(),
         }
@@ -70,7 +84,7 @@ impl InfoDevRequest {
 pub struct InfoDevs {
     ///
     ///
-    devs: HashMap<String, Arc<Mutex<InfoDev>>>,
+    devs: HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>>,
 
     ///
     ///
@@ -120,7 +134,7 @@ impl InfoDevs {
 
     ///
     ///
-    pub fn get_dev_info(&self, name: &String) -> Option<Arc<Mutex<InfoDev>>> {
+    pub fn get_dev_info(&self, name: &String) -> Option<Arc<Mutex<InfoDynamicDeviceStatus>>> {
         match self.devs.get(name) {
             Some(o) => Some(o.clone()),
             None => None,
@@ -134,9 +148,24 @@ impl InfoDevs {
         self.requests.pop()
     }
 
-    pub fn validate_request(&mut self, request: InfoDevRequest) {
-        self.devs
-            .insert(request.name, Arc::new(Mutex::new(InfoDev::new())));
+    ///
+    /// Validate the creation request on managed devices
+    ///
+    pub fn validate_creation_request(
+        &mut self,
+        request: InfoDevRequest,
+    ) -> ThreadSafeInfoDynamicDeviceStatus {
+        //
+        // Create the new object for the new device
+        let new_obj = Arc::new(Mutex::new(InfoDynamicDeviceStatus::new()));
+        //
+        // Insert the object in the management list for InfoDynamicDeviceStatus
+        self.devs.insert(request.name, new_obj.clone());
+        //
+        // Then notify waiting thread that the request is accepted
         self.request_validation_notifier.notify_waiters();
+        //
+        // If it is a creation request, return the InfoDev created
+        new_obj
     }
 }

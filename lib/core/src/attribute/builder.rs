@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 
 use crate::{BidirMsgAtt, MessageClient, MessageCodec, MessageDispatcher};
 
-use super::{cmd_only_msg_att::CmdOnlyMsgAtt, wo_msg_att::WoMessageAttribute};
+use super::{att_only_msg_att::AttOnlyMsgAtt, cmd_only_msg_att::CmdOnlyMsgAtt};
 
 /// Object that allow to build an generic attribute
 ///
@@ -55,7 +55,7 @@ pub struct MessageAttributeBuilder {
 }
 
 impl MessageAttributeBuilder {
-    pub fn with_ro_access(self) -> CmdOnlyMsgAttBuilder {
+    pub fn with_cmd_only_access(self) -> CmdOnlyMsgAttBuilder {
         CmdOnlyMsgAttBuilder { base: self.base }
     }
 
@@ -63,7 +63,7 @@ impl MessageAttributeBuilder {
         BidirMsgAttBuilder { base: self.base }
     }
 
-    pub fn with_wo_access(self) -> WoMessageAttributeBuilder {
+    pub fn with_att_only_access(self) -> WoMessageAttributeBuilder {
         WoMessageAttributeBuilder { base: self.base }
     }
 }
@@ -114,7 +114,7 @@ pub struct WoMessageAttributeBuilder {
 }
 
 impl WoMessageAttributeBuilder {
-    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> WoMessageAttribute<TYPE> {
-        WoMessageAttribute::from(self.base)
+    pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> AttOnlyMsgAtt<TYPE> {
+        AttOnlyMsgAtt::from(self.base)
     }
 }
