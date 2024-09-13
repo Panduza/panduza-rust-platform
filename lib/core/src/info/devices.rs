@@ -37,6 +37,11 @@ pub struct InfoDynamicDeviceStatus {
     ///
     /// Main Notifications from the device to the user
     notifications: Vec<Notification>,
+
+    ///
+    /// True if the object has been updated
+    /// The info device set it back to false when changes are published
+    has_been_updated: bool,
 }
 
 ///
@@ -49,6 +54,7 @@ impl InfoDynamicDeviceStatus {
         InfoDynamicDeviceStatus {
             state: State::Booting,
             notifications: Vec::new(),
+            has_been_updated: true,
         }
     }
 

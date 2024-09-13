@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use pack::InfoPack;
 use tokio::time::sleep;
 
-use crate::{device, Device, DeviceOperations, Error, JsonCodec};
+use crate::{Device, DeviceOperations, Error, JsonCodec};
 
 ///
 /// Main device of the platform
@@ -93,6 +93,11 @@ impl DeviceOperations for InfoDevice {
                 Ok(())
             })
             .await;
+
+        // I need to spawn a task to watch if a device status has changed, if yes update
+        // It is a better design to create a task that will always live here
+        // device
+        // .spawn(async move {
 
         Ok(())
     }

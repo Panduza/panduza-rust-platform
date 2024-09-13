@@ -19,7 +19,7 @@ use tokio::time::sleep;
 // use crate::connection;
 
 use crate::info::InfoDevice;
-use crate::{task_channel::create_task_channel, Error, TaskReceiver, TaskResult, TaskSender};
+use crate::{task_channel::create_task_channel, TaskReceiver, TaskResult, TaskSender};
 
 use crate::{
     Device, DeviceMonitor, Factory, PlatformLogger, ProductionOrder, Reactor, ReactorSettings,
