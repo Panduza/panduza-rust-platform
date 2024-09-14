@@ -7,20 +7,20 @@ use tokio::sync::{Mutex, Notify};
 ///
 ///
 ///
-pub enum NotificationLevel {
-    Info,
-    Warning,
-    Error,
-}
+// pub enum NotificationLevel {
+//     Info,
+//     Warning,
+//     Error,
+// }
 
 ///
 ///
 ///
-pub struct Notification {
-    level: NotificationLevel,
-    message: String,
-    timestamp: u64,
-}
+// pub struct Notification {
+//     level: NotificationLevel,
+//     message: String,
+//     timestamp: u64,
+// }
 
 ///
 /// Dynamic information that must be provided by the device to maintain a status inside
@@ -36,7 +36,7 @@ pub struct InfoDynamicDeviceStatus {
 
     ///
     /// Main Notifications from the device to the user
-    notifications: Vec<Notification>,
+    // notifications: Vec<Notification>,
 
     ///
     /// True if the object has been updated
@@ -59,7 +59,7 @@ impl InfoDynamicDeviceStatus {
     pub fn new(device_status_change_notifier: Arc<Notify>) -> InfoDynamicDeviceStatus {
         let new_instance = InfoDynamicDeviceStatus {
             state: State::Booting,
-            notifications: Vec::new(),
+            // notifications: Vec::new(),
             has_been_updated: true,
             device_status_change_notifier: device_status_change_notifier,
         };
@@ -67,12 +67,25 @@ impl InfoDynamicDeviceStatus {
         new_instance
     }
 
+    pub fn state_as_string(&self) -> String {
+        format!("{}", self.state)
+    }
+
     ///
     ///
     ///  
     pub fn change_state(&mut self, new_state: State) {
         self.state = new_state;
+        self.has_been_updated = true;
         self.device_status_change_notifier.notify_waiters();
+    }
+
+    pub fn has_been_updated(&mut self) -> bool {
+        if self.has_been_updated {
+            self.has_been_updated = false;
+            return true;
+        }
+        return false;
     }
 }
 
@@ -133,6 +146,12 @@ impl InfoDevs {
             request_validation_notifier: Arc::new(Notify::new()),
             device_status_change_notifier: Arc::new(Notify::new()),
         }
+    }
+
+    ///
+    ///
+    pub fn devs(&mut self) -> &mut HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>> {
+        &mut self.devs
     }
 
     ///

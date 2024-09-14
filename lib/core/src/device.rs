@@ -58,8 +58,10 @@ pub struct Device {
     // Object to provide data to the info device
     /// Main pack
     info_pack: Option<InfoPack>,
-    /// Specific for device info
-    info_dev: Option<Arc<Mutex<InfoDynamicDeviceStatus>>>,
+
+    ///
+    /// Device must share its status with the device "_" through this info object
+    info_dyn_dev_status: Option<Arc<Mutex<InfoDynamicDeviceStatus>>>,
 
     // started: bool,
     /// Inner object
@@ -100,7 +102,7 @@ impl Device {
             logger: DeviceLogger::new(name.clone()),
             reactor: reactor.clone(),
             info_pack: info_pack,
-            info_dev: None,
+            info_dyn_dev_status: None,
             inner: DeviceInner::new(reactor.clone(), settings).into(),
             inner_operations: Arc::new(Mutex::new(operations)),
             topic: format!("{}/{}", reactor.root_topic(), name),
@@ -146,7 +148,7 @@ impl Device {
         //
         // First start by booting the device to give him a connection with the info_pack
         // and allow the InfoDevice to send device information on MQTT
-        self.move_to_state(State::Booting);
+        self.move_to_state(State::Booting).await;
 
         //
         // Start the main loop of the device
@@ -162,10 +164,10 @@ impl Device {
                 State::Booting => {
                     if let Some(mut info_pack) = self.info_pack.clone() {
                         self.logger.debug("FSM try to add_deivce in info pack");
-                        self.info_dev = Some(info_pack.add_device(self.name()).await);
+                        self.info_dyn_dev_status = Some(info_pack.add_device(self.name()).await);
                         self.logger.debug("FSM finish info pack");
                     }
-                    self.move_to_state(State::Initializating);
+                    self.move_to_state(State::Initializating).await;
                 }
                 State::Connecting => {} // wait for reactor signal
                 State::Initializating => {
@@ -177,11 +179,11 @@ impl Device {
                     match mount_result {
                         Ok(_) => {
                             self.logger.debug("FSM Mount Success ");
-                            self.move_to_state(State::Running);
+                            self.move_to_state(State::Running).await;
                         }
                         Err(e) => {
                             self.logger.error(format!("FSM Mount Failure {}", e));
-                            self.move_to_state(State::Error);
+                            self.move_to_state(State::Error).await;
                         }
                     }
                 }
@@ -195,7 +197,7 @@ impl Device {
                         .wait_reboot_event(self.clone())
                         .await;
                     self.logger.info("try to reboot");
-                    self.move_to_state(State::Initializating);
+                    self.move_to_state(State::Initializating).await;
                 }
                 State::Warning => {}
                 State::Cleaning => {}
@@ -223,8 +225,16 @@ impl Device {
     ///
     /// Function to change the current state of the device FSM
     ///
-    pub fn move_to_state(&mut self, new_state: State) {
+    pub async fn move_to_state(&mut self, new_state: State) {
+        // Set the new state
         self.state = new_state;
+
+        // Alert monitoring device "_"
+        if let Some(sts) = &mut self.info_dyn_dev_status {
+            sts.lock().await.change_state(self.state.clone());
+        }
+
+        // Notify FSM
         self.state_change_notifier.notify_one();
     }
 }

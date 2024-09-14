@@ -1,13 +1,15 @@
 pub mod devices;
 pub mod pack;
 
-use std::time::Duration;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
+use futures::lock::{self, Mutex};
 use pack::InfoPack;
+use serde_json::json;
 use tokio::time::sleep;
 
-use crate::{Device, DeviceOperations, Error, JsonCodec};
+use crate::{AttOnlyMsgAtt, Device, DeviceOperations, Error, JsonCodec};
 
 ///
 /// Main device of the platform
@@ -19,6 +21,12 @@ pub struct InfoDevice {
     /// communicate with this device
     ///
     pack: InfoPack,
+
+    ///
+    /// Each device have an attribute to share its state
+    /// This Map hold those attribute, the name of the device is the key.
+    ///
+    devices_status_attributes: Arc<Mutex<HashMap<String, AttOnlyMsgAtt<JsonCodec>>>>,
 }
 
 impl InfoDevice {
@@ -28,7 +36,10 @@ impl InfoDevice {
     pub fn new() -> (InfoDevice, InfoPack) {
         let pack = InfoPack::new();
 
-        let device = InfoDevice { pack: pack.clone() };
+        let device = InfoDevice {
+            pack: pack.clone(),
+            devices_status_attributes: Arc::new(Mutex::new(HashMap::new())),
+        };
 
         (device, pack)
     }
@@ -54,6 +65,7 @@ impl DeviceOperations for InfoDevice {
         // a validation. Once validated, the device can continue to run and report its status through an 'Arc<Mutex<InfoDev"
         //
         let pack_clone = self.pack.clone();
+        let devices_status_attributes_clone = self.devices_status_attributes.clone();
         device
             .spawn(async move {
                 //
@@ -79,7 +91,10 @@ impl DeviceOperations for InfoDevice {
 
                             // att => att only
 
-                            // att.set(value)
+                            devices_status_attributes_clone
+                                .lock()
+                                .await
+                                .insert(r.name.clone(), att);
 
                             // Here I must create a attribute inside interface_devices
                             // when the request is a creation request
@@ -100,6 +115,7 @@ impl DeviceOperations for InfoDevice {
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
         let pack_clone2 = self.pack.clone();
+        let devices_status_attributes_clone2 = self.devices_status_attributes.clone();
         device
             .spawn(async move {
                 //
@@ -112,7 +128,21 @@ impl DeviceOperations for InfoDevice {
                     // Wait for next status change
                     device_status_change.notified().await;
 
-                    println!("$$$$$$$$$$ status change")
+                    println!("$$$$$$$$$$ status change");
+
+                    let status_attributes = devices_status_attributes_clone2.lock().await;
+
+                    // Update each status attribute here
+                    for d in pack_clone2.devices().lock().await.devs() {
+                        let mut status = d.1.lock().await;
+                        if status.has_been_updated() {
+                            status_attributes[d.0]
+                                .set(JsonCodec::from(json!({
+                                    "state": status.state_as_string()
+                                })))
+                                .await?;
+                        }
+                    }
                 }
                 Ok(())
             })
