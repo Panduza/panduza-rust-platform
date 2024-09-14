@@ -56,8 +56,11 @@ impl DeviceOperations for InfoDevice {
         let pack_clone = self.pack.clone();
         device
             .spawn(async move {
+                //
+                // Clone the notifier from info pack
                 let new_request = pack_clone.new_request_notifier().await;
 
+                //
                 loop {
                     let devices = pack_clone.devices();
                     let request = devices.lock().await.pop_next_request();
@@ -96,8 +99,24 @@ impl DeviceOperations for InfoDevice {
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
-        // device
-        // .spawn(async move {
+        let pack_clone2 = self.pack.clone();
+        device
+            .spawn(async move {
+                //
+                // Clone the notifier from info pack
+                let device_status_change = pack_clone2.device_status_change_notifier().await;
+
+                //
+                loop {
+                    //
+                    // Wait for next status change
+                    device_status_change.notified().await;
+
+                    println!("$$$$$$$$$$ status change")
+                }
+                Ok(())
+            })
+            .await;
 
         Ok(())
     }

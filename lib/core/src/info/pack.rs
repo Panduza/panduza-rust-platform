@@ -39,6 +39,12 @@ impl InfoPack {
         self.devices.lock().await.new_request_notifier()
     }
 
+    ///
+    ///
+    pub async fn device_status_change_notifier(&self) -> Arc<Notify> {
+        self.devices.lock().await.device_status_change_notifier()
+    }
+
     pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDynamicDeviceStatus>> {
         let request_validated_notifier = self.devices.lock().await.request_validation_notifier();
 
@@ -50,5 +56,13 @@ impl InfoPack {
         request_validated_notifier.notified().await;
 
         self.devices.lock().await.get_dev_info(&name).unwrap()
+    }
+
+    ///
+    ///
+    ///
+    pub async fn check_for_status_update(&self) {
+        // let ds = self.devices.lock().await;
+        // for d in ds {}
     }
 }

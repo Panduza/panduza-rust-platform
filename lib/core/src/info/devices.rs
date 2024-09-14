@@ -42,6 +42,12 @@ pub struct InfoDynamicDeviceStatus {
     /// True if the object has been updated
     /// The info device set it back to false when changes are published
     has_been_updated: bool,
+
+    ///
+    /// This allow this object to notify its parent
+    /// This will trigger actions to manage a status notification
+    /// The excepted action is a new publication on device "_"
+    device_status_change_notifier: Arc<Notify>,
 }
 
 ///
@@ -50,12 +56,15 @@ pub struct InfoDynamicDeviceStatus {
 pub type ThreadSafeInfoDynamicDeviceStatus = Arc<Mutex<InfoDynamicDeviceStatus>>;
 
 impl InfoDynamicDeviceStatus {
-    pub fn new() -> InfoDynamicDeviceStatus {
-        InfoDynamicDeviceStatus {
+    pub fn new(device_status_change_notifier: Arc<Notify>) -> InfoDynamicDeviceStatus {
+        let new_instance = InfoDynamicDeviceStatus {
             state: State::Booting,
             notifications: Vec::new(),
             has_been_updated: true,
-        }
+            device_status_change_notifier: device_status_change_notifier,
+        };
+        new_instance.device_status_change_notifier.notify_waiters();
+        new_instance
     }
 
     ///
@@ -63,6 +72,7 @@ impl InfoDynamicDeviceStatus {
     ///  
     pub fn change_state(&mut self, new_state: State) {
         self.state = new_state;
+        self.device_status_change_notifier.notify_waiters();
     }
 }
 
@@ -105,6 +115,11 @@ pub struct InfoDevs {
     /// Notified when a request has been managed by the InfoDevice
     ///
     request_validation_notifier: Arc<Notify>,
+
+    ///
+    /// Notified when a device status change
+    ///
+    device_status_change_notifier: Arc<Notify>,
 }
 
 impl InfoDevs {
@@ -116,6 +131,7 @@ impl InfoDevs {
             requests: Vec::new(),
             new_request_notifier: Arc::new(Notify::new()),
             request_validation_notifier: Arc::new(Notify::new()),
+            device_status_change_notifier: Arc::new(Notify::new()),
         }
     }
 
@@ -129,6 +145,12 @@ impl InfoDevs {
     ///
     pub fn request_validation_notifier(&self) -> Arc<Notify> {
         self.request_validation_notifier.clone()
+    }
+
+    ///
+    ///
+    pub fn device_status_change_notifier(&self) -> Arc<Notify> {
+        self.device_status_change_notifier.clone()
     }
 
     ///
@@ -163,7 +185,9 @@ impl InfoDevs {
     ) -> ThreadSafeInfoDynamicDeviceStatus {
         //
         // Create the new object for the new device
-        let new_obj = Arc::new(Mutex::new(InfoDynamicDeviceStatus::new()));
+        let new_obj = Arc::new(Mutex::new(InfoDynamicDeviceStatus::new(
+            self.device_status_change_notifier.clone(),
+        )));
         //
         // Insert the object in the management list for InfoDynamicDeviceStatus
         self.devs.insert(request.name, new_obj.clone());
@@ -173,5 +197,22 @@ impl InfoDevs {
         //
         // If it is a creation request, return the InfoDev created
         new_obj
+    }
+
+    ///
+    /// Go trough status and check for update
+    ///
+    /// WARNING
+    /// Maybe not the best way of doing this feature, it will force a thread to run useless
+    /// periodic actions
+    ///
+    pub async fn check_for_status_update(&self) -> Vec<ThreadSafeInfoDynamicDeviceStatus> {
+        let mut updated_status = Vec::new();
+        for d in &self.devs {
+            if d.1.lock().await.has_been_updated {
+                updated_status.push(d.1.clone())
+            }
+        }
+        updated_status
     }
 }
