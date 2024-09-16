@@ -1,3 +1,8 @@
+mod structure;
+
+pub use structure::DeviceStructure;
+use structure::StructuralElement;
+
 use std::sync::Arc;
 
 use crate::device::State;
@@ -21,43 +26,6 @@ use tokio::sync::{Mutex, Notify};
 //     message: String,
 //     timestamp: u64,
 // }
-
-enum AttributeMode {
-    AttOnly,
-    CmdOnly,
-    Bidir,
-}
-
-struct ElementAttribute {
-    name: String,
-    typee: String,
-    mode: AttributeMode,
-}
-
-struct ElementInterface {
-    name: String,
-    tags: Vec<String>,
-}
-
-///
-/// Element at the basis of device structure
-///
-enum StructuralElement {
-    Attribute(ElementAttribute),
-    Interface(ElementInterface),
-}
-
-struct DeviceStructure {
-    elements: Vec<StructuralElement>,
-}
-
-impl DeviceStructure {
-    fn new() -> Self {
-        DeviceStructure {
-            elements: Vec::new(),
-        }
-    }
-}
 
 ///
 /// Dynamic information that must be provided by the device to maintain a status inside
@@ -128,6 +96,14 @@ impl InfoDynamicDeviceStatus {
         }
         return false;
     }
+
+    pub fn structure_append(&mut self, topic: String, element: StructuralElement) {
+
+        // split du topic
+        // remove layers until we found the device name
+    }
+
+    // pub fn structure_remove()
 }
 
 #[derive(Debug)]
