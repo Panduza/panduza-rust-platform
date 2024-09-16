@@ -70,7 +70,7 @@ impl InfoDynamicDeviceStatus {
             // notifications: Vec::new(),
             has_been_updated: true,
             device_status_change_notifier: device_status_change_notifier,
-            structure: DeviceStructure::new(),
+            structure: DeviceStructure::new("pok"),
         };
         new_instance.device_status_change_notifier.notify_waiters();
         new_instance
