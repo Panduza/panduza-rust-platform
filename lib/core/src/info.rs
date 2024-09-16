@@ -4,7 +4,7 @@ pub mod pack;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
-use futures::lock::{self, Mutex};
+use futures::lock::Mutex;
 use pack::InfoPack;
 use serde_json::json;
 use tokio::time::sleep;
@@ -54,6 +54,13 @@ impl DeviceOperations for InfoDevice {
         //
         // Structure of the devices
         // let mut interface_devices = device.create_interface("structures").finish();
+
+        let structure_att = device
+            .create_attribute("structure")
+            .message()
+            .with_att_only_access()
+            .finish_with_codec::<JsonCodec>()
+            .await;
 
         //
         // state of each devices

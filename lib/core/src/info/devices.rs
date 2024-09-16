@@ -22,6 +22,43 @@ use tokio::sync::{Mutex, Notify};
 //     timestamp: u64,
 // }
 
+enum AttributeMode {
+    AttOnly,
+    CmdOnly,
+    Bidir,
+}
+
+struct ElementAttribute {
+    name: String,
+    typee: String,
+    mode: AttributeMode,
+}
+
+struct ElementInterface {
+    name: String,
+    tags: Vec<String>,
+}
+
+///
+/// Element at the basis of device structure
+///
+enum StructuralElement {
+    Attribute(ElementAttribute),
+    Interface(ElementInterface),
+}
+
+struct DeviceStructure {
+    elements: Vec<StructuralElement>,
+}
+
+impl DeviceStructure {
+    fn new() -> Self {
+        DeviceStructure {
+            elements: Vec::new(),
+        }
+    }
+}
+
 ///
 /// Dynamic information that must be provided by the device to maintain a status inside
 /// the main platform device "_".
@@ -48,6 +85,9 @@ pub struct InfoDynamicDeviceStatus {
     /// This will trigger actions to manage a status notification
     /// The excepted action is a new publication on device "_"
     device_status_change_notifier: Arc<Notify>,
+
+    ///
+    structure: DeviceStructure,
 }
 
 ///
@@ -62,6 +102,7 @@ impl InfoDynamicDeviceStatus {
             // notifications: Vec::new(),
             has_been_updated: true,
             device_status_change_notifier: device_status_change_notifier,
+            structure: DeviceStructure::new(),
         };
         new_instance.device_status_change_notifier.notify_waiters();
         new_instance

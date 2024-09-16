@@ -115,6 +115,9 @@ pub struct WoMessageAttributeBuilder {
 
 impl WoMessageAttributeBuilder {
     pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> AttOnlyMsgAtt<TYPE> {
+        //
+        // TODO HERE I SHOULD SEND STRUCTURE UPDATE TO THE INFO PACK
+        //
         AttOnlyMsgAtt::from(self.base)
     }
 }
