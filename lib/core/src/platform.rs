@@ -129,8 +129,8 @@ impl Platform {
             .unwrap();
 
         //
-        // let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
-        let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
+        let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
+        // let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
         production_order.device_settings = json!({});
         let (mut monitor, mut dev) =
             self.factory

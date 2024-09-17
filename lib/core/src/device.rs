@@ -134,6 +134,7 @@ impl Device {
     /// Device can directly create some attribute on its root
     ///
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
+        self.logger.warn("crash");
         self.reactor
             .create_new_attribute(self.info_dyn_dev_status.as_ref().unwrap().clone())
             .with_topic(format!("{}/{}", self.topic, name.into())) // take the device topic as root
@@ -166,6 +167,8 @@ impl Device {
                         self.logger.debug("FSM try to add_deivce in info pack");
                         self.info_dyn_dev_status = Some(info_pack.add_device(self.name()).await);
                         self.logger.debug("FSM finish info pack");
+                    } else {
+                        self.logger.debug("FSM NO INFO PACK !");
                     }
                     self.move_to_state(State::Initializating).await;
                 }

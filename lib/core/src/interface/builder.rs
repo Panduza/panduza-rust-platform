@@ -30,10 +30,14 @@ impl InterfaceBuilder {
         }
     }
 
-    pub fn with_tags<T: Into<String>>(self, tags: T) -> Self {
+    pub fn with_tag<T: Into<String>>(mut self, tag: T) -> Self {
+        self.tags.push(tag.into());
         self
     }
 
+    ///
+    ///
+    ///
     pub async fn finish(self) -> Interface {
         let bis = self.topic.clone();
         let name = bis.split('/').last().unwrap();
