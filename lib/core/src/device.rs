@@ -125,7 +125,7 @@ impl Device {
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
         InterfaceBuilder::new(
             self.reactor.clone(),
-            // Arc::downgrade(&self.inner),
+            self.info_dyn_dev_status.as_ref().unwrap().clone(),
             format!("{}/{}", self.topic, name.into()), // take the device topic as root
         )
     }

@@ -23,7 +23,10 @@ impl ElementInterface {
     }
 
     pub fn into_json_value(&self) -> serde_json::Value {
-        return json!({});
+        return json!({
+            "name": self.name,
+            "tags": self.tags
+        });
     }
 
     pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {

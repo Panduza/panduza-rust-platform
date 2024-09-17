@@ -28,8 +28,12 @@ impl DeviceStructure {
         }
     }
 
-    pub fn into_json_value() -> serde_json::Value {
-        let p = serde_json::Map::new();
+    pub fn into_json_value(&self) -> serde_json::Value {
+        let mut p = serde_json::Map::new();
+
+        for e in &self.elements {
+            p.insert(e.name().clone(), e.into_json_value());
+        }
 
         p.into()
     }
@@ -201,6 +205,20 @@ mod tests {
 
     #[test]
     ///
+    /// Just perform a very basic breakdown topic operation
+    ///
+    fn test_breakdown_topic_basic() {
+        let device_name = "my_device";
+        let topic = "namespace/pza/my_device/topic1/subtopic";
+        let expected = vec!["my_device", "topic1", "subtopic"];
+
+        let mut structure = DeviceStructure::new(device_name);
+        let result = structure.breakdown_topic(topic);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    ///
     /// Test that we can insert a interface element
     ///
     fn test_insert_element_basic() {
@@ -261,15 +279,24 @@ mod tests {
 
     #[test]
     ///
-    /// Just perform a very basic breakdown topic operation
     ///
-    fn test_breakdown_topic_basic() {
+    ///
+    fn test_into_json_basic() {
+        // inputs
         let device_name = "my_device";
-        let topic = "namespace/pza/my_device/topic1/subtopic";
-        let expected = vec!["my_device", "topic1", "subtopic"];
+        let topic = "namespace/pza/my_device/topic1";
 
+        // operation
         let mut structure = DeviceStructure::new(device_name);
-        let result = structure.breakdown_topic(topic);
-        assert_eq!(result, expected);
+        structure
+            .insert(
+                topic.to_string(),
+                StructuralElement::Interface(ElementInterface::new("topic1", Vec::new())),
+            )
+            .unwrap();
+
+        // checks
+        let is_element_exist = structure.into_json_value();
+        assert_eq!(is_element_exist, json!({}));
     }
 }

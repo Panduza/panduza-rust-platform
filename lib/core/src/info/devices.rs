@@ -1,10 +1,11 @@
 mod structure;
 
 pub use structure::DeviceStructure;
+use structure::StructuralElement;
 
 use std::sync::Arc;
 
-use crate::device::State;
+use crate::{device::State, Error};
 use std::collections::HashMap;
 use tokio::sync::{Mutex, Notify};
 
@@ -96,11 +97,13 @@ impl InfoDynamicDeviceStatus {
         return false;
     }
 
-    // pub fn structure_append(&mut self, topic: String, element: StructuralElement) {
-
-    //     // split du topic
-    //     // remove layers until we found the device name
-    // }
+    pub fn structure_insert(
+        &mut self,
+        topic: String,
+        element: StructuralElement,
+    ) -> Result<(), Error> {
+        self.structure.insert(topic, element)
+    }
 
     // pub fn structure_remove()
 }

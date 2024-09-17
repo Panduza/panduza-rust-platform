@@ -2,7 +2,7 @@ use std::sync::Weak;
 
 use tokio::sync::Mutex;
 
-use crate::{DeviceInner, Reactor};
+use crate::{info::devices::ThreadSafeInfoDynamicDeviceStatus, DeviceInner, Reactor};
 
 use super::Interface;
 
@@ -10,7 +10,7 @@ pub struct InterfaceBuilder {
     //
     pub reactor: Reactor,
     ///
-    // pub parent: Weak<Mutex<DeviceInner>>,
+    pub device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
     ///
     pub topic: String,
 }
@@ -18,12 +18,12 @@ pub struct InterfaceBuilder {
 impl InterfaceBuilder {
     pub fn new<N: Into<String>>(
         reactor: Reactor,
-        // parent: Weak<Mutex<DeviceInner>>,
+        device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
         topic: N,
     ) -> Self {
         Self {
             reactor: reactor,
-            // parent: parent,
+            device_dyn_info: device_dyn_info,
             topic: topic.into(),
         }
     }
@@ -33,6 +33,8 @@ impl InterfaceBuilder {
     }
 
     pub fn finish(self) -> Interface {
+        // device_dyn_info
+        // insert in status
         Interface::from(self)
     }
 }

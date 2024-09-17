@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::{AttributeBuilder, InterfaceBuilder, Reactor};
+use crate::{
+    info::devices::ThreadSafeInfoDynamicDeviceStatus, AttributeBuilder, InterfaceBuilder, Reactor,
+};
 
 pub mod builder;
 
@@ -8,6 +10,8 @@ pub mod builder;
 pub struct Interface {
     ///
     reactor: Reactor,
+    //
+    pub device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
     ///
     topic: String,
 }
@@ -19,7 +23,7 @@ impl Interface {
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
         InterfaceBuilder::new(
             self.reactor.clone(),
-            // Arc::downgrade(&self.inner),
+            self.device_dyn_info.clone(),
             format!("{}/{}", self.topic, name.into()), // take the device topic as root
         )
     }
@@ -35,6 +39,7 @@ impl From<builder::InterfaceBuilder> for Interface {
     fn from(builder: builder::InterfaceBuilder) -> Self {
         Interface {
             reactor: builder.reactor,
+            device_dyn_info: builder.device_dyn_info,
             topic: builder.topic,
         }
     }
