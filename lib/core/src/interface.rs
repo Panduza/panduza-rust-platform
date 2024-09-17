@@ -30,7 +30,7 @@ impl Interface {
 
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
         self.reactor
-            .create_new_attribute()
+            .create_new_attribute(self.device_dyn_info.clone())
             .with_topic(format!("{}/{}", self.topic, name.into()))
     }
 }

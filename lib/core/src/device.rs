@@ -135,7 +135,7 @@ impl Device {
     ///
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
         self.reactor
-            .create_new_attribute()
+            .create_new_attribute(self.info_dyn_dev_status.as_ref().unwrap().clone())
             .with_topic(format!("{}/{}", self.topic, name.into())) // take the device topic as root
     }
 

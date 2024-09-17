@@ -2,7 +2,10 @@ use std::sync::Weak;
 
 use tokio::sync::Mutex;
 
-use crate::{BidirMsgAtt, MessageClient, MessageCodec, MessageDispatcher};
+use crate::{
+    info::devices::ThreadSafeInfoDynamicDeviceStatus, BidirMsgAtt, MessageClient, MessageCodec,
+    MessageDispatcher,
+};
 
 use super::{att_only_msg_att::AttOnlyMsgAtt, cmd_only_msg_att::CmdOnlyMsgAtt};
 
@@ -16,6 +19,9 @@ pub struct AttributeBuilder {
     /// incoming messages on attributes
     pub message_dispatcher: Weak<Mutex<MessageDispatcher>>,
 
+    ///
+    pub device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
+
     /// Topic of the attribute
     pub topic: Option<String>,
 }
@@ -25,10 +31,12 @@ impl AttributeBuilder {
     pub fn new(
         message_client: MessageClient,
         message_dispatcher: Weak<Mutex<MessageDispatcher>>,
+        device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
     ) -> AttributeBuilder {
         AttributeBuilder {
             message_client,
             message_dispatcher,
+            device_dyn_info,
             topic: None,
         }
     }

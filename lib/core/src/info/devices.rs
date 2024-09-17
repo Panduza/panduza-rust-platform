@@ -1,7 +1,9 @@
 mod structure;
 
 pub use structure::DeviceStructure;
-use structure::StructuralElement;
+pub use structure::ElementAttribute;
+pub use structure::ElementInterface;
+pub use structure::StructuralElement;
 
 use std::sync::Arc;
 

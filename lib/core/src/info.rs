@@ -64,7 +64,7 @@ impl DeviceOperations for InfoDevice {
 
         //
         // state of each devices
-        let mut interface_devices = device.create_interface("devices").finish();
+        let mut interface_devices = device.create_interface("devices").finish().await;
 
         //
         // Here the device interface must provide an attribute for each device mounted on the platform

@@ -12,6 +12,7 @@ pub mod message_dispatcher;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::info::devices::ThreadSafeInfoDynamicDeviceStatus;
 use crate::{AttributeBuilder, MessageDispatcher, TaskResult, TaskSender};
 
 use rumqttc::AsyncClient;
@@ -84,10 +85,14 @@ impl Reactor {
         )
     }
 
-    pub fn create_new_attribute(&self) -> AttributeBuilder {
+    pub fn create_new_attribute(
+        &self,
+        device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
+    ) -> AttributeBuilder {
         AttributeBuilder::new(
             self.message_client.as_ref().unwrap().clone(),
             Arc::downgrade(&self.message_dispatcher),
+            device_dyn_info,
         )
     }
 

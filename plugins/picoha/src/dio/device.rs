@@ -159,7 +159,10 @@ impl PicoHaDioDevice {
     ) -> Result<(), Error> {
         //
         // Create interface direction
-        let mut direction = parent_interface.create_interface("direction").finish();
+        let mut direction = parent_interface
+            .create_interface("direction")
+            .finish()
+            .await;
 
         // meta : enum ?
 
@@ -239,7 +242,7 @@ impl PicoHaDioDevice {
     ) -> Result<(), Error> {
         //
         // Create interface direction
-        let mut io_value_attr = parent_interface.create_interface("value").finish();
+        let mut io_value_attr = parent_interface.create_interface("value").finish().await;
 
         // meta : enum ?
 
@@ -295,7 +298,8 @@ impl PicoHaDioDevice {
         // Register interface
         let io_interface = parent_interface
             .create_interface(format!("{}", pin_num))
-            .finish();
+            .finish()
+            .await;
 
         //
         self.create_io_interface_enum_direction(device.clone(), io_interface.clone(), pin_num)
@@ -317,7 +321,7 @@ impl PicoHaDioDevice {
 
         //
         // Register interface
-        let mut interface = device.create_interface("io").finish();
+        let interface = device.create_interface("io").finish().await;
 
         //
         //
