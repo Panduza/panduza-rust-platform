@@ -1,7 +1,6 @@
 mod structure;
 
 pub use structure::DeviceStructure;
-use structure::StructuralElement;
 
 use std::sync::Arc;
 
@@ -97,11 +96,11 @@ impl InfoDynamicDeviceStatus {
         return false;
     }
 
-    pub fn structure_append(&mut self, topic: String, element: StructuralElement) {
+    // pub fn structure_append(&mut self, topic: String, element: StructuralElement) {
 
-        // split du topic
-        // remove layers until we found the device name
-    }
+    //     // split du topic
+    //     // remove layers until we found the device name
+    // }
 
     // pub fn structure_remove()
 }
