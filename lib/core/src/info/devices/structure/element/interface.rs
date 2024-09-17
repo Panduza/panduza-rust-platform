@@ -1,3 +1,5 @@
+use serde_json::json;
+
 use super::StructuralElement;
 
 use crate::Error;
@@ -18,6 +20,10 @@ impl ElementInterface {
             tags,
             elements: Vec::new(),
         }
+    }
+
+    pub fn into_json_value(&self) -> serde_json::Value {
+        return json!({});
     }
 
     pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {

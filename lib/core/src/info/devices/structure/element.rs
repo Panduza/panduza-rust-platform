@@ -1,4 +1,4 @@
-mod attribute;
+pub mod attribute;
 mod interface;
 
 use crate::Error;
@@ -19,6 +19,13 @@ impl StructuralElement {
         match self {
             StructuralElement::Attribute(a) => &a.name(),
             StructuralElement::Interface(i) => &i.name(),
+        }
+    }
+
+    pub fn into_json_value(&self) -> serde_json::Value {
+        match self {
+            StructuralElement::Attribute(a) => a.into_json_value(),
+            StructuralElement::Interface(i) => i.into_json_value(),
         }
     }
 

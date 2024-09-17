@@ -1,3 +1,5 @@
+use serde_json::json;
+
 use crate::Error;
 
 pub enum AttributeMode {
@@ -23,6 +25,15 @@ impl ElementAttribute {
             mode,
         }
     }
+
+    pub fn into_json_value(&self) -> serde_json::Value {
+        json!({
+            "name": self.name,
+            "type": self.typee,
+            // "mode": self.mode
+        })
+    }
+
     ///
     pub fn name(&self) -> &String {
         &self.name
