@@ -11,7 +11,7 @@ pub struct Interface {
     ///
     reactor: Reactor,
     //
-    pub device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
+    pub device_dyn_info: Option<ThreadSafeInfoDynamicDeviceStatus>,
     ///
     topic: String,
 }

@@ -125,7 +125,7 @@ impl Device {
     pub fn create_interface<N: Into<String>>(&mut self, name: N) -> InterfaceBuilder {
         InterfaceBuilder::new(
             self.reactor.clone(),
-            self.info_dyn_dev_status.as_ref().unwrap().clone(),
+            self.info_dyn_dev_status.clone(),
             format!("{}/{}", self.topic, name.into()), // take the device topic as root
         )
     }
@@ -134,9 +134,8 @@ impl Device {
     /// Device can directly create some attribute on its root
     ///
     pub fn create_attribute<N: Into<String>>(&mut self, name: N) -> AttributeBuilder {
-        self.logger.warn("crash");
         self.reactor
-            .create_new_attribute(self.info_dyn_dev_status.as_ref().unwrap().clone())
+            .create_new_attribute(self.info_dyn_dev_status.clone())
             .with_topic(format!("{}/{}", self.topic, name.into())) // take the device topic as root
     }
 

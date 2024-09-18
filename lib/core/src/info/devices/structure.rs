@@ -8,12 +8,55 @@ use serde_json::json;
 
 use crate::Error;
 
-pub struct DeviceStructure {
-    ///
-    /// Name of the device
-    ///
-    device_name: String,
+struct Topic {
+    namespace: String,
+    host: String,
+    device: String,
+    layers: Vec<String>,
+}
 
+impl Topic {
+    pub fn from_string<A: Into<String>>(topic: A) -> Self {
+        // Split the topic
+        let topic_string = topic.into();
+        let mut layers: Vec<&str> = topic_string.split('/').collect();
+
+        //
+        //
+        let mut namespace_parts: Vec<String> = Vec::new();
+        while !layers.is_empty() {
+            {
+                let layer = layers.get(0).unwrap();
+                if *layer == "pza" {
+                    break;
+                }
+                namespace_parts.push(layer.to_string());
+            }
+            layers.remove(0);
+        }
+
+        // Remove pza
+        layers.remove(0);
+
+        //
+        //
+        let namespace = namespace_parts.join("/");
+        let host = layers.remove(0).to_string();
+        let device = layers.remove(0).to_string();
+
+        Self {
+            namespace,
+            host,
+            device,
+            layers: layers.into_iter().map(|l| l.to_string()).collect(),
+        }
+    }
+}
+
+///
+/// Meta Structure of all devices managed by the platform except '_'
+///
+pub struct DeviceStructure {
     ///
     /// Elements of the device
     ///
@@ -21,9 +64,8 @@ pub struct DeviceStructure {
 }
 
 impl DeviceStructure {
-    pub fn new<A: Into<String>>(name: A) -> Self {
+    pub fn new() -> Self {
         DeviceStructure {
-            device_name: name.into(),
             elements: Vec::new(),
         }
     }
@@ -36,25 +78,6 @@ impl DeviceStructure {
         }
 
         p.into()
-    }
-
-    pub fn breakdown_topic<A: Into<String>>(&self, topic: A) -> Vec<String> {
-        // Split the topic
-        let topic_string = topic.into();
-        let mut layers: Vec<&str> = topic_string.split('/').collect();
-
-        // Remove layers before device name
-        while !layers.is_empty() {
-            if let Some(value) = layers.get(0) {
-                if value == &self.device_name.as_str() {
-                    break;
-                } else {
-                    layers.remove(0);
-                }
-            }
-        }
-
-        layers.into_iter().map(|s| s.to_string()).collect()
     }
 
     ///
@@ -76,8 +99,10 @@ impl DeviceStructure {
     pub fn is_element_exist<A: Into<String>>(&self, topic: A) -> Result<bool, Error> {
         //
         // Breakdown the topic into layers
-        let mut layers = self.breakdown_topic(topic);
-        layers.remove(0);
+
+        let t = Topic::from_string(topic);
+
+        let layers = t.layers;
 
         if layers.len() == 1 {
             //
@@ -115,36 +140,15 @@ impl DeviceStructure {
     }
 
     pub fn insert(&mut self, topic: String, element: StructuralElement) -> Result<(), Error> {
-        println!("pok");
+        //
+        // Debug
+        println!("structure::insert {:?}", topic);
 
-        let mut layers: Vec<&str> = topic.split('/').collect();
-
-        while !layers.is_empty() {
-            match layers.get(0) {
-                Some(value) => {
-                    if value == &self.device_name.as_str() {
-                        break;
-                    } else {
-                        layers.remove(0);
-                    }
-                }
-                None => {
-                    // Should never go there
-                }
-            }
-        }
-        println!("{:?}", layers);
-
-        if layers.is_empty() {
-            // error
-        }
-
-        // Remove device name
-        layers.remove(0);
-
-        if layers.is_empty() {
-            // error insertion need at least a name
-        }
+        //
+        //
+        // let mut layers: Vec<&str> = topic.split('/').collect();
+        let t = Topic::from_string(topic);
+        let mut layers = t.layers;
 
         if layers.len() == 1 {
             //
@@ -208,13 +212,15 @@ mod tests {
     /// Just perform a very basic breakdown topic operation
     ///
     fn test_breakdown_topic_basic() {
-        let device_name = "my_device";
-        let topic = "namespace/pza/my_device/topic1/subtopic";
-        let expected = vec!["my_device", "topic1", "subtopic"];
+        let topic = "namespace/pza/host/my_device/topic1/subtopic";
 
-        let mut structure = DeviceStructure::new(device_name);
-        let result = structure.breakdown_topic(topic);
-        assert_eq!(result, expected);
+        let mut structure = Topic::from_string(topic);
+        assert_eq!(structure.host, "host".to_string());
+        assert_eq!(structure.device, "my_device".to_string());
+        assert_eq!(
+            structure.layers,
+            vec!["topic1".to_string(), "subtopic".to_string()]
+        );
     }
 
     #[test]
@@ -223,11 +229,10 @@ mod tests {
     ///
     fn test_insert_element_basic() {
         // inputs
-        let device_name = "my_device";
-        let topic = "namespace/pza/my_device/topic1";
+        let topic = "namespace/pza/host/my_device/topic1";
 
         // operation
-        let mut structure = DeviceStructure::new(device_name);
+        let mut structure = DeviceStructure::new();
         structure
             .insert(
                 topic.to_string(),
@@ -246,12 +251,11 @@ mod tests {
     ///
     fn test_insert_element_multiple_layer() {
         // inputs
-        let device_name = "my_device";
-        let topic1 = "namespace/pza/my_device/topic1";
-        let topic2 = "namespace/pza/my_device/topic1/topic2";
+        let topic1 = "namespace/pza/host/my_device/topic1";
+        let topic2 = "namespace/pza/host/my_device/topic1/topic2";
 
         // operation
-        let mut structure = DeviceStructure::new(device_name);
+        let mut structure = DeviceStructure::new();
         structure
             .insert(
                 topic1.to_string(),
@@ -283,11 +287,10 @@ mod tests {
     ///
     fn test_into_json_basic() {
         // inputs
-        let device_name = "my_device";
-        let topic = "namespace/pza/my_device/topic1";
+        let topic = "namespace/pza/host/my_device/topic1";
 
         // operation
-        let mut structure = DeviceStructure::new(device_name);
+        let mut structure = DeviceStructure::new();
         structure
             .insert(
                 topic.to_string(),

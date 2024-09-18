@@ -78,7 +78,7 @@ impl ElementInterface {
             })
     }
 
-    pub fn insert(&mut self, layers: Vec<&str>, element: StructuralElement) -> Result<(), Error> {
+    pub fn insert(&mut self, layers: Vec<String>, element: StructuralElement) -> Result<(), Error> {
         if layers.len() == 1 {
             // Insert HERE
             // new element name = layers.get(0)

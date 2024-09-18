@@ -87,7 +87,7 @@ impl Reactor {
 
     pub fn create_new_attribute(
         &self,
-        device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
+        device_dyn_info: Option<ThreadSafeInfoDynamicDeviceStatus>,
     ) -> AttributeBuilder {
         AttributeBuilder::new(
             self.message_client.as_ref().unwrap().clone(),

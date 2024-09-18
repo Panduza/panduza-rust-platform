@@ -1,10 +1,13 @@
+use crate::info::devices::AttributeMode;
+use crate::info::devices::ElementInterface;
+use crate::info::devices::StructuralElement;
 use std::sync::Weak;
 
 use tokio::sync::Mutex;
 
 use crate::{
-    info::devices::ThreadSafeInfoDynamicDeviceStatus, BidirMsgAtt, MessageClient, MessageCodec,
-    MessageDispatcher,
+    info::devices::{ElementAttribute, ThreadSafeInfoDynamicDeviceStatus},
+    BidirMsgAtt, MessageClient, MessageCodec, MessageDispatcher,
 };
 
 use super::{att_only_msg_att::AttOnlyMsgAtt, cmd_only_msg_att::CmdOnlyMsgAtt};
@@ -20,7 +23,7 @@ pub struct AttributeBuilder {
     pub message_dispatcher: Weak<Mutex<MessageDispatcher>>,
 
     ///
-    pub device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
+    pub device_dyn_info: Option<ThreadSafeInfoDynamicDeviceStatus>,
 
     /// Topic of the attribute
     pub topic: Option<String>,
@@ -31,7 +34,7 @@ impl AttributeBuilder {
     pub fn new(
         message_client: MessageClient,
         message_dispatcher: Weak<Mutex<MessageDispatcher>>,
-        device_dyn_info: ThreadSafeInfoDynamicDeviceStatus,
+        device_dyn_info: Option<ThreadSafeInfoDynamicDeviceStatus>,
     ) -> AttributeBuilder {
         AttributeBuilder {
             message_client,
@@ -123,6 +126,27 @@ pub struct WoMessageAttributeBuilder {
 
 impl WoMessageAttributeBuilder {
     pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> AttOnlyMsgAtt<TYPE> {
+        //
+        //
+
+        let bis1 = self.base.topic.clone().unwrap();
+        let bis = self.base.topic.clone().unwrap();
+        let name = bis.split('/').last().unwrap();
+        if let Some(device_dyn_info) = self.base.device_dyn_info.clone() {
+            device_dyn_info
+                .lock()
+                .await
+                .structure_insert(
+                    bis1.clone(),
+                    StructuralElement::Attribute(ElementAttribute::new(
+                        name.to_string(),
+                        "pok".to_string(),
+                        AttributeMode::AttOnly,
+                    )),
+                )
+                .unwrap();
+        }
+
         //
         // TODO HERE I SHOULD SEND STRUCTURE UPDATE TO THE INFO PACK
         //

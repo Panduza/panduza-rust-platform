@@ -102,7 +102,7 @@ impl Platform {
         let (info_device_operations, info_pack) = InfoDevice::new();
         let (mut info_monitor, info_device) = DeviceMonitor::new(
             reactor.clone(),
-            None,
+            None, // this device will manage info_pack and cannot use it to boot like other devices
             Box::new(info_device_operations),
             ProductionOrder::new("_", "_"),
         );

@@ -1,5 +1,6 @@
 mod structure;
 
+pub use structure::AttributeMode;
 pub use structure::DeviceStructure;
 pub use structure::ElementAttribute;
 pub use structure::ElementInterface;
@@ -72,7 +73,7 @@ impl InfoDynamicDeviceStatus {
             // notifications: Vec::new(),
             has_been_updated: true,
             device_status_change_notifier: device_status_change_notifier,
-            structure: DeviceStructure::new("pok"),
+            structure: DeviceStructure::new(),
         };
         new_instance.device_status_change_notifier.notify_waiters();
         new_instance

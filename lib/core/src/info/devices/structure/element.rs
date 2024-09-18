@@ -39,7 +39,7 @@ impl StructuralElement {
     ///
     ///
     ///
-    pub fn insert(&mut self, layers: Vec<&str>, element: StructuralElement) -> Result<(), Error> {
+    pub fn insert(&mut self, layers: Vec<String>, element: StructuralElement) -> Result<(), Error> {
         match self {
             StructuralElement::Attribute(_) => Err(Error::InternalLogic(
                 "Cannot insert an element inside an Attribute".to_string(),
