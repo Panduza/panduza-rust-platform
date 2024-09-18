@@ -45,6 +45,16 @@ impl InfoPack {
         self.devices.lock().await.device_status_change_notifier()
     }
 
+    ///
+    ///
+    pub async fn device_structure_change_notifier(&self) -> Arc<Notify> {
+        self.devices.lock().await.device_structure_change_notifier()
+    }
+
+    pub async fn device_structure_as_json_value(&self) -> serde_json::Value {
+        self.devices.lock().await.structure_into_json_value().await
+    }
+
     pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDynamicDeviceStatus>> {
         let request_validated_notifier = self.devices.lock().await.request_validation_notifier();
 

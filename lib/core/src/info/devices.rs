@@ -57,6 +57,8 @@ pub struct InfoDynamicDeviceStatus {
     /// The excepted action is a new publication on device "_"
     device_status_change_notifier: Arc<Notify>,
 
+    device_structure_change_notifier: Arc<Notify>,
+
     ///
     ///
     ///
@@ -69,12 +71,16 @@ pub struct InfoDynamicDeviceStatus {
 pub type ThreadSafeInfoDynamicDeviceStatus = Arc<Mutex<InfoDynamicDeviceStatus>>;
 
 impl InfoDynamicDeviceStatus {
-    pub fn new(device_status_change_notifier: Arc<Notify>) -> InfoDynamicDeviceStatus {
+    pub fn new(
+        device_status_change_notifier: Arc<Notify>,
+        device_structure_change_notifier: Arc<Notify>,
+    ) -> InfoDynamicDeviceStatus {
         let new_instance = InfoDynamicDeviceStatus {
             state: State::Booting,
             // notifications: Vec::new(),
             has_been_updated: true,
             device_status_change_notifier: device_status_change_notifier,
+            device_structure_change_notifier: device_structure_change_notifier,
             structure: DeviceStructure::new(),
         };
         new_instance.device_status_change_notifier.notify_waiters();
@@ -83,6 +89,10 @@ impl InfoDynamicDeviceStatus {
 
     pub fn state_as_string(&self) -> String {
         format!("{}", self.state)
+    }
+
+    pub fn structure_into_json_value(&self) -> serde_json::Value {
+        self.structure.into_json_value()
     }
 
     ///
@@ -109,7 +119,9 @@ impl InfoDynamicDeviceStatus {
     ) -> Result<(), Error> {
         // println!("{:?}", self.structure.into_json_value());
 
-        self.structure.insert(topic, element)
+        let res = self.structure.insert(topic, element);
+        self.device_structure_change_notifier.notify_waiters();
+        res
     }
 
     // pub fn structure_remove()
@@ -159,6 +171,8 @@ pub struct InfoDevs {
     /// Notified when a device status change
     ///
     device_status_change_notifier: Arc<Notify>,
+
+    device_structure_change_notifier: Arc<Notify>,
 }
 
 impl InfoDevs {
@@ -171,7 +185,18 @@ impl InfoDevs {
             new_request_notifier: Arc::new(Notify::new()),
             request_validation_notifier: Arc::new(Notify::new()),
             device_status_change_notifier: Arc::new(Notify::new()),
+            device_structure_change_notifier: Arc::new(Notify::new()),
         }
+    }
+
+    pub async fn structure_into_json_value(&self) -> serde_json::Value {
+        let mut p = serde_json::Map::new();
+
+        for e in &self.devs {
+            p.insert(e.0.clone(), e.1.lock().await.structure_into_json_value());
+        }
+
+        p.into()
     }
 
     ///
@@ -196,6 +221,12 @@ impl InfoDevs {
     ///
     pub fn device_status_change_notifier(&self) -> Arc<Notify> {
         self.device_status_change_notifier.clone()
+    }
+
+    ///
+    ///
+    pub fn device_structure_change_notifier(&self) -> Arc<Notify> {
+        self.device_structure_change_notifier.clone()
     }
 
     ///
@@ -232,6 +263,7 @@ impl InfoDevs {
         // Create the new object for the new device
         let new_obj = Arc::new(Mutex::new(InfoDynamicDeviceStatus::new(
             self.device_status_change_notifier.clone(),
+            self.device_structure_change_notifier.clone(),
         )));
         //
         // Insert the object in the management list for InfoDynamicDeviceStatus

@@ -52,17 +52,6 @@ impl DeviceOperations for InfoDevice {
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         //
-        // Structure of the devices
-        // let mut interface_devices = device.create_interface("structures").finish();
-
-        let structure_att = device
-            .create_attribute("structure")
-            .message()
-            .with_att_only_access()
-            .finish_with_codec::<JsonCodec>()
-            .await;
-
-        //
         // state of each devices
         let mut interface_devices = device.create_interface("devices").finish().await;
 
@@ -151,6 +140,40 @@ impl DeviceOperations for InfoDevice {
                         }
                     }
                 }
+                Ok(())
+            })
+            .await;
+
+        //
+        // Structure of the devices
+        let structure_att = device
+            .create_attribute("structure")
+            .message()
+            .with_att_only_access()
+            .finish_with_codec::<JsonCodec>()
+            .await;
+
+        let pack_clone3 = self.pack.clone();
+
+        device
+            .spawn(async move {
+                //
+                //
+                let structure_change = pack_clone3.device_structure_change_notifier().await;
+
+                loop {
+                    //
+                    // Wait for next status change
+                    structure_change.notified().await;
+
+                    println!("$$$$$$$$$$ structure change ****");
+
+                    let structure = pack_clone3.device_structure_as_json_value().await;
+                    println!("{:?}", structure);
+
+                    structure_att.set(JsonCodec::from(structure)).await.unwrap();
+                }
+
                 Ok(())
             })
             .await;
