@@ -1,5 +1,4 @@
 use crate::info::devices::AttributeMode;
-use crate::info::devices::ElementInterface;
 use crate::info::devices::StructuralElement;
 use std::sync::Weak;
 
@@ -128,7 +127,6 @@ impl WoMessageAttributeBuilder {
     pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> AttOnlyMsgAtt<TYPE> {
         //
         //
-
         let bis1 = self.base.topic.clone().unwrap();
         let bis = self.base.topic.clone().unwrap();
         let name = bis.split('/').last().unwrap();
@@ -140,7 +138,7 @@ impl WoMessageAttributeBuilder {
                     bis1.clone(),
                     StructuralElement::Attribute(ElementAttribute::new(
                         name.to_string(),
-                        "pok".to_string(),
+                        TYPE::typee(),
                         AttributeMode::AttOnly,
                     )),
                 )

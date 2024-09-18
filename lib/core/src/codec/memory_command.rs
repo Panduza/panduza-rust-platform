@@ -86,4 +86,9 @@ impl MessageCodec for MemoryCommandCodec {
         let v = serde_json::to_string(self).map_err(|e| Error::SerializeFailure(e.to_string()))?;
         Ok(v.into_bytes())
     }
+
+    ///
+    fn typee() -> String {
+        "memory_command".to_string()
+    }
 }

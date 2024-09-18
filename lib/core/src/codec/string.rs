@@ -92,6 +92,11 @@ impl MessageCodec for StringCodec {
         let v = serde_json::to_string(self).map_err(|e| Error::SerializeFailure(e.to_string()))?;
         Ok(v.into_bytes())
     }
+
+    ///
+    fn typee() -> String {
+        "string".to_string()
+    }
 }
 
 #[cfg(test)]

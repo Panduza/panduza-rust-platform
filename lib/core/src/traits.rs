@@ -63,4 +63,6 @@ pub trait MessageCodec: PartialEq + Debug + Sync + Send + Clone + 'static {
     /// Encode data
     ///
     fn into_message_payload(&self) -> Result<Vec<u8>, Error>;
+
+    fn typee() -> String;
 }

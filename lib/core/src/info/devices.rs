@@ -58,6 +58,8 @@ pub struct InfoDynamicDeviceStatus {
     device_status_change_notifier: Arc<Notify>,
 
     ///
+    ///
+    ///
     structure: DeviceStructure,
 }
 
@@ -105,6 +107,8 @@ impl InfoDynamicDeviceStatus {
         topic: String,
         element: StructuralElement,
     ) -> Result<(), Error> {
+        // println!("{:?}", self.structure.into_json_value());
+
         self.structure.insert(topic, element)
     }
 

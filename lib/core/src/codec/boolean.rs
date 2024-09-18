@@ -73,4 +73,9 @@ impl MessageCodec for BooleanCodec {
         let v = serde_json::to_string(self).map_err(|e| Error::SerializeFailure(e.to_string()))?;
         Ok(v.into_bytes())
     }
+    ///
+    ///
+    fn typee() -> String {
+        "boolean".to_string()
+    }
 }
