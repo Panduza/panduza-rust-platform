@@ -1,7 +1,9 @@
+use serde::Serialize;
 use serde_json::json;
 
 use crate::Error;
 
+#[derive(Serialize)]
 pub enum AttributeMode {
     AttOnly,
     CmdOnly,
@@ -28,9 +30,9 @@ impl ElementAttribute {
 
     pub fn into_json_value(&self) -> serde_json::Value {
         json!({
-            "name": self.name,
+            // "name": self.name,
             "type": self.typee,
-            // "mode": self.mode
+            "mode": self.mode
         })
     }
 

@@ -24,13 +24,12 @@ impl ElementInterface {
 
     pub fn into_json_value(&self) -> serde_json::Value {
         //
-        let mut children = Vec::<serde_json::Value>::new();
+        let mut children = serde_json::Map::new();
         for e in &self.elements {
-            children.push(e.into_json_value());
+            children.insert(e.name().clone(), e.into_json_value());
         }
 
         return json!({
-            "name": self.name,
             "tags": self.tags,
             "children": children
         });

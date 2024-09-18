@@ -169,7 +169,7 @@ impl DeviceOperations for InfoDevice {
                     println!("$$$$$$$$$$ structure change ****");
 
                     let structure = pack_clone3.device_structure_as_json_value().await;
-                    println!("{:?}", structure);
+                    // println!("{:?}", structure);
 
                     structure_att.set(JsonCodec::from(structure)).await.unwrap();
                 }
