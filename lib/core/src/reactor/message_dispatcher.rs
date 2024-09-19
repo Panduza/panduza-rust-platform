@@ -46,6 +46,8 @@ impl MessageDispatcher {
                     println!("Attribute not found");
                 }
             }
+        } else {
+            println!("message recived on unmannaged topic");
         }
     }
 }

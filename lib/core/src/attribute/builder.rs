@@ -73,8 +73,8 @@ impl MessageAttributeBuilder {
         BidirMsgAttBuilder { base: self.base }
     }
 
-    pub fn with_att_only_access(self) -> WoMessageAttributeBuilder {
-        WoMessageAttributeBuilder { base: self.base }
+    pub fn with_att_only_access(self) -> AttOnlyMsgBuilder {
+        AttOnlyMsgBuilder { base: self.base }
     }
 }
 
@@ -89,6 +89,26 @@ pub struct CmdOnlyMsgAttBuilder {
 
 impl CmdOnlyMsgAttBuilder {
     pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> CmdOnlyMsgAtt<TYPE> {
+        //
+        //
+        let bis1 = self.base.topic.clone().unwrap();
+        let bis = self.base.topic.clone().unwrap();
+        let name = bis.split('/').last().unwrap();
+        if let Some(device_dyn_info) = self.base.device_dyn_info.clone() {
+            device_dyn_info
+                .lock()
+                .await
+                .structure_insert(
+                    bis1.clone(),
+                    StructuralElement::Attribute(ElementAttribute::new(
+                        name.to_string(),
+                        TYPE::typee(),
+                        AttributeMode::AttOnly,
+                    )),
+                )
+                .unwrap();
+        }
+
         CmdOnlyMsgAtt::from(self.base).init().await.unwrap()
     }
 }
@@ -104,6 +124,26 @@ pub struct BidirMsgAttBuilder {
 
 impl BidirMsgAttBuilder {
     pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> BidirMsgAtt<TYPE> {
+        //
+        //
+        let bis1 = self.base.topic.clone().unwrap();
+        let bis = self.base.topic.clone().unwrap();
+        let name = bis.split('/').last().unwrap();
+        if let Some(device_dyn_info) = self.base.device_dyn_info.clone() {
+            device_dyn_info
+                .lock()
+                .await
+                .structure_insert(
+                    bis1.clone(),
+                    StructuralElement::Attribute(ElementAttribute::new(
+                        name.to_string(),
+                        TYPE::typee(),
+                        AttributeMode::AttOnly,
+                    )),
+                )
+                .unwrap();
+        }
+
         BidirMsgAtt::from(self.base)
             .init()
             .await
@@ -118,12 +158,12 @@ impl BidirMsgAttBuilder {
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-/// Builder specialisation for Wo Attribute
-pub struct WoMessageAttributeBuilder {
+/// Builder specialisation for att only Attribute
+pub struct AttOnlyMsgBuilder {
     base: AttributeBuilder,
 }
 
-impl WoMessageAttributeBuilder {
+impl AttOnlyMsgBuilder {
     pub async fn finish_with_codec<TYPE: MessageCodec>(self) -> AttOnlyMsgAtt<TYPE> {
         //
         //
@@ -145,9 +185,6 @@ impl WoMessageAttributeBuilder {
                 .unwrap();
         }
 
-        //
-        // TODO HERE I SHOULD SEND STRUCTURE UPDATE TO THE INFO PACK
-        //
         AttOnlyMsgAtt::from(self.base)
     }
 }
