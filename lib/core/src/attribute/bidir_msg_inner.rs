@@ -7,7 +7,6 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use rumqttc::QoS;
 use std::sync::Arc;
-use std::sync::Weak;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 

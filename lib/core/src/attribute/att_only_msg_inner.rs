@@ -1,19 +1,10 @@
-use rumqttc::QoS;
-use std::sync::Arc;
-use std::sync::Weak;
-use tokio::sync::Mutex;
-
-use bytes::Bytes;
-
-use async_trait::async_trait;
-
-use tokio::sync::Notify;
-
 use crate::AttributeBuilder;
 use crate::Error;
 use crate::MessageClient;
 use crate::MessageCodec;
-use crate::MessageHandler;
+use rumqttc::QoS;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// Read Only Inner implementation of the message attribute
 /// This inner implementation allow the public part to be cloneable easly

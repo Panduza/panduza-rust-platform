@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::{
     info::devices::ThreadSafeInfoDynamicDeviceStatus, AttributeBuilder, InterfaceBuilder, Reactor,
 };

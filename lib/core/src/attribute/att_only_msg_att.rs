@@ -1,17 +1,7 @@
-use std::future::Future;
+use super::AttOnlyMsgAttInner;
+use crate::{AttributeBuilder, Error, MessageCodec};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
-use crate::{AttributeBuilder, Error, MessageCodec, TaskResult};
-
-use super::AttOnlyMsgAttInner;
-
-// use super::att::Att;
-// pub use super::CoreMembers;
-// pub use super::OnMessageHandler;
-// pub use super::ReactorData;
-
-// pub use inner_msg_att_bool::OnChangeHandlerFunction;
 
 /// Attribute to manage a boolean
 #[derive(Clone)]

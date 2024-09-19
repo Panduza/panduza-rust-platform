@@ -4,9 +4,7 @@ use crate::Error;
 use crate::MessageCodec;
 use std::future::Future;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
-use tokio::time::sleep;
 
 ///
 /// Attribute to only receive command from clients
