@@ -1,9 +1,6 @@
-use std::{future::Future, sync::Arc};
-
-use tokio::{sync::Mutex, task::JoinHandle};
-
-use crate::{DeviceOperations, DeviceSettings, Reactor, TaskResult};
-use tokio::task::JoinSet;
+use crate::{DeviceSettings, Reactor};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// Inner implementation of the device
 pub struct DeviceInner {

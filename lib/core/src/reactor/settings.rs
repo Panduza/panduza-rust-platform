@@ -1,8 +1,8 @@
 /// Settings for the reactor
 ///
 pub struct ReactorSettings {
-    addr: String,
-    port_mqtt: u16,
+    pub addr: String,
+    pub port_mqtt: u16,
 
     /// Namespace on which the reactor must work
     ///

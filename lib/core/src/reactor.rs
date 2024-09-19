@@ -22,7 +22,7 @@ struct PzaScanMessageHandler {
 
 #[async_trait]
 impl MessageHandler for PzaScanMessageHandler {
-    async fn on_message(&mut self, data: &Bytes) -> Result<(), Error> {
+    async fn on_message(&mut self, _incomming_data: &Bytes) -> Result<(), Error> {
         let hostname = hostname::get().unwrap().to_string_lossy().to_string();
         let now = Utc::now();
 
@@ -64,7 +64,7 @@ impl Reactor {
     ///
     /// * `core` - The core of the reactor
     ///
-    pub fn new(settings: ReactorSettings) -> Self {
+    pub fn new(_settings: ReactorSettings) -> Self {
         // let data = ;
 
         // Server hostname

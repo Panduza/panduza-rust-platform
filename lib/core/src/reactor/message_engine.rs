@@ -62,12 +62,12 @@ impl MessageEngine {
                 rumqttc::Event::Outgoing(outgoing) => {
                     // println!("Outgoing = {:?}", outgoing);
                     match outgoing {
-                        rumqttc::Outgoing::Publish(packet) => {
-                            // println!("Publish = {:?}", packet);
-                        }
-                        rumqttc::Outgoing::Subscribe(p) => {
-                            // println!("Subscribe = {:?}", p);
-                        }
+                        // rumqttc::Outgoing::Publish(packet) => {
+                        //     // println!("Publish = {:?}", packet);
+                        // }
+                        // rumqttc::Outgoing::Subscribe(p) => {
+                        //     // println!("Subscribe = {:?}", p);
+                        // }
                         // rumqttc::Outgoing::Unsubscribe(_) => todo!(),
                         // rumqttc::Outgoing::PubAck(_) => todo!(),
                         // rumqttc::Outgoing::PubRec(_) => todo!(),

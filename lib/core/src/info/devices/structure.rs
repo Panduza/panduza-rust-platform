@@ -4,15 +4,14 @@ pub use element::attribute::AttributeMode;
 pub use element::ElementAttribute;
 pub use element::ElementInterface;
 pub use element::StructuralElement;
-use serde_json::json;
 
 use crate::Error;
 
 struct Topic {
-    namespace: String,
-    host: String,
-    device: String,
-    layers: Vec<String>,
+    pub namespace: String,
+    pub host: String,
+    pub device: String,
+    pub layers: Vec<String>,
 }
 
 impl Topic {

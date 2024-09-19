@@ -1,8 +1,6 @@
 use crate::{Device, Error};
 use async_trait::async_trait;
 use bytes::Bytes;
-use serde::Deserialize;
-use serde::Serialize;
 use std::fmt::Debug;
 
 /// Actions that are specific for each device type

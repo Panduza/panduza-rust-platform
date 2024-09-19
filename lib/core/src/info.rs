@@ -95,7 +95,7 @@ impl DeviceOperations for InfoDevice {
                             // Here I must create a attribute inside interface_devices
                             // when the request is a creation request
                             // else delete the object
-                            let info = devices.lock().await.validate_creation_request(r);
+                            let _info = devices.lock().await.validate_creation_request(r);
                         }
                         None => {}
                     }
@@ -104,7 +104,7 @@ impl DeviceOperations for InfoDevice {
                     new_request.notified().await;
                 }
 
-                Ok(())
+                // Ok(())
             })
             .await;
 
@@ -140,7 +140,7 @@ impl DeviceOperations for InfoDevice {
                         }
                     }
                 }
-                Ok(())
+                // Ok(())
             })
             .await;
 
@@ -174,7 +174,7 @@ impl DeviceOperations for InfoDevice {
                     structure_att.set(JsonCodec::from(structure)).await.unwrap();
                 }
 
-                Ok(())
+                // Ok(())
             })
             .await;
 
@@ -183,7 +183,7 @@ impl DeviceOperations for InfoDevice {
     ///
     /// Easiest way to implement the reboot event
     ///
-    async fn wait_reboot_event(&mut self, mut device: Device) {
+    async fn wait_reboot_event(&mut self, mut _device: Device) {
         sleep(Duration::from_secs(5)).await;
     }
 }
