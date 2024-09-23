@@ -1484,6 +1484,7 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 [[package]]
 name = "panduza-platform-connectors"
 version = "0.1.0"
+source = "git+https://github.com/Panduza/panduza-platform-connectors?branch=main#e7d5d3d5e09e03115dddb885316eb24fd41781e4"
 dependencies = [
  "futures-lite",
  "lazy_static",
@@ -1500,6 +1501,7 @@ dependencies = [
 [[package]]
 name = "panduza-platform-core"
 version = "0.1.0"
+source = "git+https://github.com/Panduza/panduza-platform-core?branch=main#6c266fe8b7b3382130a024d2109dcede579ff23e"
 dependencies = [
  "async-trait",
  "bitflags 2.5.0",
@@ -1531,7 +1533,6 @@ dependencies = [
  "futures",
  "hostname 0.4.0",
  "nusb",
- "panduza-platform-connectors",
  "panduza-platform-core",
  "pza-plugin-fake",
  "pza-plugin-picoha",
