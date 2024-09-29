@@ -18,8 +18,13 @@ use tokio::time::sleep;
 // use crate::device;
 // use crate::connection;
 
+pub mod config_utils;
+
 pub mod config_manager;
 use config_manager::*;
+
+pub mod device_tree_manager;
+use device_tree_manager::*;
 
 use crate::info::InfoDevice;
 use crate::{task_channel::create_task_channel, TaskReceiver, TaskResult, TaskSender};
@@ -38,7 +43,12 @@ pub struct Platform {
 
     /// Factory
     factory: Factory,
+
+    // Config Manager
     config_manager: ConfigManager,
+
+    // Device Tree Manager
+    device_tree_manager: DeviceTreeManager,
 
     // Main tasks management
     // All the task that should never be stopped
@@ -78,6 +88,8 @@ impl Platform {
 
             config_manager: ConfigManager::new(),
 
+            device_tree_manager: DeviceTreeManager::new(),
+
             main_task_pool: JoinSet::new(),
             main_task_sender: main_tx,
             main_task_receiver: Arc::new(Mutex::new(main_rx)),
@@ -108,6 +120,10 @@ impl Platform {
             .and_then(|p| p.name.as_deref())
             .unwrap_or("Noname");
 
+        if let Err(e) = self.device_tree_manager.load_device_tree() {
+            panic!("Error loading the device tree: {}", e);
+        }
+
         // TODO: should be done thorugh connection.json
         let settings = ReactorSettings::new(addr, port, None);
 
@@ -123,7 +139,7 @@ impl Platform {
             reactor.clone(),
             None, // this device will manage info_pack and cannot use it to boot like other devices
             Box::new(info_device_operations),
-            ProductionOrder::new("_", "_"),
+            ProductionOrder::new("_", "_", None),
         );
 
         let mut info_device_clone = info_device.clone();
@@ -148,35 +164,43 @@ impl Platform {
             .unwrap();
 
         //
-        let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
+
+        for device in self.device_tree_manager.get_tree() {
+            let mut production_order =
+                ProductionOrder::new(&device.r#ref, &device.name, device.settings.to_owned());
+
+            let (mut monitor, mut dev) =
+                self.factory
+                    .produce(&reactor, Some(info_pack.clone()), production_order);
+
+            // state machine + subtask monitoring
+            let mut dddddd2 = dev.clone();
+            self.main_task_sender
+                .spawn(
+                    async move {
+                        dddddd2.run_fsm().await;
+                        Ok(())
+                    }
+                    .boxed(),
+                )
+                .unwrap();
+
+            self.main_task_sender
+                .spawn(
+                    async move {
+                        monitor.run().await;
+                        Ok(())
+                    }
+                    .boxed(),
+                )
+                .unwrap();
+        }
+
+        //        let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
         // let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
-        production_order.device_settings = json!({});
-        let (mut monitor, mut dev) =
-            self.factory
-                .produce(reactor, Some(info_pack.clone()), production_order);
+        //production_order.device_settings = json!({});
 
         // state machine + subtask monitoring
-
-        let mut dddddd2 = dev.clone();
-        self.main_task_sender
-            .spawn(
-                async move {
-                    dddddd2.run_fsm().await;
-                    Ok(())
-                }
-                .boxed(),
-            )
-            .unwrap();
-
-        self.main_task_sender
-            .spawn(
-                async move {
-                    monitor.run().await;
-                    Ok(())
-                }
-                .boxed(),
-            )
-            .unwrap();
 
         //
         // need to spawn the idle task

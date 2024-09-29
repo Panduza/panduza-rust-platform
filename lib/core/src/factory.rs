@@ -56,7 +56,7 @@ impl Factory {
     ///
     pub fn produce(
         &self,
-        reactor: Reactor,
+        reactor: &Reactor,
         info_pack: Option<InfoPack>,
         production_order: ProductionOrder,
     ) -> (DeviceMonitor, Device) {
