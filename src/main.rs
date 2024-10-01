@@ -111,7 +111,7 @@ async fn main() {
 
     unsafe {
         let lib = libloading::Library::new(
-            "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/debug/pza_plugin_fakes.dll",
+            "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/release/pza_plugin_fakes.dll",
         )
         .unwrap();
 
@@ -131,21 +131,21 @@ async fn main() {
 
         (plugin_ptr.test)();
 
-        (plugin_ptr.join)();
-
         // let func2: libloading::Symbol<fn() -> *mut u32> = lib.get(b"get_number_pointer").unwrap();
         // println!("get_number_pointer got {} == expect 5", *func2());
 
         // let func3: libloading::Symbol<fn() -> *mut simple_struct> = lib.get(b"get_simple_struct_ptr").unwrap();
         // println!("get_simple_struct_ptr got {} == expect 6", (*func3()).a);
+
+        (plugin_ptr.join)();
     }
 
-    // // Create platform runner
-    // let mut platform = Platform::new(factory);
-    // std::thread::spawn(move || {
-    //     broker.start().unwrap();
-    // });
+    // Create platform runner
+    let mut platform = Platform::new(factory);
+    std::thread::spawn(move || {
+        broker.start().unwrap();
+    });
 
-    // // Platform loop
-    // platform.run().await;
+    // Platform loop
+    platform.run().await;
 }
