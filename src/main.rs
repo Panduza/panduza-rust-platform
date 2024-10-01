@@ -120,13 +120,12 @@ async fn main() {
 
         let plugin_ptr = (*func)(); // Get the pointer to the Plugin struct
 
-        // Cast the raw pointer to a *const c_char
-        let name_ptr = plugin_ptr.name as *const c_char;
-
         // Create a CStr from the pointer, handling potential errors
-        let cstr = CStr::from_ptr(name_ptr);
+        // let cstr = CString::from_raw(plugin_ptr.name);
 
-        println!("plugin  got {:?} ", cstr.to_str());
+        println!("plugin  got {:?} ", plugin_ptr.name);
+
+        (plugin_ptr.test)();
 
         // let func2: libloading::Symbol<fn() -> *mut u32> = lib.get(b"get_number_pointer").unwrap();
         // println!("get_number_pointer got {} == expect 5", *func2());
