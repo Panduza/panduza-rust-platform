@@ -18,10 +18,15 @@
 mod log;
 // mod builtin_devices;
 
+use std::ffi::c_char;
+use std::ffi::CStr;
+use std::ffi::CString;
+
 use panduza_platform_core::BooleanCodec;
 use panduza_platform_core::Factory;
 use panduza_platform_core::Platform;
 
+use panduza_platform_core::Plugin;
 use rumqttd::Broker;
 use rumqttd::Config;
 
@@ -100,15 +105,42 @@ async fn main() {
 
     //
     let mut factory = Factory::new();
-    factory.add_producers(pza_plugin_fake::plugin_producers());
-    factory.add_producers(pza_plugin_picoha::plugin_producers());
+    // factory.add_producers(pza_plugin_fake::plugin_producers());
+    // factory.add_producers(pza_plugin_picoha::plugin_producers());
+    // factory.add_producers(pza_plugin_picoha_ssb::plugin_producers());
 
-    // Create platform runner
-    let mut platform = Platform::new(factory);
-    std::thread::spawn(move || {
-        broker.start().unwrap();
-    });
+    unsafe {
+        let lib = libloading::Library::new(
+            "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/debug/pza_plugin_fakes.dll",
+        )
+        .unwrap();
 
-    // Platform loop
-    platform.run().await;
+        let func: libloading::Symbol<extern "C" fn() -> Plugin> =
+            lib.get(b"plugin_entry_point").unwrap();
+
+        let plugin_ptr = (*func)(); // Get the pointer to the Plugin struct
+
+        // Cast the raw pointer to a *const c_char
+        let name_ptr = plugin_ptr.name as *const c_char;
+
+        // Create a CStr from the pointer, handling potential errors
+        let cstr = CStr::from_ptr(name_ptr);
+
+        println!("plugin  got {:?} ", cstr.to_str());
+
+        // let func2: libloading::Symbol<fn() -> *mut u32> = lib.get(b"get_number_pointer").unwrap();
+        // println!("get_number_pointer got {} == expect 5", *func2());
+
+        // let func3: libloading::Symbol<fn() -> *mut simple_struct> = lib.get(b"get_simple_struct_ptr").unwrap();
+        // println!("get_simple_struct_ptr got {} == expect 6", (*func3()).a);
+    }
+
+    // // Create platform runner
+    // let mut platform = Platform::new(factory);
+    // std::thread::spawn(move || {
+    //     broker.start().unwrap();
+    // });
+
+    // // Platform loop
+    // platform.run().await;
 }
