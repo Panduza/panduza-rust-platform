@@ -124,10 +124,8 @@ async fn main() {
         // let cstr = CString::from_raw(plugin_ptr.name);
 
         println!("plugin  got {:?} ", plugin_ptr.name);
-        println!(
-            "plugin  got {:?} ",
-            CStr::from_ptr(plugin_ptr.version as *const i8).to_str()
-        );
+        println!("name {:?} ", CStr::from_ptr(plugin_ptr.name).to_str());
+        println!("version {:?} ", CStr::from_ptr(plugin_ptr.version).to_str());
 
         (plugin_ptr.test)();
 

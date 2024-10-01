@@ -1411,6 +1411,7 @@ dependencies = [
  "bitflags 2.5.0",
  "bytes",
  "chrono",
+ "colored",
  "dirs",
  "futures",
  "hostname 0.3.1",
@@ -1421,6 +1422,9 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "tracing-appender",
+ "tracing-core",
+ "tracing-subscriber",
 ]
 
 [[package]]
