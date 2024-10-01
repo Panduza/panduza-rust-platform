@@ -131,6 +131,8 @@ async fn main() {
 
         (plugin_ptr.test)();
 
+        (plugin_ptr.join)();
+
         // let func2: libloading::Symbol<fn() -> *mut u32> = lib.get(b"get_number_pointer").unwrap();
         // println!("get_number_pointer got {} == expect 5", *func2());
 
