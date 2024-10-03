@@ -114,8 +114,13 @@ async fn main() {
     let mut plugins: Vec<Plugin> = Vec::new();
 
     unsafe {
+        // let lib = libloading::Library::new(
+        //     "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/release/pza_plugin_fakes.dll",
+        // )
+        // .unwrap();
+
         let lib = libloading::Library::new(
-            "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/release/pza_plugin_fakes.dll",
+            "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/debug/pza_plugin_fakes.dll"
         )
         .unwrap();
 
