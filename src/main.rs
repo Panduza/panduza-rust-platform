@@ -27,6 +27,7 @@ use panduza_platform_core::Factory;
 use panduza_platform_core::Platform;
 
 use panduza_platform_core::Plugin;
+use panduza_platform_core::ProductionOrder;
 use rumqttd::Broker;
 use rumqttd::Config;
 
@@ -109,6 +110,9 @@ async fn main() {
     // factory.add_producers(pza_plugin_picoha::plugin_producers());
     // factory.add_producers(pza_plugin_picoha_ssb::plugin_producers());
 
+    let mut libs = Vec::new();
+    let mut plugins: Vec<Plugin> = Vec::new();
+
     unsafe {
         let lib = libloading::Library::new(
             "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/release/pza_plugin_fakes.dll",
@@ -135,7 +139,13 @@ async fn main() {
         // let func3: libloading::Symbol<fn() -> *mut simple_struct> = lib.get(b"get_simple_struct_ptr").unwrap();
         // println!("get_simple_struct_ptr got {} == expect 6", (*func3()).a);
 
-        (plugin_ptr.join)();
+        let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
+
+        let order = production_order.to_c_string().unwrap();
+        (plugin_ptr.produce)(order.as_c_str().as_ptr());
+
+        libs.push(lib);
+        plugins.push(plugin_ptr);
     }
 
     // Create platform runner
@@ -146,4 +156,8 @@ async fn main() {
 
     // Platform loop
     platform.run().await;
+
+    for p in plugins {
+        unsafe { (p.join)() };
+    }
 }

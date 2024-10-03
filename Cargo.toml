@@ -24,7 +24,7 @@ panduza-platform-core = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-
 
 
 # Main async framework for the platform
-tokio = { version = "1", features = ["full", "tracing"] }
+tokio = { version = "1.40.0", features = ["full", "tracing"] }
 
 libloading = "0.8"
 
