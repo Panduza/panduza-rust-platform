@@ -1,6 +1,16 @@
-use panduza_platform_core::Error;
+use panduza_platform_core::{Error, PlatformLogger};
+use std::sync::Arc;
+use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
+use tokio::sync::Notify;
 
-pub enum Services {
+///
+///
+///
+static REQUEST_CHANNEL_SIZE: usize = 64;
+
+pub enum ServiceRequest {
     Boot,
     LoadPlugins,
     StartBroker,
@@ -8,17 +18,39 @@ pub enum Services {
 
 // run actions when request arrives
 //
-pub struct ServicesTask {}
+pub struct Services {
+    logger: PlatformLogger,
 
-/// Task code that runs the interface Listener
-///
-/// move the listener into the task
-///
-pub async fn service_task() -> Result<(), Error> {
-    // loop {
+    request_sender: Sender<ServiceRequest>,
+    request_receiver: Option<Receiver<ServiceRequest>>,
+}
 
-    // }
+impl Services {
+    ///
+    ///
+    pub fn new() -> Self {
+        let (rqst_tx, rqst_rx) = channel::<ServiceRequest>(REQUEST_CHANNEL_SIZE);
+        Self {
+            logger: PlatformLogger::new(),
+            request_sender: rqst_tx.clone(),
+            request_receiver: Some(rqst_rx),
+        }
+    }
 
-    println!("service_task");
-    Ok(())
+    ///
+    ///
+    pub async fn run_task(mut self) -> Result<(), Error> {
+        let mut request_receiver = self.request_receiver.take().unwrap();
+        loop {
+            let request = request_receiver
+                .recv()
+                .await
+                .ok_or(Error::ChannelError(format!("The channel seems broken")))?;
+            match request {
+                ServiceRequest::Boot => todo!(),
+                ServiceRequest::LoadPlugins => todo!(),
+                ServiceRequest::StartBroker => todo!(),
+            }
+        }
+    }
 }

@@ -1,3 +1,4 @@
+use futures::FutureExt;
 use panduza_platform_core::{create_task_channel, TaskReceiver, TaskResult, TaskSender};
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -9,6 +10,7 @@ use tokio::task::JoinSet;
 use tokio::time::sleep;
 
 use crate::plugins_manager::PluginsManager;
+use crate::services::{self, Services};
 
 /// Platform
 ///
@@ -72,6 +74,10 @@ impl Platform {
     pub async fn run(&mut self) {
         // Info log
         self.logger.info("Platform Version ...");
+
+        // Prepare services task start
+        let services = Services::new();
+        self.task_sender.spawn(services.run_task().boxed()).unwrap();
 
         // TODO: should be done thorugh connection.json
         // let settings = ReactorSettings::new("localhost", 1883, None);
