@@ -1,10 +1,11 @@
 use panduza_platform_core::Error;
 use panduza_platform_core::Plugin;
+use panduza_platform_core::ProductionOrder;
 
 ///
+/// Gather all the objects required to make the plugin work
 ///
-///
-struct PluginHandler {
+pub struct PluginHandler {
     ///
     /// Binary object loaded inside process
     object: libloading::Library,
@@ -15,7 +16,7 @@ struct PluginHandler {
 
 impl PluginHandler {
     ///
-    ///
+    /// Load a plugin from a file
     ///
     pub fn from_filename<A: Into<String>>(filename: A) -> Result<PluginHandler, Error> {
         //
@@ -56,7 +57,7 @@ impl PluginHandler {
 ///
 ///
 ///
-struct PluginsManager {
+pub struct PluginsManager {
     ///
     /// Plugin handlers
     ///
@@ -64,5 +65,27 @@ struct PluginsManager {
 }
 
 impl PluginsManager {
-    //
+    ///
+    /// Create a new object
+    ///
+    pub fn new() -> Self {
+        Self {
+            handlers: Vec::new(),
+        }
+    }
+
+    ///
+    /// To register a new plugin
+    ///
+    pub fn register_plugin<A: Into<String>>(&mut self, filename: A) -> Result<(), Error> {
+        //
+        // Append the plugin
+        self.handlers.push(PluginHandler::from_filename(filename)?);
+        Ok(())
+    }
+
+    ///
+    ///
+    ///
+    pub fn produce(order: ProductionOrder) {}
 }

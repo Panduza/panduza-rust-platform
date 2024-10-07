@@ -17,15 +17,17 @@
 
 mod log;
 // mod builtin_devices;
+
+mod platform;
+pub use platform::Platform;
+
+mod services;
+
 mod plugins_manager;
 
-use std::ffi::c_char;
 use std::ffi::CStr;
-use std::ffi::CString;
 
-use panduza_platform_core::BooleanCodec;
 use panduza_platform_core::Factory;
-use panduza_platform_core::Platform;
 
 use panduza_platform_core::Plugin;
 use panduza_platform_core::ProductionOrder;
@@ -105,57 +107,55 @@ async fn main() {
     let rumqttd_config: Config = config.try_deserialize().unwrap();
     let mut broker = Broker::new(rumqttd_config);
 
-    //
-    let mut factory = Factory::new();
-    // factory.add_producers(pza_plugin_fake::plugin_producers());
-    // factory.add_producers(pza_plugin_picoha::plugin_producers());
-    // factory.add_producers(pza_plugin_picoha_ssb::plugin_producers());
+    // let mut libs: Vec<libloading::Library> = Vec::new();
+    // let mut plugins: Vec<Plugin> = Vec::new();
 
-    let mut libs: Vec<libloading::Library> = Vec::new();
-    let mut plugins: Vec<Plugin> = Vec::new();
+    // unsafe {
+    //     // let lib = libloading::Library::new(
+    //     //     "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/release/pza_plugin_fakes.dll",
+    //     // )
+    //     // .unwrap();
 
-    unsafe {
-        // let lib = libloading::Library::new(
-        //     "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/release/pza_plugin_fakes.dll",
-        // )
-        // .unwrap();
+    //     let lib = libloading::Library::new(
+    //         "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/debug/pza_plugin_fakes.dll"
+    //     )
+    //     .unwrap();
 
-        let lib = libloading::Library::new(
-            "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/debug/pza_plugin_fakes.dll"
-        )
-        .unwrap();
+    //     let func: libloading::Symbol<extern "C" fn() -> Plugin> =
+    //         lib.get(b"plugin_entry_point").unwrap();
 
-        let func: libloading::Symbol<extern "C" fn() -> Plugin> =
-            lib.get(b"plugin_entry_point").unwrap();
+    //     let plugin_ptr = (*func)(); // Get the pointer to the Plugin struct
 
-        let plugin_ptr = (*func)(); // Get the pointer to the Plugin struct
+    //     // Create a CStr from the pointer, handling potential errors
+    //     // let cstr = CString::from_raw(plugin_ptr.name);
 
-        // Create a CStr from the pointer, handling potential errors
-        // let cstr = CString::from_raw(plugin_ptr.name);
+    //     println!("plugin  got {:?} ", plugin_ptr.name);
+    //     println!("name {:?} ", CStr::from_ptr(plugin_ptr.name).to_str());
+    //     println!("version {:?} ", CStr::from_ptr(plugin_ptr.version).to_str());
 
-        println!("plugin  got {:?} ", plugin_ptr.name);
-        println!("name {:?} ", CStr::from_ptr(plugin_ptr.name).to_str());
-        println!("version {:?} ", CStr::from_ptr(plugin_ptr.version).to_str());
+    //     (plugin_ptr.test)();
 
-        (plugin_ptr.test)();
+    //     // let func2: libloading::Symbol<fn() -> *mut u32> = lib.get(b"get_number_pointer").unwrap();
+    //     // println!("get_number_pointer got {} == expect 5", *func2());
 
-        // let func2: libloading::Symbol<fn() -> *mut u32> = lib.get(b"get_number_pointer").unwrap();
-        // println!("get_number_pointer got {} == expect 5", *func2());
+    //     // let func3: libloading::Symbol<fn() -> *mut simple_struct> = lib.get(b"get_simple_struct_ptr").unwrap();
+    //     // println!("get_simple_struct_ptr got {} == expect 6", (*func3()).a);
 
-        // let func3: libloading::Symbol<fn() -> *mut simple_struct> = lib.get(b"get_simple_struct_ptr").unwrap();
-        // println!("get_simple_struct_ptr got {} == expect 6", (*func3()).a);
+    //     let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
 
-        let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
+    //     let order = production_order.to_c_string().unwrap();
+    //     (plugin_ptr.produce)(order.as_c_str().as_ptr());
 
-        let order = production_order.to_c_string().unwrap();
-        (plugin_ptr.produce)(order.as_c_str().as_ptr());
-
-        libs.push(lib);
-        plugins.push(plugin_ptr);
-    }
+    //     libs.push(lib);
+    //     plugins.push(plugin_ptr);
+    // }
 
     // Create platform runner
-    let mut platform = Platform::new(factory);
+    // La platform c'est l'assemblage de
+    // - 1 broker
+    // - 1 runtime pour les services de bases
+    // - N plugins runtime
+    let mut platform = Platform::new();
     std::thread::spawn(move || {
         broker.start().unwrap();
     });
@@ -163,7 +163,7 @@ async fn main() {
     // Platform loop
     platform.run().await;
 
-    for p in plugins {
-        unsafe { (p.join)() };
-    }
+    // for p in plugins {
+    //     unsafe { (p.join)() };
+    // }
 }
