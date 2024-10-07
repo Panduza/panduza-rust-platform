@@ -17,6 +17,7 @@
 
 mod log;
 // mod builtin_devices;
+mod plugins_manager;
 
 use std::ffi::c_char;
 use std::ffi::CStr;
@@ -110,7 +111,7 @@ async fn main() {
     // factory.add_producers(pza_plugin_picoha::plugin_producers());
     // factory.add_producers(pza_plugin_picoha_ssb::plugin_producers());
 
-    let mut libs = Vec::new();
+    let mut libs: Vec<libloading::Library> = Vec::new();
     let mut plugins: Vec<Plugin> = Vec::new();
 
     unsafe {
