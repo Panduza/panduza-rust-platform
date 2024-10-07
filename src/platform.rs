@@ -9,7 +9,6 @@ use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinSet;
 use tokio::time::sleep;
 
-use crate::plugins_manager::PluginsManager;
 use crate::services::{self, Services};
 
 /// Platform
@@ -26,10 +25,6 @@ pub struct Platform {
     ///
     /// Flag to know alert the platform, it must stop
     must_stop: Arc<AtomicBool>,
-
-    ///
-    /// Manage all plugins in the platform
-    plugin_manager: PluginsManager,
 
     // Main tasks management
     // All the task that should never be stopped
@@ -58,8 +53,6 @@ impl Platform {
 
             keep_alive: Arc::new(AtomicBool::new(true)),
             must_stop: Arc::new(AtomicBool::new(false)),
-
-            plugin_manager: PluginsManager::new(),
 
             task_pool: JoinSet::new(),
             task_sender: main_tx,

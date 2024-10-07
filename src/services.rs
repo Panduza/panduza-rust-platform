@@ -1,9 +1,8 @@
+use crate::plugins_manager::PluginsManager;
 use panduza_platform_core::{Error, PlatformLogger};
-use std::sync::Arc;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::Notify;
 
 ///
 ///
@@ -21,6 +20,9 @@ pub enum ServiceRequest {
 pub struct Services {
     logger: PlatformLogger,
 
+    // ///
+    // /// Manage all plugins in the platform
+    // plugin_manager: PluginsManager,
     request_sender: Sender<ServiceRequest>,
     request_receiver: Option<Receiver<ServiceRequest>>,
 }
@@ -32,6 +34,7 @@ impl Services {
         let (rqst_tx, rqst_rx) = channel::<ServiceRequest>(REQUEST_CHANNEL_SIZE);
         Self {
             logger: PlatformLogger::new(),
+
             request_sender: rqst_tx.clone(),
             request_receiver: Some(rqst_rx),
         }
@@ -40,6 +43,8 @@ impl Services {
     ///
     ///
     pub async fn run_task(mut self) -> Result<(), Error> {
+        let plugin_manager = PluginsManager::new();
+
         let mut request_receiver = self.request_receiver.take().unwrap();
         loop {
             let request = request_receiver
