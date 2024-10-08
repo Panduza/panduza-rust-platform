@@ -21,6 +21,7 @@ mod log;
 mod platform;
 pub use platform::Platform;
 
+mod device_tree;
 mod plugins_manager;
 
 // use std::ffi::CStr;

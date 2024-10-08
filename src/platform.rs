@@ -1,8 +1,9 @@
 use futures::FutureExt;
-use panduza_platform_core::{create_task_channel, TaskReceiver, TaskResult, TaskSender};
+use panduza_platform_core::{create_task_channel, env, TaskReceiver, TaskResult, TaskSender};
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
 use rumqttd::Config;
+use std::fs::File;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -14,6 +15,7 @@ use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinSet;
 use tokio::time::sleep;
 
+use crate::device_tree::DeviceTree;
 use crate::plugins_manager::PluginsManager;
 
 ///
@@ -23,8 +25,9 @@ static REQUEST_CHANNEL_SIZE: usize = 64;
 
 pub enum ServiceRequest {
     Boot,
-    LoadPlugins,
     StartBroker,
+    LoadPlugins,
+    LoadDeviceTree,
 }
 
 /// Platform
@@ -180,15 +183,21 @@ impl Platform {
                     match request_value {
                         ServiceRequest::Boot => {
                             self.service_boot().await;
-                        }
-                        ServiceRequest::LoadPlugins => {
-                            self.service_load_plugins().await;
                         },
                         ServiceRequest::StartBroker => {
                             self.service_start_broker().await;
                         }
+                        ServiceRequest::LoadPlugins => {
+                            self.service_load_plugins().await;
+                        },
+                        ServiceRequest::LoadDeviceTree => {
+                            self.service_load_device_tree().await;
+                        },
                     }
                 },
+                //
+                // task to create monitor plugin manager notifications
+                //
                 continue_running = self.end_of_all_tasks() => {
                     //
                     // Manage platform end
@@ -253,6 +262,12 @@ impl Platform {
         //
         self.request_sender
             .try_send(ServiceRequest::LoadPlugins)
+            .unwrap();
+
+        //
+        //
+        self.request_sender
+            .try_send(ServiceRequest::LoadDeviceTree)
             .unwrap();
     }
 
@@ -337,8 +352,27 @@ impl Platform {
     /// -------------------------------------------------------------
     ///
     async fn service_load_plugins(&mut self) {
-        self.plugin_manager.plugins_system_paths();
         self.plugin_manager.load_system_plugins().unwrap();
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_load_device_tree(&mut self) {
+        // clean current run
+
+        let tree_path = env::system_default_device_tree_file().unwrap();
+
+        println!("search for tree in ({:?})", tree_path);
+
+        let file = File::open(tree_path).unwrap();
+        let dt: DeviceTree = serde_json::from_reader(&file).unwrap();
+
+        println!("{:?}", dt);
+
+        // parse device tree
+        //      list of p order
+        // start each task
+        //      for each po find the plugin and start
     }
 }
 

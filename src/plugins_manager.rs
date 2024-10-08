@@ -1,8 +1,8 @@
+use panduza_platform_core::env;
 use panduza_platform_core::Error;
 use panduza_platform_core::PlatformLogger;
 use panduza_platform_core::Plugin;
 use panduza_platform_core::ProductionOrder;
-use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -83,36 +83,10 @@ impl PluginsManager {
 
     ///
     ///
-    pub fn plugins_system_paths(&mut self) -> Vec<PathBuf> {
-        let mut res = Vec::new();
-        // res.push(value);
-        // a coté du binaire
-        // si windows c:/
-        let path = env::current_exe().unwrap();
-        let parent = path.parent().unwrap();
-        let ppp = parent.join("plugins");
-        // println!("The current directory is {}", ppp.display()); // cd/plugins
-
-        res.push(ppp);
-
-        // main and alternate
-
-        let windows_path = PathBuf::from(dirs::public_dir().unwrap())
-            .join("panduza")
-            .join("plugins");
-        // println!("The current directory is {}", windows_path.display()); // cd/plugins
-
-        res.push(windows_path);
-
-        return res;
-    }
-
-    ///
-    ///
     pub fn load_system_plugins(&mut self) -> Result<u32, Error> {
         let mut count = 0;
 
-        for path in self.plugins_system_paths() {
+        for path in env::system_plugins_dir_paths() {
             // User information
             self.logger
                 .info(format!("Search Plugins in ({})", path.display()));
