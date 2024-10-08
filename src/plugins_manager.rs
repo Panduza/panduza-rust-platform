@@ -4,7 +4,7 @@ use panduza_platform_core::Plugin;
 use panduza_platform_core::ProductionOrder;
 use std::env;
 use std::ffi::OsStr;
-use std::fs::{self, DirEntry};
+use std::fs;
 use std::path::PathBuf;
 
 ///
@@ -109,7 +109,9 @@ impl PluginsManager {
 
     ///
     ///
-    pub fn load_system_plugins(&mut self) {
+    pub fn load_system_plugins(&mut self) -> Result<u32, Error> {
+        let mut count = 0;
+
         for path in self.plugins_system_paths() {
             // User information
             self.logger
@@ -127,12 +129,14 @@ impl PluginsManager {
                         // Print or process the DLL file path
                         println!("Found DLL file: {}", path.display());
 
-                        self.register_plugin(path);
+                        self.register_plugin(path)?;
+                        count += 1;
                         // Add the DLL file path to a list or perform other actions as needed
                     }
                 }
             }
         }
+        Ok(count)
     }
 
     ///
@@ -148,5 +152,8 @@ impl PluginsManager {
     ///
     ///
     ///
-    pub fn produce(order: ProductionOrder) {}
+    pub fn produce(order: ProductionOrder) {
+        // find the good plugin
+        // produce the device
+    }
 }

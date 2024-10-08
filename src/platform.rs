@@ -338,7 +338,7 @@ impl Platform {
     ///
     async fn service_load_plugins(&mut self) {
         self.plugin_manager.plugins_system_paths();
-        self.plugin_manager.load_system_plugins();
+        self.plugin_manager.load_system_plugins().unwrap();
     }
 }
 
