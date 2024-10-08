@@ -1,15 +1,31 @@
 use futures::FutureExt;
 use panduza_platform_core::{create_task_channel, TaskReceiver, TaskResult, TaskSender};
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
+use rumqttd::Broker;
+use rumqttd::Config;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
+use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinSet;
 use tokio::time::sleep;
 
-use crate::services::{self, Services};
+use crate::plugins_manager::PluginsManager;
+
+///
+///
+///
+static REQUEST_CHANNEL_SIZE: usize = 64;
+
+pub enum ServiceRequest {
+    Boot,
+    LoadPlugins,
+    StartBroker,
+}
 
 /// Platform
 ///
@@ -26,7 +42,7 @@ pub struct Platform {
     /// Flag to know alert the platform, it must stop
     must_stop: Arc<AtomicBool>,
 
-    // Main tasks management
+    // -- tasks management
     // All the task that should never be stopped
     /// Pool
     task_pool: JoinSet<TaskResult>,
@@ -36,6 +52,19 @@ pub struct Platform {
     task_receiver: Option<TaskReceiver<TaskResult>>,
     /// Notify when a new task has been loaded
     new_task_notifier: Arc<Notify>,
+
+    // -- Services management
+    ///
+    ///
+    request_sender: Sender<ServiceRequest>,
+    ///
+    ///
+    request_receiver: Option<Receiver<ServiceRequest>>,
+
+    // -- Plugin management
+    ///
+    ///
+    plugin_manager: PluginsManager,
 }
 
 impl Platform {
@@ -45,7 +74,7 @@ impl Platform {
         //
         // Task creation request channel
         let (main_tx, main_rx) = create_task_channel::<TaskResult>(20);
-
+        let (rqst_tx, rqst_rx) = channel::<ServiceRequest>(REQUEST_CHANNEL_SIZE);
         //
         // Create object
         return Self {
@@ -59,6 +88,11 @@ impl Platform {
             task_receiver: Some(main_rx),
 
             new_task_notifier: Arc::new(Notify::new()),
+
+            request_sender: rqst_tx.clone(),
+            request_receiver: Some(rqst_rx),
+
+            plugin_manager: PluginsManager::new(),
         };
     }
 
@@ -67,10 +101,6 @@ impl Platform {
     pub async fn run(&mut self) {
         // Info log
         self.logger.info("Platform Version ...");
-
-        // Prepare services task start
-        let services = Services::new();
-        self.task_sender.spawn(services.run_task().boxed()).unwrap();
 
         // TODO: should be done thorugh connection.json
         // let settings = ReactorSettings::new("localhost", 1883, None);
@@ -116,8 +146,13 @@ impl Platform {
         // self.task_sender.spawn(service_task().boxed()).unwrap();
 
         //
+        //
+        self.request_sender.try_send(ServiceRequest::Boot).unwrap();
+
+        //
         // Take the task reciever for usage in the main loop only
         let mut task_receiver = self.task_receiver.take().unwrap();
+        let mut request_receiver = self.request_receiver.take().unwrap();
 
         //
         // Main running loop
@@ -137,6 +172,22 @@ impl Platform {
                     // Function to effectily spawn tasks requested by the system
                     let ah = self.task_pool.spawn(task.unwrap());
                     self.logger.debug(format!( "New task created ! [{:?}]", ah ));
+                },
+                request = request_receiver.recv() => {
+                    //
+                    // Manage service requests
+                    let request_value = request.unwrap();
+                    match request_value {
+                        ServiceRequest::Boot => {
+                            self.service_boot().await;
+                        }
+                        ServiceRequest::LoadPlugins => {
+                            self.service_load_plugins().await;
+                        },
+                        ServiceRequest::StartBroker => {
+                            self.service_start_broker().await;
+                        }
+                    }
                 },
                 continue_running = self.end_of_all_tasks() => {
                     //
@@ -183,10 +234,111 @@ impl Platform {
             }
             false => {
                 // Wait for an other task to be loaded
+                self.logger.warn("Wait for new tasks");
                 self.new_task_notifier.notified().await;
                 true
             }
         }
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_boot(&mut self) {
+        //
+        //
+        self.request_sender
+            .try_send(ServiceRequest::StartBroker)
+            .unwrap();
+        //
+        //
+        self.request_sender
+            .try_send(ServiceRequest::LoadPlugins)
+            .unwrap();
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_start_broker(&mut self) {
+        let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
+        router.insert("id".to_string(), config::Value::new(None, 0));
+        router.insert(
+            "max_connections".to_string(),
+            config::Value::new(None, 10010),
+        );
+        router.insert(
+            "max_outgoing_packet_count".to_string(),
+            config::Value::new(None, 200),
+        );
+        router.insert(
+            "max_segment_size".to_string(),
+            config::Value::new(None, 104857600),
+        );
+        router.insert(
+            "max_segment_count".to_string(),
+            config::Value::new(None, 10),
+        );
+
+        let mut server_connections: std::collections::HashMap<String, config::Value> =
+            config::Map::new();
+        server_connections.insert(
+            "connection_timeout_ms".to_string(),
+            config::Value::new(None, 60000),
+        );
+        server_connections.insert(
+            "max_payload_size".to_string(),
+            config::Value::new(None, 20480),
+        );
+        server_connections.insert(
+            "max_inflight_count".to_string(),
+            config::Value::new(None, 10000),
+        );
+        server_connections.insert(
+            "dynamic_filters".to_string(),
+            config::Value::new(None, true),
+        );
+
+        let mut server: std::collections::HashMap<String, config::Value> = config::Map::new();
+        server.insert("name".to_string(), config::Value::new(None, "v4-1"));
+        server.insert(
+            "listen".to_string(),
+            config::Value::new(None, "0.0.0.0:1883"),
+        );
+        server.insert(
+            "next_connection_delay_ms".to_string(),
+            config::Value::new(None, 1),
+        );
+        server.insert(
+            "connections".to_string(),
+            config::Value::new(None, server_connections),
+        );
+
+        // see docs of config crate to know more
+        let config = config::Config::builder()
+            .set_default("id", 0)
+            .unwrap()
+            .set_default("router", router)
+            .unwrap()
+            .set_default("v4.1", server)
+            .unwrap()
+            .build()
+            .unwrap();
+
+        // this is where we deserialize it into Config
+        let rumqttd_config: Config = config.try_deserialize().unwrap();
+        let mut broker = Broker::new(rumqttd_config);
+
+        self.logger.info("Start Broker");
+        let jh = std::thread::spawn(move || {
+            broker.start().unwrap();
+            println!("BROKER STOPPPED !!!!!!!!!!!!!!!!!");
+        });
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_load_plugins(&mut self) {
+        self.plugin_manager.plugins_system_paths();
+        self.plugin_manager.load_system_plugins();
     }
 }
 
