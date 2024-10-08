@@ -10,7 +10,10 @@ use std::path::{Path, PathBuf};
 
 #[derive(Default, Deserialize, Serialize, Debug)]
 pub struct DeviceTree {
-    devices: Vec<ProductionOrder>,
+    ///
+    ///
+    ///
+    pub devices: Vec<ProductionOrder>,
 }
 
 impl DeviceTree {

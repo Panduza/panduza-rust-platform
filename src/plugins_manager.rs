@@ -17,6 +17,9 @@ pub struct PluginHandler {
     ///
     /// C interface of the plugin
     interface: Plugin,
+    ///
+    ///
+    producer_refs: Vec<String>,
 }
 
 impl PluginHandler {
@@ -46,13 +49,24 @@ impl PluginHandler {
             let interface = plugin_entry_point();
 
             //
+            //
+            let producer_refs = interface.producer_refs_as_obj().unwrap();
+
+            //
             // Compose the handler
             // Object must be kept alive as long as the interface live
             return Ok(PluginHandler {
                 object: object,
                 interface: interface,
+                producer_refs: producer_refs,
             });
         }
+    }
+
+    ///
+    ///
+    pub fn producer_refs(&self) -> &Vec<String> {
+        &self.producer_refs
     }
 }
 
@@ -117,9 +131,13 @@ impl PluginsManager {
     /// To register a new plugin
     ///
     pub fn register_plugin(&mut self, filename: PathBuf) -> Result<(), Error> {
+        let handler = PluginHandler::from_filename(filename)?;
+
+        println!("{:?}", handler.producer_refs());
+
         //
         // Append the plugin
-        self.handlers.push(PluginHandler::from_filename(filename)?);
+        self.handlers.push(handler);
         Ok(())
     }
 

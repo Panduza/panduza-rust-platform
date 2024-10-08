@@ -1,5 +1,7 @@
 use futures::FutureExt;
-use panduza_platform_core::{create_task_channel, env, TaskReceiver, TaskResult, TaskSender};
+use panduza_platform_core::{
+    create_task_channel, env, ProductionOrder, TaskReceiver, TaskResult, TaskSender,
+};
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
 use rumqttd::Config;
@@ -21,13 +23,14 @@ use crate::plugins_manager::PluginsManager;
 ///
 ///
 ///
-static REQUEST_CHANNEL_SIZE: usize = 64;
+static REQUEST_CHANNEL_SIZE: usize = 256;
 
 pub enum ServiceRequest {
     Boot,
     StartBroker,
     LoadPlugins,
     LoadDeviceTree,
+    ProduceDevice(ProductionOrder),
 }
 
 /// Platform
@@ -193,6 +196,9 @@ impl Platform {
                         ServiceRequest::LoadDeviceTree => {
                             self.service_load_device_tree().await;
                         },
+                        ServiceRequest::ProduceDevice(order) => {
+
+                        }
                     }
                 },
                 //
@@ -369,11 +375,16 @@ impl Platform {
 
         println!("{:?}", dt);
 
-        // parse device tree
-        //      list of p order
-        // start each task
-        //      for each po find the plugin and start
+        for po in dt.devices {
+            self.request_sender
+                .try_send(ServiceRequest::ProduceDevice(po))
+                .unwrap();
+        }
     }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_produce_device(&mut self, po: &ProductionOrder) {}
 }
 
 //         // Start the main service task directly
