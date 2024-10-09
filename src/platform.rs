@@ -197,7 +197,7 @@ impl Platform {
                             self.service_load_device_tree().await;
                         },
                         ServiceRequest::ProduceDevice(order) => {
-
+                            self.service_produce_device(&order).await;
                         }
                     }
                 },
@@ -384,7 +384,9 @@ impl Platform {
 
     /// -------------------------------------------------------------
     ///
-    async fn service_produce_device(&mut self, po: &ProductionOrder) {}
+    async fn service_produce_device(&mut self, po: &ProductionOrder) {
+        let _res = self.plugin_manager.produce(po).unwrap();
+    }
 }
 
 //         // Start the main service task directly

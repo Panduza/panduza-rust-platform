@@ -142,10 +142,14 @@ impl PluginsManager {
     }
 
     ///
+    /// True when a plugin was able to build the order, false else
     ///
-    ///
-    pub fn produce(order: ProductionOrder) {
+    pub fn produce(&mut self, order: &ProductionOrder) -> Result<bool, Error> {
         // find the good plugin
         // produce the device
+
+        println!("prod {:?}", order);
+
+        Ok(true)
     }
 }
