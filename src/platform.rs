@@ -1,7 +1,7 @@
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, Factory, ProductionOrder, Runtime, TaskReceiver, TaskResult,
-    TaskSender,
+    create_task_channel, env, DeviceMonitor, Factory, ProductionOrder, Runtime, TaskReceiver,
+    TaskResult, TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
@@ -20,6 +20,7 @@ use tokio::time::sleep;
 
 use crate::device_tree::DeviceTree;
 use crate::plugins_manager::PluginsManager;
+use crate::underscore_device::UnderscoreDevice;
 
 ///
 ///
@@ -74,6 +75,9 @@ pub struct Platform {
     ///
     ///
     // runtime: Option<Runtime>,
+    ///
+    ///
+    reactor: Option<Reactor>,
 
     // -- Plugin management
     ///
@@ -106,7 +110,7 @@ impl Platform {
             request_sender: rqst_tx.clone(),
             request_receiver: Some(rqst_rx),
 
-            // runtime: None,
+            reactor: None,
             plugin_manager: PluginsManager::new(),
         };
     }
@@ -405,12 +409,10 @@ impl Platform {
 
         let tree_path = env::system_default_device_tree_file().unwrap();
 
-        println!("search for tree in ({:?})", tree_path);
+        // println!("search for tree in ({:?})", tree_path);
 
         let file = File::open(tree_path).unwrap();
         let dt: DeviceTree = serde_json::from_reader(&file).unwrap();
-
-        println!("{:?}", dt);
 
         for po in dt.devices {
             self.request_sender
@@ -434,6 +436,9 @@ impl Platform {
         //
         let settings = ReactorSettings::new("localhost", 1883, None);
         let mut reactor = Reactor::new(settings);
+        reactor.start(self.task_sender.clone()).unwrap();
+
+        self.reactor = Some(reactor.clone());
 
         //
         //
@@ -456,42 +461,33 @@ impl Platform {
         self.logger
             .info("----- SERVICE : LOAD UNDERSCORE DEVICE -----");
 
-        // let (info_device_operations, info_pack) = InfoDevice::new();
-        // let (mut monitor, device) = UnderscoreDevice::new(
-        //     reactor.clone(),
-        //     None, // this device will manage info_pack and cannot use it to boot like other devices
-        //     Box::new(info_device_operations),
-        //     ProductionOrder::new("_", "_"),
-        // );
+        let (underscore_device_operations, info_pack) = UnderscoreDevice::new();
+        let (mut monitor, mut device) = DeviceMonitor::new(
+            self.reactor.as_ref().unwrap().clone(),
+            None, // this device will manage info_pack and cannot use it to boot like other devices
+            Box::new(underscore_device_operations),
+            ProductionOrder::new("_", "_"),
+        );
 
-        // // let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
-        // // production_order.device_settings = json!({});
-        // let (mut monitor, mut dev) =
-        //     self.factory
-        //         .produce(self.reactor.clone(), None, production_order.unwrap());
+        self.task_sender
+            .spawn(
+                async move {
+                    device.run_fsm().await;
+                    Ok(())
+                }
+                .boxed(),
+            )
+            .unwrap();
 
-        // dev.set_plugin(self.logger.get_plugin());
-
-        // // let mut dddddd2 = dev.clone();
-        // self.task_sender
-        //     .spawn(
-        //         async move {
-        //             dev.run_fsm().await;
-        //             Ok(())
-        //         }
-        //         .boxed(),
-        //     )
-        //     .unwrap();
-
-        // self.task_sender
-        //     .spawn(
-        //         async move {
-        //             monitor.run().await;
-        //             Ok(())
-        //         }
-        //         .boxed(),
-        //     )
-        //     .unwrap();
+        self.task_sender
+            .spawn(
+                async move {
+                    monitor.run().await;
+                    Ok(())
+                }
+                .boxed(),
+            )
+            .unwrap();
     }
 
     /// -------------------------------------------------------------
