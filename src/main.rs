@@ -15,14 +15,12 @@
 //     unused_parens,
 // )]
 
-mod log;
-// mod builtin_devices;
-
 mod platform;
 pub use platform::Platform;
 
 mod device_tree;
 mod plugins_manager;
+mod underscore_device;
 
 // use std::ffi::CStr;
 
@@ -36,118 +34,7 @@ mod plugins_manager;
 #[tokio::main]
 async fn main() {
     // Init tracing subscribers
-    log::init();
-
-    // let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
-    // router.insert("id".to_string(), config::Value::new(None, 0));
-    // router.insert(
-    //     "max_connections".to_string(),
-    //     config::Value::new(None, 10010),
-    // );
-    // router.insert(
-    //     "max_outgoing_packet_count".to_string(),
-    //     config::Value::new(None, 200),
-    // );
-    // router.insert(
-    //     "max_segment_size".to_string(),
-    //     config::Value::new(None, 104857600),
-    // );
-    // router.insert(
-    //     "max_segment_count".to_string(),
-    //     config::Value::new(None, 10),
-    // );
-
-    // let mut server_connections: std::collections::HashMap<String, config::Value> =
-    //     config::Map::new();
-    // server_connections.insert(
-    //     "connection_timeout_ms".to_string(),
-    //     config::Value::new(None, 60000),
-    // );
-    // server_connections.insert(
-    //     "max_payload_size".to_string(),
-    //     config::Value::new(None, 20480),
-    // );
-    // server_connections.insert(
-    //     "max_inflight_count".to_string(),
-    //     config::Value::new(None, 10000),
-    // );
-    // server_connections.insert(
-    //     "dynamic_filters".to_string(),
-    //     config::Value::new(None, true),
-    // );
-
-    // let mut server: std::collections::HashMap<String, config::Value> = config::Map::new();
-    // server.insert("name".to_string(), config::Value::new(None, "v4-1"));
-    // server.insert(
-    //     "listen".to_string(),
-    //     config::Value::new(None, "0.0.0.0:1883"),
-    // );
-    // server.insert(
-    //     "next_connection_delay_ms".to_string(),
-    //     config::Value::new(None, 1),
-    // );
-    // server.insert(
-    //     "connections".to_string(),
-    //     config::Value::new(None, server_connections),
-    // );
-
-    // // see docs of config crate to know more
-    // let config = config::Config::builder()
-    //     .set_default("id", 0)
-    //     .unwrap()
-    //     .set_default("router", router)
-    //     .unwrap()
-    //     .set_default("v4.1", server)
-    //     .unwrap()
-    //     .build()
-    //     .unwrap();
-
-    // // this is where we deserialize it into Config
-    // let rumqttd_config: Config = config.try_deserialize().unwrap();
-    // let mut broker = Broker::new(rumqttd_config);
-
-    // let mut libs: Vec<libloading::Library> = Vec::new();
-    // let mut plugins: Vec<Plugin> = Vec::new();
-
-    // unsafe {
-    //     // let lib = libloading::Library::new(
-    //     //     "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/release/pza_plugin_fakes.dll",
-    //     // )
-    //     // .unwrap();
-
-    //     let lib = libloading::Library::new(
-    //         "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-fakes/target/debug/pza_plugin_fakes.dll"
-    //     )
-    //     .unwrap();
-
-    //     let func: libloading::Symbol<extern "C" fn() -> Plugin> =
-    //         lib.get(b"plugin_entry_point").unwrap();
-
-    //     let plugin_ptr = (*func)(); // Get the pointer to the Plugin struct
-
-    //     // Create a CStr from the pointer, handling potential errors
-    //     // let cstr = CString::from_raw(plugin_ptr.name);
-
-    //     println!("plugin  got {:?} ", plugin_ptr.name);
-    //     println!("name {:?} ", CStr::from_ptr(plugin_ptr.name).to_str());
-    //     println!("version {:?} ", CStr::from_ptr(plugin_ptr.version).to_str());
-
-    //     (plugin_ptr.test)();
-
-    //     // let func2: libloading::Symbol<fn() -> *mut u32> = lib.get(b"get_number_pointer").unwrap();
-    //     // println!("get_number_pointer got {} == expect 5", *func2());
-
-    //     // let func3: libloading::Symbol<fn() -> *mut simple_struct> = lib.get(b"get_simple_struct_ptr").unwrap();
-    //     // println!("get_simple_struct_ptr got {} == expect 6", (*func3()).a);
-
-    //     let mut production_order = ProductionOrder::new("panduza.fake_register_map", "memory_map");
-
-    //     let order = production_order.to_c_string().unwrap();
-    //     (plugin_ptr.produce)(order.as_c_str().as_ptr());
-
-    //     libs.push(lib);
-    //     plugins.push(plugin_ptr);
-    // }
+    panduza_platform_core::log::init();
 
     // Create platform runner
     // La platform c'est l'assemblage de

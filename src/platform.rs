@@ -1,6 +1,7 @@
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, ProductionOrder, TaskReceiver, TaskResult, TaskSender,
+    create_task_channel, env, Factory, ProductionOrder, Runtime, TaskReceiver, TaskResult,
+    TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
@@ -30,6 +31,8 @@ pub enum ServiceRequest {
     StartBroker,
     LoadPlugins,
     LoadDeviceTree,
+    LoadLocalRuntime,
+    LoadUnderscoreDevice,
     ProduceDevice(ProductionOrder),
 }
 
@@ -67,6 +70,11 @@ pub struct Platform {
     ///
     request_receiver: Option<Receiver<ServiceRequest>>,
 
+    // -- Local Runtime
+    ///
+    ///
+    // runtime: Option<Runtime>,
+
     // -- Plugin management
     ///
     ///
@@ -98,6 +106,7 @@ impl Platform {
             request_sender: rqst_tx.clone(),
             request_receiver: Some(rqst_rx),
 
+            // runtime: None,
             plugin_manager: PluginsManager::new(),
         };
     }
@@ -196,6 +205,12 @@ impl Platform {
                         ServiceRequest::LoadDeviceTree => {
                             self.service_load_device_tree().await;
                         },
+                        ServiceRequest::LoadLocalRuntime => {
+                            self.service_load_local_runtime().await;
+                        },
+                        ServiceRequest::LoadUnderscoreDevice => {
+                            self.service_load_underscore_device().await;
+                        },
                         ServiceRequest::ProduceDevice(order) => {
                             self.service_produce_device(&order).await;
                         }
@@ -262,7 +277,6 @@ impl Platform {
         //
         // info
         self.logger.info("----- SERVICE : BOOT -----");
-
         //
         //
         self.request_sender
@@ -273,7 +287,16 @@ impl Platform {
         self.request_sender
             .try_send(ServiceRequest::LoadPlugins)
             .unwrap();
-
+        //
+        //
+        self.request_sender
+            .try_send(ServiceRequest::LoadLocalRuntime)
+            .unwrap();
+        //
+        //
+        self.request_sender
+            .try_send(ServiceRequest::LoadUnderscoreDevice)
+            .unwrap();
         //
         //
         self.request_sender
@@ -394,6 +417,81 @@ impl Platform {
                 .try_send(ServiceRequest::ProduceDevice(po))
                 .unwrap();
         }
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_load_local_runtime(&mut self) {
+        //
+        // info
+        self.logger.info("----- SERVICE : LOAD LOCAL RUNTIME -----");
+
+        //
+        //
+        let mut factory = Factory::new();
+        // factory.add_producers(plugin_producers());
+
+        //
+        let settings = ReactorSettings::new("localhost", 1883, None);
+        let mut reactor = Reactor::new(settings);
+
+        //
+        //
+        let runtime = Runtime::new(factory, reactor);
+
+        // //
+        // //
+        // POS = Some(runtime.clone_production_order_sender());
+
+        //
+        // Start thread
+        self.task_sender.spawn(runtime.task().boxed()).unwrap();
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_load_underscore_device(&mut self) {
+        //
+        // info
+        self.logger
+            .info("----- SERVICE : LOAD UNDERSCORE DEVICE -----");
+
+        // let (info_device_operations, info_pack) = InfoDevice::new();
+        // let (mut monitor, device) = UnderscoreDevice::new(
+        //     reactor.clone(),
+        //     None, // this device will manage info_pack and cannot use it to boot like other devices
+        //     Box::new(info_device_operations),
+        //     ProductionOrder::new("_", "_"),
+        // );
+
+        // // let mut production_order = ProductionOrder::new("panduza.picoha-dio", "testdevice");
+        // // production_order.device_settings = json!({});
+        // let (mut monitor, mut dev) =
+        //     self.factory
+        //         .produce(self.reactor.clone(), None, production_order.unwrap());
+
+        // dev.set_plugin(self.logger.get_plugin());
+
+        // // let mut dddddd2 = dev.clone();
+        // self.task_sender
+        //     .spawn(
+        //         async move {
+        //             dev.run_fsm().await;
+        //             Ok(())
+        //         }
+        //         .boxed(),
+        //     )
+        //     .unwrap();
+
+        // self.task_sender
+        //     .spawn(
+        //         async move {
+        //             monitor.run().await;
+        //             Ok(())
+        //         }
+        //         .boxed(),
+        //     )
+        //     .unwrap();
     }
 
     /// -------------------------------------------------------------
@@ -590,67 +688,3 @@ impl Platform {
 //         })).await {
 //             tracing::error!(class="Platform", "Failed to create device:\n{}", e);
 //         }
-
-//         // Mount devices
-//         d.start_devices().await.unwrap();
-//     }
-
-//     /// Reload tree inside platform configuration
-//     ///
-//     async fn reload_tree(
-//         services: AmServices,
-//         devices_manager: device::AmManager,
-//         connections_manager: connection::AmManager) -> Result<(), crate::Error>
-//     {
-
-//         let services_lock = services.lock().await;
-
-//         let tree_ref = services_lock.get_tree_content();
-
-//         tracing::info!(class="Platform", "store : {}", tree_ref);
-
-//         let devices_definitions= tree_ref.get("devices");
-//         match devices_definitions {
-//             Some(devices) => {
-//                 // Iterate over the devices
-//                 if let Some(devices) = devices.as_array() {
-//                     for device_definition in devices {
-
-//                         let result = devices_manager.lock().await.create_device(device_definition).await;
-//                         match result {
-//                             Err(_e) => {
-//                                 return __platform_error_result!(
-//                                     format!("Failed to create device: {}", serde_json::to_string_pretty(&device_definition).unwrap())
-//                                 );
-//                             },
-//                             Ok(new_device_name) => {
-//                                 let mut d = devices_manager.lock().await;
-//                                 let mut _c = connections_manager.lock().await;
-
-//                                 let _server_device = d.get_device(new_device_name).unwrap();
-//                                 let _connection = _c.connection().unwrap();
-//                                 // server_device.set_default_connection(default_connection.clone()).await;
-
-//                             }
-//                         }
-
-//                     }
-//                 }
-//             },
-//             None => {
-//                 tracing::warn!("No devices found in the tree");
-//             }
-//         }
-
-//         let mut d = devices_manager.lock().await;
-//         d.start_devices().await.unwrap();
-
-//         // Success
-//         Ok(())
-//     }
-
-//     pub fn devices(&self) -> &device::AmManager {
-//         return &self.devices;
-//     }
-
-// }
