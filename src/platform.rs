@@ -260,6 +260,10 @@ impl Platform {
     ///
     async fn service_boot(&mut self) {
         //
+        // info
+        self.logger.info("----- SERVICE : BOOT -----");
+
+        //
         //
         self.request_sender
             .try_send(ServiceRequest::StartBroker)
@@ -280,6 +284,10 @@ impl Platform {
     /// -------------------------------------------------------------
     ///
     async fn service_start_broker(&mut self) {
+        //
+        // info
+        self.logger.info("----- SERVICE : START BROKER -----");
+
         let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
         router.insert("id".to_string(), config::Value::new(None, 0));
         router.insert(
@@ -358,13 +366,19 @@ impl Platform {
     /// -------------------------------------------------------------
     ///
     async fn service_load_plugins(&mut self) {
+        //
+        // info
+        self.logger.info("----- SERVICE : LOAD PLUGINS -----");
+
         self.plugin_manager.load_system_plugins().unwrap();
     }
 
     /// -------------------------------------------------------------
     ///
     async fn service_load_device_tree(&mut self) {
-        // clean current run
+        //
+        // info
+        self.logger.info("----- SERVICE : LOAD DEVICE TREE -----");
 
         let tree_path = env::system_default_device_tree_file().unwrap();
 
@@ -385,6 +399,11 @@ impl Platform {
     /// -------------------------------------------------------------
     ///
     async fn service_produce_device(&mut self, po: &ProductionOrder) {
+        //
+        // info
+        self.logger.info("----- SERVICE : PRODUCE DEVICE -----");
+        self.logger.info(format!("ORDER: {:?}", po));
+
         let _res = self.plugin_manager.produce(po).unwrap();
     }
 }

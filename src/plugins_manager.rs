@@ -68,6 +68,26 @@ impl PluginHandler {
     pub fn producer_refs(&self) -> &Vec<String> {
         &self.producer_refs
     }
+
+    ///
+    /// Produce the device if it can
+    ///
+    /// Return
+    /// - True if the plugin successfuly build the device
+    /// - False if it cannot build it
+    /// - Error if it can but failed to do it
+    ///
+    pub fn produce(&self, order: &ProductionOrder) -> Result<bool, Error> {
+        unsafe {
+            if self.producer_refs.contains(&order.dref) {
+                let order_as_c_string = order.to_c_string()?;
+                let ret = (self.interface.produce)(order_as_c_string.as_c_str().as_ptr());
+                println!("==> {}", ret);
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
 }
 
 ///
@@ -103,7 +123,7 @@ impl PluginsManager {
         for path in env::system_plugins_dir_paths() {
             // User information
             self.logger
-                .info(format!("Search Plugins in ({})", path.display()));
+                .info(format!("? SEARCH PUGINS in ({})", path.display()));
 
             // Ensure the path is a directory
             if path.is_dir() {
@@ -115,7 +135,8 @@ impl PluginsManager {
                     // Check if the entry is a file and has a DLL extension
                     if path.is_file() && path.extension() == Some(OsStr::new("dll")) {
                         // Print or process the DLL file path
-                        println!("Found DLL file: {}", path.display());
+                        self.logger
+                            .info(format!("!  Found DLL file: {:?}", path.display()));
 
                         self.register_plugin(path)?;
                         count += 1;
@@ -131,9 +152,14 @@ impl PluginsManager {
     /// To register a new plugin
     ///
     pub fn register_plugin(&mut self, filename: PathBuf) -> Result<(), Error> {
+        //
         let handler = PluginHandler::from_filename(filename)?;
 
-        println!("{:?}", handler.producer_refs());
+        // Info
+        self.logger.info(format!(
+            "         PRODUCERS : {:?}",
+            handler.producer_refs()
+        ));
 
         //
         // Append the plugin
@@ -145,11 +171,17 @@ impl PluginsManager {
     /// True when a plugin was able to build the order, false else
     ///
     pub fn produce(&mut self, order: &ProductionOrder) -> Result<bool, Error> {
-        // find the good plugin
-        // produce the device
+        for ph in (&self.handlers).into_iter() {
+            match ph.produce(order)? {
+                true => return Ok(true),
+                false => {}
+            }
+        }
 
-        println!("prod {:?}", order);
-
-        Ok(true)
+        //
+        // Log failure
+        self.logger
+            .info(format!("No plugin found to manage this order"));
+        Ok(false)
     }
 }
