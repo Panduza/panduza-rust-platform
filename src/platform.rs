@@ -104,7 +104,6 @@ impl Platform {
             task_pool: JoinSet::new(),
             task_sender: main_tx,
             task_receiver: Some(main_rx),
-
             new_task_notifier: Arc::new(Notify::new()),
 
             request_sender: rqst_tx.clone(),
@@ -191,6 +190,7 @@ impl Platform {
                     // Function to effectily spawn tasks requested by the system
                     let ah = self.task_pool.spawn(task.unwrap());
                     self.logger.debug(format!( "New task created ! [{:?}]", ah ));
+                    self.new_task_notifier.notify_waiters();
                 },
                 request = request_receiver.recv() => {
                     //
