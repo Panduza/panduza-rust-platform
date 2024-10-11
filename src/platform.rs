@@ -407,9 +407,14 @@ impl Platform {
         // info
         self.logger.info("----- SERVICE : LOAD DEVICE TREE -----");
 
+        //
+        // Get path
         let tree_path = env::system_default_device_tree_file().unwrap();
 
-        // println!("search for tree in ({:?})", tree_path);
+        //
+        // info
+        self.logger
+            .info(format!("TREE PATH: \"{}\"", tree_path.display()));
 
         let file = File::open(tree_path).unwrap();
         let dt: DeviceTree = serde_json::from_reader(&file).unwrap();
