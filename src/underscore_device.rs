@@ -51,7 +51,7 @@ impl DeviceOperations for UnderscoreDevice {
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         //
         // state of each devices
-        let mut interface_devices = device.create_interface("devices").finish().await;
+        let mut interface_devices = device.create_interface("devices").finish();
 
         //
         // Here the device interface must provide an attribute for each device mounted on the platform
