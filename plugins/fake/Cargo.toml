@@ -1,13 +1,11 @@
 [package]
-name = "plugin-fake"
+name = "pza-plugin-fake"
 edition = "2021"
 
 [dependencies]
 
 # The panduza core library
-panduza-core = { path = "../../lib/core" }
-# The panduza connectors library
-panduza-connectors = { path = "../../lib/connectors" }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main" }
 # Main async framework for the platform
 tokio = { version = "1", features = ["full", "tracing"] }
 # Json serialization & deserialization

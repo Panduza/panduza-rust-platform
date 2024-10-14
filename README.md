@@ -7,10 +7,10 @@ You must install Rust and Cargo then execute this commands
 
 ```bash
 # Enable fmt tracing (std terminal logs)
-cargo run --features trac-fmt
+cargo run --features log
 
 # Enable fmt tracing + broker logs 
-cargo run --features trac-fmt, broker-log
+cargo run --features log, broker-log
 
 # Enable tokio console tracing
 RUSTFLAGS="--cfg tokio_unstable" cargo run --features trac-console

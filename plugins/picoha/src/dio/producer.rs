@@ -1,46 +1,24 @@
-use serde_json;
-use serde_json::json;
-use panduza_core::device::traits::{DeviceActions, Producer};
+use super::device::PicoHaDioDevice;
+use panduza_platform_core::{DeviceOperations, Producer};
 
-use super::device::PicoHaDio;
+pub struct PiochaDio {}
 
-
-pub struct DeviceProducer;
-
-impl DeviceProducer {
-    pub fn new_boxed() -> Box<dyn Producer> {
-        return Box::new(DeviceProducer{});
+impl PiochaDio {
+    pub fn new() -> Box<PiochaDio> {
+        Box::new(PiochaDio {})
     }
 }
 
-impl Producer for DeviceProducer {
-
-    // fn manufacturer(&self) -> String {
-    //     return "korad".to_string();
-    // }
-    // fn model(&self) -> String {
-    //     return "KA3005".to_string();
-    // }
-
-    fn settings_props(&self) -> serde_json::Value {
-        return json!([
-            {
-                "name": "usb_serial",
-                "type": "string",
-                "default": ""
-            },
-            {
-                "name": "serial_port_name",
-                "type": "string",
-                "default": ""
-            }
-        ]);
+impl Producer for PiochaDio {
+    fn manufacturer(&self) -> String {
+        "panduza".to_string()
     }
 
-
-    fn produce(&self) -> Result<Box<dyn DeviceActions>, panduza_core::Error> {
-        return Ok(Box::new(PicoHaDio{}));
+    fn model(&self) -> String {
+        "picoha-dio".to_string()
     }
 
+    fn produce(&self) -> Result<Box<dyn DeviceOperations>, panduza_platform_core::Error> {
+        return Ok(Box::new(PicoHaDioDevice::new()));
+    }
 }
-
