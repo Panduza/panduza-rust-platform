@@ -6,17 +6,7 @@ edition = "2021"
 
 [dependencies]
 
-# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "ab" }
-
-panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core", features = [
-    "log",
-] }
-
-# panduza-platform-core = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-platform-core", features = [
-#     "log",
-# ] }
-
-# panduza-platform-connectors = { git = "https://github.com/Panduza/panduza-platform-connectors", branch = "main" }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main" }
 
 
 # plugin-std = { path = "plugins/std" }
