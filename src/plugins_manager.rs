@@ -1,8 +1,10 @@
 use panduza_platform_core::env;
 use panduza_platform_core::Error;
+use panduza_platform_core::Notification;
 use panduza_platform_core::PlatformLogger;
 use panduza_platform_core::Plugin;
 use panduza_platform_core::ProductionOrder;
+use std::ffi::CStr;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -87,6 +89,36 @@ impl PluginHandler {
             }
         }
         Ok(false)
+    }
+
+    ///
+    ///
+    ///
+    pub fn pull_notifications(&self) -> Result<Vec<Notification>, Error> {
+        unsafe {
+            let notifs_as_ptr = (self.interface.pull_notifications)();
+
+            //
+            //
+            if notifs_as_ptr.is_null() {
+                return Err(Error::InvalidArgument("Null C string pointer".to_string()));
+            }
+            //
+            //
+            let c_str = CStr::from_ptr(notifs_as_ptr);
+            let str = c_str
+                .to_str()
+                .map_err(|e| Error::InvalidArgument(format!("Invalid C string: {:?}", e)))?;
+
+            let json: serde_json::Value = serde_json::from_str(str)
+                .map_err(|e| Error::InvalidArgument(format!("Invalid JSON: {:?}", e)))?;
+
+            let obj = serde_json::from_value(json).map_err(|e| {
+                Error::InvalidArgument(format!("Failed to deserialize JSON: {:?}", e))
+            })?;
+
+            Ok(obj)
+        }
     }
 }
 
@@ -183,5 +215,17 @@ impl PluginsManager {
         self.logger
             .info(format!("No plugin found to manage this order"));
         Ok(false)
+    }
+
+    pub fn pull_notifications(&self) -> Result<Vec<Notification>, Error> {
+        //
+        //
+        let mut results: Vec<Notification> = Vec::new();
+
+        for ph in (&self.handlers).into_iter() {
+            results.extend(ph.pull_notifications()?);
+        }
+
+        Ok(results)
     }
 }

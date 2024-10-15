@@ -6,7 +6,13 @@ edition = "2021"
 
 [dependencies]
 
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main" }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
+    "log",
+] }
+
+# panduza-platform-core = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-platform-core", features = [
+#     "log",
+# ] }
 
 
 # plugin-std = { path = "plugins/std" }
@@ -29,9 +35,6 @@ dirs = "3.0.2"
 
 # MQTT async client
 rumqttc = "0.24.0"
-
-# Used to get USB port info (hunt)
-nusb = "0.1.9"
 
 # rumqttd = { git = "https://github.com/bytebeamio/rumqtt", ref = "main" }
 rumqttd = { git = "https://github.com/Panduza/rumqtt", branch = "pza_tests" }
@@ -74,12 +77,12 @@ colored = "2.0.0"
 # in the resulting binary unless the verbosity level is specified dynamically.
 # This level is configured separately for release and debug builds.
 tracing = { version = "0.1", features = [
-    "max_level_off",
+    # "max_level_off",
     # "max_level_error",
     # "max_level_warn",
     # "max_level_info",
     # "max_level_debug",
-    # "max_level_trace",
+    "max_level_trace",
     # "release_max_level_off",
     # "release_max_level_error",
     # "release_max_level_warn",

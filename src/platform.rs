@@ -9,6 +9,7 @@ use rumqttd::Config;
 use std::fs::File;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::signal;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::Receiver;
@@ -88,6 +89,10 @@ pub struct Platform {
     /// They will help the underscore device to give informations to the user
     ///
     notifications: Arc<Mutex<Vec<Notification>>>,
+    ///
+    ///
+    ///
+    new_notifications_notifier: Arc<Notify>,
 }
 
 impl Platform {
@@ -118,6 +123,7 @@ impl Platform {
             plugin_manager: PluginsManager::new(),
 
             notifications: Arc::new(Mutex::new(Vec::new())),
+            new_notifications_notifier: Arc::new(Notify::new()),
         };
     }
 
@@ -126,6 +132,23 @@ impl Platform {
     pub async fn run(&mut self) {
         // Info log
         self.logger.info("Platform Version ...");
+
+        let n_n = self.notifications.clone();
+        let n_notifier = self.new_notifications_notifier.clone();
+        self.task_sender
+            .spawn(
+                async move {
+                    loop {
+                        n_notifier.notified().await;
+                        let mut lock = n_n.lock().await;
+                        let copy_notifs = lock.clone();
+                        lock.clear();
+                        drop(lock);
+                    }
+                }
+                .boxed(),
+            )
+            .unwrap();
 
         //
         //
@@ -184,6 +207,9 @@ impl Platform {
                         }
                     }
                 },
+                _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                    self.pull_notifications().await;
+                },
                 //
                 // task to create monitor plugin manager notifications
                 //
@@ -235,6 +261,23 @@ impl Platform {
                 self.logger.warn("Wait for new tasks");
                 self.new_task_notifier.notified().await;
                 true
+            }
+        }
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn pull_notifications(&mut self) {
+        let result = self.plugin_manager.pull_notifications();
+        match result {
+            Ok(new_notifications) => {
+                let mut n = self.notifications.lock().await;
+                n.extend(new_notifications);
+                self.new_notifications_notifier.notify_waiters();
+            }
+            Err(e) => {
+                self.logger
+                    .error(format!("error while pulling notifis {:?}", e));
             }
         }
     }
