@@ -9,6 +9,7 @@ use rumqttd::Config;
 use std::fs::File;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::signal;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::Receiver;
@@ -184,6 +185,9 @@ impl Platform {
                         }
                     }
                 },
+                _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                    self.pull_notifications().await;
+                },
                 //
                 // task to create monitor plugin manager notifications
                 //
@@ -235,6 +239,23 @@ impl Platform {
                 self.logger.warn("Wait for new tasks");
                 self.new_task_notifier.notified().await;
                 true
+            }
+        }
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn pull_notifications(&mut self) {
+        println!("pull!!!!!!!!!!");
+        let result = self.plugin_manager.pull_notifications();
+        match result {
+            Ok(new_notifications) => {
+                let mut n = self.notifications.lock().await;
+                n.extend(new_notifications);
+            }
+            Err(e) => {
+                self.logger
+                    .error(format!("error while pulling notifis {:?}", e));
             }
         }
     }
