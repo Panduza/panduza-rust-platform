@@ -1349,6 +1349,7 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 [[package]]
 name = "panduza-platform-core"
 version = "0.1.0"
+source = "git+https://github.com/Panduza/panduza-platform-core?branch=main#75e599130927852c121422d5a113ddd1941d5ee2"
 dependencies = [
  "async-trait",
  "bitflags 2.5.0",
