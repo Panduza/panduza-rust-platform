@@ -7,6 +7,7 @@ use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
 use rumqttd::Config;
 use std::fs::File;
+use std::ops::Not;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -491,19 +492,7 @@ impl Platform {
         let n_n = self.notifications.clone();
         let n_notifier = self.new_notifications_notifier.clone();
         self.task_sender
-            .spawn(
-                async move {
-                    loop {
-                        n_notifier.notified().await;
-                        let mut lock = n_n.lock().await;
-                        let copy_notifs = lock.clone();
-                        lock.clear();
-                        drop(lock);
-                        println!("manage noti");
-                    }
-                }
-                .boxed(),
-            )
+            .spawn(Self::task_process_notifications(n_notifier, n_n).boxed())
             .unwrap();
     }
 
@@ -516,5 +505,35 @@ impl Platform {
         self.logger.info(format!("ORDER: {:?}", po));
 
         let _res = self.plugin_manager.produce(po).unwrap();
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn task_process_notifications(
+        n_notifier: Arc<Notify>,
+        n_notifications: Arc<Mutex<Vec<Notification>>>,
+    ) -> TaskResult {
+        loop {
+            n_notifier.notified().await;
+            let mut lock = n_notifications.lock().await;
+            let copy_notifs = lock.clone();
+            lock.clear();
+            drop(lock);
+
+            for not in &copy_notifs {
+                match not {
+                    Notification::StateChanged(state_notification) => {
+                        println!("state");
+                    }
+                    Notification::ElementCreated(structural_notification) => {
+                        println!("create");
+                    }
+                    Notification::ElementDeleted(structural_notification) => {
+                        println!("deleted");
+                    }
+                }
+            }
+            println!("manage noti");
+        }
     }
 }
