@@ -19,6 +19,7 @@ use tokio::task::JoinSet;
 
 use crate::device_tree::DeviceTree;
 use crate::plugins_manager::PluginsManager;
+use crate::underscore_device::pack::InfoPack;
 use crate::underscore_device::UnderscoreDevice;
 
 ///
@@ -132,23 +133,6 @@ impl Platform {
     pub async fn run(&mut self) {
         // Info log
         self.logger.info("Platform Version ...");
-
-        let n_n = self.notifications.clone();
-        let n_notifier = self.new_notifications_notifier.clone();
-        self.task_sender
-            .spawn(
-                async move {
-                    loop {
-                        n_notifier.notified().await;
-                        let mut lock = n_n.lock().await;
-                        let copy_notifs = lock.clone();
-                        lock.clear();
-                        drop(lock);
-                    }
-                }
-                .boxed(),
-            )
-            .unwrap();
 
         //
         //
@@ -475,6 +459,7 @@ impl Platform {
             .info("----- SERVICE : LOAD UNDERSCORE DEVICE -----");
 
         let (underscore_device_operations, info_pack) = UnderscoreDevice::new();
+
         let (mut monitor, mut device) = DeviceMonitor::new(
             self.reactor.as_ref().unwrap().clone(),
             None, // this device will manage info_pack and cannot use it to boot like other devices
@@ -497,6 +482,25 @@ impl Platform {
                 async move {
                     monitor.run().await;
                     Ok(())
+                }
+                .boxed(),
+            )
+            .unwrap();
+
+        // // self.info_pack.
+        let n_n = self.notifications.clone();
+        let n_notifier = self.new_notifications_notifier.clone();
+        self.task_sender
+            .spawn(
+                async move {
+                    loop {
+                        n_notifier.notified().await;
+                        let mut lock = n_n.lock().await;
+                        let copy_notifs = lock.clone();
+                        lock.clear();
+                        drop(lock);
+                        println!("manage noti");
+                    }
                 }
                 .boxed(),
             )

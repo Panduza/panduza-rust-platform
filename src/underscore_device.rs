@@ -15,8 +15,7 @@ use tokio::time::sleep;
 ///
 pub struct UnderscoreDevice {
     ///
-    /// Object that allow other elements of the platform to
-    /// communicate with this device
+    ///
     ///
     pack: InfoPack,
 
