@@ -1,10 +1,10 @@
 mod structure;
 
-pub use structure::AttributeMode;
-pub use structure::DeviceStructure;
-pub use structure::ElementAttribute;
-pub use structure::ElementInterface;
-pub use structure::StructuralElement;
+// pub use structure::AttributeMode;
+// pub use structure::DeviceStructure;
+// pub use structure::ElementAttribute;
+// pub use structure::ElementInterface;
+// pub use structure::InfoElement;
 
 use std::sync::Arc;
 
@@ -58,11 +58,7 @@ pub struct InfoDynamicDeviceStatus {
     device_status_change_notifier: Arc<Notify>,
 
     device_structure_change_notifier: Arc<Notify>,
-
-    ///
-    ///
-    ///
-    structure: DeviceStructure,
+    // structure: DeviceStructure,
 }
 
 ///
@@ -81,7 +77,7 @@ impl InfoDynamicDeviceStatus {
             has_been_updated: true,
             device_status_change_notifier: device_status_change_notifier,
             device_structure_change_notifier: device_structure_change_notifier,
-            structure: DeviceStructure::new(),
+            // structure: DeviceStructure::new(),
         };
         new_instance.device_status_change_notifier.notify_waiters();
         new_instance
@@ -91,9 +87,9 @@ impl InfoDynamicDeviceStatus {
         format!("{}", self.state)
     }
 
-    pub fn structure_into_json_value(&self) -> serde_json::Value {
-        self.structure.into_json_value()
-    }
+    // pub fn structure_into_json_value(&self) -> serde_json::Value {
+    //     self.structure.into_json_value()
+    // }
 
     ///
     ///
@@ -112,17 +108,13 @@ impl InfoDynamicDeviceStatus {
         return false;
     }
 
-    pub fn structure_insert(
-        &mut self,
-        topic: String,
-        element: StructuralElement,
-    ) -> Result<(), Error> {
-        // println!("{:?}", self.structure.into_json_value());
+    // pub fn structure_insert(&mut self, topic: String, element: InfoElement) -> Result<(), Error> {
+    //     // println!("{:?}", self.structure.into_json_value());
 
-        let res = self.structure.insert(topic, element);
-        self.device_structure_change_notifier.notify_waiters();
-        res
-    }
+    //     let res = self.structure.insert(topic, element);
+    //     self.device_structure_change_notifier.notify_waiters();
+    //     res
+    // }
 
     // pub fn structure_remove()
 }
@@ -148,24 +140,18 @@ impl InfoDevRequest {
     }
 }
 
-pub struct InfoDevs {
+pub struct InfoPackInner {
+    //
+    // list of devices
+    //      STATE for each device
+    //      elements enfants
+    // elements => devices, interface, attribut
+    //
+    //
+    ///
     ///
     ///
     devs: HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>>,
-
-    ///
-    ///
-    requests: Vec<InfoDevRequest>,
-
-    ///
-    /// Notified when a new request is pending
-    ///
-    new_request_notifier: Arc<Notify>,
-
-    ///
-    /// Notified when a request has been managed by the InfoDevice
-    ///
-    request_validation_notifier: Arc<Notify>,
 
     ///
     /// Notified when a device status change
@@ -175,15 +161,12 @@ pub struct InfoDevs {
     device_structure_change_notifier: Arc<Notify>,
 }
 
-impl InfoDevs {
+impl InfoPackInner {
     ///
     ///
-    pub fn new() -> InfoDevs {
-        InfoDevs {
+    pub fn new() -> InfoPackInner {
+        InfoPackInner {
             devs: HashMap::new(),
-            requests: Vec::new(),
-            new_request_notifier: Arc::new(Notify::new()),
-            request_validation_notifier: Arc::new(Notify::new()),
             device_status_change_notifier: Arc::new(Notify::new()),
             device_structure_change_notifier: Arc::new(Notify::new()),
         }
@@ -192,9 +175,9 @@ impl InfoDevs {
     pub async fn structure_into_json_value(&self) -> serde_json::Value {
         let mut p = serde_json::Map::new();
 
-        for e in &self.devs {
-            p.insert(e.0.clone(), e.1.lock().await.structure_into_json_value());
-        }
+        // for e in &self.devs {
+        //     p.insert(e.0.clone(), e.1.lock().await.structure_into_json_value());
+        // }
 
         p.into()
     }
@@ -203,18 +186,6 @@ impl InfoDevs {
     ///
     pub fn devs(&mut self) -> &mut HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>> {
         &mut self.devs
-    }
-
-    ///
-    ///
-    pub fn new_request_notifier(&self) -> Arc<Notify> {
-        self.new_request_notifier.clone()
-    }
-
-    ///
-    ///
-    pub fn request_validation_notifier(&self) -> Arc<Notify> {
-        self.request_validation_notifier.clone()
     }
 
     ///
@@ -230,13 +201,6 @@ impl InfoDevs {
     }
 
     ///
-    pub fn push_device_creation_request(&mut self, name: String) {
-        self.requests
-            .push(InfoDevRequest::new(RequestType::Create, name));
-        self.new_request_notifier.notify_waiters();
-    }
-
-    ///
     ///
     pub fn get_dev_info(&self, name: &String) -> Option<Arc<Mutex<InfoDynamicDeviceStatus>>> {
         match self.devs.get(name) {
@@ -245,36 +209,36 @@ impl InfoDevs {
         }
     }
 
-    ///
-    ///
-    ///
-    pub fn pop_next_request(&mut self) -> Option<InfoDevRequest> {
-        self.requests.pop()
-    }
+    // ///
+    // ///
+    // ///
+    // pub fn pop_next_request(&mut self) -> Option<InfoDevRequest> {
+    //     self.requests.pop()
+    // }
 
-    ///
-    /// Validate the creation request on managed devices
-    ///
-    pub fn validate_creation_request(
-        &mut self,
-        request: InfoDevRequest,
-    ) -> ThreadSafeInfoDynamicDeviceStatus {
-        //
-        // Create the new object for the new device
-        let new_obj = Arc::new(Mutex::new(InfoDynamicDeviceStatus::new(
-            self.device_status_change_notifier.clone(),
-            self.device_structure_change_notifier.clone(),
-        )));
-        //
-        // Insert the object in the management list for InfoDynamicDeviceStatus
-        self.devs.insert(request.name, new_obj.clone());
-        //
-        // Then notify waiting thread that the request is accepted
-        self.request_validation_notifier.notify_waiters();
-        //
-        // If it is a creation request, return the InfoDev created
-        new_obj
-    }
+    // ///
+    // /// Validate the creation request on managed devices
+    // ///
+    // pub fn validate_creation_request(
+    //     &mut self,
+    //     request: InfoDevRequest,
+    // ) -> ThreadSafeInfoDynamicDeviceStatus {
+    //     //
+    //     // Create the new object for the new device
+    //     let new_obj = Arc::new(Mutex::new(InfoDynamicDeviceStatus::new(
+    //         self.device_status_change_notifier.clone(),
+    //         self.device_structure_change_notifier.clone(),
+    //     )));
+    //     //
+    //     // Insert the object in the management list for InfoDynamicDeviceStatus
+    //     self.devs.insert(request.name, new_obj.clone());
+    //     //
+    //     // Then notify waiting thread that the request is accepted
+    //     self.request_validation_notifier.notify_waiters();
+    //     //
+    //     // If it is a creation request, return the InfoDev created
+    //     new_obj
+    // }
 
     ///
     /// Go trough status and check for update

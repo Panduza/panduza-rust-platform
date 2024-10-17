@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use super::StructuralElement;
+use super::InfoElement;
 
 use panduza_platform_core::Error;
 
@@ -10,7 +10,7 @@ use panduza_platform_core::Error;
 pub struct ElementInterface {
     name: String,
     tags: Vec<String>,
-    elements: Vec<StructuralElement>,
+    elements: Vec<InfoElement>,
 }
 
 impl ElementInterface {
@@ -66,7 +66,7 @@ impl ElementInterface {
         &self.name
     }
 
-    pub fn find_layer(&self, name: &str) -> &StructuralElement {
+    pub fn find_layer(&self, name: &str) -> &InfoElement {
         self.elements
             .iter()
             .find(|element| element.name() == name)
@@ -75,7 +75,7 @@ impl ElementInterface {
             })
     }
 
-    pub fn find_layer_mut(&mut self, name: &str) -> &mut StructuralElement {
+    pub fn find_layer_mut(&mut self, name: &str) -> &mut InfoElement {
         self.elements
             .iter_mut()
             .find(|element| element.name() == name)
@@ -84,7 +84,7 @@ impl ElementInterface {
             })
     }
 
-    pub fn insert(&mut self, layers: Vec<String>, element: StructuralElement) -> Result<(), Error> {
+    pub fn insert(&mut self, layers: Vec<String>, element: InfoElement) -> Result<(), Error> {
         if layers.len() == 1 {
             // Insert HERE
             // new element name = layers.get(0)

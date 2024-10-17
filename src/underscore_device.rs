@@ -1,4 +1,5 @@
 pub mod devices;
+pub mod element;
 pub mod pack;
 
 use async_trait::async_trait;
@@ -59,51 +60,48 @@ impl DeviceOperations for UnderscoreDevice {
         //
         let pack_clone = self.pack.clone();
         let devices_status_attributes_clone = self.devices_status_attributes.clone();
-        device
-            .spawn(async move {
-                //
-                // Clone the notifier from info pack
-                let new_request = pack_clone.new_request_notifier().await;
+        // device
+        //     .spawn(async move {
 
-                //
-                loop {
-                    let devices = pack_clone.devices();
-                    let request = devices.lock().await.pop_next_request();
-                    match request {
-                        Some(r) => {
-                            //
-                            //
-                            println!("********{:?}", r);
+        //         //
+        //         loop {
+        //             let devices = pack_clone.devices();
+        //             let request = devices.lock().await.pop_next_request();
+        //             match request {
+        //                 Some(r) => {
+        //                     //
+        //                     //
+        //                     println!("********{:?}", r);
 
-                            let att = interface_devices
-                                .create_attribute(r.name.clone())
-                                .message()
-                                .with_att_only_access()
-                                .finish_with_codec::<JsonCodec>()
-                                .await;
+        //                     let att = interface_devices
+        //                         .create_attribute(r.name.clone())
+        //                         .message()
+        //                         .with_att_only_access()
+        //                         .finish_with_codec::<JsonCodec>()
+        //                         .await;
 
-                            // att => att only
+        //                     // att => att only
 
-                            devices_status_attributes_clone
-                                .lock()
-                                .await
-                                .insert(r.name.clone(), att);
+        //                     devices_status_attributes_clone
+        //                         .lock()
+        //                         .await
+        //                         .insert(r.name.clone(), att);
 
-                            // Here I must create a attribute inside interface_devices
-                            // when the request is a creation request
-                            // else delete the object
-                            let _info = devices.lock().await.validate_creation_request(r);
-                        }
-                        None => {}
-                    }
-                    //
-                    // Wait for more request
-                    new_request.notified().await;
-                }
+        //                     // Here I must create a attribute inside interface_devices
+        //                     // when the request is a creation request
+        //                     // else delete the object
+        //                     let _info = devices.lock().await.validate_creation_request(r);
+        //                 }
+        //                 None => {}
+        //             }
+        //             //
+        //             // Wait for more request
+        //             new_request.notified().await;
+        //         }
 
-                // Ok(())
-            })
-            .await;
+        //         // Ok(())
+        //     })
+        //     .await;
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here

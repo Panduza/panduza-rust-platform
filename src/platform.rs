@@ -492,7 +492,7 @@ impl Platform {
         let n_n = self.notifications.clone();
         let n_notifier = self.new_notifications_notifier.clone();
         self.task_sender
-            .spawn(Self::task_process_notifications(n_notifier, n_n).boxed())
+            .spawn(Self::task_process_notifications(info_pack, n_notifier, n_n).boxed())
             .unwrap();
     }
 
@@ -510,6 +510,7 @@ impl Platform {
     /// -------------------------------------------------------------
     ///
     async fn task_process_notifications(
+        mut info_pack: InfoPack,
         n_notifier: Arc<Notify>,
         n_notifications: Arc<Mutex<Vec<Notification>>>,
     ) -> TaskResult {
@@ -519,21 +520,7 @@ impl Platform {
             let copy_notifs = lock.clone();
             lock.clear();
             drop(lock);
-
-            for not in &copy_notifs {
-                match not {
-                    Notification::StateChanged(state_notification) => {
-                        println!("state");
-                    }
-                    Notification::ElementCreated(structural_notification) => {
-                        println!("create");
-                    }
-                    Notification::ElementDeleted(structural_notification) => {
-                        println!("deleted");
-                    }
-                }
-            }
-            println!("manage noti");
+            info_pack.process_notifications(copy_notifs);
         }
     }
 }

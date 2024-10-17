@@ -7,16 +7,17 @@
 
 use std::sync::Arc;
 
+use panduza_platform_core::Notification;
 use tokio::sync::{Mutex, Notify};
 
-use super::devices::{InfoDevs, InfoDynamicDeviceStatus};
+use super::devices::{InfoDynamicDeviceStatus, InfoPackInner};
 
 #[derive(Clone)]
 pub struct InfoPack {
     ///
     /// Devices infos, one for each instanciated device
     ///
-    devices: Arc<Mutex<InfoDevs>>,
+    devices: Arc<Mutex<InfoPackInner>>,
 }
 
 impl InfoPack {
@@ -25,18 +26,29 @@ impl InfoPack {
     ///
     pub fn new() -> InfoPack {
         InfoPack {
-            devices: Arc::new(Mutex::new(InfoDevs::new())),
+            devices: Arc::new(Mutex::new(InfoPackInner::new())),
         }
     }
 
-    pub fn devices(&self) -> Arc<Mutex<InfoDevs>> {
-        self.devices.clone()
+    pub fn process_notifications(&mut self, notifications: Vec<Notification>) {
+        for not in &notifications {
+            match not {
+                Notification::StateChanged(state_notification) => {
+                    println!("state");
+                }
+                Notification::ElementCreated(structural_notification) => {
+                    println!("create");
+                }
+                Notification::ElementDeleted(structural_notification) => {
+                    println!("deleted");
+                }
+            }
+        }
+        println!("manage noti");
     }
 
-    ///
-    ///
-    pub async fn new_request_notifier(&self) -> Arc<Notify> {
-        self.devices.lock().await.new_request_notifier()
+    pub fn devices(&self) -> Arc<Mutex<InfoPackInner>> {
+        self.devices.clone()
     }
 
     ///
@@ -55,18 +67,18 @@ impl InfoPack {
         self.devices.lock().await.structure_into_json_value().await
     }
 
-    pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDynamicDeviceStatus>> {
-        let request_validated_notifier = self.devices.lock().await.request_validation_notifier();
+    // pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDynamicDeviceStatus>> {
+    //     let request_validated_notifier = self.devices.lock().await.request_validation_notifier();
 
-        self.devices
-            .lock()
-            .await
-            .push_device_creation_request(name.clone());
+    //     self.devices
+    //         .lock()
+    //         .await
+    //         .push_device_creation_request(name.clone());
 
-        request_validated_notifier.notified().await;
+    //     request_validated_notifier.notified().await;
 
-        self.devices.lock().await.get_dev_info(&name).unwrap()
-    }
+    //     self.devices.lock().await.get_dev_info(&name).unwrap()
+    // }
 
     ///
     ///
