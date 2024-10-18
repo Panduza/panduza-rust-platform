@@ -34,7 +34,7 @@ impl InfoPack {
         for not in &notifications {
             match not {
                 Notification::StateChanged(state_notification) => {
-                    println!("state");
+                    println!("state {:?}", state_notification);
                 }
                 Notification::ElementCreated(structural_notification) => {
                     println!("create");

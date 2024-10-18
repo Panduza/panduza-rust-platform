@@ -113,8 +113,11 @@ impl PluginHandler {
             let json: serde_json::Value = serde_json::from_str(str)
                 .map_err(|e| Error::InvalidArgument(format!("Invalid JSON: {:?}", e)))?;
 
-            let obj = serde_json::from_value(json).map_err(|e| {
-                Error::InvalidArgument(format!("Failed to deserialize JSON: {:?}", e))
+            let obj = serde_json::from_value(json.clone()).map_err(|e| {
+                Error::InvalidArgument(format!(
+                    "Failed to deserialize 'Notification' from JSON string: {:?} {:?}",
+                    e, json
+                ))
             })?;
 
             Ok(obj)
