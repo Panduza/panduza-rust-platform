@@ -5,12 +5,13 @@
 // On peut aussi faire un notifier par device state pour update qu'un topic pour chaque device
 //
 
+use super::Topic;
 use std::sync::Arc;
 
 use panduza_platform_core::Notification;
 use tokio::sync::{Mutex, Notify};
 
-use super::devices::{InfoDynamicDeviceStatus, InfoPackInner};
+use super::devices::InfoPackInner;
 
 #[derive(Clone)]
 pub struct InfoPack {

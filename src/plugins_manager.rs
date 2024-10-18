@@ -15,7 +15,7 @@ use std::path::PathBuf;
 pub struct PluginHandler {
     ///
     /// Binary object loaded inside process
-    object: libloading::Library,
+    _object: libloading::Library,
     ///
     /// C interface of the plugin
     interface: Plugin,
@@ -58,7 +58,7 @@ impl PluginHandler {
             // Compose the handler
             // Object must be kept alive as long as the interface live
             return Ok(PluginHandler {
-                object: object,
+                _object: object,
                 interface: interface,
                 producer_refs: producer_refs,
             });

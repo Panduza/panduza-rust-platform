@@ -7,7 +7,6 @@ use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
 use rumqttd::Config;
 use std::fs::File;
-use std::ops::Not;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;

@@ -1,6 +1,7 @@
 pub mod devices;
 pub mod element;
 pub mod pack;
+pub mod topic;
 
 use async_trait::async_trait;
 use futures::lock::Mutex;
@@ -9,6 +10,7 @@ use panduza_platform_core::{AttOnlyMsgAtt, Device, DeviceOperations, Error, Json
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::time::sleep;
+pub use topic::Topic;
 
 ///
 /// Main device of the platform
