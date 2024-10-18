@@ -18,7 +18,7 @@ pub struct InfoPack {
     ///
     /// Devices infos, one for each instanciated device
     ///
-    devices: Arc<Mutex<InfoPackInner>>,
+    inner: Arc<Mutex<InfoPackInner>>,
 }
 
 impl InfoPack {
@@ -27,7 +27,7 @@ impl InfoPack {
     ///
     pub fn new() -> InfoPack {
         InfoPack {
-            devices: Arc::new(Mutex::new(InfoPackInner::new())),
+            inner: Arc::new(Mutex::new(InfoPackInner::new())),
         }
     }
 
@@ -36,6 +36,9 @@ impl InfoPack {
             match not {
                 Notification::StateChanged(state_notification) => {
                     println!("state {:?}", state_notification);
+
+                    let p = Topic::from_string(state_notification.topic.clone());
+                    println!("{:?}", p.device);
                 }
                 Notification::ElementCreated(structural_notification) => {
                     println!("create");
@@ -49,23 +52,23 @@ impl InfoPack {
     }
 
     pub fn devices(&self) -> Arc<Mutex<InfoPackInner>> {
-        self.devices.clone()
+        self.inner.clone()
     }
 
     ///
     ///
     pub async fn device_status_change_notifier(&self) -> Arc<Notify> {
-        self.devices.lock().await.device_status_change_notifier()
+        self.inner.lock().await.device_status_change_notifier()
     }
 
     ///
     ///
     pub async fn device_structure_change_notifier(&self) -> Arc<Notify> {
-        self.devices.lock().await.device_structure_change_notifier()
+        self.inner.lock().await.device_structure_change_notifier()
     }
 
     pub async fn device_structure_as_json_value(&self) -> serde_json::Value {
-        self.devices.lock().await.structure_into_json_value().await
+        self.inner.lock().await.structure_into_json_value().await
     }
 
     // pub async fn add_device(&mut self, name: String) -> Arc<Mutex<InfoDynamicDeviceStatus>> {

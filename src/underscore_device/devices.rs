@@ -151,7 +151,7 @@ pub struct InfoPackInner {
     ///
     ///
     ///
-    devs: HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>>,
+    instances: HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>>,
 
     ///
     /// Notified when a device status change
@@ -166,7 +166,7 @@ impl InfoPackInner {
     ///
     pub fn new() -> InfoPackInner {
         InfoPackInner {
-            devs: HashMap::new(),
+            instances: HashMap::new(),
             device_status_change_notifier: Arc::new(Notify::new()),
             device_structure_change_notifier: Arc::new(Notify::new()),
         }
@@ -182,11 +182,11 @@ impl InfoPackInner {
         p.into()
     }
 
-    ///
-    ///
-    pub fn devs(&mut self) -> &mut HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>> {
-        &mut self.devs
-    }
+    // ///
+    // ///
+    // pub fn devs(&mut self) -> &mut HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>> {
+    //     &mut self.devs
+    // }
 
     ///
     ///
@@ -203,10 +203,11 @@ impl InfoPackInner {
     ///
     ///
     pub fn get_dev_info(&self, name: &String) -> Option<Arc<Mutex<InfoDynamicDeviceStatus>>> {
-        match self.devs.get(name) {
-            Some(o) => Some(o.clone()),
-            None => None,
-        }
+        // match self.devs.get(name) {
+        //     Some(o) => Some(o.clone()),
+        //     None => None,
+        // }
+        None
     }
 
     // ///
@@ -249,11 +250,11 @@ impl InfoPackInner {
     ///
     pub async fn check_for_status_update(&self) -> Vec<ThreadSafeInfoDynamicDeviceStatus> {
         let mut updated_status = Vec::new();
-        for d in &self.devs {
-            if d.1.lock().await.has_been_updated {
-                updated_status.push(d.1.clone())
-            }
-        }
+        // for d in &self.devs {
+        //     if d.1.lock().await.has_been_updated {
+        //         updated_status.push(d.1.clone())
+        //     }
+        // }
         updated_status
     }
 }

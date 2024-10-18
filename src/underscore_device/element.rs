@@ -1,17 +1,17 @@
 pub mod attribute;
-mod device;
+mod instance;
 mod interface;
 
 pub use attribute::ElementAttribute;
-pub use device::InfoElementDevice;
+pub use instance::InfoElementInstance;
 pub use interface::ElementInterface;
 use panduza_platform_core::Error;
 
 ///
-/// Element at the basis of device structure
+/// Element at the basis of Instance structure
 ///
 pub enum InfoElement {
-    Device(InfoElementDevice),
+    Instance(InfoElementInstance),
     Attribute(ElementAttribute),
     Interface(ElementInterface),
 }
@@ -21,7 +21,7 @@ impl InfoElement {
         match self {
             InfoElement::Attribute(a) => &a.name(),
             InfoElement::Interface(i) => &i.name(),
-            InfoElement::Device(info_element_device) => todo!(),
+            InfoElement::Instance(info_element_instance) => todo!(),
         }
     }
 
@@ -29,7 +29,7 @@ impl InfoElement {
         match self {
             InfoElement::Attribute(a) => a.into_json_value(),
             InfoElement::Interface(i) => i.into_json_value(),
-            InfoElement::Device(info_element_device) => todo!(),
+            InfoElement::Instance(info_element_instance) => todo!(),
         }
     }
 
@@ -37,7 +37,7 @@ impl InfoElement {
         match self {
             InfoElement::Attribute(a) => a.is_element_exist(layers),
             InfoElement::Interface(i) => i.is_element_exist(layers),
-            InfoElement::Device(info_element_device) => todo!(),
+            InfoElement::Instance(info_element_instance) => todo!(),
         }
     }
 
@@ -50,7 +50,7 @@ impl InfoElement {
                 "Cannot insert an element inside an Attribute".to_string(),
             )),
             InfoElement::Interface(interface) => interface.insert(layers, element),
-            InfoElement::Device(info_element_device) => todo!(),
+            InfoElement::Instance(info_element_Instance) => todo!(),
         }
     }
 }

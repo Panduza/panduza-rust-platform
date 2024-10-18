@@ -125,17 +125,17 @@ impl DeviceOperations for UnderscoreDevice {
 
                     let status_attributes = devices_status_attributes_clone2.lock().await;
 
-                    // Update each status attribute here
-                    for d in pack_clone2.devices().lock().await.devs() {
-                        let mut status = d.1.lock().await;
-                        if status.has_been_updated() {
-                            status_attributes[d.0]
-                                .set(JsonCodec::from(json!({
-                                    "state": status.state_as_string()
-                                })))
-                                .await?;
-                        }
-                    }
+                    // // Update each status attribute here
+                    // for d in pack_clone2.devices().lock().await.devs() {
+                    //     let mut status = d.1.lock().await;
+                    //     if status.has_been_updated() {
+                    //         status_attributes[d.0]
+                    //             .set(JsonCodec::from(json!({
+                    //                 "state": status.state_as_string()
+                    //             })))
+                    //             .await?;
+                    //     }
+                    // }
                 }
                 // Ok(())
             })
