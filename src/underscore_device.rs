@@ -107,73 +107,73 @@ impl DeviceOperations for UnderscoreDevice {
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
-        let pack_clone2 = self.pack.clone();
-        let devices_status_attributes_clone2 = self.devices_status_attributes.clone();
-        device
-            .spawn(async move {
-                //
-                // Clone the notifier from info pack
-                let device_status_change = pack_clone2.device_status_change_notifier().await;
+        // let pack_clone2 = self.pack.clone();
+        // let devices_status_attributes_clone2 = self.devices_status_attributes.clone();
+        // device
+        //     .spawn(async move {
+        //         //
+        //         // Clone the notifier from info pack
+        //         let device_status_change = pack_clone2.device_status_change_notifier().await;
 
-                //
-                loop {
-                    //
-                    // Wait for next status change
-                    device_status_change.notified().await;
+        //         //
+        //         loop {
+        //             //
+        //             // Wait for next status change
+        //             device_status_change.notified().await;
 
-                    println!("$$$$$$$$$$ status change");
+        //             println!("$$$$$$$$$$ status change");
 
-                    let status_attributes = devices_status_attributes_clone2.lock().await;
+        //             let status_attributes = devices_status_attributes_clone2.lock().await;
 
-                    // // Update each status attribute here
-                    // for d in pack_clone2.devices().lock().await.devs() {
-                    //     let mut status = d.1.lock().await;
-                    //     if status.has_been_updated() {
-                    //         status_attributes[d.0]
-                    //             .set(JsonCodec::from(json!({
-                    //                 "state": status.state_as_string()
-                    //             })))
-                    //             .await?;
-                    //     }
-                    // }
-                }
-                // Ok(())
-            })
-            .await;
+        //             // // Update each status attribute here
+        //             // for d in pack_clone2.devices().lock().await.devs() {
+        //             //     let mut status = d.1.lock().await;
+        //             //     if status.has_been_updated() {
+        //             //         status_attributes[d.0]
+        //             //             .set(JsonCodec::from(json!({
+        //             //                 "state": status.state_as_string()
+        //             //             })))
+        //             //             .await?;
+        //             //     }
+        //             // }
+        //         }
+        //         // Ok(())
+        //     })
+        //     .await;
 
         //
         // Structure of the devices
-        let structure_att = device
-            .create_attribute("structure")
-            .message()
-            .with_att_only_access()
-            .finish_with_codec::<JsonCodec>()
-            .await;
+        // let structure_att = device
+        //     .create_attribute("structure")
+        //     .message()
+        //     .with_att_only_access()
+        //     .finish_with_codec::<JsonCodec>()
+        //     .await;
 
-        let pack_clone3 = self.pack.clone();
+        // let pack_clone3 = self.pack.clone();
 
-        device
-            .spawn(async move {
-                //
-                //
-                let structure_change = pack_clone3.device_structure_change_notifier().await;
+        // device
+        //     .spawn(async move {
+        //         //
+        //         //
+        //         let structure_change = pack_clone3.device_structure_change_notifier().await;
 
-                loop {
-                    //
-                    // Wait for next status change
-                    structure_change.notified().await;
+        //         loop {
+        //             //
+        //             // Wait for next status change
+        //             structure_change.notified().await;
 
-                    println!("$$$$$$$$$$ structure change ****");
+        //             println!("$$$$$$$$$$ structure change ****");
 
-                    let structure = pack_clone3.device_structure_as_json_value().await;
-                    // println!("{:?}", structure);
+        //             let structure = pack_clone3.device_structure_as_json_value().await;
+        //             // println!("{:?}", structure);
 
-                    structure_att.set(JsonCodec::from(structure)).await.unwrap();
-                }
+        //             structure_att.set(JsonCodec::from(structure)).await.unwrap();
+        //         }
 
-                // Ok(())
-            })
-            .await;
+        //         // Ok(())
+        //     })
+        //     .await;
 
         Ok(())
     }

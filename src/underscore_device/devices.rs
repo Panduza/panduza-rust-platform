@@ -8,9 +8,13 @@ mod structure;
 
 use std::sync::Arc;
 
-use panduza_platform_core::{device::State, Error};
+use crate::underscore_device::element::InfoElement;
+use panduza_platform_core::{device::State, StateNotification};
 use std::collections::HashMap;
 use tokio::sync::{Mutex, Notify};
+
+use super::{element::InfoElementInstance, Topic};
+// use panduza_platform_core
 
 ///
 ///
@@ -119,26 +123,26 @@ impl InfoDynamicDeviceStatus {
     // pub fn structure_remove()
 }
 
-#[derive(Debug)]
-pub enum RequestType {
-    Create,
-    Delete,
-}
+// #[derive(Debug)]
+// pub enum RequestType {
+//     Create,
+//     Delete,
+// }
 
-#[derive(Debug)]
-pub struct InfoDevRequest {
-    pub rtype: RequestType,
-    pub name: String,
-}
+// #[derive(Debug)]
+// pub struct InfoDevRequest {
+//     pub rtype: RequestType,
+//     pub name: String,
+// }
 
-impl InfoDevRequest {
-    pub fn new(rtype: RequestType, name: String) -> InfoDevRequest {
-        InfoDevRequest {
-            rtype: rtype,
-            name: name,
-        }
-    }
-}
+// impl InfoDevRequest {
+//     pub fn new(rtype: RequestType, name: String) -> InfoDevRequest {
+//         InfoDevRequest {
+//             rtype: rtype,
+//             name: name,
+//         }
+//     }
+// }
 
 pub struct InfoPackInner {
     //
@@ -151,7 +155,7 @@ pub struct InfoPackInner {
     ///
     ///
     ///
-    instances: HashMap<String, Arc<Mutex<InfoDynamicDeviceStatus>>>,
+    instances: HashMap<String, InfoElement>,
 
     ///
     /// Notified when a device status change
@@ -172,6 +176,27 @@ impl InfoPackInner {
         }
     }
 
+    ///
+    ///
+    ///
+    pub fn process_state_changed(&mut self, n: &StateNotification) {
+        let topic = Topic::from_string(n.topic.clone());
+        // println!("{:?}", p.device);
+
+        let instance_name = topic.device;
+
+        // if the instance does not exist, create it
+        if !self.instances.contains_key(&instance_name) {
+            InfoElement::Instance(InfoElementInstance::new(instance_name))
+        }
+
+        // n.
+        //
+    }
+
+    ///
+    ///
+    ///
     pub async fn structure_into_json_value(&self) -> serde_json::Value {
         let mut p = serde_json::Map::new();
 
