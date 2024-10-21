@@ -187,7 +187,10 @@ impl InfoPackInner {
 
         // if the instance does not exist, create it
         if !self.instances.contains_key(&instance_name) {
-            InfoElement::Instance(InfoElementInstance::new(instance_name))
+            self.instances.insert(
+                instance_name,
+                InfoElement::Instance(InfoElementInstance::new(instance_name)),
+            );
         }
 
         // n.
