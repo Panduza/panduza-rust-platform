@@ -123,23 +123,31 @@ impl DeviceOperations for UnderscoreDevice {
 
                     println!("$$$$$$$$$$ status change");
 
-                    let status = pack_clone2.pack_instance_status();
+                    let pack_status = pack_clone2.pack_instance_status();
 
-                    println!("{:?}", status);
+                    println!("{:?}", pack_status);
 
-                    // if instance_attributes_clone
+                    let mut lock = instance_attributes_clone.lock().await;
+                    for status in pack_status {
+                        if !lock.contains_key(&status.0) {
+                            let att = interface_devices
+                                .create_attribute(status.0.clone())
+                                .message()
+                                .with_att_only_access()
+                                .finish_with_codec::<JsonCodec>()
+                                .await;
 
-                    // // Update each status attribute here
-                    // for d in pack_clone2.devices().lock().await.devs() {
-                    //     let mut status = d.1.lock().await;
-                    //     if status.has_been_updated() {
-                    //         status_attributes[d.0]
-                    //             .set(JsonCodec::from(json!({
-                    //                 "state": status.state_as_string()
-                    //             })))
-                    //             .await?;
-                    //     }
-                    // }
+                            lock.insert(status.0.clone(), att);
+                        }
+
+                        lock.get_mut(&status.0)
+                            .unwrap()
+                            .set(JsonCodec::from(json!({
+                                "state": status.1.to_string()
+                            })))
+                            .await?;
+                    }
+                    drop(lock);
                 }
                 // Ok(())
             })
