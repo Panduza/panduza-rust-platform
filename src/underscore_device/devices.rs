@@ -13,10 +13,7 @@ use panduza_platform_core::{device::State, StateNotification};
 use std::collections::HashMap;
 use tokio::sync::{Mutex, Notify};
 
-use super::{
-    element::{self, InfoElementInstance},
-    Topic,
-};
+use super::{element::InfoElementInstance, Topic};
 // use panduza_platform_core
 
 ///

@@ -120,6 +120,8 @@ impl PluginHandler {
                 ))
             })?;
 
+            // println!("pulll {:?}", obj);
+
             Ok(obj)
         }
     }
