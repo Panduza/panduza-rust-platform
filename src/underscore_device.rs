@@ -26,7 +26,7 @@ pub struct UnderscoreDevice {
     /// Each device have an attribute to share its state
     /// This Map hold those attribute, the name of the device is the key.
     ///
-    devices_status_attributes: Arc<Mutex<HashMap<String, AttOnlyMsgAtt<JsonCodec>>>>,
+    instance_attributes: Arc<Mutex<HashMap<String, AttOnlyMsgAtt<JsonCodec>>>>,
 }
 
 impl UnderscoreDevice {
@@ -38,7 +38,7 @@ impl UnderscoreDevice {
 
         let device = UnderscoreDevice {
             pack: pack.clone(),
-            devices_status_attributes: Arc::new(Mutex::new(HashMap::new())),
+            instance_attributes: Arc::new(Mutex::new(HashMap::new())),
         };
 
         (device, pack)
@@ -60,8 +60,8 @@ impl DeviceOperations for UnderscoreDevice {
         // When the device boot, it must send a creation request to this task and wait for the 'UnderscoreDevice'
         // a validation. Once validated, the device can continue to run and report its status through an 'Arc<Mutex<InfoDev"
         //
-        let pack_clone = self.pack.clone();
-        let devices_status_attributes_clone = self.devices_status_attributes.clone();
+        // let pack_clone = self.pack.clone();
+        // let devices_status_attributes_clone = self.devices_status_attributes.clone();
         // device
         //     .spawn(async move {
 
@@ -107,39 +107,43 @@ impl DeviceOperations for UnderscoreDevice {
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
-        // let pack_clone2 = self.pack.clone();
-        // let devices_status_attributes_clone2 = self.devices_status_attributes.clone();
-        // device
-        //     .spawn(async move {
-        //         //
-        //         // Clone the notifier from info pack
-        //         let device_status_change = pack_clone2.device_status_change_notifier().await;
+        let pack_clone2 = self.pack.clone();
+        let instance_attributes_clone = self.instance_attributes.clone();
+        device
+            .spawn(async move {
+                //
+                // Clone the notifier from info pack
+                let device_status_change = pack_clone2.instance_status_change_notifier();
 
-        //         //
-        //         loop {
-        //             //
-        //             // Wait for next status change
-        //             device_status_change.notified().await;
+                //
+                loop {
+                    //
+                    // Wait for next status change
+                    device_status_change.notified().await;
 
-        //             println!("$$$$$$$$$$ status change");
+                    println!("$$$$$$$$$$ status change");
 
-        //             let status_attributes = devices_status_attributes_clone2.lock().await;
+                    let status = pack_clone2.pack_instance_status();
 
-        //             // // Update each status attribute here
-        //             // for d in pack_clone2.devices().lock().await.devs() {
-        //             //     let mut status = d.1.lock().await;
-        //             //     if status.has_been_updated() {
-        //             //         status_attributes[d.0]
-        //             //             .set(JsonCodec::from(json!({
-        //             //                 "state": status.state_as_string()
-        //             //             })))
-        //             //             .await?;
-        //             //     }
-        //             // }
-        //         }
-        //         // Ok(())
-        //     })
-        //     .await;
+                    println!("{:?}", status);
+
+                    // if instance_attributes_clone
+
+                    // // Update each status attribute here
+                    // for d in pack_clone2.devices().lock().await.devs() {
+                    //     let mut status = d.1.lock().await;
+                    //     if status.has_been_updated() {
+                    //         status_attributes[d.0]
+                    //             .set(JsonCodec::from(json!({
+                    //                 "state": status.state_as_string()
+                    //             })))
+                    //             .await?;
+                    //     }
+                    // }
+                }
+                // Ok(())
+            })
+            .await;
 
         //
         // Structure of the devices

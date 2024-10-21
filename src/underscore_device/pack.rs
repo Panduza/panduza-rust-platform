@@ -8,7 +8,7 @@
 use super::Topic;
 use std::sync::Arc;
 
-use panduza_platform_core::Notification;
+use panduza_platform_core::{device::State, Notification};
 use tokio::sync::Notify;
 
 use super::devices::InfoPackInner;
@@ -53,15 +53,19 @@ impl InfoPack {
         println!("manage noti");
     }
 
+    pub fn pack_instance_status(&self) -> Vec<(String, State)> {
+        self.inner.lock().unwrap().pack_instance_status()
+    }
+
     // pub fn devices(&self) -> Arc<Mutex<InfoPackInner>> {
     //     self.inner.clone()
     // }
 
-    // ///
-    // ///
-    // pub async fn device_status_change_notifier(&self) -> Arc<Notify> {
-    //     self.inner.lock().await.device_status_change_notifier()
-    // }
+    ///
+    ///
+    pub fn instance_status_change_notifier(&self) -> Arc<Notify> {
+        self.inner.lock().unwrap().instance_status_change_notifier()
+    }
 
     // ///
     // ///
