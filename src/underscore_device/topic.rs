@@ -3,8 +3,8 @@
 ///
 #[derive(Debug)]
 pub struct Topic {
-    pub namespace: String,
-    pub host: String,
+    pub _namespace: String,
+    pub _host: String,
     pub device: String,
     pub layers: Vec<String>,
 }
@@ -39,8 +39,8 @@ impl Topic {
         let device = layers.remove(0).to_string();
 
         Self {
-            namespace,
-            host,
+            _namespace: namespace,
+            _host: host,
             device,
             layers: layers.into_iter().map(|l| l.to_string()).collect(),
         }

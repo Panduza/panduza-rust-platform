@@ -155,37 +155,36 @@ impl DeviceOperations for UnderscoreDevice {
 
         //
         // Structure of the devices
-        // let structure_att = device
-        //     .create_attribute("structure")
-        //     .message()
-        //     .with_att_only_access()
-        //     .finish_with_codec::<JsonCodec>()
-        //     .await;
+        let structure_att = device
+            .create_attribute("structure")
+            .message()
+            .with_att_only_access()
+            .finish_with_codec::<JsonCodec>()
+            .await;
 
-        // let pack_clone3 = self.pack.clone();
+        let pack_clone3 = self.pack.clone();
+        device
+            .spawn(async move {
+                //
+                //
+                let structure_change = pack_clone3.instance_structure_change_notifier().await;
+                // let pack_clone4 = pack_clone3.clone();
 
-        // device
-        //     .spawn(async move {
-        //         //
-        //         //
-        //         let structure_change = pack_clone3.device_structure_change_notifier().await;
+                loop {
+                    //
+                    // Wait for next status change
+                    structure_change.notified().await;
 
-        //         loop {
-        //             //
-        //             // Wait for next status change
-        //             structure_change.notified().await;
+                    println!("$$$$$$$$$$ structure change ****");
 
-        //             println!("$$$$$$$$$$ structure change ****");
+                    let structure = pack_clone3.device_structure_as_json_value().await;
+                    println!("structure {:?}", structure);
 
-        //             let structure = pack_clone3.device_structure_as_json_value().await;
-        //             // println!("{:?}", structure);
-
-        //             structure_att.set(JsonCodec::from(structure)).await.unwrap();
-        //         }
-
-        //         // Ok(())
-        //     })
-        //     .await;
+                    structure_att.set(JsonCodec::from(structure)).await.unwrap();
+                }
+                // Ok(())
+            })
+            .await;
 
         Ok(())
     }

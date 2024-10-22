@@ -7,6 +7,7 @@ use panduza_platform_core::Error;
 ///
 ///
 ///
+#[derive(Debug)]
 pub struct ElementInterface {
     name: String,
     tags: Vec<String>,

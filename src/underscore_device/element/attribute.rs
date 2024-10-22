@@ -1,15 +1,9 @@
 use serde::Serialize;
 use serde_json::json;
 
-use panduza_platform_core::Error;
+use panduza_platform_core::{AttributeMode, Error};
 
-#[derive(Serialize)]
-pub enum AttributeMode {
-    AttOnly,
-    CmdOnly,
-    Bidir,
-}
-
+#[derive(Debug)]
 pub struct ElementAttribute {
     name: String,
     typee: String,
