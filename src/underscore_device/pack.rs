@@ -3,7 +3,7 @@ use std::sync::Arc;
 use panduza_platform_core::{device::State, Notification};
 use tokio::sync::Notify;
 
-use super::devices::InfoPackInner;
+use super::pack_inner::InfoPackInner;
 
 #[derive(Clone)]
 pub struct InfoPack {

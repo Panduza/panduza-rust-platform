@@ -22,6 +22,9 @@ pub struct InfoPackInner {
     ///
     instance_status_change_notifier: Arc<Notify>,
 
+    ///
+    ///
+    ///
     instance_structure_change_notifier: Arc<Notify>,
 }
 
