@@ -1,15 +1,8 @@
-use serde::Serialize;
 use serde_json::json;
 
-use panduza_platform_core::Error;
+use panduza_platform_core::AttributeMode;
 
-#[derive(Serialize)]
-pub enum AttributeMode {
-    AttOnly,
-    CmdOnly,
-    Bidir,
-}
-
+#[derive(Debug)]
 pub struct ElementAttribute {
     name: String,
     typee: String,
@@ -40,18 +33,18 @@ impl ElementAttribute {
     pub fn name(&self) -> &String {
         &self.name
     }
-    ///
-    pub fn typee(&self) -> &String {
-        &self.typee
-    }
-    pub fn mode(&self) -> &AttributeMode {
-        &self.mode
-    }
+    // ///
+    // pub fn typee(&self) -> &String {
+    //     &self.typee
+    // }
+    // pub fn mode(&self) -> &AttributeMode {
+    //     &self.mode
+    // }
 
-    ///
-    /// Attribute does not hold any elements
-    ///
-    pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {
-        Ok(false)
-    }
+    // ///
+    // /// Attribute does not hold any elements
+    // ///
+    // pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {
+    //     Ok(false)
+    // }
 }

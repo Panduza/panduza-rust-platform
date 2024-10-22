@@ -15,7 +15,7 @@ use std::path::PathBuf;
 pub struct PluginHandler {
     ///
     /// Binary object loaded inside process
-    object: libloading::Library,
+    _object: libloading::Library,
     ///
     /// C interface of the plugin
     interface: Plugin,
@@ -58,7 +58,7 @@ impl PluginHandler {
             // Compose the handler
             // Object must be kept alive as long as the interface live
             return Ok(PluginHandler {
-                object: object,
+                _object: object,
                 interface: interface,
                 producer_refs: producer_refs,
             });
@@ -113,9 +113,14 @@ impl PluginHandler {
             let json: serde_json::Value = serde_json::from_str(str)
                 .map_err(|e| Error::InvalidArgument(format!("Invalid JSON: {:?}", e)))?;
 
-            let obj = serde_json::from_value(json).map_err(|e| {
-                Error::InvalidArgument(format!("Failed to deserialize JSON: {:?}", e))
+            let obj = serde_json::from_value(json.clone()).map_err(|e| {
+                Error::InvalidArgument(format!(
+                    "Failed to deserialize 'Notification' from JSON string: {:?} {:?}",
+                    e, json
+                ))
             })?;
+
+            // println!("pulll {:?}", obj);
 
             Ok(obj)
         }

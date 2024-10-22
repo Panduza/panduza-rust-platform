@@ -1,5 +1,7 @@
-pub mod devices;
+pub mod element;
 pub mod pack;
+pub mod pack_inner;
+pub mod topic;
 
 use async_trait::async_trait;
 use futures::lock::Mutex;
@@ -8,6 +10,7 @@ use panduza_platform_core::{AttOnlyMsgAtt, Device, DeviceOperations, Error, Json
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::time::sleep;
+pub use topic::Topic;
 
 ///
 /// Main device of the platform
@@ -15,8 +18,7 @@ use tokio::time::sleep;
 ///
 pub struct UnderscoreDevice {
     ///
-    /// Object that allow other elements of the platform to
-    /// communicate with this device
+    ///
     ///
     pack: InfoPack,
 
@@ -24,7 +26,7 @@ pub struct UnderscoreDevice {
     /// Each device have an attribute to share its state
     /// This Map hold those attribute, the name of the device is the key.
     ///
-    devices_status_attributes: Arc<Mutex<HashMap<String, AttOnlyMsgAtt<JsonCodec>>>>,
+    instance_attributes: Arc<Mutex<HashMap<String, AttOnlyMsgAtt<JsonCodec>>>>,
 }
 
 impl UnderscoreDevice {
@@ -36,7 +38,7 @@ impl UnderscoreDevice {
 
         let device = UnderscoreDevice {
             pack: pack.clone(),
-            devices_status_attributes: Arc::new(Mutex::new(HashMap::new())),
+            instance_attributes: Arc::new(Mutex::new(HashMap::new())),
         };
 
         (device, pack)
@@ -53,68 +55,15 @@ impl DeviceOperations for UnderscoreDevice {
         // state of each devices
         let mut interface_devices = device.create_interface("devices").finish();
 
-        //
-        // Here the device interface must provide an attribute for each device mounted on the platform
-        // When the device boot, it must send a creation request to this task and wait for the 'UnderscoreDevice'
-        // a validation. Once validated, the device can continue to run and report its status through an 'Arc<Mutex<InfoDev"
-        //
-        let pack_clone = self.pack.clone();
-        let devices_status_attributes_clone = self.devices_status_attributes.clone();
-        device
-            .spawn(async move {
-                //
-                // Clone the notifier from info pack
-                let new_request = pack_clone.new_request_notifier().await;
-
-                //
-                loop {
-                    let devices = pack_clone.devices();
-                    let request = devices.lock().await.pop_next_request();
-                    match request {
-                        Some(r) => {
-                            //
-                            //
-                            println!("********{:?}", r);
-
-                            let att = interface_devices
-                                .create_attribute(r.name.clone())
-                                .message()
-                                .with_att_only_access()
-                                .finish_with_codec::<JsonCodec>()
-                                .await;
-
-                            // att => att only
-
-                            devices_status_attributes_clone
-                                .lock()
-                                .await
-                                .insert(r.name.clone(), att);
-
-                            // Here I must create a attribute inside interface_devices
-                            // when the request is a creation request
-                            // else delete the object
-                            let _info = devices.lock().await.validate_creation_request(r);
-                        }
-                        None => {}
-                    }
-                    //
-                    // Wait for more request
-                    new_request.notified().await;
-                }
-
-                // Ok(())
-            })
-            .await;
-
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
         let pack_clone2 = self.pack.clone();
-        let devices_status_attributes_clone2 = self.devices_status_attributes.clone();
+        let instance_attributes_clone = self.instance_attributes.clone();
         device
             .spawn(async move {
                 //
                 // Clone the notifier from info pack
-                let device_status_change = pack_clone2.device_status_change_notifier().await;
+                let device_status_change = pack_clone2.instance_status_change_notifier();
 
                 //
                 loop {
@@ -124,19 +73,31 @@ impl DeviceOperations for UnderscoreDevice {
 
                     println!("$$$$$$$$$$ status change");
 
-                    let status_attributes = devices_status_attributes_clone2.lock().await;
+                    let pack_status = pack_clone2.pack_instance_status();
 
-                    // Update each status attribute here
-                    for d in pack_clone2.devices().lock().await.devs() {
-                        let mut status = d.1.lock().await;
-                        if status.has_been_updated() {
-                            status_attributes[d.0]
-                                .set(JsonCodec::from(json!({
-                                    "state": status.state_as_string()
-                                })))
-                                .await?;
+                    println!("{:?}", pack_status);
+
+                    let mut lock = instance_attributes_clone.lock().await;
+                    for status in pack_status {
+                        if !lock.contains_key(&status.0) {
+                            let att = interface_devices
+                                .create_attribute(status.0.clone())
+                                .message()
+                                .with_att_only_access()
+                                .finish_with_codec::<JsonCodec>()
+                                .await;
+
+                            lock.insert(status.0.clone(), att);
                         }
+
+                        lock.get_mut(&status.0)
+                            .unwrap()
+                            .set(JsonCodec::from(json!({
+                                "state": status.1.to_string()
+                            })))
+                            .await?;
                     }
+                    drop(lock);
                 }
                 // Ok(())
             })
@@ -152,12 +113,12 @@ impl DeviceOperations for UnderscoreDevice {
             .await;
 
         let pack_clone3 = self.pack.clone();
-
         device
             .spawn(async move {
                 //
                 //
-                let structure_change = pack_clone3.device_structure_change_notifier().await;
+                let structure_change = pack_clone3.instance_structure_change_notifier().await;
+                // let pack_clone4 = pack_clone3.clone();
 
                 loop {
                     //
@@ -167,11 +128,10 @@ impl DeviceOperations for UnderscoreDevice {
                     println!("$$$$$$$$$$ structure change ****");
 
                     let structure = pack_clone3.device_structure_as_json_value().await;
-                    // println!("{:?}", structure);
+                    // println!("structure {:?}", structure);
 
                     structure_att.set(JsonCodec::from(structure)).await.unwrap();
                 }
-
                 // Ok(())
             })
             .await;
