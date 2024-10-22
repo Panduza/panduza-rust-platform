@@ -1,11 +1,5 @@
 mod structure;
 
-// pub use structure::AttributeMode;
-// pub use structure::DeviceStructure;
-// pub use structure::ElementAttribute;
-// pub use structure::ElementInterface;
-// pub use structure::InfoElement;
-
 use std::sync::Arc;
 
 use crate::underscore_device::element::InfoElement;
@@ -15,24 +9,6 @@ use tokio::sync::{Mutex, Notify};
 
 use super::{element::InfoElementInstance, Topic};
 // use panduza_platform_core
-
-///
-///
-///
-// pub enum NotificationLevel {
-//     Info,
-//     Warning,
-//     Error,
-// }
-
-///
-///
-///
-// pub struct Notification {
-//     level: NotificationLevel,
-//     message: String,
-//     timestamp: u64,
-// }
 
 ///
 /// Dynamic information that must be provided by the device to maintain a status inside
@@ -123,27 +99,6 @@ impl InfoDynamicDeviceStatus {
     // pub fn structure_remove()
 }
 
-// #[derive(Debug)]
-// pub enum RequestType {
-//     Create,
-//     Delete,
-// }
-
-// #[derive(Debug)]
-// pub struct InfoDevRequest {
-//     pub rtype: RequestType,
-//     pub name: String,
-// }
-
-// impl InfoDevRequest {
-//     pub fn new(rtype: RequestType, name: String) -> InfoDevRequest {
-//         InfoDevRequest {
-//             rtype: rtype,
-//             name: name,
-//         }
-//     }
-// }
-
 pub struct InfoPackInner {
     ///
     ///
@@ -214,6 +169,18 @@ impl InfoPackInner {
                         InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
                     );
                 }
+
+                let instance = self.instances.get_mut(&instance_name).unwrap();
+                if let InfoElement::Instance(info_element_instance) = instance {
+                    println!("pooooooooooooookkkkk");
+                }
+                // match instance {
+                //     InfoElement::Instance(info_element_instance) => {
+                //         // info_element_instance.set_state(n.state.clone());
+                //     }
+                //     InfoElement::Attribute(element_attribute) => todo!(),
+                //     InfoElement::Interface(element_interface) => todo!(),
+                // }
             }
             StructuralNotification::Interface(interface_notification) => {
                 let instance_name = topic.device;
@@ -283,37 +250,6 @@ impl InfoPackInner {
         // }
         None
     }
-
-    // ///
-    // ///
-    // ///
-    // pub fn pop_next_request(&mut self) -> Option<InfoDevRequest> {
-    //     self.requests.pop()
-    // }
-
-    // ///
-    // /// Validate the creation request on managed devices
-    // ///
-    // pub fn validate_creation_request(
-    //     &mut self,
-    //     request: InfoDevRequest,
-    // ) -> ThreadSafeInfoDynamicDeviceStatus {
-    //     //
-    //     // Create the new object for the new device
-    //     let new_obj = Arc::new(Mutex::new(InfoDynamicDeviceStatus::new(
-    //         self.device_status_change_notifier.clone(),
-    //         self.device_structure_change_notifier.clone(),
-    //     )));
-    //     //
-    //     // Insert the object in the management list for InfoDynamicDeviceStatus
-    //     self.devs.insert(request.name, new_obj.clone());
-    //     //
-    //     // Then notify waiting thread that the request is accepted
-    //     self.request_validation_notifier.notify_waiters();
-    //     //
-    //     // If it is a creation request, return the InfoDev created
-    //     new_obj
-    // }
 
     ///
     /// Go trough status and check for update
