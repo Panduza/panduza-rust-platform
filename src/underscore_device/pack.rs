@@ -35,7 +35,7 @@ impl InfoPack {
         for not in &notifications {
             match not {
                 Notification::StateChanged(state_notification) => {
-                    println!("state {:?}", state_notification);
+                    // println!("state {:?}", state_notification);
 
                     self.inner
                         .lock()
@@ -43,14 +43,18 @@ impl InfoPack {
                         .process_state_changed(state_notification);
                 }
                 Notification::ElementCreated(structural_notification) => {
-                    println!("create");
+                    println!("create {:?}", structural_notification);
+
+                    self.inner
+                        .lock()
+                        .unwrap()
+                        .process_element_creation(structural_notification);
                 }
                 Notification::ElementDeleted(structural_notification) => {
-                    println!("deleted");
+                    println!("deleted {:?}", structural_notification);
                 }
             }
         }
-        println!("manage noti");
     }
 
     pub fn pack_instance_status(&self) -> Vec<(String, State)> {

@@ -1,6 +1,7 @@
 ///
 ///
 ///
+#[derive(Debug)]
 pub struct Topic {
     pub namespace: String,
     pub host: String,

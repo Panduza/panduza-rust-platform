@@ -9,7 +9,7 @@ mod structure;
 use std::sync::Arc;
 
 use crate::underscore_device::element::InfoElement;
-use panduza_platform_core::{device::State, StateNotification};
+use panduza_platform_core::{device::State, StateNotification, StructuralNotification};
 use std::collections::HashMap;
 use tokio::sync::{Mutex, Notify};
 
@@ -196,6 +196,36 @@ impl InfoPackInner {
         }
 
         self.instance_status_change_notifier.notify_waiters();
+    }
+
+    ///
+    ///
+    ///
+    pub fn process_element_creation(&mut self, n: &StructuralNotification) {
+        let topic = Topic::from_string(n.topic());
+        println!("topic :::: {:?}", topic);
+        match n {
+            StructuralNotification::Attribute(attribute_notification) => {
+                let instance_name = topic.device;
+
+                if !self.instances.contains_key(&instance_name) {
+                    self.instances.insert(
+                        instance_name.clone(),
+                        InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
+                    );
+                }
+            }
+            StructuralNotification::Interface(interface_notification) => {
+                let instance_name = topic.device;
+
+                if !self.instances.contains_key(&instance_name) {
+                    self.instances.insert(
+                        instance_name.clone(),
+                        InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
+                    );
+                }
+            }
+        }
     }
 
     ///
