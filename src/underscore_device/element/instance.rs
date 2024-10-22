@@ -62,7 +62,7 @@ impl InfoElementInstance {
         if layers.len() == 1 {
             // Insert HERE
             // new element name = layers.get(0)
-            let layer_name = match layers.get(0) {
+            let _layer_name = match layers.get(0) {
                 Some(value) => {
                     self.children.insert(value.clone(), element);
                 }

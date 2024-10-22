@@ -58,23 +58,23 @@ impl ElementInterface {
     // }
 
     ///
-    pub fn tags(&self) -> &Vec<String> {
-        &self.tags
-    }
+    // pub fn tags(&self) -> &Vec<String> {
+    //     &self.tags
+    // }
 
     ///
     pub fn name(&self) -> &String {
         &self.name
     }
 
-    pub fn find_layer(&self, name: &str) -> &InfoElement {
-        self.elements
-            .iter()
-            .find(|element| element.name() == name)
-            .unwrap_or_else(|| {
-                panic!("Layer '{}' not found in device", name);
-            })
-    }
+    // pub fn find_layer(&self, name: &str) -> &InfoElement {
+    //     self.elements
+    //         .iter()
+    //         .find(|element| element.name() == name)
+    //         .unwrap_or_else(|| {
+    //             panic!("Layer '{}' not found in device", name);
+    //         })
+    // }
 
     pub fn find_layer_mut(&mut self, name: &str) -> &mut InfoElement {
         self.elements
@@ -89,8 +89,8 @@ impl ElementInterface {
         if layers.len() == 1 {
             // Insert HERE
             // new element name = layers.get(0)
-            let layer_name = match layers.get(0) {
-                Some(value) => {
+            let _layer_name = match layers.get(0) {
+                Some(_value) => {
                     self.elements.push(element);
                 }
                 None => {

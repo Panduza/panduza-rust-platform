@@ -48,7 +48,7 @@ impl InfoElement {
     ///
     ///
     pub fn insert(&mut self, layers: Vec<String>, element: InfoElement) -> Result<(), Error> {
-        println!(">>>>>>> {:?} -- {:?}", layers, element);
+        // println!(">>>>>>> {:?} -- {:?}", layers, element);
         match self {
             InfoElement::Attribute(_) => Err(Error::InternalLogic(
                 "Cannot insert an element inside an Attribute".to_string(),

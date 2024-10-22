@@ -55,56 +55,6 @@ impl DeviceOperations for UnderscoreDevice {
         // state of each devices
         let mut interface_devices = device.create_interface("devices").finish();
 
-        //
-        // Here the device interface must provide an attribute for each device mounted on the platform
-        // When the device boot, it must send a creation request to this task and wait for the 'UnderscoreDevice'
-        // a validation. Once validated, the device can continue to run and report its status through an 'Arc<Mutex<InfoDev"
-        //
-        // let pack_clone = self.pack.clone();
-        // let devices_status_attributes_clone = self.devices_status_attributes.clone();
-        // device
-        //     .spawn(async move {
-
-        //         //
-        //         loop {
-        //             let devices = pack_clone.devices();
-        //             let request = devices.lock().await.pop_next_request();
-        //             match request {
-        //                 Some(r) => {
-        //                     //
-        //                     //
-        //                     println!("********{:?}", r);
-
-        //                     let att = interface_devices
-        //                         .create_attribute(r.name.clone())
-        //                         .message()
-        //                         .with_att_only_access()
-        //                         .finish_with_codec::<JsonCodec>()
-        //                         .await;
-
-        //                     // att => att only
-
-        //                     devices_status_attributes_clone
-        //                         .lock()
-        //                         .await
-        //                         .insert(r.name.clone(), att);
-
-        //                     // Here I must create a attribute inside interface_devices
-        //                     // when the request is a creation request
-        //                     // else delete the object
-        //                     let _info = devices.lock().await.validate_creation_request(r);
-        //                 }
-        //                 None => {}
-        //             }
-        //             //
-        //             // Wait for more request
-        //             new_request.notified().await;
-        //         }
-
-        //         // Ok(())
-        //     })
-        //     .await;
-
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
         let pack_clone2 = self.pack.clone();
@@ -178,7 +128,7 @@ impl DeviceOperations for UnderscoreDevice {
                     println!("$$$$$$$$$$ structure change ****");
 
                     let structure = pack_clone3.device_structure_as_json_value().await;
-                    println!("structure {:?}", structure);
+                    // println!("structure {:?}", structure);
 
                     structure_att.set(JsonCodec::from(structure)).await.unwrap();
                 }

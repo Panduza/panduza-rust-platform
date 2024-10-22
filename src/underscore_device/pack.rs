@@ -35,15 +35,15 @@ impl InfoPack {
                         .process_state_changed(state_notification);
                 }
                 Notification::ElementCreated(structural_notification) => {
-                    println!("create {:?}", structural_notification);
+                    // println!("create {:?}", structural_notification);
 
                     self.inner
                         .lock()
                         .unwrap()
                         .process_element_creation(structural_notification);
                 }
-                Notification::ElementDeleted(structural_notification) => {
-                    println!("deleted {:?}", structural_notification);
+                Notification::ElementDeleted(_structural_notification) => {
+                    // println!("deleted {:?}", structural_notification);
                 }
             }
         }

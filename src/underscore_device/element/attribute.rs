@@ -33,13 +33,13 @@ impl ElementAttribute {
     pub fn name(&self) -> &String {
         &self.name
     }
-    ///
-    pub fn typee(&self) -> &String {
-        &self.typee
-    }
-    pub fn mode(&self) -> &AttributeMode {
-        &self.mode
-    }
+    // ///
+    // pub fn typee(&self) -> &String {
+    //     &self.typee
+    // }
+    // pub fn mode(&self) -> &AttributeMode {
+    //     &self.mode
+    // }
 
     // ///
     // /// Attribute does not hold any elements

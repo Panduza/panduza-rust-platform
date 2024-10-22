@@ -5,10 +5,7 @@ use panduza_platform_core::{device::State, StateNotification, StructuralNotifica
 use std::collections::HashMap;
 use tokio::sync::Notify;
 
-use super::{
-    element::{self, InfoElementInstance},
-    Topic,
-};
+use super::{element::InfoElementInstance, Topic};
 // use panduza_platform_core
 
 pub struct InfoPackInner {
@@ -61,8 +58,8 @@ impl InfoPackInner {
             InfoElement::Instance(info_element_instance) => {
                 info_element_instance.set_state(n.state.clone());
             }
-            InfoElement::Attribute(element_attribute) => todo!(),
-            InfoElement::Interface(element_interface) => todo!(),
+            InfoElement::Attribute(_element_attribute) => todo!(),
+            InfoElement::Interface(_element_interface) => todo!(),
         }
 
         self.instance_status_change_notifier.notify_waiters();
@@ -74,40 +71,42 @@ impl InfoPackInner {
     pub fn process_element_creation(&mut self, n: &StructuralNotification) {
         let topic = Topic::from_string(n.topic());
 
-        match n {
-            StructuralNotification::Attribute(attribute_notification) => {
-                let instance_name = topic.device;
+        let instance_name = topic.device;
 
-                if !self.instances.contains_key(&instance_name) {
-                    self.instances.insert(
-                        instance_name.clone(),
-                        InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
-                    );
-                }
-
-                let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
-
-                let o = InfoElement::from(n.clone());
-
-                instance.insert(topic.layers, o).unwrap();
-            }
-            StructuralNotification::Interface(interface_notification) => {
-                let instance_name = topic.device;
-
-                if !self.instances.contains_key(&instance_name) {
-                    self.instances.insert(
-                        instance_name.clone(),
-                        InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
-                    );
-                }
-
-                let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
-
-                let o = InfoElement::from(n.clone());
-
-                instance.insert(topic.layers, o).unwrap();
-            }
+        if !self.instances.contains_key(&instance_name) {
+            self.instances.insert(
+                instance_name.clone(),
+                InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
+            );
         }
+
+        let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
+
+        let o = InfoElement::from(n.clone());
+
+        instance.insert(topic.layers, o).unwrap();
+
+        // match n {
+        //     StructuralNotification::Attribute(_attribute_notification) => {
+
+        //     }
+        //     StructuralNotification::Interface(_interface_notification) => {
+        //         let instance_name = topic.device;
+
+        //         if !self.instances.contains_key(&instance_name) {
+        //             self.instances.insert(
+        //                 instance_name.clone(),
+        //                 InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
+        //             );
+        //         }
+
+        //         let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
+
+        //         let o = InfoElement::from(n.clone());
+
+        //         instance.insert(topic.layers, o).unwrap();
+        //     }
+        // }
 
         self.instance_structure_change_notifier.notify_waiters();
     }
@@ -118,7 +117,7 @@ impl InfoPackInner {
         let mut r = Vec::new();
         // instance name
         // instance state
-        for (key, value) in (&self.instances).into_iter() {
+        for (_key, value) in (&self.instances).into_iter() {
             match value {
                 InfoElement::Instance(info_element_instance) => {
                     r.push((
@@ -126,8 +125,8 @@ impl InfoPackInner {
                         info_element_instance.state.clone(),
                     ));
                 }
-                InfoElement::Attribute(element_attribute) => todo!(),
-                InfoElement::Interface(element_interface) => todo!(),
+                InfoElement::Attribute(_element_attribute) => todo!(),
+                InfoElement::Interface(_element_interface) => todo!(),
             }
         }
         r
