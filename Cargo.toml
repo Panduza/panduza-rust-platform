@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "notifs", features = [
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
     "log",
 ] }
 
