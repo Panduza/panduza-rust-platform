@@ -45,4 +45,8 @@ impl Topic {
             layers: layers.into_iter().map(|l| l.to_string()).collect(),
         }
     }
+
+    pub fn last_layer(&self) -> String {
+        self.layers.last().unwrap().clone()
+    }
 }

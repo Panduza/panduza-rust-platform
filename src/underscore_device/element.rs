@@ -7,6 +7,8 @@ pub use instance::InfoElementInstance;
 pub use interface::ElementInterface;
 use panduza_platform_core::{Error, StructuralNotification};
 
+use super::Topic;
+
 ///
 /// Element at the basis of Instance structure
 ///
@@ -22,7 +24,7 @@ impl InfoElement {
         match self {
             InfoElement::Attribute(a) => &a.name(),
             InfoElement::Interface(i) => &i.name(),
-            InfoElement::Instance(info_element_instance) => todo!(),
+            InfoElement::Instance(_info_element_instance) => todo!(),
         }
     }
 
@@ -34,13 +36,13 @@ impl InfoElement {
         }
     }
 
-    pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {
-        match self {
-            InfoElement::Attribute(a) => a.is_element_exist(layers),
-            InfoElement::Interface(i) => i.is_element_exist(layers),
-            InfoElement::Instance(info_element_instance) => todo!(),
-        }
-    }
+    // pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {
+    //     match self {
+    //         InfoElement::Attribute(a) => a.is_element_exist(layers),
+    //         InfoElement::Interface(i) => i.is_element_exist(layers),
+    //         InfoElement::Instance(info_element_instance) => todo!(),
+    //     }
+    // }
 
     ///
     ///
@@ -52,8 +54,8 @@ impl InfoElement {
                 "Cannot insert an element inside an Attribute".to_string(),
             )),
             InfoElement::Interface(interface) => interface.insert(layers, element),
-            InfoElement::Instance(info_element_Instance) => {
-                info_element_Instance.insert(layers, element)
+            InfoElement::Instance(_info_element_instance) => {
+                _info_element_instance.insert(layers, element)
             }
         }
     }
@@ -66,15 +68,20 @@ impl From<StructuralNotification> for InfoElement {
     fn from(value: StructuralNotification) -> Self {
         match value {
             StructuralNotification::Attribute(attribute_notification) => {
+                let t = Topic::from_string(attribute_notification.name());
                 InfoElement::Attribute(ElementAttribute::new(
-                    attribute_notification.name(),
+                    t.last_layer(),
                     attribute_notification.typee(),
                     attribute_notification.mode().clone(),
                 ))
             }
-            StructuralNotification::Interface(interface_notification) => InfoElement::Interface(
-                ElementInterface::new(interface_notification.topic(), Vec::new()),
-            ),
+            StructuralNotification::Interface(interface_notification) => {
+                let t = Topic::from_string(interface_notification.topic());
+                InfoElement::Interface(ElementInterface::new(
+                    t.last_layer(),
+                    interface_notification.tags,
+                ))
+            }
         }
     }
 }

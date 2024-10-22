@@ -1,7 +1,6 @@
-use serde::Serialize;
 use serde_json::json;
 
-use panduza_platform_core::{AttributeMode, Error};
+use panduza_platform_core::AttributeMode;
 
 #[derive(Debug)]
 pub struct ElementAttribute {
@@ -42,10 +41,10 @@ impl ElementAttribute {
         &self.mode
     }
 
-    ///
-    /// Attribute does not hold any elements
-    ///
-    pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {
-        Ok(false)
-    }
+    // ///
+    // /// Attribute does not hold any elements
+    // ///
+    // pub fn is_element_exist(&self, layers: Vec<String>) -> Result<bool, Error> {
+    //     Ok(false)
+    // }
 }

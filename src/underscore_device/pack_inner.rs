@@ -69,11 +69,11 @@ impl InfoPackInner {
     }
 
     ///
-    ///
+    /// Process an element creation notification
     ///
     pub fn process_element_creation(&mut self, n: &StructuralNotification) {
         let topic = Topic::from_string(n.topic());
-        println!("topic :::: {:?}", topic);
+
         match n {
             StructuralNotification::Attribute(attribute_notification) => {
                 let instance_name = topic.device;
@@ -100,6 +100,12 @@ impl InfoPackInner {
                         InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
                     );
                 }
+
+                let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
+
+                let o = InfoElement::from(n.clone());
+
+                instance.insert(topic.layers, o).unwrap();
             }
         }
 
