@@ -157,6 +157,11 @@ impl PluginsManager {
     pub fn load_system_plugins(&mut self) -> Result<u32, Error> {
         let mut count = 0;
 
+        //
+        // Get extension of the plugin on the system
+        let dyn_lib_ext =
+            env::system_dyn_lib_extension().map_err(|e| Error::Generic(format!("{:?}", e)))?;
+
         for path in env::system_plugins_dir_paths() {
             // User information
             self.logger
@@ -170,10 +175,11 @@ impl PluginsManager {
                     let path = entry.path();
 
                     // Check if the entry is a file and has a DLL extension
-                    if path.is_file() && path.extension() == Some(OsStr::new("dll")) {
+                    if path.is_file() && path.extension() == Some(OsStr::new(dyn_lib_ext.as_str()))
+                    {
                         // Print or process the DLL file path
                         self.logger
-                            .info(format!("!  Found DLL file: {:?}", path.display()));
+                            .info(format!("!  Found PUGIN file: {:?}", path.display()));
 
                         self.register_plugin(path)?;
                         count += 1;
