@@ -1,18 +1,17 @@
 use std::sync::Arc;
 
-use crate::underscore_device::element::InfoElement;
 use panduza_platform_core::{device::State, StateNotification, StructuralNotification};
 use std::collections::HashMap;
 use tokio::sync::Notify;
 
-use super::{element::InfoElementInstance, Topic};
+use super::{element::instance::InstanceElement, structure::Structure, Topic};
 // use panduza_platform_core
 
 pub struct InfoPackInner {
     ///
     ///
     ///
-    instances: HashMap<String, InfoElement>,
+    structure: Structure,
 
     ///
     /// Notified when a device status change
@@ -30,7 +29,7 @@ impl InfoPackInner {
     ///
     pub fn new() -> InfoPackInner {
         InfoPackInner {
-            instances: HashMap::new(),
+            structure: Structure::default(),
             instance_status_change_notifier: Arc::new(Notify::new()),
             instance_structure_change_notifier: Arc::new(Notify::new()),
         }
@@ -45,22 +44,22 @@ impl InfoPackInner {
 
         let instance_name = topic.device;
 
-        // if the instance does not exist, create it
-        if !self.instances.contains_key(&instance_name) {
-            self.instances.insert(
-                instance_name.clone(),
-                InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
-            );
-        }
+        // // if the instance does not exist, create it
+        // if !self.instances.contains_key(&instance_name) {
+        //     self.instances.insert(
+        //         instance_name.clone(),
+        //         InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
+        //     );
+        // }
 
-        let instance = self.instances.get_mut(&instance_name).unwrap();
-        match instance {
-            InfoElement::Instance(info_element_instance) => {
-                info_element_instance.set_state(n.state.clone());
-            }
-            InfoElement::Attribute(_element_attribute) => todo!(),
-            InfoElement::Interface(_element_interface) => todo!(),
-        }
+        // let instance = self.instances.get_mut(&instance_name).unwrap();
+        // match instance {
+        //     InfoElement::Instance(info_element_instance) => {
+        //         info_element_instance.set_state(n.state.clone());
+        //     }
+        //     InfoElement::Attribute(_element_attribute) => todo!(),
+        //     InfoElement::Interface(_element_interface) => todo!(),
+        // }
 
         self.instance_status_change_notifier.notify_waiters();
     }
@@ -73,18 +72,18 @@ impl InfoPackInner {
 
         let instance_name = topic.device;
 
-        if !self.instances.contains_key(&instance_name) {
-            self.instances.insert(
-                instance_name.clone(),
-                InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
-            );
+        //
+        // Create the instance if not already created
+        if !self.structure.contains_instance(&instance_name) {
+            self.structure
+                .insert_instance(instance_name.clone(), InstanceElement::default());
         }
 
-        let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
+        // let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
 
-        let o = InfoElement::from(n.clone());
+        // let o = InfoElement::from(n.clone());
 
-        instance.insert(topic.layers, o).unwrap();
+        // instance.insert(topic.layers, o).unwrap();
 
         // match n {
         //     StructuralNotification::Attribute(_attribute_notification) => {
@@ -117,18 +116,18 @@ impl InfoPackInner {
         let mut r = Vec::new();
         // instance name
         // instance state
-        for (_key, value) in (&self.instances).into_iter() {
-            match value {
-                InfoElement::Instance(info_element_instance) => {
-                    r.push((
-                        info_element_instance.name.clone(),
-                        info_element_instance.state.clone(),
-                    ));
-                }
-                InfoElement::Attribute(_element_attribute) => todo!(),
-                InfoElement::Interface(_element_interface) => todo!(),
-            }
-        }
+        // for (_key, value) in (&self.instances).into_iter() {
+        //     match value {
+        //         InfoElement::Instance(info_element_instance) => {
+        //             r.push((
+        //                 info_element_instance.name.clone(),
+        //                 info_element_instance.state.clone(),
+        //             ));
+        //         }
+        //         InfoElement::Attribute(_element_attribute) => todo!(),
+        //         InfoElement::Interface(_element_interface) => todo!(),
+        //     }
+        // }
         r
     }
 
@@ -138,9 +137,9 @@ impl InfoPackInner {
     pub fn structure_into_json_value(&self) -> serde_json::Value {
         let mut p = serde_json::Map::new();
 
-        for (name, e) in &self.instances {
-            p.insert(name.clone(), e.into_json_value());
-        }
+        // for (name, e) in &self.instances {
+        //     p.insert(name.clone(), e.into_json_value());
+        // }
 
         p.into()
     }

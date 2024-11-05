@@ -1,15 +1,22 @@
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use panduza_platform_core::AttributeMode;
 
-#[derive(Debug)]
-pub struct ElementAttribute {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AttributElement {
     name: String,
+
+    ///
+    /// Type of the attribute
+    ///
+    #[serde(rename = "type")]
     typee: String,
+
     mode: AttributeMode,
 }
 
-impl ElementAttribute {
+impl AttributElement {
     ///
     ///
     ///

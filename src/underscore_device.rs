@@ -1,6 +1,7 @@
 pub mod element;
 pub mod pack;
 pub mod pack_inner;
+pub mod structure;
 pub mod topic;
 
 use async_trait::async_trait;

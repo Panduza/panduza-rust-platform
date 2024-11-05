@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "next_gen", features = [
     "log",
 ] }
 
@@ -47,7 +47,7 @@ async-trait = "0.1.77"
 futures = "0.3.17"
 
 
-serde = "1.0.0"
+serde = { "version" = "1.0.0", features = ["derive"] }
 
 # Json serialization & deserialization
 serde_json = "1.0.114"
