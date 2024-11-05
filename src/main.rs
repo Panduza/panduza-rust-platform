@@ -1,5 +1,5 @@
-// #![deny(
-//     while_true,
+#![deny(
+    while_true,
 //     improper_ctypes,
 //     non_shorthand_field_patterns,
 //     no_mangle_generic_items,
@@ -13,7 +13,7 @@
 //     unused_allocation,
 //     unused_comparisons,
 //     unused_parens,
-// )]
+)]
 
 mod platform;
 pub use platform::Platform;
