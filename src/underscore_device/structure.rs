@@ -1,4 +1,9 @@
-use super::element::instance::InstanceElement;
+pub mod attribute;
+pub mod class;
+pub mod instance;
+
+use instance::InstanceElement;
+use panduza_platform_core::device::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -38,5 +43,23 @@ impl Structure {
     ///
     pub fn contains_instance(&mut self, name: &String) -> bool {
         self.driver_instances.contains_key(name)
+    }
+
+    ///
+    ///
+    ///
+    pub fn get_mut_instance(&mut self, name: &String) -> Option<&mut InstanceElement> {
+        self.driver_instances.get_mut(name)
+    }
+
+    ///
+    ///
+    ///
+    pub fn pack_instance_status(&self) -> Vec<(String, State)> {
+        let mut r = Vec::new();
+        for (_key, value) in (&self.driver_instances).into_iter() {
+            r.push((_key.clone(), value.state.clone()));
+        }
+        r
     }
 }

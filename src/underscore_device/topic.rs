@@ -4,8 +4,7 @@
 #[derive(Debug)]
 pub struct Topic {
     pub _namespace: String,
-    pub _host: String,
-    pub device: String,
+    pub instance: String,
     pub layers: Vec<String>,
 }
 
@@ -35,18 +34,24 @@ impl Topic {
         //
         //
         let namespace = namespace_parts.join("/");
-        let host = layers.remove(0).to_string();
         let device = layers.remove(0).to_string();
 
         Self {
             _namespace: namespace,
-            _host: host,
-            device,
+            instance: device,
             layers: layers.into_iter().map(|l| l.to_string()).collect(),
         }
     }
 
-    pub fn last_layer(&self) -> String {
-        self.layers.last().unwrap().clone()
+    pub fn layers_len(&self) -> usize {
+        self.layers.len()
     }
+
+    pub fn first_layer(&self) -> String {
+        self.layers.first().unwrap().clone()
+    }
+
+    // pub fn last_layer(&self) -> String {
+    //     self.layers.last().unwrap().clone()
+    // }
 }

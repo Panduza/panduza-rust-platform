@@ -1,4 +1,3 @@
-pub mod element;
 pub mod pack;
 pub mod pack_inner;
 pub mod structure;
@@ -128,8 +127,8 @@ impl DeviceOperations for UnderscoreDevice {
 
                     println!("$$$$$$$$$$ structure change ****");
 
-                    let structure = pack_clone3.device_structure_as_json_value().await;
-                    // println!("structure {:?}", structure);
+                    let structure = pack_clone3.device_structure_as_json_value().await.unwrap();
+                    println!("structure {:?}", structure);
 
                     structure_att.set(JsonCodec::from(structure)).await.unwrap();
                 }
