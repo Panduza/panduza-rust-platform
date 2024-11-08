@@ -26,8 +26,9 @@ dirs = "3.0.2"
 # MQTT async client
 rumqttc = "0.24.0"
 
-# rumqttd = { git = "https://github.com/bytebeamio/rumqtt", ref = "main" }
-rumqttd = { git = "https://github.com/Panduza/rumqtt", branch = "pza_tests" }
+# 
+rumqttd = { git = "https://github.com/Panduza/rumqtt", tag = "0.0.0" }
+
 config = "0.14.0"
 
 # Async trait support
