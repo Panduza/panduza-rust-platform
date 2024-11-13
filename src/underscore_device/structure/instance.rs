@@ -57,6 +57,10 @@ impl InstanceElement {
     /// Get a class from its layers, it means that it will dig to find a sub class if needed
     ///
     pub fn get_mut_class_from_layers(&mut self, layers: &Vec<String>) -> Option<&mut ClassElement> {
+        //
+        // low level debug
+        println!("instance::get_mut_class_from_layers({:?})", layers);
+
         if layers.len() == 1 {
             let name = layers.first().unwrap();
             self.classes.get_mut(name)

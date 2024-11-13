@@ -51,7 +51,7 @@ impl Topic {
         self.layers.first().unwrap().clone()
     }
 
-    // pub fn last_layer(&self) -> String {
-    //     self.layers.last().unwrap().clone()
-    // }
+    pub fn last_layer(&self) -> String {
+        self.layers.last().unwrap().clone()
+    }
 }

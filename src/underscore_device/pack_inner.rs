@@ -107,7 +107,7 @@ impl InfoPackInner {
                     layers.remove(layers.len() - 1);
                     // println!("---------- {:?}", layers);
                     let class = instance.get_mut_class_from_layers(&layers).unwrap();
-                    class.insert_attribute(topic.first_layer().clone(), new_attribute);
+                    class.insert_attribute(topic.last_layer().clone(), new_attribute);
                 }
             }
             StructuralNotification::Interface(_interface_notification) => {
@@ -120,8 +120,16 @@ impl InfoPackInner {
                 //
                 //
                 else {
-                    let class = instance.get_mut_class_from_layers(&topic.layers).unwrap();
-                    class.insert_class(topic.first_layer().clone(), new_class);
+                    let mut layers = topic.layers.clone();
+                    layers.remove(layers.len() - 1);
+                    let class =
+                        instance
+                            .get_mut_class_from_layers(&layers)
+                            .ok_or(Error::InternalLogic(format!(
+                                "cannot find class from layer {:?}",
+                                &layers
+                            )))?;
+                    class.insert_class(topic.last_layer().clone(), new_class);
                 }
             }
         }
