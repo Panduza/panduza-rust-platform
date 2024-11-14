@@ -28,7 +28,7 @@ pub struct InstanceElement {
     ///
     /// User information about the structure
     ///
-    info: String,
+    info: Option<String>,
 }
 
 impl InstanceElement {

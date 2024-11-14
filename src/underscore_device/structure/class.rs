@@ -28,14 +28,14 @@ pub struct ClassElement {
     ///
     /// User information about the structure
     ///
-    info: String,
+    info: Option<String>,
 }
 
 impl ClassElement {
     ///
     /// Constructor
     ///
-    pub fn new(tags: Vec<String>, info: String) -> Self {
+    pub fn new(tags: Vec<String>, info: Option<String>) -> Self {
         Self {
             tags,
             classes: HashMap::default(),
@@ -88,6 +88,6 @@ impl ClassElement {
 ///
 impl From<InterfaceNotification> for ClassElement {
     fn from(notif: InterfaceNotification) -> Self {
-        ClassElement::new(notif.tags, "_".to_string())
+        ClassElement::new(notif.tags, None)
     }
 }

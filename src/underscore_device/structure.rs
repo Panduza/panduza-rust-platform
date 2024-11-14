@@ -20,7 +20,7 @@ pub struct Structure {
     ///
     /// User information about the structure
     ///
-    info: String,
+    info: Option<String>,
 }
 
 impl Structure {
