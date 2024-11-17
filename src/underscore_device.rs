@@ -93,7 +93,8 @@ impl DeviceOperations for UnderscoreDevice {
                         lock.get_mut(&status.0)
                             .unwrap()
                             .set(JsonCodec::from(json!({
-                                "state": status.1.to_string()
+                                "state": status.1.to_string(),
+                                "alerts": status.2
                             })))
                             .await?;
                     }

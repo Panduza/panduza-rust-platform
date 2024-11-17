@@ -7,7 +7,9 @@ use super::{
     Topic,
 };
 use crate::underscore_device::structure::class::ClassElement;
-use panduza_platform_core::{device::State, Error, StateNotification, StructuralNotification};
+use panduza_platform_core::{
+    device::State, AlertNotification, Error, StateNotification, StructuralNotification,
+};
 use std::sync::Arc;
 use tokio::sync::Notify;
 
@@ -71,6 +73,32 @@ impl InfoPackInner {
             .unwrap();
 
         instance.set_state(n.state.clone());
+
+        self.instance_status_change_notifier.notify_waiters();
+    }
+
+    ///
+    ///
+    ///
+    pub fn process_alert(&mut self, n: AlertNotification) {
+        let topic = Topic::from_string(n.topic.clone());
+        // println!("{:?}", p.device);
+
+        let instance_name = &topic.instance;
+
+        //
+        // Create the instance if not already created
+        self.create_instance_if_not_exists(instance_name);
+
+        //
+        // Instance MUST now exist
+        let instance = self
+            .structure
+            .get_mut_instance(instance_name)
+            .ok_or(Error::Wtf)
+            .unwrap();
+
+        instance.add_alert(n.into());
 
         self.instance_status_change_notifier.notify_waiters();
     }

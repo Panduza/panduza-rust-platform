@@ -44,7 +44,9 @@ impl InfoPack {
                 Notification::ElementDeleted(_structural_notification) => {
                     // println!("deleted {:?}", structural_notification);
                 }
-                Notification::Alert(alert_notification) => {}
+                Notification::Alert(alert_notification) => {
+                    self.inner.lock().unwrap().process_alert(alert_notification);
+                }
             }
         }
     }
