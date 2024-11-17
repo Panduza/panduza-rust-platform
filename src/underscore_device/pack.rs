@@ -3,7 +3,7 @@ use std::sync::Arc;
 use panduza_platform_core::{device::State, Error, Notification};
 use tokio::sync::Notify;
 
-use super::pack_inner::InfoPackInner;
+use super::{pack_inner::InfoPackInner, structure::instance::Alert};
 
 #[derive(Clone)]
 pub struct InfoPack {
@@ -44,11 +44,12 @@ impl InfoPack {
                 Notification::ElementDeleted(_structural_notification) => {
                     // println!("deleted {:?}", structural_notification);
                 }
+                Notification::Alert(alert_notification) => {}
             }
         }
     }
 
-    pub fn pack_instance_status(&self) -> Vec<(String, State)> {
+    pub fn pack_instance_status(&self) -> Vec<(String, State, Vec<Alert>)> {
         self.inner.lock().unwrap().pack_instance_status()
     }
 

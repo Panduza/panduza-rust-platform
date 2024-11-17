@@ -4,6 +4,12 @@ use std::collections::HashMap;
 
 use super::{attribute::AttributElement, class::ClassElement};
 
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct Alert {
+    topic: String,
+    message: String,
+}
+
 ///
 /// Represent an instance in the structure
 ///
@@ -14,6 +20,12 @@ pub struct InstanceElement {
     ///
     #[serde(skip)]
     pub state: State,
+
+    ///
+    /// State of the instance
+    ///
+    #[serde(skip)]
+    pub alerts: Vec<Alert>,
 
     ///
     /// Sub classes
@@ -37,6 +49,13 @@ impl InstanceElement {
     ///
     pub fn set_state(&mut self, new_state: State) {
         self.state = new_state;
+    }
+
+    ///
+    ///
+    ///
+    pub fn add_alert(&mut self, alert: Alert) {
+        self.alerts.push(alert);
     }
 
     ///

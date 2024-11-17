@@ -1,5 +1,9 @@
 use super::{
-    structure::{attribute::AttributElement, instance::InstanceElement, Structure},
+    structure::{
+        attribute::AttributElement,
+        instance::{Alert, InstanceElement},
+        Structure,
+    },
     Topic,
 };
 use crate::underscore_device::structure::class::ClassElement;
@@ -141,7 +145,7 @@ impl InfoPackInner {
 
     ///
     ///
-    pub fn pack_instance_status(&self) -> Vec<(String, State)> {
+    pub fn pack_instance_status(&self) -> Vec<(String, State, Vec<Alert>)> {
         self.structure.pack_instance_status()
     }
 

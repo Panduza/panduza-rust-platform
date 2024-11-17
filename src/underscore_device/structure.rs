@@ -2,7 +2,7 @@ pub mod attribute;
 pub mod class;
 pub mod instance;
 
-use instance::InstanceElement;
+use instance::{Alert, InstanceElement};
 use panduza_platform_core::device::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -55,10 +55,10 @@ impl Structure {
     ///
     ///
     ///
-    pub fn pack_instance_status(&self) -> Vec<(String, State)> {
+    pub fn pack_instance_status(&self) -> Vec<(String, State, Vec<Alert>)> {
         let mut r = Vec::new();
         for (_key, value) in (&self.driver_instances).into_iter() {
-            r.push((_key.clone(), value.state.clone()));
+            r.push((_key.clone(), value.state.clone(), value.alerts.clone()));
         }
         r
     }
