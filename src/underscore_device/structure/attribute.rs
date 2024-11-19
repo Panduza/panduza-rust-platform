@@ -54,10 +54,11 @@ impl AttributElement {
 ///
 impl From<AttributeNotification> for AttributElement {
     fn from(notif: AttributeNotification) -> Self {
+        // TODO: here notif members should be moved !
         AttributElement::new(
             notif.typee(),
             notif.mode().clone(),
-            None,
+            notif.info().clone(),
             notif.settings().clone(),
         )
     }
