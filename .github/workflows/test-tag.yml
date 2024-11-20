@@ -1,0 +1,37 @@
+name: test_tag
+
+on:
+    push:
+        tags:
+            - '*'
+    
+jobs:
+
+    check_tag_match_cargo:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout project
+              uses: actions/checkout@v4
+
+            - name: Install tools
+              run: sudo apt install jq
+
+            - name: Crate Cargo Version
+              run: |
+                cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].version'
+                cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].version' > cargo_version.txt
+
+            - name: GitHub Tag Name
+              run: |
+                echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
+                echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+            
+            - name: Compare tag name and cargo version
+              run: |
+                tag_name=$(echo "${GITHUB_REF_NAME}" | cut -d '/' -f 3)
+                cargo_version=$(cat cargo_version.txt)
+    
+                if [[ "$tag_name" != "$cargo_version" ]]; then
+                echo "Tag name ($tag_name) does not match cargo version ($cargo_version)"
+                exit 1
+                fi

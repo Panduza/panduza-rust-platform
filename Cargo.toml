@@ -1,6 +1,6 @@
 [package]
 name = "panduza-rust-platform"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2021"
 
 
@@ -10,21 +10,9 @@ edition = "2021"
 panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
     "log",
 ] }
-
-# panduza-platform-core = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-platform-core", features = [
+# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.0", features = [
 #     "log",
 # ] }
-
-
-# plugin-std = { path = "plugins/std" }
-# plugin-video = { path = "plugins/video" }
-
-# pza-plugin-fake = { path = "plugins/fake" }
-# pza-plugin-picoha = { path = "plugins/picoha" }
-
-# pza-plugin-picoha-ssb = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/pza-plugin-picoha-ssb" }
-# , branch = "main"
-
 
 # Main async framework for the platform
 tokio = { version = "1.40.0", features = ["full", "tracing"] }
@@ -37,8 +25,9 @@ dirs = "3.0.2"
 # MQTT async client
 rumqttc = "0.24.0"
 
-# rumqttd = { git = "https://github.com/bytebeamio/rumqtt", ref = "main" }
-rumqttd = { git = "https://github.com/Panduza/rumqtt", branch = "pza_tests" }
+# 
+rumqttd = { git = "https://github.com/Panduza/rumqtt", tag = "0.0.0" }
+
 config = "0.14.0"
 
 # Async trait support
