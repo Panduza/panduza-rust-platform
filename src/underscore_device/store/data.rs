@@ -28,4 +28,5 @@ struct StoreData {
     ///
     ///
     data: HashMap<String, StoreEntry>,
+    // instances: HashMap<String, ?>,
 }

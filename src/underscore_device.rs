@@ -1,6 +1,7 @@
 pub mod att;
 pub mod pack;
 pub mod pack_inner;
+pub mod scanner;
 pub mod store;
 pub mod structure;
 pub mod topic;
@@ -65,6 +66,7 @@ impl DeviceOperations for UnderscoreDevice {
         //      - running boolean
         //      - total_scan number
         //      - joined_scan number
+        //      - instances json
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here

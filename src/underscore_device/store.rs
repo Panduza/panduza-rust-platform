@@ -10,7 +10,6 @@ use panduza_platform_core::{Device, Error};
 ///     "manuf.model" : {
 ///         "description" : "text"
 ///         "settings": {}  -> description of the possible settings for the driver
-///         "instances": {} -> json that can be copy/past in the tree.json
 ///     }
 /// }
 ///
