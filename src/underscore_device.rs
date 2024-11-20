@@ -62,12 +62,6 @@ impl DeviceOperations for UnderscoreDevice {
         // state of each devices
         let mut interface_devices = device.create_interface("devices").finish();
 
-        // scanner -> interface to control a scan session
-        //      - running boolean
-        //      - total_scan number
-        //      - joined_scan number
-        //      - instances json
-
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
         let pack_clone2 = self.pack.clone();
