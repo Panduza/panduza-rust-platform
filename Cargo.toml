@@ -6,7 +6,8 @@ edition = "2021"
 
 [dependencies]
 
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "next_gen", features = [
+# Main base code for Panduza platform and plugins
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
     "log",
 ] }
 
