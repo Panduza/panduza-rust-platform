@@ -1,3 +1,4 @@
+pub mod att;
 pub mod pack;
 pub mod pack_inner;
 pub mod structure;
@@ -56,10 +57,17 @@ impl DeviceOperations for UnderscoreDevice {
         let mut interface_devices = device.create_interface("devices").finish();
 
         // store -> json with all the possible device that can be created + hunted instances found on the computer
-        // hunt -> interface to control a hunting session
+        // {
+        //      "manuf.model" : {
+        //          "description" : "text"
+        //          "settings": {}  -> description of the possible settings for the driver
+        //          "instances": {} -> json that can be copy/past in the tree.json
+        //      }
+        // }
+        // scanner -> interface to control a scan session
         //      - running boolean
-        //      - total_hunter number
-        //      - joined_hunter number
+        //      - total_scan number
+        //      - joined_scan number
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
