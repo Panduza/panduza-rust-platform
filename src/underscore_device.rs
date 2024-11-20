@@ -53,17 +53,13 @@ impl DeviceOperations for UnderscoreDevice {
     ///
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         //
+        // Mount the store
+        att::store::mount(device).await?;
+
+        //
         // state of each devices
         let mut interface_devices = device.create_interface("devices").finish();
 
-        // store -> json with all the possible device that can be created + hunted instances found on the computer
-        // {
-        //      "manuf.model" : {
-        //          "description" : "text"
-        //          "settings": {}  -> description of the possible settings for the driver
-        //          "instances": {} -> json that can be copy/past in the tree.json
-        //      }
-        // }
         // scanner -> interface to control a scan session
         //      - running boolean
         //      - total_scan number
