@@ -1,6 +1,6 @@
-pub mod element;
 pub mod pack;
 pub mod pack_inner;
+pub mod structure;
 pub mod topic;
 
 use async_trait::async_trait;
@@ -55,6 +55,12 @@ impl DeviceOperations for UnderscoreDevice {
         // state of each devices
         let mut interface_devices = device.create_interface("devices").finish();
 
+        // store -> json with all the possible device that can be created + hunted instances found on the computer
+        // hunt -> interface to control a hunting session
+        //      - running boolean
+        //      - total_hunter number
+        //      - joined_hunter number
+
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
         let pack_clone2 = self.pack.clone();
@@ -93,7 +99,8 @@ impl DeviceOperations for UnderscoreDevice {
                         lock.get_mut(&status.0)
                             .unwrap()
                             .set(JsonCodec::from(json!({
-                                "state": status.1.to_string()
+                                "state": status.1.to_string(),
+                                "alerts": status.2
                             })))
                             .await?;
                     }
@@ -127,8 +134,8 @@ impl DeviceOperations for UnderscoreDevice {
 
                     println!("$$$$$$$$$$ structure change ****");
 
-                    let structure = pack_clone3.device_structure_as_json_value().await;
-                    // println!("structure {:?}", structure);
+                    let structure = pack_clone3.device_structure_as_json_value().await.unwrap();
+                    println!("structure {:?}", structure);
 
                     structure_att.set(JsonCodec::from(structure)).await.unwrap();
                 }

@@ -1,18 +1,23 @@
+use super::{
+    structure::{
+        attribute::AttributElement,
+        instance::{Alert, InstanceElement},
+        Structure,
+    },
+    Topic,
+};
+use crate::underscore_device::structure::class::ClassElement;
+use panduza_platform_core::{
+    device::State, AlertNotification, Error, StateNotification, StructuralNotification,
+};
 use std::sync::Arc;
-
-use crate::underscore_device::element::InfoElement;
-use panduza_platform_core::{device::State, StateNotification, StructuralNotification};
-use std::collections::HashMap;
 use tokio::sync::Notify;
-
-use super::{element::InfoElementInstance, Topic};
-// use panduza_platform_core
 
 pub struct InfoPackInner {
     ///
     ///
     ///
-    instances: HashMap<String, InfoElement>,
+    structure: Structure,
 
     ///
     /// Notified when a device status change
@@ -30,9 +35,19 @@ impl InfoPackInner {
     ///
     pub fn new() -> InfoPackInner {
         InfoPackInner {
-            instances: HashMap::new(),
+            structure: Structure::default(),
             instance_status_change_notifier: Arc::new(Notify::new()),
             instance_structure_change_notifier: Arc::new(Notify::new()),
+        }
+    }
+
+    ///
+    /// Create a new instance if this instance does not already exist
+    ///
+    pub fn create_instance_if_not_exists(&mut self, instance_name: &String) {
+        if !self.structure.contains_instance(&instance_name) {
+            self.structure
+                .insert_instance(instance_name.clone(), InstanceElement::default());
         }
     }
 
@@ -43,24 +58,47 @@ impl InfoPackInner {
         let topic = Topic::from_string(n.topic.clone());
         // println!("{:?}", p.device);
 
-        let instance_name = topic.device;
+        let instance_name = &topic.instance;
 
-        // if the instance does not exist, create it
-        if !self.instances.contains_key(&instance_name) {
-            self.instances.insert(
-                instance_name.clone(),
-                InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
-            );
-        }
+        //
+        // Create the instance if not already created
+        self.create_instance_if_not_exists(instance_name);
 
-        let instance = self.instances.get_mut(&instance_name).unwrap();
-        match instance {
-            InfoElement::Instance(info_element_instance) => {
-                info_element_instance.set_state(n.state.clone());
-            }
-            InfoElement::Attribute(_element_attribute) => todo!(),
-            InfoElement::Interface(_element_interface) => todo!(),
-        }
+        //
+        // Instance MUST now exist
+        let instance = self
+            .structure
+            .get_mut_instance(instance_name)
+            .ok_or(Error::Wtf)
+            .unwrap();
+
+        instance.set_state(n.state.clone());
+
+        self.instance_status_change_notifier.notify_waiters();
+    }
+
+    ///
+    ///
+    ///
+    pub fn process_alert(&mut self, n: AlertNotification) {
+        let topic = Topic::from_string(n.topic.clone());
+        // println!("{:?}", p.device);
+
+        let instance_name = &topic.instance;
+
+        //
+        // Create the instance if not already created
+        self.create_instance_if_not_exists(instance_name);
+
+        //
+        // Instance MUST now exist
+        let instance = self
+            .structure
+            .get_mut_instance(instance_name)
+            .ok_or(Error::Wtf)
+            .unwrap();
+
+        instance.add_alert(n.into());
 
         self.instance_status_change_notifier.notify_waiters();
     }
@@ -68,81 +106,83 @@ impl InfoPackInner {
     ///
     /// Process an element creation notification
     ///
-    pub fn process_element_creation(&mut self, n: &StructuralNotification) {
+    pub fn process_element_creation(&mut self, n: StructuralNotification) -> Result<(), Error> {
         let topic = Topic::from_string(n.topic());
 
-        let instance_name = topic.device;
+        let instance_name = &topic.instance;
 
-        if !self.instances.contains_key(&instance_name) {
-            self.instances.insert(
-                instance_name.clone(),
-                InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
-            );
-        }
+        //
+        // Create the instance if not already created
+        self.create_instance_if_not_exists(instance_name);
 
-        let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
+        //
+        // Instance MUST now exist
+        let instance = self
+            .structure
+            .get_mut_instance(instance_name)
+            .ok_or(Error::Wtf)
+            .unwrap();
 
-        let o = InfoElement::from(n.clone());
-
-        instance.insert(topic.layers, o).unwrap();
-
-        // match n {
-        //     StructuralNotification::Attribute(_attribute_notification) => {
-
-        //     }
-        //     StructuralNotification::Interface(_interface_notification) => {
-        //         let instance_name = topic.device;
-
-        //         if !self.instances.contains_key(&instance_name) {
-        //             self.instances.insert(
-        //                 instance_name.clone(),
-        //                 InfoElement::Instance(InfoElementInstance::new(instance_name.clone())),
-        //             );
-        //         }
-
-        //         let instance: &mut InfoElement = self.instances.get_mut(&instance_name).unwrap();
-
-        //         let o = InfoElement::from(n.clone());
-
-        //         instance.insert(topic.layers, o).unwrap();
-        //     }
-        // }
-
-        self.instance_structure_change_notifier.notify_waiters();
-    }
-
-    ///
-    ///
-    pub fn pack_instance_status(&self) -> Vec<(String, State)> {
-        let mut r = Vec::new();
-        // instance name
-        // instance state
-        for (_key, value) in (&self.instances).into_iter() {
-            match value {
-                InfoElement::Instance(info_element_instance) => {
-                    r.push((
-                        info_element_instance.name.clone(),
-                        info_element_instance.state.clone(),
-                    ));
+        match n {
+            StructuralNotification::Attribute(_attribute_notification) => {
+                let new_attribute = AttributElement::from(_attribute_notification);
+                //
+                // You have to insert the element in the instance
+                if topic.layers_len() == 1 {
+                    instance.insert_attribute(topic.first_layer().clone(), new_attribute);
                 }
-                InfoElement::Attribute(_element_attribute) => todo!(),
-                InfoElement::Interface(_element_interface) => todo!(),
+                //
+                //
+                else {
+                    let mut layers = topic.layers.clone();
+                    // println!("---------- {:?}", layers);
+                    layers.remove(layers.len() - 1);
+                    // println!("---------- {:?}", layers);
+                    let class = instance.get_mut_class_from_layers(&layers).unwrap();
+                    class.insert_attribute(topic.last_layer().clone(), new_attribute);
+                }
+            }
+            StructuralNotification::Interface(_interface_notification) => {
+                let new_class = ClassElement::from(_interface_notification);
+                //
+                // You have to insert the element in the instance
+                if topic.layers_len() == 1 {
+                    instance.insert_class(topic.first_layer().clone(), new_class);
+                }
+                //
+                //
+                else {
+                    let mut layers = topic.layers.clone();
+                    layers.remove(layers.len() - 1);
+                    let class =
+                        instance
+                            .get_mut_class_from_layers(&layers)
+                            .ok_or(Error::InternalLogic(format!(
+                                "cannot find class from layer {:?}",
+                                &layers
+                            )))?;
+                    class.insert_class(topic.last_layer().clone(), new_class);
+                }
             }
         }
-        r
+
+        self.instance_structure_change_notifier.notify_waiters();
+
+        Ok(())
+    }
+
+    ///
+    ///
+    pub fn pack_instance_status(&self) -> Vec<(String, State, Vec<Alert>)> {
+        self.structure.pack_instance_status()
     }
 
     ///
     ///
     ///
-    pub fn structure_into_json_value(&self) -> serde_json::Value {
-        let mut p = serde_json::Map::new();
-
-        for (name, e) in &self.instances {
-            p.insert(name.clone(), e.into_json_value());
-        }
-
-        p.into()
+    pub fn structure_into_json_value(&self) -> Result<serde_json::Value, Error> {
+        serde_json::to_value(&self.structure)
+            .map_err(|e| Error::SerializeFailure(format!("{:?}", e)))
     }
 
     ///

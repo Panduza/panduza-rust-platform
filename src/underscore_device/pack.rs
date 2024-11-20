@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use panduza_platform_core::{device::State, Notification};
+use panduza_platform_core::{device::State, Error, Notification};
 use tokio::sync::Notify;
 
-use super::pack_inner::InfoPackInner;
+use super::{pack_inner::InfoPackInner, structure::instance::Alert};
 
 #[derive(Clone)]
 pub struct InfoPack {
@@ -24,7 +24,7 @@ impl InfoPack {
     }
 
     pub fn process_notifications(&mut self, notifications: Vec<Notification>) {
-        for not in &notifications {
+        for not in notifications {
             match not {
                 Notification::StateChanged(state_notification) => {
                     // println!("state {:?}", state_notification);
@@ -32,30 +32,28 @@ impl InfoPack {
                     self.inner
                         .lock()
                         .unwrap()
-                        .process_state_changed(state_notification);
+                        .process_state_changed(&state_notification);
                 }
                 Notification::ElementCreated(structural_notification) => {
-                    // println!("create {:?}", structural_notification);
-
                     self.inner
                         .lock()
                         .unwrap()
-                        .process_element_creation(structural_notification);
+                        .process_element_creation(structural_notification)
+                        .unwrap();
                 }
                 Notification::ElementDeleted(_structural_notification) => {
                     // println!("deleted {:?}", structural_notification);
+                }
+                Notification::Alert(alert_notification) => {
+                    self.inner.lock().unwrap().process_alert(alert_notification);
                 }
             }
         }
     }
 
-    pub fn pack_instance_status(&self) -> Vec<(String, State)> {
+    pub fn pack_instance_status(&self) -> Vec<(String, State, Vec<Alert>)> {
         self.inner.lock().unwrap().pack_instance_status()
     }
-
-    // pub fn devices(&self) -> Arc<Mutex<InfoPackInner>> {
-    //     self.inner.clone()
-    // }
 
     ///
     ///
@@ -72,7 +70,7 @@ impl InfoPack {
             .instance_structure_change_notifier()
     }
 
-    pub async fn device_structure_as_json_value(&self) -> serde_json::Value {
+    pub async fn device_structure_as_json_value(&self) -> Result<serde_json::Value, Error> {
         self.inner.lock().unwrap().structure_into_json_value()
     }
 }
