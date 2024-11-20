@@ -1,6 +1,7 @@
 pub mod att;
 pub mod pack;
 pub mod pack_inner;
+pub mod store;
 pub mod structure;
 pub mod topic;
 
@@ -54,7 +55,7 @@ impl DeviceOperations for UnderscoreDevice {
     async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
         //
         // Mount the store
-        att::store::mount(device).await?;
+        store::mount(device.clone()).await?;
 
         //
         // state of each devices

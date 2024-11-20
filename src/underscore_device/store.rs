@@ -1,9 +1,11 @@
-use panduza_platform_core::Device;
+pub mod data;
+
+use panduza_platform_core::{Device, Error};
 
 ///
 /// Mount the store attribute
 ///
-/// json with all the possible device that can be created + scanned instances found on the server
+/// json with all the possible driver that can be instanciated + scanned instances found on the server
 /// {
 ///     "manuf.model" : {
 ///         "description" : "text"
@@ -12,12 +14,16 @@ use panduza_platform_core::Device;
 ///     }
 /// }
 ///
-pub async fn mount(mut device: Device) -> Result<(), Error> {
+pub async fn mount(mut instance: Device) -> Result<(), Error> {
     //
     // Create the attribute
-    let att_store = device
+    let att_store = instance
         .create_attribute("store")
         .with_ro()
         .finish_as_json()
         .await?;
+
+    //
+    //
+    Ok(())
 }
