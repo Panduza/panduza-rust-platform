@@ -1,3 +1,4 @@
+use panduza_platform_core::Error;
 use panduza_platform_core::Store;
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -42,7 +43,7 @@ impl SharedStore {
     ///
     ///
     ///
-    pub async fn into_json_value(&mut self, store: Store) -> Result<JsonValue, Error> {
+    pub async fn into_json_value(&self) -> Result<JsonValue, Error> {
         self.store.lock().await.into_json_value()
     }
 }
