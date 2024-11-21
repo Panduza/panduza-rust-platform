@@ -228,6 +228,9 @@ impl PluginsManager {
         Ok(false)
     }
 
+    ///
+    ///
+    ///
     pub fn pull_notifications(&self) -> Result<Vec<Notification>, Error> {
         //
         //
@@ -238,5 +241,14 @@ impl PluginsManager {
         }
 
         Ok(results)
+    }
+
+    ///
+    /// Merge all the stores from plugins into a single one
+    ///
+    pub fn merge_stores(&mut self, store: &mut Store) {
+        for ph in (&self.handlers).into_iter() {
+            store.extend_by_copy(&ph.store);
+        }
     }
 }

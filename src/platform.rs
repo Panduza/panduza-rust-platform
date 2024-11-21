@@ -31,7 +31,6 @@ pub enum ServiceRequest {
     Boot,
     StartBroker,
     LoadPlugins,
-    LoadStore,
     LoadDeviceTree,
     LoadLocalRuntime,
     LoadUnderscoreDevice,
@@ -178,9 +177,6 @@ impl Platform {
                         ServiceRequest::LoadPlugins => {
                             self.service_load_plugins().await;
                         },
-                        ServiceRequest::LoadStore => {
-                            self.service_load_store().await;
-                        }
                         ServiceRequest::LoadDeviceTree => {
                             self.service_load_device_tree().await;
                         },
@@ -294,11 +290,6 @@ impl Platform {
         //
         //
         self.request_sender
-            .try_send(ServiceRequest::LoadStore)
-            .unwrap();
-        //
-        //
-        self.request_sender
             .try_send(ServiceRequest::LoadUnderscoreDevice)
             .unwrap();
         //
@@ -398,14 +389,6 @@ impl Platform {
         self.logger.info("----- SERVICE : LOAD PLUGINS -----");
 
         self.plugin_manager.load_system_plugins().unwrap();
-    }
-
-    /// -------------------------------------------------------------
-    ///
-    async fn service_load_store(&mut self) {
-        //
-        // info
-        self.logger.info("----- SERVICE : LOAD STORE -----");
     }
 
     /// -------------------------------------------------------------
