@@ -9,7 +9,7 @@ pub mod topic;
 use async_trait::async_trait;
 use futures::lock::Mutex;
 use pack::InfoPack;
-use panduza_platform_core::{AttOnlyMsgAtt, Device, DeviceOperations, Error, JsonCodec};
+use panduza_platform_core::{AttOnlyMsgAtt, Device, DriverOperations, Error, JsonCodec};
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::time::sleep;
@@ -49,24 +49,24 @@ impl UnderscoreDevice {
 }
 
 #[async_trait]
-impl DeviceOperations for UnderscoreDevice {
+impl DriverOperations for UnderscoreDevice {
     ///
     ///
     ///
-    async fn mount(&mut self, mut device: Device) -> Result<(), Error> {
+    async fn mount(&mut self, mut instance: Device) -> Result<(), Error> {
         //
         // Mount the store
-        store::mount(device.clone()).await?;
+        store::mount(instance.clone()).await?;
 
         //
         // state of each devices
-        let mut interface_devices = device.create_interface("devices").finish();
+        let mut interface_devices = instance.create_interface("devices").finish();
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
         let pack_clone2 = self.pack.clone();
         let instance_attributes_clone = self.instance_attributes.clone();
-        device
+        instance
             .spawn(async move {
                 //
                 // Clone the notifier from info pack
@@ -113,7 +113,7 @@ impl DeviceOperations for UnderscoreDevice {
 
         //
         // Structure of the devices
-        let structure_att = device
+        let structure_att = instance
             .create_attribute("structure")
             .message()
             .with_att_only_access()
@@ -121,7 +121,7 @@ impl DeviceOperations for UnderscoreDevice {
             .await;
 
         let pack_clone3 = self.pack.clone();
-        device
+        instance
             .spawn(async move {
                 //
                 //

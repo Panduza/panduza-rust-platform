@@ -1,6 +1,6 @@
 #![deny(
     while_true,
-//     improper_ctypes,
+    improper_ctypes,
 //     non_shorthand_field_patterns,
 //     no_mangle_generic_items,
 //     overflowing_literals,
@@ -15,16 +15,12 @@
 //     unused_parens,
 )]
 
-mod platform;
-pub use platform::Platform;
-
 mod device_tree;
+mod platform;
 mod plugins_manager;
 mod underscore_device;
 
-// use std::ffi::CStr;
-
-// use panduza_platform_core::Factory;
+pub use platform::Platform;
 
 // use panduza_platform_core::Plugin;
 // use panduza_platform_core::ProductionOrder;
