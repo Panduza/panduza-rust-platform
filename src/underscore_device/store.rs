@@ -2,7 +2,7 @@ pub mod data;
 
 use data::SharedStore;
 use panduza_platform_core::{Device, Error};
-use serder_json::json;
+use serde_json::json;
 
 ///
 /// Mount the store attribute
