@@ -246,9 +246,11 @@ impl PluginsManager {
     ///
     /// Merge all the stores from plugins into a single one
     ///
-    pub fn merge_stores(&mut self, store: &mut Store) {
+    pub fn merge_stores(&mut self) -> Store {
+        let mut store = Store::default();
         for ph in (&self.handlers).into_iter() {
             store.extend_by_copy(&ph.store);
         }
+        store
     }
 }

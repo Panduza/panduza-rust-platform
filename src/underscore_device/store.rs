@@ -1,5 +1,6 @@
 pub mod data;
 
+use data::SharedStore;
 use panduza_platform_core::{Device, Error};
 
 ///
@@ -13,7 +14,7 @@ use panduza_platform_core::{Device, Error};
 ///     }
 /// }
 ///
-pub async fn mount(mut instance: Device) -> Result<(), Error> {
+pub async fn mount(mut instance: Device, store: SharedStore) -> Result<(), Error> {
     //
     // Create the attribute
     let att_store = instance

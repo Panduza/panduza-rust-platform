@@ -12,6 +12,7 @@ use pack::InfoPack;
 use panduza_platform_core::{AttOnlyMsgAtt, Device, DriverOperations, Error, JsonCodec};
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
+use store::data::SharedStore;
 use tokio::time::sleep;
 pub use topic::Topic;
 
@@ -26,6 +27,11 @@ pub struct UnderscoreDevice {
     pack: InfoPack,
 
     ///
+    ///
+    ///
+    store: SharedStore,
+
+    ///
     /// Each device have an attribute to share its state
     /// This Map hold those attribute, the name of the device is the key.
     ///
@@ -36,11 +42,12 @@ impl UnderscoreDevice {
     ///
     /// Constructor
     ///
-    pub fn new() -> (UnderscoreDevice, InfoPack) {
+    pub fn new(store: SharedStore) -> (UnderscoreDevice, InfoPack) {
         let pack = InfoPack::new();
 
         let device = UnderscoreDevice {
             pack: pack.clone(),
+            store: store,
             instance_attributes: Arc::new(Mutex::new(HashMap::new())),
         };
 
@@ -56,7 +63,7 @@ impl DriverOperations for UnderscoreDevice {
     async fn mount(&mut self, mut instance: Device) -> Result<(), Error> {
         //
         // Mount the store
-        store::mount(instance.clone()).await?;
+        store::mount(instance.clone(), self.store.clone()).await?;
 
         //
         // state of each devices

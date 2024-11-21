@@ -1,3 +1,8 @@
+use crate::device_tree::DeviceTree;
+use crate::plugins_manager::PluginsManager;
+use crate::underscore_device::pack::InfoPack;
+use crate::underscore_device::store::data::SharedStore;
+use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
     create_task_channel, env, DeviceMonitor, Factory, Notification, ProductionOrder, Runtime,
@@ -17,10 +22,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinSet;
 
-use crate::device_tree::DeviceTree;
-use crate::plugins_manager::PluginsManager;
-use crate::underscore_device::pack::InfoPack;
-use crate::underscore_device::UnderscoreDevice;
+use panduza_platform_core::log_info;
 
 ///
 ///
@@ -94,6 +96,11 @@ pub struct Platform {
     ///
     ///
     new_notifications_notifier: Arc<Notify>,
+
+    ///
+    ///
+    ///
+    store: SharedStore,
 }
 
 impl Platform {
@@ -125,6 +132,8 @@ impl Platform {
 
             notifications: Arc::new(Mutex::new(Vec::new())),
             new_notifications_notifier: Arc::new(Notify::new()),
+
+            store: SharedStore::new(),
         };
     }
 
@@ -389,6 +398,10 @@ impl Platform {
         self.logger.info("----- SERVICE : LOAD PLUGINS -----");
 
         self.plugin_manager.load_system_plugins().unwrap();
+
+        self.store
+            .set_stores(self.plugin_manager.merge_stores())
+            .await;
     }
 
     /// -------------------------------------------------------------
@@ -455,11 +468,14 @@ impl Platform {
     async fn service_load_underscore_device(&mut self) {
         //
         // info
-        self.logger
-            .info("----- SERVICE : LOAD UNDERSCORE DEVICE -----");
+        log_info!(self.logger, "----- SERVICE : LOAD UNDERSCORE DEVICE -----");
 
-        let (underscore_device_operations, info_pack) = UnderscoreDevice::new();
+        //
+        //
+        let (underscore_device_operations, info_pack) = UnderscoreDevice::new(self.store.clone());
 
+        //
+        //
         let (mut monitor, mut device) = DeviceMonitor::new(
             self.reactor.as_ref().unwrap().clone(),
             None, // this device will manage info_pack and cannot use it to boot like other devices
