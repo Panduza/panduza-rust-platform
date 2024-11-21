@@ -25,5 +25,26 @@ pub async fn mount(mut instance: Device, store: SharedStore) -> Result<(), Error
 
     //
     //
+    let store_has_changed = store.change_notifier.clone();
+
+    //
+    //
+    instance
+        .spawn(async move {
+            //
+            loop {
+                //
+                // Wait for store change
+                store_has_changed.notified().await;
+
+                let value = store.into_json_value(store).unwrap();
+
+                att_store.set(value).await;
+            }
+        })
+        .await;
+
+    //
+    //
     Ok(())
 }

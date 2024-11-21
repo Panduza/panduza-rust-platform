@@ -1,4 +1,5 @@
 use panduza_platform_core::Store;
+use serde_json::Value as JsonValue;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
@@ -11,7 +12,7 @@ pub struct SharedStore {
     ///
     /// Notified when a data change
     ///
-    change_notifier: Arc<Notify>,
+    pub change_notifier: Arc<Notify>,
 
     ///
     ///
@@ -36,5 +37,12 @@ impl SharedStore {
     pub async fn set_stores(&mut self, store: Store) {
         self.store.lock().await.extend_by_copy(&store);
         self.change_notifier.notify_waiters();
+    }
+
+    ///
+    ///
+    ///
+    pub async fn into_json_value(&mut self, store: Store) -> Result<JsonValue, Error> {
+        self.store.lock().await.into_json_value()
     }
 }
