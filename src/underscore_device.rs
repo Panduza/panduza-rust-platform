@@ -9,7 +9,7 @@ pub mod topic;
 use async_trait::async_trait;
 use futures::lock::Mutex;
 use pack::InfoPack;
-use panduza_platform_core::{AttOnlyMsgAtt, DriverInstance, DriverOperations, Error, JsonCodec};
+use panduza_platform_core::{AttOnlyMsgAtt, DriverOperations, Error, Instance, JsonCodec};
 use scanner::data::ScannerDriver;
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
@@ -64,7 +64,7 @@ impl DriverOperations for UnderscoreDevice {
     ///
     ///
     ///
-    async fn mount(&mut self, mut instance: DriverInstance) -> Result<(), Error> {
+    async fn mount(&mut self, mut instance: Instance) -> Result<(), Error> {
         //
         // Mount the store
         store::mount(instance.clone(), self.store.clone()).await?;
@@ -164,7 +164,7 @@ impl DriverOperations for UnderscoreDevice {
     ///
     /// Easiest way to implement the reboot event
     ///
-    async fn wait_reboot_event(&mut self, mut _device: DriverInstance) {
+    async fn wait_reboot_event(&mut self, mut _device: Instance) {
         sleep(Duration::from_secs(5)).await;
     }
 }

@@ -1,4 +1,4 @@
-use panduza_platform_core::{driver_instance::State, AlertNotification};
+use panduza_platform_core::{instance::State, AlertNotification};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

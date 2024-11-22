@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use panduza_platform_core::{driver_instance::State, Error, Notification};
+use panduza_platform_core::{instance::State, Error, Notification};
 use tokio::sync::Notify;
 
 use super::{pack_inner::InfoPackInner, structure::instance::Alert};

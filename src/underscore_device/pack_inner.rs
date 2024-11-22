@@ -8,7 +8,7 @@ use super::{
 };
 use crate::underscore_device::structure::class::ClassElement;
 use panduza_platform_core::{
-    driver_instance::State, AlertNotification, Error, StateNotification, StructuralNotification,
+    instance::State, AlertNotification, Error, StateNotification, StructuralNotification,
 };
 use std::sync::Arc;
 use tokio::sync::Notify;

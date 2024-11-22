@@ -3,7 +3,7 @@ pub mod class;
 pub mod instance;
 
 use instance::{Alert, InstanceElement};
-use panduza_platform_core::driver_instance::State;
+use panduza_platform_core::instance::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
