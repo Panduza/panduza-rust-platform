@@ -6,8 +6,8 @@ use crate::underscore_device::store::data::SharedStore;
 use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, DeviceMonitor, Factory, Notification, ProductionOrder, Runtime,
-    TaskReceiver, TaskResult, TaskSender,
+    create_task_channel, env, DriverInstanceMonitor, Factory, Notification, ProductionOrder,
+    Runtime, TaskReceiver, TaskResult, TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
@@ -488,7 +488,7 @@ impl Platform {
 
         //
         //
-        let (mut monitor, mut device) = DeviceMonitor::new(
+        let (mut monitor, mut device) = DriverInstanceMonitor::new(
             self.reactor.as_ref().unwrap().clone(),
             None, // this device will manage info_pack and cannot use it to boot like other devices
             Box::new(underscore_device_operations),

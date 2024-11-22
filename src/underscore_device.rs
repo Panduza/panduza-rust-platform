@@ -9,7 +9,7 @@ pub mod topic;
 use async_trait::async_trait;
 use futures::lock::Mutex;
 use pack::InfoPack;
-use panduza_platform_core::{AttOnlyMsgAtt, Device, DriverOperations, Error, JsonCodec};
+use panduza_platform_core::{AttOnlyMsgAtt, DriverInstance, DriverOperations, Error, JsonCodec};
 use scanner::data::ScannerDriver;
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
@@ -64,7 +64,7 @@ impl DriverOperations for UnderscoreDevice {
     ///
     ///
     ///
-    async fn mount(&mut self, mut instance: Device) -> Result<(), Error> {
+    async fn mount(&mut self, mut instance: DriverInstance) -> Result<(), Error> {
         //
         // Mount the store
         store::mount(instance.clone(), self.store.clone()).await?;
@@ -75,7 +75,7 @@ impl DriverOperations for UnderscoreDevice {
 
         //
         // state of each devices
-        let mut interface_devices = instance.create_interface("devices").finish();
+        let mut interface_devices = instance.create_class("devices").finish();
 
         // I need to spawn a task to watch if a device status has changed, if yes update
         // It is a better design to create a task that will always live here
@@ -164,7 +164,7 @@ impl DriverOperations for UnderscoreDevice {
     ///
     /// Easiest way to implement the reboot event
     ///
-    async fn wait_reboot_event(&mut self, mut _device: Device) {
+    async fn wait_reboot_event(&mut self, mut _device: DriverInstance) {
         sleep(Duration::from_secs(5)).await;
     }
 }

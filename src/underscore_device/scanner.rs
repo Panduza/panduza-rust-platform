@@ -2,7 +2,9 @@ pub mod data;
 
 use data::ScannerDriver;
 use panduza_platform_core::log_debug;
-use panduza_platform_core::{spawn_on_command, BooleanAttServer, Device, DeviceLogger, Error};
+use panduza_platform_core::{
+    spawn_on_command, BooleanAttServer, DeviceLogger, DriverInstance, Error,
+};
 
 ///
 /// Mount the scanner attribute
@@ -13,10 +15,10 @@ use panduza_platform_core::{spawn_on_command, BooleanAttServer, Device, DeviceLo
 ///      - joined_scan number
 ///      - instances json
 ///
-pub async fn mount(mut instance: Device, driver: ScannerDriver) -> Result<(), Error> {
+pub async fn mount(mut instance: DriverInstance, driver: ScannerDriver) -> Result<(), Error> {
     //
     // Create the attribute
-    let mut class_scanner = instance.create_interface("scanner").finish();
+    let mut class_scanner = instance.create_class("scanner").finish();
 
     let att_running = class_scanner
         .create_attribute("running")
