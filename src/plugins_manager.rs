@@ -4,6 +4,7 @@ use panduza_platform_core::Notification;
 use panduza_platform_core::PlatformLogger;
 use panduza_platform_core::Plugin;
 use panduza_platform_core::ProductionOrder;
+use panduza_platform_core::Store;
 use std::ffi::CStr;
 use std::ffi::OsStr;
 use std::fs;
@@ -21,7 +22,7 @@ pub struct PluginHandler {
     interface: Plugin,
     ///
     ///
-    producer_refs: Vec<String>,
+    store: Store,
 }
 
 impl PluginHandler {
@@ -52,7 +53,7 @@ impl PluginHandler {
 
             //
             //
-            let producer_refs = interface.producer_refs_as_obj().unwrap();
+            let store = interface.store_as_obj().unwrap();
 
             //
             // Compose the handler
@@ -60,15 +61,16 @@ impl PluginHandler {
             return Ok(PluginHandler {
                 _object: object,
                 interface: interface,
-                producer_refs: producer_refs,
+                store: store,
             });
         }
     }
 
     ///
+    /// Const ref on store
     ///
-    pub fn producer_refs(&self) -> &Vec<String> {
-        &self.producer_refs
+    pub fn store(&self) -> &Store {
+        &self.store
     }
 
     ///
@@ -81,7 +83,7 @@ impl PluginHandler {
     ///
     pub fn produce(&self, order: &ProductionOrder) -> Result<bool, Error> {
         unsafe {
-            if self.producer_refs.contains(&order.dref) {
+            if self.store.contains(&order.dref) {
                 let order_as_c_string = order.to_c_string()?;
                 let ret = (self.interface.produce)(order_as_c_string.as_c_str().as_ptr());
                 println!("==> {}", ret);
@@ -116,6 +118,41 @@ impl PluginHandler {
             let obj = serde_json::from_value(json.clone()).map_err(|e| {
                 Error::InvalidArgument(format!(
                     "Failed to deserialize 'Notification' from JSON string: {:?} {:?}",
+                    e, json
+                ))
+            })?;
+
+            // println!("pulll {:?}", obj);
+
+            Ok(obj)
+        }
+    }
+
+    ///
+    ///
+    ///
+    pub fn scan(&self) -> Result<Vec<ProductionOrder>, Error> {
+        unsafe {
+            let scan_as_ptr = (self.interface.scan)();
+
+            //
+            //
+            if scan_as_ptr.is_null() {
+                return Err(Error::InvalidArgument("Null C string pointer".to_string()));
+            }
+            //
+            //
+            let c_str = CStr::from_ptr(scan_as_ptr);
+            let str = c_str
+                .to_str()
+                .map_err(|e| Error::InvalidArgument(format!("Invalid C string: {:?}", e)))?;
+
+            let json: serde_json::Value = serde_json::from_str(str)
+                .map_err(|e| Error::InvalidArgument(format!("Invalid JSON: {:?}", e)))?;
+
+            let obj = serde_json::from_value(json.clone()).map_err(|e| {
+                Error::InvalidArgument(format!(
+                    "Failed to deserialize 'Scan' from JSON string: {:?} {:?}",
                     e, json
                 ))
             })?;
@@ -199,10 +236,8 @@ impl PluginsManager {
         let handler = PluginHandler::from_filename(filename)?;
 
         // Info
-        self.logger.info(format!(
-            "         PRODUCERS : {:?}",
-            handler.producer_refs()
-        ));
+        self.logger
+            .info(format!("         PRODUCERS : {:?}", handler.store()));
 
         //
         // Append the plugin
@@ -228,6 +263,9 @@ impl PluginsManager {
         Ok(false)
     }
 
+    ///
+    ///
+    ///
     pub fn pull_notifications(&self) -> Result<Vec<Notification>, Error> {
         //
         //
@@ -238,5 +276,27 @@ impl PluginsManager {
         }
 
         Ok(results)
+    }
+
+    ///
+    /// Merge all the stores from plugins into a single one
+    ///
+    pub fn merge_stores(&mut self) -> Store {
+        let mut store = Store::default();
+        for ph in (&self.handlers).into_iter() {
+            store.extend_by_copy(&ph.store);
+        }
+        store
+    }
+
+    ///
+    ///
+    ///
+    pub fn scan(&self) -> Result<Vec<ProductionOrder>, Error> {
+        let mut v = Vec::new();
+        for ph in (&self.handlers).into_iter() {
+            v.extend(ph.scan()?);
+        }
+        Ok(v)
     }
 }

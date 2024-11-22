@@ -5,4 +5,7 @@
         // ".\\Cargo.toml",
     ],
     "rust-analyzer.showUnlinkedFileNotification": false,
+    "rust-analyzer.cargo.features": [
+        "built-in-drivers"
+    ]
 }

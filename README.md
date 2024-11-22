@@ -8,12 +8,13 @@ You must install Rust and Cargo then execute this commands
 ```bash
 # Enable fmt tracing (std terminal logs)
 cargo run --features log
+```
 
-# Enable fmt tracing + broker logs 
-cargo run --features log, broker-log
+To embbed built-in drivers
 
-# Enable tokio console tracing
-RUSTFLAGS="--cfg tokio_unstable" cargo run --features trac-console
+```bash
+# Enable fmt tracing (std terminal logs)
+cargo run --features log,built-in-drivers
 ```
 
 ## Manage log levels
@@ -39,7 +40,10 @@ tracing = { version = "0.1", features = [
 ]}
 ```
 
-# Linux video install :
+# Others
 
-sudo apt-get install libv4l-dev
-sudo apt-get install libclang-dev
+
+```bash
+# Enable tokio console tracing
+RUSTFLAGS="--cfg tokio_unstable" cargo run --features trac-console
+```

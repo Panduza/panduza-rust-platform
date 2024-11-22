@@ -1,7 +1,13 @@
+use crate::device_tree::DeviceTree;
+use crate::plugins_manager::PluginsManager;
+use crate::underscore_device::pack::InfoPack;
+use crate::underscore_device::scanner::data::ScannerDriver;
+use crate::underscore_device::store::data::SharedStore;
+use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, DeviceMonitor, Factory, Notification, ProductionOrder, Runtime,
-    TaskReceiver, TaskResult, TaskSender,
+    create_task_channel, env, Factory, InstanceMonitor, Notification, ProductionOrder, Runtime,
+    Store, TaskReceiver, TaskResult, TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
@@ -17,10 +23,7 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::{Mutex, Notify};
 use tokio::task::JoinSet;
 
-use crate::device_tree::DeviceTree;
-use crate::plugins_manager::PluginsManager;
-use crate::underscore_device::pack::InfoPack;
-use crate::underscore_device::UnderscoreDevice;
+use panduza_platform_core::log_info;
 
 ///
 ///
@@ -35,6 +38,7 @@ pub enum ServiceRequest {
     LoadLocalRuntime,
     LoadUnderscoreDevice,
     ProduceDevice(ProductionOrder),
+    StartScanning,
 }
 
 /// Platform
@@ -94,6 +98,20 @@ pub struct Platform {
     ///
     ///
     new_notifications_notifier: Arc<Notify>,
+
+    ///
+    ///
+    ///
+    store: SharedStore,
+
+    built_in_store: Store,
+
+    ///
+    ///
+    ///
+    scanner_driver: ScannerDriver,
+
+    local_runtime_po_sender: Option<tokio::sync::mpsc::Sender<ProductionOrder>>,
 }
 
 impl Platform {
@@ -125,6 +143,12 @@ impl Platform {
 
             notifications: Arc::new(Mutex::new(Vec::new())),
             new_notifications_notifier: Arc::new(Notify::new()),
+
+            store: SharedStore::new(),
+            built_in_store: Store::default(),
+            scanner_driver: ScannerDriver::new(),
+
+            local_runtime_po_sender: None,
         };
     }
 
@@ -187,8 +211,11 @@ impl Platform {
                             self.service_load_underscore_device().await;
                         },
                         ServiceRequest::ProduceDevice(order) => {
-                            self.service_produce_device(&order).await;
-                        }
+                            self.service_produce_device(order).await;
+                        },
+                        ServiceRequest::StartScanning => {
+                            self.service_start_scanning().await;
+                        },
                     }
                 },
                 _ = tokio::time::sleep(Duration::from_secs(1)) => {
@@ -389,6 +416,10 @@ impl Platform {
         self.logger.info("----- SERVICE : LOAD PLUGINS -----");
 
         self.plugin_manager.load_system_plugins().unwrap();
+
+        self.store
+            .set_stores(self.plugin_manager.merge_stores())
+            .await;
     }
 
     /// -------------------------------------------------------------
@@ -427,8 +458,16 @@ impl Platform {
         //
         //
         // mut
-        let factory = Factory::new();
-        // factory.add_producers(plugin_producers());
+        let mut factory = Factory::new();
+
+        //
+        // Append built-in drivers
+        #[cfg(feature = "built-in-drivers")]
+        factory.add_producers(crate::built_in::plugin_producers());
+
+        //
+        //
+        self.built_in_store = factory.store();
 
         //
         let settings = ReactorSettings::new("localhost", 1883, None);
@@ -441,9 +480,9 @@ impl Platform {
         //
         let runtime = Runtime::new(factory, reactor);
 
-        // //
-        // //
-        // POS = Some(runtime.clone_production_order_sender());
+        //
+        //
+        self.local_runtime_po_sender = Some(runtime.clone_production_order_sender());
 
         //
         // Start thread
@@ -455,12 +494,16 @@ impl Platform {
     async fn service_load_underscore_device(&mut self) {
         //
         // info
-        self.logger
-            .info("----- SERVICE : LOAD UNDERSCORE DEVICE -----");
+        log_info!(self.logger, "----- SERVICE : LOAD UNDERSCORE DEVICE -----");
 
-        let (underscore_device_operations, info_pack) = UnderscoreDevice::new();
+        //
+        //
+        let (underscore_device_operations, info_pack) =
+            UnderscoreDevice::new(self.store.clone(), self.scanner_driver.clone());
 
-        let (mut monitor, mut device) = DeviceMonitor::new(
+        //
+        //
+        let (mut monitor, mut device) = InstanceMonitor::new(
             self.reactor.as_ref().unwrap().clone(),
             None, // this device will manage info_pack and cannot use it to boot like other devices
             Box::new(underscore_device_operations),
@@ -493,17 +536,51 @@ impl Platform {
         self.task_sender
             .spawn(Self::task_process_notifications(info_pack, n_notifier, n_n).boxed())
             .unwrap();
+
+        //
+        //
+        self.task_sender
+            .spawn(
+                Self::task_process_scanner(
+                    self.scanner_driver.clone(),
+                    self.request_sender.clone(),
+                )
+                .boxed(),
+            )
+            .unwrap();
     }
 
     /// -------------------------------------------------------------
     ///
-    async fn service_produce_device(&mut self, po: &ProductionOrder) {
+    async fn service_produce_device(&mut self, po: ProductionOrder) {
         //
         // info
         self.logger.info("----- SERVICE : PRODUCE DEVICE -----");
         self.logger.info(format!("ORDER: {:?}", po));
 
-        let _res = self.plugin_manager.produce(po).unwrap();
+        if self.built_in_store.contains(&po.dref()) {
+            log_info!(self.logger, "LOCAL PRODUCER");
+            self.local_runtime_po_sender
+                .as_ref()
+                .unwrap()
+                .try_send(po)
+                .unwrap();
+        } else {
+            log_info!(self.logger, "PLUGIN PRODUCER");
+            let _res = self.plugin_manager.produce(&po).unwrap();
+        }
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_start_scanning(&mut self) {
+        //
+        // info
+        self.logger.info("----- SERVICE : START SCANNING -----");
+        // self.logger.info(format!("ORDER: {:?}", po));
+
+        let _res = self.plugin_manager.scan().unwrap();
+        println!("{:?}", _res);
     }
 
     /// -------------------------------------------------------------
@@ -520,6 +597,22 @@ impl Platform {
             lock.clear();
             drop(lock);
             info_pack.process_notifications(copy_notifs);
+        }
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn task_process_scanner(
+        driver: ScannerDriver,
+        request_sender: Sender<ServiceRequest>,
+    ) -> TaskResult {
+        loop {
+            driver.request_notifier.notified().await;
+            if !driver.is_already_running().await {
+                request_sender
+                    .try_send(ServiceRequest::StartScanning)
+                    .unwrap();
+            }
         }
     }
 }

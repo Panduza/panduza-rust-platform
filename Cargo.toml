@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 
 # Main base code for Panduza platform and plugins
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "store", features = [
     "log",
 ] }
 # panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.0", features = [
@@ -101,6 +101,15 @@ rust_decimal_macros = "1.35"
 
 # x264 = "0.3"
 
+
+# --- BUILT-IN DRIVERS
+# crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
+# ---
+# Korad devices
+pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", branch = "store", features = [
+    "log",
+], optional = true }
+
 [features]
 
 # Enable tracing in stdout
@@ -110,3 +119,9 @@ broker-log = []
 
 # Enable tracing in tokio console
 # trac-console = [ "console-subscriber" ]
+
+
+# ---
+# Integrate some generic drivers directly into the platform
+# 
+built-in-drivers = ["pza-plugin-korad"]
