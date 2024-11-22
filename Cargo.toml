@@ -106,7 +106,7 @@ rust_decimal_macros = "1.35"
 # crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
 # ---
 # Korad devices
-pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", branch = "store", features = [
+pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", branch = "main", features = [
     "log",
 ], optional = true }
 
