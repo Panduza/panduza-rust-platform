@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use futures::lock::Mutex;
 use pack::InfoPack;
 use panduza_platform_core::{AttOnlyMsgAtt, Device, DriverOperations, Error, JsonCodec};
+use scanner::data::ScannerDriver;
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use store::data::SharedStore;
@@ -31,6 +32,8 @@ pub struct UnderscoreDevice {
     ///
     store: SharedStore,
 
+    scanner_driver: ScannerDriver,
+
     ///
     /// Each device have an attribute to share its state
     /// This Map hold those attribute, the name of the device is the key.
@@ -42,12 +45,13 @@ impl UnderscoreDevice {
     ///
     /// Constructor
     ///
-    pub fn new(store: SharedStore) -> (UnderscoreDevice, InfoPack) {
+    pub fn new(store: SharedStore, scanner_driver: ScannerDriver) -> (UnderscoreDevice, InfoPack) {
         let pack = InfoPack::new();
 
         let device = UnderscoreDevice {
             pack: pack.clone(),
             store: store,
+            scanner_driver: scanner_driver,
             instance_attributes: Arc::new(Mutex::new(HashMap::new())),
         };
 
@@ -64,6 +68,10 @@ impl DriverOperations for UnderscoreDevice {
         //
         // Mount the store
         store::mount(instance.clone(), self.store.clone()).await?;
+
+        //
+        //
+        scanner::mount(instance.clone(), self.scanner_driver.clone()).await?;
 
         //
         // state of each devices

@@ -1,6 +1,7 @@
 use crate::device_tree::DeviceTree;
 use crate::plugins_manager::PluginsManager;
 use crate::underscore_device::pack::InfoPack;
+use crate::underscore_device::scanner::data::ScannerDriver;
 use crate::underscore_device::store::data::SharedStore;
 use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
@@ -37,6 +38,7 @@ pub enum ServiceRequest {
     LoadLocalRuntime,
     LoadUnderscoreDevice,
     ProduceDevice(ProductionOrder),
+    StartScanning,
 }
 
 /// Platform
@@ -101,6 +103,11 @@ pub struct Platform {
     ///
     ///
     store: SharedStore,
+
+    ///
+    ///
+    ///
+    scanner_driver: ScannerDriver,
 }
 
 impl Platform {
@@ -134,6 +141,7 @@ impl Platform {
             new_notifications_notifier: Arc::new(Notify::new()),
 
             store: SharedStore::new(),
+            scanner_driver: ScannerDriver::new(),
         };
     }
 
@@ -197,6 +205,9 @@ impl Platform {
                         },
                         ServiceRequest::ProduceDevice(order) => {
                             self.service_produce_device(&order).await;
+                        },
+                        ServiceRequest::StartScanning => {
+                            self.service_start_scanning().await;
                         },
                     }
                 },
@@ -472,7 +483,8 @@ impl Platform {
 
         //
         //
-        let (underscore_device_operations, info_pack) = UnderscoreDevice::new(self.store.clone());
+        let (underscore_device_operations, info_pack) =
+            UnderscoreDevice::new(self.store.clone(), self.scanner_driver.clone());
 
         //
         //
@@ -509,6 +521,18 @@ impl Platform {
         self.task_sender
             .spawn(Self::task_process_notifications(info_pack, n_notifier, n_n).boxed())
             .unwrap();
+
+        //
+        //
+        self.task_sender
+            .spawn(
+                Self::task_process_scanner(
+                    self.scanner_driver.clone(),
+                    self.request_sender.clone(),
+                )
+                .boxed(),
+            )
+            .unwrap();
     }
 
     /// -------------------------------------------------------------
@@ -520,6 +544,18 @@ impl Platform {
         self.logger.info(format!("ORDER: {:?}", po));
 
         let _res = self.plugin_manager.produce(po).unwrap();
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn service_start_scanning(&mut self) {
+        //
+        // info
+        self.logger.info("----- SERVICE : START SCANNING -----");
+        // self.logger.info(format!("ORDER: {:?}", po));
+
+        let _res = self.plugin_manager.scan().unwrap();
+        println!("{:?}", _res);
     }
 
     /// -------------------------------------------------------------
@@ -536,6 +572,22 @@ impl Platform {
             lock.clear();
             drop(lock);
             info_pack.process_notifications(copy_notifs);
+        }
+    }
+
+    /// -------------------------------------------------------------
+    ///
+    async fn task_process_scanner(
+        driver: ScannerDriver,
+        request_sender: Sender<ServiceRequest>,
+    ) -> TaskResult {
+        loop {
+            driver.request_notifier.notified().await;
+            if !driver.is_already_running().await {
+                request_sender
+                    .try_send(ServiceRequest::StartScanning)
+                    .unwrap();
+            }
         }
     }
 }

@@ -127,6 +127,41 @@ impl PluginHandler {
             Ok(obj)
         }
     }
+
+    ///
+    ///
+    ///
+    pub fn scan(&self) -> Result<Vec<ProductionOrder>, Error> {
+        unsafe {
+            let scan_as_ptr = (self.interface.scan)();
+
+            //
+            //
+            if scan_as_ptr.is_null() {
+                return Err(Error::InvalidArgument("Null C string pointer".to_string()));
+            }
+            //
+            //
+            let c_str = CStr::from_ptr(scan_as_ptr);
+            let str = c_str
+                .to_str()
+                .map_err(|e| Error::InvalidArgument(format!("Invalid C string: {:?}", e)))?;
+
+            let json: serde_json::Value = serde_json::from_str(str)
+                .map_err(|e| Error::InvalidArgument(format!("Invalid JSON: {:?}", e)))?;
+
+            let obj = serde_json::from_value(json.clone()).map_err(|e| {
+                Error::InvalidArgument(format!(
+                    "Failed to deserialize 'Scan' from JSON string: {:?} {:?}",
+                    e, json
+                ))
+            })?;
+
+            // println!("pulll {:?}", obj);
+
+            Ok(obj)
+        }
+    }
 }
 
 ///
@@ -252,5 +287,16 @@ impl PluginsManager {
             store.extend_by_copy(&ph.store);
         }
         store
+    }
+
+    ///
+    ///
+    ///
+    pub fn scan(&self) -> Result<Vec<ProductionOrder>, Error> {
+        let mut v = Vec::new();
+        for ph in (&self.handlers).into_iter() {
+            v.extend(ph.scan()?);
+        }
+        Ok(v)
     }
 }
