@@ -7,7 +7,7 @@ use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
     create_task_channel, env, Factory, InstanceMonitor, Notification, ProductionOrder, Runtime,
-    TaskReceiver, TaskResult, TaskSender,
+    Store, TaskReceiver, TaskResult, TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
@@ -104,10 +104,14 @@ pub struct Platform {
     ///
     store: SharedStore,
 
+    built_in_store: Store,
+
     ///
     ///
     ///
     scanner_driver: ScannerDriver,
+
+    local_runtime_po_sender: Option<tokio::sync::mpsc::Sender<ProductionOrder>>,
 }
 
 impl Platform {
@@ -141,7 +145,10 @@ impl Platform {
             new_notifications_notifier: Arc::new(Notify::new()),
 
             store: SharedStore::new(),
+            built_in_store: Store::default(),
             scanner_driver: ScannerDriver::new(),
+
+            local_runtime_po_sender: None,
         };
     }
 
@@ -204,7 +211,7 @@ impl Platform {
                             self.service_load_underscore_device().await;
                         },
                         ServiceRequest::ProduceDevice(order) => {
-                            self.service_produce_device(&order).await;
+                            self.service_produce_device(order).await;
                         },
                         ServiceRequest::StartScanning => {
                             self.service_start_scanning().await;
@@ -451,8 +458,16 @@ impl Platform {
         //
         //
         // mut
-        let factory = Factory::new();
-        // factory.add_producers(plugin_producers());
+        let mut factory = Factory::new();
+
+        //
+        // Append built-in drivers
+        #[cfg(feature = "built-in-drivers")]
+        factory.add_producers(crate::built_in::plugin_producers());
+
+        //
+        //
+        self.built_in_store = factory.store();
 
         //
         let settings = ReactorSettings::new("localhost", 1883, None);
@@ -465,9 +480,9 @@ impl Platform {
         //
         let runtime = Runtime::new(factory, reactor);
 
-        // //
-        // //
-        // POS = Some(runtime.clone_production_order_sender());
+        //
+        //
+        self.local_runtime_po_sender = Some(runtime.clone_production_order_sender());
 
         //
         // Start thread
@@ -537,13 +552,23 @@ impl Platform {
 
     /// -------------------------------------------------------------
     ///
-    async fn service_produce_device(&mut self, po: &ProductionOrder) {
+    async fn service_produce_device(&mut self, po: ProductionOrder) {
         //
         // info
         self.logger.info("----- SERVICE : PRODUCE DEVICE -----");
         self.logger.info(format!("ORDER: {:?}", po));
 
-        let _res = self.plugin_manager.produce(po).unwrap();
+        if self.built_in_store.contains(&po.dref()) {
+            log_info!(self.logger, "LOCAL PRODUCER");
+            self.local_runtime_po_sender
+                .as_ref()
+                .unwrap()
+                .try_send(po)
+                .unwrap();
+        } else {
+            log_info!(self.logger, "PLUGIN PRODUCER");
+            let _res = self.plugin_manager.produce(&po).unwrap();
+        }
     }
 
     /// -------------------------------------------------------------

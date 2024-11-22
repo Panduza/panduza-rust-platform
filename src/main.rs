@@ -15,6 +15,7 @@
 //     unused_parens,
 )]
 
+mod built_in;
 mod device_tree;
 mod platform;
 mod plugins_manager;
