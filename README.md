@@ -15,6 +15,7 @@ To embbed built-in drivers
 ```bash
 # Enable fmt tracing (std terminal logs)
 cargo run --features log,built-in-drivers
+cargo build --features log,built-in-drivers
 ```
 
 ## Manage log levels
