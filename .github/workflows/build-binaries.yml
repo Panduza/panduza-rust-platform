@@ -21,7 +21,7 @@ jobs:
             run: cargo --version
           
           - name: Try to Build
-            run: cargo build --verbose --release
+            run: cargo build --features log,built-in-drivers --verbose --release
 
           # Release version is supposed to have a faster runtime than debug
           # - name: Upload windows binaries release
@@ -41,7 +41,7 @@ jobs:
               run: cargo --version
             
             - name: Try to Build
-              run: cargo build --verbose --release
+              run: cargo build --features log,built-in-drivers --verbose --release
 
             # Release version is supposed to have a faster runtime than debug
             - name: Upload windows binaries release
@@ -49,3 +49,5 @@ jobs:
               with:
                   name: windows_binaries
                   path: target/release/panduza-rust-platform.exe
+
+                  
