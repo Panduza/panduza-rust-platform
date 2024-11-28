@@ -1,18 +1,18 @@
 [package]
 name = "panduza-rust-platform"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 
 [dependencies]
 
 # Main base code for Panduza platform and plugins
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
-    "log",
-] }
-# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.0", features = [
+# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
 #     "log",
 # ] }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.2", features = [
+    "log",
+] }
 
 # Main async framework for the platform
 tokio = { version = "1.40.0", features = ["full", "tracing"] }
@@ -96,17 +96,12 @@ tracing-appender = "0.2.3"
 rust_decimal = "1.35.0"
 rust_decimal_macros = "1.35"
 
-# Video converting h264
-# ffmpeg-next = "5.0"
-
-# x264 = "0.3"
-
 
 # --- BUILT-IN DRIVERS
 # crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
 # ---
 # Korad devices
-pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", branch = "main", features = [
+pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.0", features = [
     "log",
 ], optional = true }
 

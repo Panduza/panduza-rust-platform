@@ -9,7 +9,7 @@ pub mod topic;
 use async_trait::async_trait;
 use futures::lock::Mutex;
 use pack::InfoPack;
-use panduza_platform_core::{AttOnlyMsgAtt, DriverOperations, Error, Instance, JsonCodec};
+use panduza_platform_core::{DriverOperations, Error, Instance, JsonAttServer};
 use scanner::data::ScannerDriver;
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc, time::Duration};
@@ -38,7 +38,7 @@ pub struct UnderscoreDevice {
     /// Each device have an attribute to share its state
     /// This Map hold those attribute, the name of the device is the key.
     ///
-    instance_attributes: Arc<Mutex<HashMap<String, AttOnlyMsgAtt<JsonCodec>>>>,
+    instance_attributes: Arc<Mutex<HashMap<String, JsonAttServer>>>,
 }
 
 impl UnderscoreDevice {
@@ -104,20 +104,19 @@ impl DriverOperations for UnderscoreDevice {
                         if !lock.contains_key(&status.0) {
                             let att = interface_devices
                                 .create_attribute(status.0.clone())
-                                .message()
-                                .with_att_only_access()
-                                .finish_with_codec::<JsonCodec>()
-                                .await;
+                                .with_ro()
+                                .finish_as_json()
+                                .await?;
 
                             lock.insert(status.0.clone(), att);
                         }
 
                         lock.get_mut(&status.0)
                             .unwrap()
-                            .set(JsonCodec::from(json!({
+                            .set(json!({
                                 "state": status.1.to_string(),
                                 "alerts": status.2
-                            })))
+                            }))
                             .await?;
                     }
                     drop(lock);
@@ -130,10 +129,9 @@ impl DriverOperations for UnderscoreDevice {
         // Structure of the devices
         let structure_att = instance
             .create_attribute("structure")
-            .message()
-            .with_att_only_access()
-            .finish_with_codec::<JsonCodec>()
-            .await;
+            .with_ro()
+            .finish_as_json()
+            .await?;
 
         let pack_clone3 = self.pack.clone();
         instance
@@ -153,7 +151,7 @@ impl DriverOperations for UnderscoreDevice {
                     let structure = pack_clone3.device_structure_as_json_value().await.unwrap();
                     println!("structure {:?}", structure);
 
-                    structure_att.set(JsonCodec::from(structure)).await.unwrap();
+                    structure_att.set(structure).await.unwrap();
                 }
                 // Ok(())
             })
