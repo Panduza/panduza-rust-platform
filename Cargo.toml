@@ -11,6 +11,7 @@ edition = "2021"
 #     "log",
 # ] }
 panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.2", features = [
+    # "serial",
     "log",
 ] }
 
@@ -106,7 +107,7 @@ pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = 
 ], optional = true }
 # ---
 # Hameg devices
-pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.0", features = [
+pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", branch = "main", features = [
     "log",
 ], optional = true }
 
