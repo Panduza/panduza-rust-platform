@@ -1,3 +1,4 @@
+use crate::built_in;
 use crate::device_tree::DeviceTree;
 use crate::plugins_manager::PluginsManager;
 use crate::underscore_device::pack::InfoPack;
@@ -578,6 +579,10 @@ impl Platform {
         // info
         self.logger.info("----- SERVICE : START SCANNING -----");
         // self.logger.info(format!("ORDER: {:?}", po));
+
+        for scanner in built_in::plugin_scanners() {
+            let result = scanner.scan();
+        }
 
         let _res = self.plugin_manager.scan().unwrap();
         println!("{:?}", _res);
