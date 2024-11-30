@@ -1,6 +1,6 @@
 [package]
 name = "panduza-rust-platform"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 
 
@@ -10,7 +10,7 @@ edition = "2021"
 # panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
 #     "log",
 # ] }
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.3", features = [
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.4", features = [
     # "serial",
     "log",
 ] }
@@ -102,12 +102,12 @@ rust_decimal_macros = "1.35"
 # crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
 # ---
 # Korad devices
-pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.2", features = [
+pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.3", features = [
     "log",
 ], optional = true }
 # ---
 # Hameg devices
-pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.1", features = [
+pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.2", features = [
     "log",
 ], optional = true }
 
