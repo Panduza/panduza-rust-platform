@@ -7,8 +7,8 @@ use crate::underscore_device::store::data::SharedStore;
 use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, Factory, InstanceMonitor, Notification, ProductionOrder, Runtime,
-    Store, TaskReceiver, TaskResult, TaskSender,
+    create_task_channel, env, Factory, InstanceMonitor, Notification, NotificationGroup,
+    ProductionOrder, Runtime, Store, TaskReceiver, TaskResult, TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
@@ -113,6 +113,7 @@ pub struct Platform {
     scanner_driver: ScannerDriver,
 
     local_runtime_po_sender: Option<tokio::sync::mpsc::Sender<ProductionOrder>>,
+    local_runtime_notifications: Option<Arc<std::sync::Mutex<NotificationGroup>>>,
 }
 
 impl Platform {
@@ -150,6 +151,7 @@ impl Platform {
             scanner_driver: ScannerDriver::new(),
 
             local_runtime_po_sender: None,
+            local_runtime_notifications: None,
         };
     }
 
@@ -291,6 +293,21 @@ impl Platform {
                 self.logger
                     .error(format!("error while pulling notifis {:?}", e));
             }
+        }
+
+        //
+        // Local notifications
+        let local_notifs = self
+            .local_runtime_notifications
+            .as_mut()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .pull();
+        if !local_notifs.is_empty() {
+            let mut n = self.notifications.lock().await;
+            n.extend(local_notifs);
+            self.new_notifications_notifier.notify_waiters();
         }
     }
 
@@ -479,7 +496,11 @@ impl Platform {
 
         //
         //
-        let runtime = Runtime::new(factory, reactor);
+        let runtime: Runtime = Runtime::new(factory, reactor);
+
+        //
+        //
+        self.local_runtime_notifications = Some(runtime.clone_notifications());
 
         //
         //
