@@ -10,10 +10,15 @@ edition = "2021"
 # panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
 #     "log",
 # ] }
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.4", features = [
+# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.4", features = [
+#     # "serial",
+#     "log",
+# ] }
+panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core", features = [
     # "serial",
     "log",
 ] }
+
 
 # Main async framework for the platform
 tokio = { version = "1.40.0", features = ["full", "tracing"] }

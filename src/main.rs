@@ -31,7 +31,7 @@ pub use platform::Platform;
 #[tokio::main]
 async fn main() {
     // Init tracing subscribers
-    panduza_platform_core::log::init();
+    panduza_platform_core::tracing::init();
 
     // Create platform runner
     // La platform c'est l'assemblage de
