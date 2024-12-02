@@ -157,12 +157,17 @@ impl Platform {
         };
     }
 
+    ///
+    ///
+    pub fn log_starting_info(&self, platform_version: &str, rustc_version: &str) {
+        log_info!(self.logger, "-- Platform Start --");
+        log_info!(self.logger, "Platform Version: {}", platform_version);
+        log_info!(self.logger, "Rustc Version: {}", rustc_version);
+    }
+
     /// Main platform run loop
     ///
     pub async fn run(&mut self) {
-        // Info log
-        self.logger.info("Platform Version ...");
-
         //
         //
         self.request_sender.try_send(ServiceRequest::Boot).unwrap();

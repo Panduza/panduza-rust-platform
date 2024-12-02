@@ -24,7 +24,6 @@ mod plugins_manager;
 mod sys_info;
 mod underscore_device;
 
-use panduza_platform_core::env;
 pub use platform::Platform;
 
 use clap::Parser;
@@ -42,18 +41,13 @@ struct Args {
     broker_log_enable: bool,
 }
 
-///
-///
+/// At least print arguments when the platform is started
+/// If the use start without log, he can understand why there is none.
 ///
 fn print_platform_header(args: &Args) {
     println!("----------------------------------------");
     println!("# Panduza Platform");
     println!("");
-    println!("## System");
-    println!("- Platform Version    : {}", sys_info::PLATFORM_VERSION);
-    println!("- Rustc Version       : {}", sys_info::RUSTC_VERSION);
-    println!("");
-    println!("## Arguments");
     println!(
         "- Stdout logs         : {}",
         if args.log_stdout_enable {
@@ -80,7 +74,7 @@ async fn main() {
     let args = Args::parse();
 
     //
-    // Give some context when the platform start
+    // Give some information when the platform start
     print_platform_header(&args);
 
     //
@@ -95,6 +89,11 @@ async fn main() {
     // - N plugins runtime
     let mut platform = Platform::new();
 
+    //
+    // Log minimal set of information
+    platform.log_starting_info(sys_info::PLATFORM_VERSION, sys_info::RUSTC_VERSION);
+
+    //
     // Platform loop
     platform.run().await;
 }
