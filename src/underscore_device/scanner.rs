@@ -2,9 +2,7 @@ pub mod data;
 
 use data::ScannerDriver;
 use panduza_platform_core::log_debug;
-use panduza_platform_core::{
-    spawn_on_command, BooleanAttServer, DeviceLogger, Instance, Error,
-};
+use panduza_platform_core::{spawn_on_command, BooleanAttServer, Error, Instance, InstanceLogger};
 
 ///
 /// Mount the scanner attribute
@@ -46,7 +44,7 @@ pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), 
 ///
 ///
 async fn on_running_command(
-    logger: DeviceLogger,
+    logger: InstanceLogger,
     mut att_running: BooleanAttServer,
     mut driver: ScannerDriver,
 ) -> Result<(), Error> {

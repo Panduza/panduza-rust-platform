@@ -14,10 +14,10 @@ edition = "2021"
 #     # "serial",
 #     "log",
 # ] }
-panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core", features = [
-    # "serial",
-    "log",
-] }
+panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core" }
+
+
+clap = { version = "4.5.21", features = ["derive"] }
 
 
 # Main async framework for the platform
@@ -116,13 +116,13 @@ pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = 
     "log",
 ], optional = true }
 
+
+[build-dependencies]
+toml = "0.8.19"
+
 # --- FEATURES
 [features]
 
-# Enable tracing in stdout
-log = []
-log-issue = []
-broker-log = []
 
 # Enable tracing in tokio console
 # trac-console = [ "console-subscriber" ]

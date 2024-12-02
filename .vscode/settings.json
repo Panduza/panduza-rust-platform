@@ -6,6 +6,14 @@
     ],
     "rust-analyzer.showUnlinkedFileNotification": false,
     "rust-analyzer.cargo.features": [
-        "built-in-drivers"
-    ]
+        // "built-in-drivers"
+    ],
+    "rainbow_csv.virtual_alignment_mode": "always",
+    "rainbow_csv.autodetect_separators": [
+        ";",
+        "|",
+    ],
+    "[csv]": {
+        "editor.inlayHints.maximumLength": 0
+    },
 }

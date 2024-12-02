@@ -15,23 +15,78 @@
 //     unused_parens,
 )]
 
+#[cfg(feature = "built-in-drivers")]
 mod built_in;
+
 mod device_tree;
 mod platform;
 mod plugins_manager;
+mod sys_info;
 mod underscore_device;
 
+use panduza_platform_core::env;
 pub use platform::Platform;
 
-// use panduza_platform_core::Plugin;
-// use panduza_platform_core::ProductionOrder;
-// use rumqttd::Broker;
-// use rumqttd::Config;
+use clap::Parser;
+
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Enable logs on stdout
+    #[arg(short, long)]
+    log_stdout_enable: bool,
+
+    /// Also display broker logs
+    #[arg(short, long)]
+    broker_log_enable: bool,
+}
+
+///
+///
+///
+fn print_platform_header(args: &Args) {
+    println!("----------------------------------------");
+    println!("# Panduza Platform");
+    println!("");
+    println!("## System");
+    println!("- Platform Version    : {}", sys_info::PLATFORM_VERSION);
+    println!("- Rustc Version       : {}", sys_info::RUSTC_VERSION);
+    println!("");
+    println!("## Arguments");
+    println!(
+        "- Stdout logs         : {}",
+        if args.log_stdout_enable {
+            "ENABLED"
+        } else {
+            "DISABLED"
+        }
+    );
+    println!(
+        "- Broker logs         : {}",
+        if args.broker_log_enable {
+            "ENABLED"
+        } else {
+            "DISABLED"
+        }
+    );
+    println!("----------------------------------------");
+}
 
 #[tokio::main]
 async fn main() {
-    // Init tracing subscribers
-    panduza_platform_core::tracing::init();
+    //
+    // Manage args
+    let args = Args::parse();
+
+    //
+    // Give some context when the platform start
+    print_platform_header(&args);
+
+    //
+    // Manage logs
+    // Init tracing subscriber
+    panduza_platform_core::tracing::init(args.log_stdout_enable, args.broker_log_enable);
 
     // Create platform runner
     // La platform c'est l'assemblage de
@@ -39,14 +94,7 @@ async fn main() {
     // - 1 runtime pour les services de bases
     // - N plugins runtime
     let mut platform = Platform::new();
-    // std::thread::spawn(move || {
-    //     broker.start().unwrap();
-    // });
 
     // Platform loop
     platform.run().await;
-
-    // for p in plugins {
-    //     unsafe { (p.join)() };
-    // }
 }
