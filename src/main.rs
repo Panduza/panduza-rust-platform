@@ -24,6 +24,8 @@ mod plugins_manager;
 mod sys_info;
 mod underscore_device;
 
+use panduza_platform_core::env::system_default_device_tree_file;
+use panduza_platform_core::env::system_default_log_dir;
 pub use platform::Platform;
 
 use clap::Parser;
@@ -64,6 +66,16 @@ fn print_platform_header(args: &Args) {
             "DISABLED"
         }
     );
+    println!("");
+    println!(
+        "- Log dir             : {:?}",
+        system_default_log_dir().unwrap()
+    );
+    println!(
+        "- Tree file           : {:?}",
+        system_default_device_tree_file().unwrap()
+    );
+
     println!("----------------------------------------");
 }
 
