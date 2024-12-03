@@ -99,7 +99,7 @@ rust_decimal_macros = "1.35"
 # crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
 # ---
 # Fake devices
-pza-plugin-fakes = { git = "https://github.com/Panduza/pza-plugin-fakes", branch = "upgrade_to_builtin_integration", optional = true }
+pza-plugin-fakes = { git = "https://github.com/Panduza/pza-plugin-fakes", tag = "0.1.0", optional = true }
 # ---
 # Korad devices
 pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.4", optional = true }
