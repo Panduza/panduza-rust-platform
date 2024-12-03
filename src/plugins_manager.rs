@@ -23,14 +23,18 @@ pub struct PluginHandler {
     ///
     ///
     store: Store,
-
 }
 
 impl PluginHandler {
     ///
     /// Load a plugin from a file
     ///
-    pub fn from_filename(filename: PathBuf, enable_stdout: bool, debug: bool, trace: bool) -> Result<PluginHandler, Error> {
+    pub fn from_filename(
+        filename: PathBuf,
+        enable_stdout: bool,
+        debug: bool,
+        trace: bool,
+    ) -> Result<PluginHandler, Error> {
         unsafe {
             //
             // Load library object
@@ -43,13 +47,14 @@ impl PluginHandler {
 
             //
             // Get plugin interface from entry point
-            let plugin_entry_point: libloading::Symbol<extern "C" fn(enable_stdout: bool, debug: bool, trace: bool) -> Plugin> =
-                object.get(b"plugin_entry_point").map_err(|e| {
-                    Error::PluginError(format!(
-                        "Unable to load plugin_entry_point [{:?}] - ({:?})",
-                        filename, e
-                    ))
-                })?;
+            let plugin_entry_point: libloading::Symbol<
+                extern "C" fn(enable_stdout: bool, debug: bool, trace: bool) -> Plugin,
+            > = object.get(b"plugin_entry_point").map_err(|e| {
+                Error::PluginError(format!(
+                    "Unable to load plugin_entry_point [{:?}] - ({:?})",
+                    filename, e
+                ))
+            })?;
             let interface = plugin_entry_point(enable_stdout, debug, trace);
 
             //
@@ -87,7 +92,6 @@ impl PluginHandler {
             if self.store.contains(&order.dref) {
                 let order_as_c_string = order.to_c_string()?;
                 let ret = (self.interface.produce)(order_as_c_string.as_c_str().as_ptr());
-                println!("==> {}", ret);
                 return Ok(true);
             }
         }
@@ -122,8 +126,6 @@ impl PluginHandler {
                     e, json
                 ))
             })?;
-
-            // println!("pulll {:?}", obj);
 
             Ok(obj)
         }
@@ -177,22 +179,24 @@ pub struct PluginsManager {
     ///
     handlers: Vec<PluginHandler>,
 
-    
-    enable_stdout: bool, debug: bool, trace: bool
+    enable_stdout: bool,
+    debug: bool,
+    trace: bool,
 }
 
 impl PluginsManager {
     ///
     /// Create a new object
     ///
-    pub fn new(
-        enable_stdout: bool, debug: bool, trace: bool) -> Self {
+    pub fn new(enable_stdout: bool, debug: bool, trace: bool) -> Self {
         Self {
             logger: PlatformLogger::new(),
 
             handlers: Vec::new(),
-            
-            enable_stdout: enable_stdout, debug: debug, trace: trace
+
+            enable_stdout: enable_stdout,
+            debug: debug,
+            trace: trace,
         }
     }
 
@@ -240,7 +244,8 @@ impl PluginsManager {
     ///
     pub fn register_plugin(&mut self, filename: PathBuf) -> Result<(), Error> {
         //
-        let handler = PluginHandler::from_filename(filename, self.enable_stdout, self.debug, self.trace)?;
+        let handler =
+            PluginHandler::from_filename(filename, self.enable_stdout, self.debug, self.trace)?;
 
         // Info
         self.logger

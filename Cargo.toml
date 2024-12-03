@@ -15,7 +15,7 @@ edition = "2021"
 #     "log",
 # ] }
 # panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core" }
-panduza-platform-core = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-platform-core" }
+panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core" }
 
 
 clap = { version = "4.5.21", features = ["derive"] }
@@ -83,9 +83,9 @@ tracing = { version = "0.1", features = [
     # "release_max_level_off",
     # "release_max_level_error",
     # "release_max_level_warn",
-    "release_max_level_info",
+    # "release_max_level_info",
     # "release_max_level_debug",
-    # "release_max_level_trace"
+    "release_max_level_trace",
 ] }
 
 # 

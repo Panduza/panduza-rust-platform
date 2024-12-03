@@ -87,7 +87,6 @@ impl InstanceElement {
     pub fn get_mut_class_from_layers(&mut self, layers: &Vec<String>) -> Option<&mut ClassElement> {
         //
         // low level debug
-        println!("instance::get_mut_class_from_layers({:?})", layers);
 
         if layers.len() == 1 {
             let name = layers.first().unwrap();

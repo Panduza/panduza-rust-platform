@@ -1,7 +1,7 @@
 #![deny(
     while_true,
     improper_ctypes,
-//     non_shorthand_field_patterns,
+    non_shorthand_field_patterns,
 //     no_mangle_generic_items,
 //     overflowing_literals,
 //     path_statements,
@@ -76,7 +76,7 @@ fn print_platform_header(args: &Args) {
     );
     println!(
         "- Debug logs          : {}",
-        if args.debug_log {
+        if args.debug_log || args.trace_log {
             "ENABLED"
         } else {
             "DISABLED"
@@ -116,7 +116,12 @@ async fn main() {
     //
     // Manage logs
     // Init tracing subscriber
-    panduza_platform_core::tracing::init(args.log_stdout_enable, args.broker_log_enable, args.debug_log, args.trace_log);
+    panduza_platform_core::tracing::init(
+        args.log_stdout_enable,
+        args.broker_log_enable,
+        args.debug_log,
+        args.trace_log,
+    );
 
     // Create platform runner
     // La platform c'est l'assemblage de
