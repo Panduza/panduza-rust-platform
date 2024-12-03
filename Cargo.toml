@@ -1,28 +1,19 @@
 [package]
 name = "panduza-rust-platform"
-version = "0.4.2"
+version = "0.5.0"
 edition = "2021"
 
 
 [dependencies]
 
 # Main base code for Panduza platform and plugins
-# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "main", features = [
-#     "log",
-# ] }
-# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.4", features = [
-#     # "serial",
-#     "log",
-# ] }
-# panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core" }
-panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core" }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.5" }
+# Main async framework for the platform
+tokio = { version = "1.40.0", features = ["full", "tracing"] }
 
 
 clap = { version = "4.5.21", features = ["derive"] }
 
-
-# Main async framework for the platform
-tokio = { version = "1.40.0", features = ["full", "tracing"] }
 
 libloading = "0.8"
 
@@ -107,15 +98,14 @@ rust_decimal_macros = "1.35"
 # --- BUILT-IN DRIVERS
 # crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
 # ---
+# Fake devices
+pza-plugin-fakes = { git = "https://github.com/Panduza/pza-plugin-fakes", branch = "upgrade_to_builtin_integration", optional = true }
+# ---
 # Korad devices
-pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.3", features = [
-    "log",
-], optional = true }
+pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.4", optional = true }
 # ---
 # Hameg devices
-pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.2", features = [
-    "log",
-], optional = true }
+pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.3", optional = true }
 
 
 [build-dependencies]
@@ -124,12 +114,7 @@ toml = "0.8.19"
 # --- FEATURES
 [features]
 
-
-# Enable tracing in tokio console
-# trac-console = [ "console-subscriber" ]
-
-
 # ---
 # Integrate some generic drivers directly into the platform
 # 
-built-in-drivers = ["pza-plugin-korad", "pza-plugin-hameg"]
+built-in-drivers = ["pza-plugin-korad", "pza-plugin-hameg", "pza-plugin-fakes"]
