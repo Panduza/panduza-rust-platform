@@ -3,9 +3,11 @@ pub mod class;
 pub mod instance;
 
 use instance::{Alert, InstanceElement};
-use panduza_platform_core::instance::State;
+use panduza_platform_core::{instance::State, log_trace, Error, Instance};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use super::pack::InfoPack;
 
 ///
 /// Structure that represent the json maintained in '_/structure'
@@ -62,4 +64,48 @@ impl Structure {
         }
         r
     }
+}
+
+///
+///
+///
+pub async fn mount(mut instance: Instance, pack: InfoPack) -> Result<(), Error> {
+    //
+    // Get logger
+    let logger = instance.logger.clone();
+
+    //
+    // Structure of the devices
+    let structure_att = instance
+        .create_attribute("structure")
+        .with_ro()
+        .finish_as_json()
+        .await?;
+
+    let pack_clone3 = pack.clone();
+    instance
+        .spawn(async move {
+            //
+            //
+            let structure_change = pack_clone3.instance_structure_change_notifier().await;
+            // let pack_clone4 = pack_clone3.clone();
+
+            loop {
+                //
+                // Wait for next status change
+                structure_change.notified().await;
+                log_trace!(logger, "structure change notification");
+
+                let structure = pack_clone3.device_structure_as_json_value().await.unwrap();
+                log_trace!(logger, "new structure {:?}", structure);
+
+                structure_att.set(structure).await.unwrap();
+            }
+            // Ok(())
+        })
+        .await;
+
+    //
+    //
+    Ok(())
 }

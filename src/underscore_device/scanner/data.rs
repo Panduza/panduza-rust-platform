@@ -1,7 +1,7 @@
-use panduza_platform_core::Error;
-use panduza_platform_core::ProductionOrder;
-use panduza_platform_core::Store;
-use serde_json::Value as JsonValue;
+// use panduza_platform_core::Error;
+// use panduza_platform_core::ProductionOrder;
+// use panduza_platform_core::Store;
+// use serde_json::Value as JsonValue;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
@@ -19,13 +19,12 @@ pub struct ScannerDriver {
     ///
     /// When something new happened from platform
     ///
-    pub update_notifier: Arc<Notify>,
+    // pub update_notifier: Arc<Notify>,
 
     //
     pub is_running: Arc<Mutex<bool>>,
-
     //
-    pub found_instances: Arc<Mutex<Vec<ProductionOrder>>>,
+    // pub found_instances: Arc<Mutex<Vec<ProductionOrder>>>,
 }
 
 impl ScannerDriver {
@@ -35,9 +34,9 @@ impl ScannerDriver {
     pub fn new() -> Self {
         Self {
             request_notifier: Arc::new(Notify::new()),
-            update_notifier: Arc::new(Notify::new()),
+            // update_notifier: Arc::new(Notify::new()),
             is_running: Arc::new(Mutex::new(false)),
-            found_instances: Arc::new(Mutex::new(Vec::new())),
+            // found_instances: Arc::new(Mutex::new(Vec::new())),
         }
     }
 

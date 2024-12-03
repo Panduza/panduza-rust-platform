@@ -1,4 +1,6 @@
+#[cfg(feature = "built-in-drivers")]
 use crate::built_in;
+
 use crate::device_tree::DeviceTree;
 use crate::plugins_manager::PluginsManager;
 use crate::underscore_device::pack::InfoPack;
@@ -7,7 +9,7 @@ use crate::underscore_device::store::data::SharedStore;
 use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, Factory, InstanceMonitor, Notification, NotificationGroup,
+    create_task_channel, env, log_debug, Factory, InstanceMonitor, Notification, NotificationGroup,
     ProductionOrder, Runtime, Store, TaskReceiver, TaskResult, TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
@@ -119,7 +121,7 @@ pub struct Platform {
 impl Platform {
     /// Create a new instance of the Platform
     ///
-    pub fn new() -> Self {
+    pub fn new(enable_stdout: bool, debug: bool, trace: bool) -> Self {
         //
         // Task creation request channel
         let (main_tx, main_rx) = create_task_channel::<TaskResult>(20);
@@ -141,7 +143,7 @@ impl Platform {
             request_receiver: Some(rqst_rx),
 
             reactor: None,
-            plugin_manager: PluginsManager::new(),
+            plugin_manager: PluginsManager::new(enable_stdout, debug, trace),
 
             notifications: Arc::new(Mutex::new(Vec::new())),
             new_notifications_notifier: Arc::new(Notify::new()),
@@ -155,12 +157,23 @@ impl Platform {
         };
     }
 
+    ///
+    ///
+    pub fn log_starting_info(
+        &self,
+        args: &super::Args,
+        platform_version: &str,
+        rustc_version: &str,
+    ) {
+        log_info!(self.logger, "-- Platform Start --");
+        log_info!(self.logger, "Args: {:?}", args);
+        log_info!(self.logger, "Platform Version: {}", platform_version);
+        log_info!(self.logger, "Rustc Version: {}", rustc_version);
+    }
+
     /// Main platform run loop
     ///
     pub async fn run(&mut self) {
-        // Info log
-        self.logger.info("Platform Version ...");
-
         //
         //
         self.request_sender.try_send(ServiceRequest::Boot).unwrap();
@@ -264,7 +277,7 @@ impl Platform {
         }
         //
         // Reaching here means that there is no task anymore
-        self.logger.warn("All tasks completed");
+        log_debug!(self.logger, "All tasks completed");
         match self.must_stop.load(Ordering::Relaxed) {
             true => {
                 // No task and stop request => quit this loop
@@ -272,7 +285,7 @@ impl Platform {
             }
             false => {
                 // Wait for an other task to be loaded
-                self.logger.warn("Wait for new tasks");
+                log_debug!(self.logger, "Wait for new tasks");
                 self.new_task_notifier.notified().await;
                 true
             }
@@ -474,8 +487,8 @@ impl Platform {
         self.logger.info("----- SERVICE : LOAD LOCAL RUNTIME -----");
 
         //
-        //
-        // mut
+        // Allow mut here because it depend of features enabled
+        #[allow(unused_mut)]
         let mut factory = Factory::new();
 
         //
@@ -601,6 +614,7 @@ impl Platform {
         self.logger.info("----- SERVICE : START SCANNING -----");
         // self.logger.info(format!("ORDER: {:?}", po));
 
+        #[cfg(feature = "built-in-drivers")]
         for scanner in built_in::plugin_scanners() {
             let result = scanner.scan();
         }

@@ -1,4 +1,6 @@
 target
 log.csv
+platform-log.csv
 *.swp
 Cargo.lock
+src/sys_info.rs

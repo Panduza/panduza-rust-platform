@@ -1,6 +1,6 @@
 # create binary on windows 
 
-name: build_binaries
+name: Build Binaries
 
 on:
     push:
@@ -12,7 +12,7 @@ jobs:
 
     # ---------------------------------------------------------------------------
     build-on-ubuntu:
-      runs-on: windows-latest
+      runs-on: ubuntu-latest
       steps:
           - name: Checkout project
             uses: actions/checkout@v4
@@ -21,7 +21,27 @@ jobs:
             run: cargo --version
           
           - name: Try to Build
-            run: cargo build --features log,built-in-drivers --verbose --release
+            run: cargo build --verbose --release
+
+          # Release version is supposed to have a faster runtime than debug
+          # - name: Upload windows binaries release
+          #   uses: actions/upload-artifact@v4
+          #   with:
+          #       name: windows_binaries
+          #       path: target/release/panduza-rust-platform.exe
+          
+    # ---------------------------------------------------------------------------
+    build-on-ubuntu-builtin:
+      runs-on: ubuntu-latest
+      steps:
+          - name: Checkout project
+            uses: actions/checkout@v4
+
+          - name: Display cargo version
+            run: cargo --version
+          
+          - name: Try to Build
+            run: cargo build --features built-in-drivers --verbose --release
 
           # Release version is supposed to have a faster runtime than debug
           # - name: Upload windows binaries release
@@ -41,7 +61,20 @@ jobs:
               run: cargo --version
             
             - name: Try to Build
-              run: cargo build --features log,built-in-drivers --verbose --release
+              run: cargo build --verbose --release
+
+    # ---------------------------------------------------------------------------
+    build-on-windows-builtin:
+        runs-on: windows-latest
+        steps:
+            - name: Checkout project
+              uses: actions/checkout@v4
+
+            - name: Display cargo version
+              run: cargo --version
+            
+            - name: Try to Build
+              run: cargo build --features built-in-drivers --verbose --release
 
             # Release version is supposed to have a faster runtime than debug
             - name: Upload windows binaries release
