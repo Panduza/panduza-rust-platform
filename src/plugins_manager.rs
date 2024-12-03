@@ -91,7 +91,7 @@ impl PluginHandler {
         unsafe {
             if self.store.contains(&order.dref) {
                 let order_as_c_string = order.to_c_string()?;
-                let ret = (self.interface.produce)(order_as_c_string.as_c_str().as_ptr());
+                let _ret = (self.interface.produce)(order_as_c_string.as_c_str().as_ptr());
                 return Ok(true);
             }
         }

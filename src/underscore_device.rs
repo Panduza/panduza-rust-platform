@@ -56,7 +56,7 @@ impl DriverOperations for UnderscoreDevice {
     ///
     ///
     ///
-    async fn mount(&mut self, mut instance: Instance) -> Result<(), Error> {
+    async fn mount(&mut self, instance: Instance) -> Result<(), Error> {
         //
         // Mount the store
         store::mount(instance.clone(), self.store.clone()).await?;
