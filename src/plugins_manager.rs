@@ -23,13 +23,14 @@ pub struct PluginHandler {
     ///
     ///
     store: Store,
+
 }
 
 impl PluginHandler {
     ///
     /// Load a plugin from a file
     ///
-    pub fn from_filename(filename: PathBuf) -> Result<PluginHandler, Error> {
+    pub fn from_filename(filename: PathBuf, enable_stdout: bool, debug: bool, trace: bool) -> Result<PluginHandler, Error> {
         unsafe {
             //
             // Load library object
@@ -42,14 +43,14 @@ impl PluginHandler {
 
             //
             // Get plugin interface from entry point
-            let plugin_entry_point: libloading::Symbol<extern "C" fn() -> Plugin> =
+            let plugin_entry_point: libloading::Symbol<extern "C" fn(enable_stdout: bool, debug: bool, trace: bool) -> Plugin> =
                 object.get(b"plugin_entry_point").map_err(|e| {
                     Error::PluginError(format!(
                         "Unable to load plugin_entry_point [{:?}] - ({:?})",
                         filename, e
                     ))
                 })?;
-            let interface = plugin_entry_point();
+            let interface = plugin_entry_point(enable_stdout, debug, trace);
 
             //
             //
@@ -175,17 +176,23 @@ pub struct PluginsManager {
     /// Plugin handlers
     ///
     handlers: Vec<PluginHandler>,
+
+    
+    enable_stdout: bool, debug: bool, trace: bool
 }
 
 impl PluginsManager {
     ///
     /// Create a new object
     ///
-    pub fn new() -> Self {
+    pub fn new(
+        enable_stdout: bool, debug: bool, trace: bool) -> Self {
         Self {
             logger: PlatformLogger::new(),
 
             handlers: Vec::new(),
+            
+            enable_stdout: enable_stdout, debug: debug, trace: trace
         }
     }
 
@@ -233,7 +240,7 @@ impl PluginsManager {
     ///
     pub fn register_plugin(&mut self, filename: PathBuf) -> Result<(), Error> {
         //
-        let handler = PluginHandler::from_filename(filename)?;
+        let handler = PluginHandler::from_filename(filename, self.enable_stdout, self.debug, self.trace)?;
 
         // Info
         self.logger

@@ -14,7 +14,8 @@ edition = "2021"
 #     # "serial",
 #     "log",
 # ] }
-panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core" }
+# panduza-platform-core = { path = "C:/Users/xavie/workspace/panduza-platform-core" }
+panduza-platform-core = { path = "C:/Users/rodriguez.NET/Documents/workspace/50-PROJET/XX-XXXX-PZA/panduza-platform-core" }
 
 
 clap = { version = "4.5.21", features = ["derive"] }

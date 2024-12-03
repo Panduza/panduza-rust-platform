@@ -33,7 +33,7 @@ use clap::Parser;
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-struct Args {
+pub struct Args {
     /// Enable logs on stdout
     #[arg(short, long)]
     log_stdout_enable: bool,
@@ -41,6 +41,14 @@ struct Args {
     /// Also display broker logs
     #[arg(short, long)]
     broker_log_enable: bool,
+
+    /// Enable debug logs
+    #[arg(short, long)]
+    debug_log: bool,
+
+    /// Enable trace logs
+    #[arg(short, long)]
+    trace_log: bool,
 }
 
 /// At least print arguments when the platform is started
@@ -61,6 +69,22 @@ fn print_platform_header(args: &Args) {
     println!(
         "- Broker logs         : {}",
         if args.broker_log_enable {
+            "ENABLED"
+        } else {
+            "DISABLED"
+        }
+    );
+    println!(
+        "- Debug logs          : {}",
+        if args.debug_log {
+            "ENABLED"
+        } else {
+            "DISABLED"
+        }
+    );
+    println!(
+        "- Trace logs          : {}",
+        if args.trace_log {
             "ENABLED"
         } else {
             "DISABLED"
@@ -92,18 +116,18 @@ async fn main() {
     //
     // Manage logs
     // Init tracing subscriber
-    panduza_platform_core::tracing::init(args.log_stdout_enable, args.broker_log_enable);
+    panduza_platform_core::tracing::init(args.log_stdout_enable, args.broker_log_enable, args.debug_log, args.trace_log);
 
     // Create platform runner
     // La platform c'est l'assemblage de
     // - 1 broker
     // - 1 runtime pour les services de bases
     // - N plugins runtime
-    let mut platform = Platform::new();
+    let mut platform = Platform::new(args.log_stdout_enable, args.debug_log, args.trace_log);
 
     //
     // Log minimal set of information
-    platform.log_starting_info(sys_info::PLATFORM_VERSION, sys_info::RUSTC_VERSION);
+    platform.log_starting_info(&args, sys_info::PLATFORM_VERSION, sys_info::RUSTC_VERSION);
 
     //
     // Platform loop

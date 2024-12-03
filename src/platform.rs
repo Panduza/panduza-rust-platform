@@ -116,12 +116,14 @@ pub struct Platform {
 
     local_runtime_po_sender: Option<tokio::sync::mpsc::Sender<ProductionOrder>>,
     local_runtime_notifications: Option<Arc<std::sync::Mutex<NotificationGroup>>>,
+
+    
 }
 
 impl Platform {
     /// Create a new instance of the Platform
     ///
-    pub fn new() -> Self {
+    pub fn new(enable_stdout: bool, debug: bool, trace: bool) -> Self {
         //
         // Task creation request channel
         let (main_tx, main_rx) = create_task_channel::<TaskResult>(20);
@@ -143,7 +145,7 @@ impl Platform {
             request_receiver: Some(rqst_rx),
 
             reactor: None,
-            plugin_manager: PluginsManager::new(),
+            plugin_manager: PluginsManager::new(enable_stdout, debug, trace),
 
             notifications: Arc::new(Mutex::new(Vec::new())),
             new_notifications_notifier: Arc::new(Notify::new()),
@@ -154,13 +156,15 @@ impl Platform {
 
             local_runtime_po_sender: None,
             local_runtime_notifications: None,
+            
         };
     }
 
     ///
     ///
-    pub fn log_starting_info(&self, platform_version: &str, rustc_version: &str) {
+    pub fn log_starting_info(&self, args: &super::Args, platform_version: &str, rustc_version: &str) {
         log_info!(self.logger, "-- Platform Start --");
+        log_info!(self.logger, "Args: {:?}", args);
         log_info!(self.logger, "Platform Version: {}", platform_version);
         log_info!(self.logger, "Rustc Version: {}", rustc_version);
     }
