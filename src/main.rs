@@ -36,7 +36,7 @@ use clap::Parser;
 pub struct Args {
     /// Enable logs on stdout
     #[arg(short, long)]
-    log_stdout_enable: bool,
+    quiet_log: bool,
 
     /// Also display broker logs
     #[arg(short, long)]
@@ -60,7 +60,7 @@ fn print_platform_header(args: &Args) {
     println!("");
     println!(
         "- Stdout logs         : {}",
-        if args.log_stdout_enable {
+        if !args.quiet_log {
             "ENABLED"
         } else {
             "DISABLED"
@@ -117,7 +117,7 @@ async fn main() {
     // Manage logs
     // Init tracing subscriber
     panduza_platform_core::tracing::init(
-        args.log_stdout_enable,
+        !args.quiet_log,
         args.broker_log_enable,
         args.debug_log,
         args.trace_log,
@@ -128,7 +128,7 @@ async fn main() {
     // - 1 broker
     // - 1 runtime pour les services de bases
     // - N plugins runtime
-    let mut platform = Platform::new(args.log_stdout_enable, args.debug_log, args.trace_log);
+    let mut platform = Platform::new(!args.quiet_log, args.debug_log, args.trace_log);
 
     //
     // Log minimal set of information

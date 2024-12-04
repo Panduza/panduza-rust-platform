@@ -1,1 +1,1 @@
-cargo run -- -l
+cargo run

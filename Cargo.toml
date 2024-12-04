@@ -1,40 +1,32 @@
 [package]
 name = "panduza-rust-platform"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 
 
 [dependencies]
 
 # Main base code for Panduza platform and plugins
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.5" }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.6" }
 # Main async framework for the platform
 tokio = { version = "1.40.0", features = ["full", "tracing"] }
-
-
+# 
 clap = { version = "4.5.21", features = ["derive"] }
-
-
+# 
 libloading = "0.8"
-
 # 
 dirs = "3.0.2"
-
 # MQTT async client
 rumqttc = "0.24.0"
-
 # 
 rumqttd = { git = "https://github.com/Panduza/rumqtt", tag = "0.0.0" }
-
+# 
 config = "0.14.0"
-
 # Async trait support
 async-trait = "0.1.77"
-
 # Futures support
 futures = "0.3.17"
-
-
+# 
 serde = { "version" = "1.0.0", features = ["derive"] }
 
 # Json serialization & deserialization
@@ -99,13 +91,13 @@ rust_decimal_macros = "1.35"
 # crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
 # ---
 # Fake devices
-pza-plugin-fakes = { git = "https://github.com/Panduza/pza-plugin-fakes", tag = "0.1.0", optional = true }
+pza-plugin-fakes = { git = "https://github.com/Panduza/pza-plugin-fakes", tag = "0.1.1", optional = true }
 # ---
 # Korad devices
-pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.4", optional = true }
+pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.5", optional = true }
 # ---
 # Hameg devices
-pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.3", optional = true }
+pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.4", optional = true }
 
 
 [build-dependencies]

@@ -614,10 +614,10 @@ impl Platform {
         self.logger.info("----- SERVICE : START SCANNING -----");
         // self.logger.info(format!("ORDER: {:?}", po));
 
-        #[cfg(feature = "built-in-drivers")]
-        for scanner in built_in::plugin_scanners() {
-            let result = scanner.scan();
-        }
+        // #[cfg(feature = "built-in-drivers")]
+        // for scanner in built_in::plugin_scanners() {
+        //     let result = scanner.scan();
+        // }
 
         let _res = self.plugin_manager.scan().unwrap();
         println!("{:?}", _res);
