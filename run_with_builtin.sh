@@ -1,1 +1,1 @@
-cargo run --features built-in-drivers -- -l
+cargo run --features built-in-drivers
