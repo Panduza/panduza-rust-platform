@@ -30,6 +30,7 @@ pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), 
     let logger_2 = instance.logger.clone();
     let att_running_2 = att_running.clone();
     spawn_on_command!(
+        "on_command => _/scanner",
         instance,
         att_running_2,
         on_running_command(logger_2.clone(), att_running_2.clone(), driver.clone())

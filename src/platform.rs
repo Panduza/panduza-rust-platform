@@ -9,8 +9,8 @@ use crate::underscore_device::store::data::SharedStore;
 use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, log_debug, Factory, InstanceMonitor, Notification, NotificationGroup,
-    ProductionOrder, Runtime, Store, TaskReceiver, TaskResult, TaskSender,
+    create_task_channel, env, log_debug, log_warn, Factory, InstanceMonitor, Notification,
+    NotificationGroup, ProductionOrder, Runtime, Store, TaskReceiver, TaskResult, TaskSender,
 };
 use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
 use rumqttd::Broker;
@@ -191,18 +191,30 @@ impl Platform {
                 _ = signal::ctrl_c() => {
                     //
                     // Exit due to user request
-                    self.logger.warn("User ctrl-c, abort requested");
+                    log_warn!(self.logger, "User ctrl-c, abort requested");
                     self.task_pool.abort_all();
                     self.must_stop.store(true, Ordering::Relaxed);
                     self.new_task_notifier.notify_waiters();
                 },
-                task = task_receiver.rx.recv() => {
-                    //
-                    // Function to effectily spawn tasks requested by the system
-                    let ah = self.task_pool.spawn(task.unwrap());
-                    self.logger.debug(format!( "New task created ! [{:?}]", ah ));
-                    self.new_task_notifier.notify_waiters();
+                //
+                // Manage new task creation requests
+                //
+                request = task_receiver.rx.recv() => {
+                    match request {
+                        Some(task) => {
+                            // Function to effectily spawn tasks requested by the system
+                            let ah = self.task_pool.spawn(task.future);
+                            log_debug!(self.logger, "New task created [{:?} => {:?}]", ah.id(), task.name);
+                            self.new_task_notifier.notify_waiters();
+                        },
+                        None => {
+                            log_warn!(self.logger, "Empty Task Request Received !");
+                        }
+                    }
                 },
+                //
+                //
+                //
                 request = request_receiver.recv() => {
                     //
                     // Manage service requests
@@ -521,7 +533,9 @@ impl Platform {
 
         //
         // Start thread
-        self.task_sender.spawn(runtime.task().boxed()).unwrap();
+        self.task_sender
+            .spawn_with_name("platform_runtime", runtime.task().boxed())
+            .unwrap();
     }
 
     /// -------------------------------------------------------------
@@ -546,7 +560,8 @@ impl Platform {
         );
 
         self.task_sender
-            .spawn(
+            .spawn_with_name(
+                "_/fsm",
                 async move {
                     device.run_fsm().await;
                     Ok(())
@@ -556,7 +571,8 @@ impl Platform {
             .unwrap();
 
         self.task_sender
-            .spawn(
+            .spawn_with_name(
+                "_/monitor",
                 async move {
                     monitor.run().await;
                     Ok(())
@@ -569,13 +585,17 @@ impl Platform {
         let n_n = self.notifications.clone();
         let n_notifier = self.new_notifications_notifier.clone();
         self.task_sender
-            .spawn(Self::task_process_notifications(info_pack, n_notifier, n_n).boxed())
+            .spawn_with_name(
+                "notifications",
+                Self::task_process_notifications(info_pack, n_notifier, n_n).boxed(),
+            )
             .unwrap();
 
         //
         //
         self.task_sender
-            .spawn(
+            .spawn_with_name(
+                "scanner_request_processor",
                 Self::task_process_scanner(
                     self.scanner_driver.clone(),
                     self.request_sender.clone(),

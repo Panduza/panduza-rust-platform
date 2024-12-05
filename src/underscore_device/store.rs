@@ -35,7 +35,7 @@ pub async fn mount(mut instance: Instance, store: SharedStore) -> Result<(), Err
     //
     //
     instance
-        .spawn(async move {
+        .spawn_with_name("store_watcher", async move {
             //
             loop {
                 //

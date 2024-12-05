@@ -84,7 +84,7 @@ pub async fn mount(mut instance: Instance, pack: InfoPack) -> Result<(), Error> 
 
     let pack_clone3 = pack.clone();
     instance
-        .spawn(async move {
+        .spawn_with_name("structure/watcher", async move {
             //
             //
             let structure_change = pack_clone3.instance_structure_change_notifier().await;
