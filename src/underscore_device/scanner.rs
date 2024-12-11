@@ -33,17 +33,17 @@ pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), 
         .with_ro()
         .finish_as_json()
         .await?;
+    att_result.set(json!({})).await?;
 
     //
     //
     let driver_2 = driver.clone();
-    let logger_3 = instance.logger.clone();
+    // let logger_3 = instance.logger.clone();
     spawn_loop!("loop => _/scanner/result", instance, {
-        att_result.set(json!({})).await?;
-
         driver_2.update_notifier.notified().await;
+        let ppp = driver_2.into_json_value().await.unwrap();
 
-        // att_result.set(json!({})).await?;
+        att_result.set(ppp).await?;
     });
 
     //

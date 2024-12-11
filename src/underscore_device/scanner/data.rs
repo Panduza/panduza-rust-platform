@@ -61,6 +61,7 @@ impl ScannerDriver {
         let mut p = self.found_instances.lock().await;
         p.clear();
         p.extend(found_instances);
+        // println!("{:?}", p);
         self.update_notifier.notify_waiters();
     }
 
