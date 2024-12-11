@@ -242,7 +242,7 @@ impl Platform {
                             self.service_produce_device(order).await;
                         },
                         ServiceRequest::StartScanning => {
-                            self.service_start_scanning().await;
+                            self.service_start_scanning(self.scanner_driver.clone()).await;
                         },
                     }
                 },
@@ -628,19 +628,22 @@ impl Platform {
 
     /// -------------------------------------------------------------
     ///
-    async fn service_start_scanning(&mut self) {
+    async fn service_start_scanning(&mut self, mut scanner_shared_data: ScannerDriver) {
         //
         // info
         self.logger.info("----- SERVICE : START SCANNING -----");
-        // self.logger.info(format!("ORDER: {:?}", po));
 
-        // #[cfg(feature = "built-in-drivers")]
-        // for scanner in built_in::plugin_scanners() {
-        //     let result = scanner.scan();
-        // }
+        let mut orders = self.plugin_manager.scan().unwrap();
 
-        let _res = self.plugin_manager.scan().unwrap();
-        println!("{:?}", _res);
+        #[cfg(feature = "built-in-drivers")]
+        for scanner in built_in::plugin_scanners() {
+            orders.extend(scanner.scan());
+        }
+
+        log_info!(self.logger, "Found instances : {:?}", orders);
+
+        scanner_shared_data.store_instances(orders).await;
+        scanner_shared_data.stop_running().await;
     }
 
     /// -------------------------------------------------------------

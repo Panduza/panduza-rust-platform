@@ -1,8 +1,11 @@
 pub mod data;
 
 use data::ScannerDriver;
-use panduza_platform_core::log_debug;
-use panduza_platform_core::{spawn_on_command, BooleanAttServer, Error, Instance, InstanceLogger};
+use panduza_platform_core::{log_debug, JsonAttServer};
+use panduza_platform_core::{
+    spawn_loop, spawn_on_command, BooleanAttServer, Error, Instance, InstanceLogger,
+};
+use serde_json::json;
 
 ///
 /// Mount the scanner attribute
@@ -24,6 +27,24 @@ pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), 
         .finish_as_boolean()
         .await?;
     att_running.set(false).await?;
+
+    let att_result = class_scanner
+        .create_attribute("result")
+        .with_ro()
+        .finish_as_json()
+        .await?;
+
+    //
+    //
+    let driver_2 = driver.clone();
+    let logger_3 = instance.logger.clone();
+    spawn_loop!("loop => _/scanner/result", instance, {
+        att_result.set(json!({})).await?;
+
+        driver_2.update_notifier.notified().await;
+
+        // att_result.set(json!({})).await?;
+    });
 
     //
     // Execute action on each command received
@@ -65,5 +86,32 @@ async fn on_running_command(
         // when ok => platform request for scan
         // flag running => true
     }
+    Ok(())
+}
+
+///
+///
+///
+async fn wait_for_notification(
+    logger: InstanceLogger,
+    mut att_result: JsonAttServer,
+    mut driver: ScannerDriver,
+) -> Result<(), Error> {
+    // while let Some(command) = att_running.pop_cmd().await {
+    //
+    // Log
+    // log_debug!(logger, "Scanner run command received '{:?}'", command);
+
+    //
+    // object partagé => trigger notify
+
+    // driver.request_scanning_start().await;
+    // att_running.set(true).await?;
+
+    // -> thread dans la platform
+    // un thread attend le notify
+    // when ok => platform request for scan
+    // flag running => true
+    // }
     Ok(())
 }
