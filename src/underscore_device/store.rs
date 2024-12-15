@@ -1,7 +1,7 @@
 pub mod data;
 
 use data::SharedStore;
-use panduza_platform_core::{Error, Instance};
+use panduza_platform_core::{Container, Error, Instance};
 
 ///
 /// Mount the store attribute
@@ -35,7 +35,7 @@ pub async fn mount(mut instance: Instance, store: SharedStore) -> Result<(), Err
     //
     //
     instance
-        .spawn_with_name("store_watcher", async move {
+        .spawn("store_watcher", async move {
             //
             loop {
                 //

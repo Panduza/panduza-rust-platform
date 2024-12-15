@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use super::pack::InfoPack;
-use panduza_platform_core::{log_trace, Error, Instance};
+use panduza_platform_core::{log_trace, Container, Error, Instance};
 use serde_json::json;
 use tokio::sync::Mutex;
 
@@ -20,14 +20,14 @@ pub async fn mount(mut instance: Instance, pack: InfoPack) -> Result<(), Error> 
 
     //
     // state of each devices
-    let mut interface_devices = instance.create_class("devices").finish();
+    let mut interface_devices = instance.create_class("devices").finish().await;
 
     // I need to spawn a task to watch if a device status has changed, if yes update
     // It is a better design to create a task that will always live here
     let pack_clone2 = pack.clone();
     let instance_attributes_clone = instance_attributes.clone();
     instance
-        .spawn_with_name("devices/watcher", async move {
+        .spawn("devices/watcher", async move {
             //
             // Clone the notifier from info pack
             let device_status_change = pack_clone2.instance_status_change_notifier();

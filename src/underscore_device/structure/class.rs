@@ -1,5 +1,5 @@
 use super::attribute::AttributElement;
-use panduza_platform_core::InterfaceNotification;
+use panduza_platform_core::ClassNotification;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -85,8 +85,8 @@ impl ClassElement {
 ///
 ///
 ///
-impl From<InterfaceNotification> for ClassElement {
-    fn from(notif: InterfaceNotification) -> Self {
+impl From<ClassNotification> for ClassElement {
+    fn from(notif: ClassNotification) -> Self {
         ClassElement::new(notif.tags, None)
     }
 }

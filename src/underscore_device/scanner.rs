@@ -1,7 +1,7 @@
 pub mod data;
 
 use data::ScannerDriver;
-use panduza_platform_core::{log_debug, JsonAttServer};
+use panduza_platform_core::{log_debug, Container, JsonAttServer, Logger};
 use panduza_platform_core::{
     spawn_loop, spawn_on_command, BooleanAttServer, Error, Instance, InstanceLogger,
 };
@@ -19,7 +19,7 @@ use serde_json::json;
 pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), Error> {
     //
     // Create the attribute
-    let mut class_scanner = instance.create_class("scanner").finish();
+    let mut class_scanner = instance.create_class("scanner").finish().await;
 
     let att_running = class_scanner
         .create_attribute("running")
@@ -66,7 +66,7 @@ pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), 
 ///
 ///
 async fn on_running_command(
-    logger: InstanceLogger,
+    logger: Logger,
     mut att_running: BooleanAttServer,
     mut driver: ScannerDriver,
 ) -> Result<(), Error> {

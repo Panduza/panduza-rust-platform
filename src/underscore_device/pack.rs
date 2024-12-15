@@ -26,7 +26,7 @@ impl InfoPack {
     pub fn process_notifications(&mut self, notifications: Vec<Notification>) {
         for not in notifications {
             match not {
-                Notification::StateChanged(state_notification) => {
+                Notification::State(state_notification) => {
                     // println!("state {:?}", state_notification);
 
                     self.inner
@@ -34,18 +34,25 @@ impl InfoPack {
                         .unwrap()
                         .process_state_changed(&state_notification);
                 }
-                Notification::ElementCreated(structural_notification) => {
+                Notification::Alert(alert_notification) => {
+                    self.inner.lock().unwrap().process_alert(alert_notification);
+                }
+                Notification::Class(n) => {
                     self.inner
                         .lock()
                         .unwrap()
-                        .process_element_creation(structural_notification)
+                        .process_class_creation(n)
                         .unwrap();
                 }
-                Notification::ElementDeleted(_structural_notification) => {
-                    // println!("deleted {:?}", structural_notification);
+                Notification::Attribute(n) => {
+                    self.inner
+                        .lock()
+                        .unwrap()
+                        .process_attribute_creation(n)
+                        .unwrap();
                 }
-                Notification::Alert(alert_notification) => {
-                    self.inner.lock().unwrap().process_alert(alert_notification);
+                Notification::Enablement(n) => {
+                    println!("enable {:?}", n);
                 }
             }
         }
