@@ -1,10 +1,8 @@
 pub mod data;
 
 use data::ScannerDriver;
-use panduza_platform_core::{log_debug, Container, JsonAttServer, Logger};
-use panduza_platform_core::{
-    spawn_loop, spawn_on_command, BooleanAttServer, Error, Instance, InstanceLogger,
-};
+use panduza_platform_core::{log_debug, Container, Logger};
+use panduza_platform_core::{spawn_loop, spawn_on_command, BooleanAttServer, Error, Instance};
 use serde_json::json;
 
 ///
@@ -86,32 +84,5 @@ async fn on_running_command(
         // when ok => platform request for scan
         // flag running => true
     }
-    Ok(())
-}
-
-///
-///
-///
-async fn wait_for_notification(
-    logger: InstanceLogger,
-    mut att_result: JsonAttServer,
-    mut driver: ScannerDriver,
-) -> Result<(), Error> {
-    // while let Some(command) = att_running.pop_cmd().await {
-    //
-    // Log
-    // log_debug!(logger, "Scanner run command received '{:?}'", command);
-
-    //
-    // object partagé => trigger notify
-
-    // driver.request_scanning_start().await;
-    // att_running.set(true).await?;
-
-    // -> thread dans la platform
-    // un thread attend le notify
-    // when ok => platform request for scan
-    // flag running => true
-    // }
     Ok(())
 }

@@ -633,7 +633,9 @@ impl Platform {
         // info
         self.logger.info("----- SERVICE : START SCANNING -----");
 
-        let mut orders = self.plugin_manager.scan().unwrap();
+        let mut orders = Vec::new();
+
+        orders.extend(self.plugin_manager.scan().unwrap());
 
         #[cfg(feature = "built-in-drivers")]
         for scanner in built_in::plugin_scanners() {
