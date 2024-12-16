@@ -14,7 +14,6 @@ pub struct InfoPack {
 }
 
 impl InfoPack {
-    ///
     /// Constructor
     ///
     pub fn new() -> InfoPack {
@@ -23,12 +22,12 @@ impl InfoPack {
         }
     }
 
+    /// Process runtime notifications
+    ///
     pub fn process_notifications(&mut self, notifications: Vec<Notification>) {
         for not in notifications {
             match not {
                 Notification::State(state_notification) => {
-                    // println!("state {:?}", state_notification);
-
                     self.inner
                         .lock()
                         .unwrap()
@@ -52,7 +51,7 @@ impl InfoPack {
                         .unwrap();
                 }
                 Notification::Enablement(n) => {
-                    println!("enable {:?}", n);
+                    self.inner.lock().unwrap().process_enablement(n).unwrap();
                 }
             }
         }

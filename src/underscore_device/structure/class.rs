@@ -10,6 +10,11 @@ use std::collections::HashMap;
 ///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClassElement {
+    /// True if the class is enable, false else
+    ///
+    #[serde(skip)]
+    enable: bool,
+
     ///
     ///
     ///
@@ -35,8 +40,9 @@ impl ClassElement {
     ///
     /// Constructor
     ///
-    pub fn new(tags: Vec<String>, info: Option<String>) -> Self {
+    pub fn new(enable: bool, tags: Vec<String>, info: Option<String>) -> Self {
         Self {
+            enable,
             tags,
             classes: HashMap::default(),
             attributes: HashMap::default(),
@@ -87,6 +93,6 @@ impl ClassElement {
 ///
 impl From<ClassNotification> for ClassElement {
     fn from(notif: ClassNotification) -> Self {
-        ClassElement::new(notif.tags, None)
+        ClassElement::new(true, notif.tags, None)
     }
 }

@@ -8,8 +8,8 @@ use super::{
 };
 use crate::underscore_device::structure::class::ClassElement;
 use panduza_platform_core::{
-    instance::State, AlertNotification, AttributeNotification, ClassNotification, Error,
-    StateNotification,
+    instance::State, runtime::notification::EnablementNotification, AlertNotification,
+    AttributeNotification, ClassNotification, Error, StateNotification,
 };
 use std::sync::Arc;
 use tokio::sync::Notify;
@@ -185,6 +185,14 @@ impl InfoPackInner {
         }
 
         self.instance_structure_change_notifier.notify_waiters();
+
+        Ok(())
+    }
+
+    /// Process an element enablement/disablement notification
+    ///
+    pub fn process_enablement(&mut self, _n: EnablementNotification) -> Result<(), Error> {
+        // let topic = Topic::from_string(n.topic());
 
         Ok(())
     }

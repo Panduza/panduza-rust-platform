@@ -33,12 +33,7 @@ impl Structure {
         self.driver_instances.insert(name, instance);
     }
 
-    // ///
-    // ///
-    // ///
-    // pub fn insert_class(topic, class) {
-
-    // }
+    // pub fn get_
 
     ///
     ///
