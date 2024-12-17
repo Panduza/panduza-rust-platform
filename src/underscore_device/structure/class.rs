@@ -1,5 +1,5 @@
 use super::attribute::AttributElement;
-use panduza_platform_core::InterfaceNotification;
+use panduza_platform_core::ClassNotification;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -10,6 +10,11 @@ use std::collections::HashMap;
 ///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClassElement {
+    /// True if the class is enable, false else
+    ///
+    #[serde(skip)]
+    enable: bool,
+
     ///
     ///
     ///
@@ -35,8 +40,9 @@ impl ClassElement {
     ///
     /// Constructor
     ///
-    pub fn new(tags: Vec<String>, info: Option<String>) -> Self {
+    pub fn new(enable: bool, tags: Vec<String>, info: Option<String>) -> Self {
         Self {
+            enable,
             tags,
             classes: HashMap::default(),
             attributes: HashMap::default(),
@@ -85,8 +91,8 @@ impl ClassElement {
 ///
 ///
 ///
-impl From<InterfaceNotification> for ClassElement {
-    fn from(notif: InterfaceNotification) -> Self {
-        ClassElement::new(notif.tags, None)
+impl From<ClassNotification> for ClassElement {
+    fn from(notif: ClassNotification) -> Self {
+        ClassElement::new(true, notif.tags, None)
     }
 }

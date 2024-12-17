@@ -1,8 +1,9 @@
 pub mod data;
 
 use data::ScannerDriver;
-use panduza_platform_core::log_debug;
-use panduza_platform_core::{spawn_on_command, BooleanAttServer, Error, Instance, InstanceLogger};
+use panduza_platform_core::{log_debug, Container, Logger};
+use panduza_platform_core::{spawn_loop, spawn_on_command, BooleanAttServer, Error, Instance};
+use serde_json::json;
 
 ///
 /// Mount the scanner attribute
@@ -16,7 +17,7 @@ use panduza_platform_core::{spawn_on_command, BooleanAttServer, Error, Instance,
 pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), Error> {
     //
     // Create the attribute
-    let mut class_scanner = instance.create_class("scanner").finish();
+    let mut class_scanner = instance.create_class("scanner").finish().await;
 
     let att_running = class_scanner
         .create_attribute("running")
@@ -25,11 +26,30 @@ pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), 
         .await?;
     att_running.set(false).await?;
 
+    let att_result = class_scanner
+        .create_attribute("result")
+        .with_ro()
+        .finish_as_json()
+        .await?;
+    att_result.set(json!({})).await?;
+
+    //
+    //
+    let driver_2 = driver.clone();
+    // let logger_3 = instance.logger.clone();
+    spawn_loop!("loop => _/scanner/result", instance, {
+        driver_2.update_notifier.notified().await;
+        let ppp = driver_2.into_json_value().await.unwrap();
+
+        att_result.set(ppp).await?;
+    });
+
     //
     // Execute action on each command received
     let logger_2 = instance.logger.clone();
     let att_running_2 = att_running.clone();
     spawn_on_command!(
+        "on_command => _/scanner",
         instance,
         att_running_2,
         on_running_command(logger_2.clone(), att_running_2.clone(), driver.clone())
@@ -44,7 +64,7 @@ pub async fn mount(mut instance: Instance, driver: ScannerDriver) -> Result<(), 
 ///
 ///
 async fn on_running_command(
-    logger: InstanceLogger,
+    logger: Logger,
     mut att_running: BooleanAttServer,
     mut driver: ScannerDriver,
 ) -> Result<(), Error> {

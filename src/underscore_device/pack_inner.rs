@@ -8,7 +8,8 @@ use super::{
 };
 use crate::underscore_device::structure::class::ClassElement;
 use panduza_platform_core::{
-    instance::State, AlertNotification, Error, StateNotification, StructuralNotification,
+    instance::State, runtime::notification::EnablementNotification, AlertNotification,
+    AttributeNotification, ClassNotification, Error, StateNotification,
 };
 use std::sync::Arc;
 use tokio::sync::Notify;
@@ -103,10 +104,9 @@ impl InfoPackInner {
         self.instance_status_change_notifier.notify_waiters();
     }
 
+    /// Process a class creation notification
     ///
-    /// Process an element creation notification
-    ///
-    pub fn process_element_creation(&mut self, n: StructuralNotification) -> Result<(), Error> {
+    pub fn process_class_creation(&mut self, n: ClassNotification) -> Result<(), Error> {
         let topic = Topic::from_string(n.topic());
 
         let instance_name = &topic.instance;
@@ -123,50 +123,76 @@ impl InfoPackInner {
             .ok_or(Error::Wtf)
             .unwrap();
 
-        match n {
-            StructuralNotification::Attribute(_attribute_notification) => {
-                let new_attribute = AttributElement::from(_attribute_notification);
-                //
-                // You have to insert the element in the instance
-                if topic.layers_len() == 1 {
-                    instance.insert_attribute(topic.first_layer().clone(), new_attribute);
-                }
-                //
-                //
-                else {
-                    let mut layers = topic.layers.clone();
-                    // println!("---------- {:?}", layers);
-                    layers.remove(layers.len() - 1);
-                    // println!("---------- {:?}", layers);
-                    let class = instance.get_mut_class_from_layers(&layers).unwrap();
-                    class.insert_attribute(topic.last_layer().clone(), new_attribute);
-                }
-            }
-            StructuralNotification::Interface(_interface_notification) => {
-                let new_class = ClassElement::from(_interface_notification);
-                //
-                // You have to insert the element in the instance
-                if topic.layers_len() == 1 {
-                    instance.insert_class(topic.first_layer().clone(), new_class);
-                }
-                //
-                //
-                else {
-                    let mut layers = topic.layers.clone();
-                    layers.remove(layers.len() - 1);
-                    let class =
-                        instance
-                            .get_mut_class_from_layers(&layers)
-                            .ok_or(Error::InternalLogic(format!(
-                                "cannot find class from layer {:?}",
-                                &layers
-                            )))?;
-                    class.insert_class(topic.last_layer().clone(), new_class);
-                }
-            }
+        let new_class = ClassElement::from(n);
+        //
+        // You have to insert the element in the instance
+        if topic.layers_len() == 1 {
+            instance.insert_class(topic.first_layer().clone(), new_class);
+        }
+        //
+        //
+        else {
+            let mut layers = topic.layers.clone();
+            layers.remove(layers.len() - 1);
+            let class = instance
+                .get_mut_class_from_layers(&layers)
+                .ok_or(Error::InternalLogic(format!(
+                    "cannot find class from layer {:?}",
+                    &layers
+                )))?;
+            class.insert_class(topic.last_layer().clone(), new_class);
         }
 
         self.instance_structure_change_notifier.notify_waiters();
+
+        Ok(())
+    }
+
+    /// Process an element creation notification
+    ///
+    pub fn process_attribute_creation(&mut self, n: AttributeNotification) -> Result<(), Error> {
+        let topic = Topic::from_string(n.topic());
+
+        let instance_name = &topic.instance;
+
+        //
+        // Create the instance if not already created
+        self.create_instance_if_not_exists(instance_name);
+
+        //
+        // Instance MUST now exist
+        let instance = self
+            .structure
+            .get_mut_instance(instance_name)
+            .ok_or(Error::Wtf)
+            .unwrap();
+
+        let new_attribute = AttributElement::from(n);
+        //
+        // You have to insert the element in the instance
+        if topic.layers_len() == 1 {
+            instance.insert_attribute(topic.first_layer().clone(), new_attribute);
+        }
+        //
+        //
+        else {
+            let mut layers = topic.layers.clone();
+            // println!("---------- {:?}", layers);
+            layers.remove(layers.len() - 1);
+            // println!("---------- {:?}", layers);
+            let class = instance.get_mut_class_from_layers(&layers).unwrap();
+            class.insert_attribute(topic.last_layer().clone(), new_attribute);
+        }
+
+        self.instance_structure_change_notifier.notify_waiters();
+
+        Ok(())
+    }
+
+    /// Process an element enablement/disablement notification
+    ///
+    pub fn process_enablement(&mut self, _n: EnablementNotification) -> Result<(), Error> {
+        // let topic = Topic::from_string(n.topic());
 
         Ok(())
     }

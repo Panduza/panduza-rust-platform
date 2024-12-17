@@ -3,7 +3,7 @@ pub mod class;
 pub mod instance;
 
 use instance::{Alert, InstanceElement};
-use panduza_platform_core::{instance::State, log_trace, Error, Instance};
+use panduza_platform_core::{instance::State, log_trace, Container, Error, Instance};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -33,12 +33,7 @@ impl Structure {
         self.driver_instances.insert(name, instance);
     }
 
-    // ///
-    // ///
-    // ///
-    // pub fn insert_class(topic, class) {
-
-    // }
+    // pub fn get_
 
     ///
     ///
@@ -84,7 +79,7 @@ pub async fn mount(mut instance: Instance, pack: InfoPack) -> Result<(), Error> 
 
     let pack_clone3 = pack.clone();
     instance
-        .spawn(async move {
+        .spawn("structure/watcher", async move {
             //
             //
             let structure_change = pack_clone3.instance_structure_change_notifier().await;
