@@ -18,6 +18,7 @@
 #[cfg(feature = "built-in-drivers")]
 mod built_in;
 
+mod config;
 mod device_tree;
 mod platform;
 mod plugins_manager;

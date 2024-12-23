@@ -35,6 +35,7 @@ static REQUEST_CHANNEL_SIZE: usize = 256;
 
 pub enum ServiceRequest {
     Boot,
+    ReadConfig,
     StartBroker,
     LoadPlugins,
     LoadDeviceTree,
@@ -51,6 +52,10 @@ pub enum ServiceRequest {
 pub struct Platform {
     /// Main logger
     logger: PlatformLogger,
+
+    ///
+    ///
+    config: crate::config::Config,
 
     ///
     /// Flag to know if we the platform must continue its work
@@ -130,6 +135,7 @@ impl Platform {
         // Create object
         return Self {
             logger: PlatformLogger::new(),
+            config: crate::config::Config::default(),
 
             keep_alive: Arc::new(AtomicBool::new(true)),
             must_stop: Arc::new(AtomicBool::new(false)),
@@ -220,6 +226,9 @@ impl Platform {
                     // Manage service requests
                     let request_value = request.unwrap();
                     match request_value {
+                        ServiceRequest::ReadConfig => {
+                            self.service_read_config().await;
+                        },
                         ServiceRequest::Boot => {
                             self.service_boot().await;
                         },
@@ -345,6 +354,11 @@ impl Platform {
         //
         //
         self.request_sender
+            .try_send(ServiceRequest::ReadConfig)
+            .unwrap();
+        //
+        //
+        self.request_sender
             .try_send(ServiceRequest::StartBroker)
             .unwrap();
         //
@@ -371,10 +385,27 @@ impl Platform {
 
     /// -------------------------------------------------------------
     ///
+    async fn service_read_config(&mut self) {
+        //
+        // info
+        self.logger.info("----- SERVICE : READ CONFIG -----");
+
+        self.config = crate::config::get_platform_config();
+    }
+
+    /// -------------------------------------------------------------
+    ///
     async fn service_start_broker(&mut self) {
         //
         // info
         self.logger.info("----- SERVICE : START BROKER -----");
+
+        let addr = self
+            .config
+            .broker
+            .as_ref()
+            .and_then(|b| b.addr.clone())
+            .unwrap_or("127.0.0.1".to_string());
 
         let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
         router.insert("id".to_string(), config::Value::new(None, 0));
