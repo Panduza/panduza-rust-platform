@@ -1,12 +1,12 @@
 [package]
 name = "panduza-rust-platform"
-version = "0.5.3"
+version = "0.5.4"
 edition = "2021"
 
 [dependencies]
 
 # Main base code for Panduza platform and plugins
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.1.10" }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.2.0" }
 # Main async framework for the platform
 tokio = { version = "1.40.0", features = ["full", "tracing"] }
 # 
@@ -72,10 +72,10 @@ rust_decimal_macros = "1.35"
 # crate-type = ["lib"] => because plugins need to be compile as simple lib when built-in
 # ---
 # Virtual Instruments
-pza-plugin-vi = { git = "https://github.com/Panduza/pza-plugin-vi", tag = "0.1.1", optional = true }
+pza-plugin-vi = { git = "https://github.com/Panduza/pza-plugin-vi", tag = "0.1.2", optional = true }
 # ---
 # Korad devices
-pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.7", optional = true }
+pza-plugin-korad = { git = "https://github.com/Panduza/pza-plugin-korad", tag = "1.0.8", optional = true }
 # ---
 # Hameg devices
 # pza-plugin-hameg = { git = "https://github.com/Panduza/pza-plugin-hameg", tag = "1.0.4", optional = true }
