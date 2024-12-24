@@ -21,6 +21,8 @@ rumqttc = "0.24.0"
 rumqttd = { git = "https://github.com/Panduza/rumqtt", tag = "0.1.0" }
 # 
 config = "0.14.0"
+#
+toml = "0.8.19"
 # Async trait support
 async-trait = "0.1.77"
 # Futures support
