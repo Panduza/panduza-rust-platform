@@ -58,6 +58,10 @@ pub struct Platform {
     config: crate::config::Config,
 
     ///
+    ///
+    config: crate::config::Config,
+
+    ///
     /// Flag to know if we the platform must continue its work
     keep_alive: Arc<AtomicBool>,
     ///
@@ -135,6 +139,7 @@ impl Platform {
         // Create object
         return Self {
             logger: Logger::new_for_platform(),
+
             config: crate::config::Config::default(),
 
             keep_alive: Arc::new(AtomicBool::new(true)),
@@ -391,6 +396,7 @@ impl Platform {
         self.logger.info("----- SERVICE : READ CONFIG -----");
 
         self.config = crate::config::get_platform_config(self.logger.clone());
+
     }
 
     /// -------------------------------------------------------------
@@ -415,6 +421,7 @@ impl Platform {
             .unwrap_or(1883);
 
         let listen_addr = format!("{}:{}", addr, port);
+
 
         let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
         router.insert("id".to_string(), config::Value::new(None, 0));

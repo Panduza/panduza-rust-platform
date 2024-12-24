@@ -45,6 +45,7 @@ impl Default for Config {
 /// Get the platform configuration from the default config file
 ///
 pub fn get_platform_config(logger: Logger) -> Config {
+  
     let file_path = system_default_config_dir().unwrap().join("platform.toml");
     let config_content = if file_path.exists() {
         std::fs::read_to_string(&file_path).expect("Failed to read config file")
@@ -52,9 +53,11 @@ pub fn get_platform_config(logger: Logger) -> Config {
         let default_config = Config::default();
         let toml_content =
             toml::to_string(&default_config).expect("Failed to serialize default config");
-        if let Err(e) = std::fs::write(&file_path, &toml_content) {
+
+      if let Err(e) = std::fs::write(&file_path, &toml_content) {
             log_warn!(logger, "Failed to write default config file: {}", e);
         }
+
         toml_content
     };
     toml::from_str(&config_content).expect("Failed to parse config file")
