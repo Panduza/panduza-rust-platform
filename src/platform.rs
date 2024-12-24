@@ -9,10 +9,10 @@ use crate::underscore_device::store::data::SharedStore;
 use crate::underscore_device::UnderscoreDevice;
 use futures::FutureExt;
 use panduza_platform_core::{
-    create_task_channel, env, log_debug, log_warn, Factory, InstanceMonitor, Notification,
+    create_task_channel, env, log_debug, log_warn, Factory, InstanceMonitor, Logger, Notification,
     NotificationGroup, ProductionOrder, Runtime, Store, TaskReceiver, TaskResult, TaskSender,
 };
-use panduza_platform_core::{PlatformLogger, Reactor, ReactorSettings};
+use panduza_platform_core::{Reactor, ReactorSettings};
 use rumqttd::Broker;
 use rumqttd::Config;
 use std::fs::File;
@@ -51,7 +51,11 @@ pub enum ServiceRequest {
 ///
 pub struct Platform {
     /// Main logger
-    logger: PlatformLogger,
+    logger: Logger,
+
+    ///
+    ///
+    config: crate::config::Config,
 
     ///
     ///
@@ -134,7 +138,8 @@ impl Platform {
         //
         // Create object
         return Self {
-            logger: PlatformLogger::new(),
+            logger: Logger::new_for_platform(),
+
             config: crate::config::Config::default(),
 
             keep_alive: Arc::new(AtomicBool::new(true)),
@@ -390,7 +395,8 @@ impl Platform {
         // info
         self.logger.info("----- SERVICE : READ CONFIG -----");
 
-        self.config = crate::config::get_platform_config();
+        self.config = crate::config::get_platform_config(self.logger.clone());
+
     }
 
     /// -------------------------------------------------------------
@@ -406,6 +412,16 @@ impl Platform {
             .as_ref()
             .and_then(|b| b.addr.clone())
             .unwrap_or("127.0.0.1".to_string());
+
+        let port = self
+            .config
+            .broker
+            .as_ref()
+            .and_then(|b| b.port.clone())
+            .unwrap_or(1883);
+
+        let listen_addr = format!("{}:{}", addr, port);
+
 
         let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
         router.insert("id".to_string(), config::Value::new(None, 0));
@@ -449,7 +465,7 @@ impl Platform {
         server.insert("name".to_string(), config::Value::new(None, "v4-1"));
         server.insert(
             "listen".to_string(),
-            config::Value::new(None, "0.0.0.0:1883"),
+            config::Value::new(None, listen_addr.clone()),
         );
         server.insert(
             "next_connection_delay_ms".to_string(),
@@ -471,11 +487,14 @@ impl Platform {
             .build()
             .unwrap();
 
+        //
         // this is where we deserialize it into Config
         let rumqttd_config: Config = config.try_deserialize().unwrap();
         let mut broker = Broker::new(rumqttd_config);
 
-        self.logger.info("Start Broker");
+        //
+        // start broker
+        log_info!(self.logger, "Broker listen on: {}", listen_addr);
         let _jh = std::thread::spawn(move || {
             broker.start().unwrap();
             println!("BROKER STOPPPED !!!!!!!!!!!!!!!!!");
