@@ -20,6 +20,7 @@ mod built_in;
 
 mod config;
 mod device_tree;
+mod local_broker_discovery;
 mod platform;
 mod plugins_manager;
 mod sys_info;

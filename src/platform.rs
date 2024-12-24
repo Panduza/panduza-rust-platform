@@ -2,6 +2,7 @@
 use crate::built_in;
 
 use crate::device_tree::DeviceTree;
+use crate::local_broker_discovery;
 use crate::plugins_manager::PluginsManager;
 use crate::underscore_device::pack::InfoPack;
 use crate::underscore_device::scanner::data::ScannerDriver;
@@ -37,6 +38,7 @@ pub enum ServiceRequest {
     Boot,
     ReadConfig,
     StartBroker,
+    StartLocalBrokerDiscovery,
     LoadPlugins,
     LoadDeviceTree,
     LoadLocalRuntime,
@@ -226,14 +228,17 @@ impl Platform {
                     // Manage service requests
                     let request_value = request.unwrap();
                     match request_value {
-                        ServiceRequest::ReadConfig => {
-                            self.service_read_config().await;
-                        },
                         ServiceRequest::Boot => {
                             self.service_boot().await;
                         },
+                        ServiceRequest::ReadConfig => {
+                            self.service_read_config().await;
+                        },
                         ServiceRequest::StartBroker => {
                             self.service_start_broker().await;
+                        }
+                        ServiceRequest::StartLocalBrokerDiscovery => {
+                            self.service_start_local_discovery().await;
                         }
                         ServiceRequest::LoadPlugins => {
                             self.service_load_plugins().await;
@@ -350,7 +355,7 @@ impl Platform {
     async fn service_boot(&mut self) {
         //
         // info
-        self.logger.info("----- SERVICE : BOOT -----");
+        log_info!(self.logger, "----- SERVICE : BOOT -----");
         //
         //
         self.request_sender
@@ -360,6 +365,11 @@ impl Platform {
         //
         self.request_sender
             .try_send(ServiceRequest::StartBroker)
+            .unwrap();
+        //
+        //
+        self.request_sender
+            .try_send(ServiceRequest::StartLocalBrokerDiscovery)
             .unwrap();
         //
         //
@@ -388,7 +398,7 @@ impl Platform {
     async fn service_read_config(&mut self) {
         //
         // info
-        self.logger.info("----- SERVICE : READ CONFIG -----");
+        log_info!(self.logger, "----- SERVICE : READ CONFIG -----");
 
         self.config = crate::config::get_platform_config(self.logger.clone());
     }
@@ -398,7 +408,7 @@ impl Platform {
     async fn service_start_broker(&mut self) {
         //
         // info
-        self.logger.info("----- SERVICE : START BROKER -----");
+        log_info!(self.logger, "----- SERVICE : START BROKER -----");
 
         let addr = self
             .config
@@ -496,10 +506,39 @@ impl Platform {
 
     /// -------------------------------------------------------------
     ///
+    async fn service_start_local_discovery(&mut self) {
+        //
+        // info
+        log_info!(self.logger, "----- SERVICE : START LOCAL DISCOVERY -----");
+
+        //
+        // Check in config if we must start the local discovery
+        let plbd_is_enabled = self
+            .config
+            .services
+            .as_ref()
+            .and_then(|s| s.enable_plbd)
+            .unwrap_or(false);
+
+        if plbd_is_enabled {
+            log_info!(self.logger, "PLBD is enabled");
+            self.task_sender
+                .spawn_with_name(
+                    "local_broker_discovery",
+                    local_broker_discovery::task(self.config.platform_name.clone()).boxed(),
+                )
+                .unwrap();
+        } else {
+            log_info!(self.logger, "PLBD is disabled");
+        }
+    }
+
+    /// -------------------------------------------------------------
+    ///
     async fn service_load_plugins(&mut self) {
         //
         // info
-        self.logger.info("----- SERVICE : LOAD PLUGINS -----");
+        log_info!(self.logger, "----- SERVICE : LOAD PLUGINS -----");
 
         self.plugin_manager.load_system_plugins().unwrap();
 
@@ -513,7 +552,7 @@ impl Platform {
     async fn service_load_device_tree(&mut self) {
         //
         // info
-        self.logger.info("----- SERVICE : LOAD DEVICE TREE -----");
+        log_info!(self.logger, "----- SERVICE : LOAD DEVICE TREE -----");
 
         //
         // Get path
@@ -539,7 +578,7 @@ impl Platform {
     async fn service_load_local_runtime(&mut self) {
         //
         // info
-        self.logger.info("----- SERVICE : LOAD LOCAL RUNTIME -----");
+        log_info!(self.logger, "----- SERVICE : LOAD LOCAL RUNTIME -----");
 
         //
         // Allow mut here because it depend of features enabled
@@ -653,8 +692,8 @@ impl Platform {
     async fn service_produce_device(&mut self, po: ProductionOrder) {
         //
         // info
-        self.logger.info("----- SERVICE : PRODUCE DEVICE -----");
-        self.logger.info(format!("ORDER: {:?}", po));
+        log_info!(self.logger, "----- SERVICE : PRODUCE DEVICE -----");
+        log_info!(self.logger, "ORDER: {:?}", po);
 
         if self.built_in_store.contains(&po.dref()) {
             log_info!(self.logger, "LOCAL PRODUCER");
@@ -674,7 +713,7 @@ impl Platform {
     async fn service_start_scanning(&mut self, mut scanner_shared_data: ScannerDriver) {
         //
         // info
-        self.logger.info("----- SERVICE : START SCANNING -----");
+        log_info!(self.logger, "----- SERVICE : START SCANNING -----");
 
         let mut orders = Vec::new();
 
