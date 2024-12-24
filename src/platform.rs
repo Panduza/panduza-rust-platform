@@ -58,7 +58,7 @@ pub struct Platform {
     ///
     ///
     config: crate::config::Config,
-
+ 
     ///
     /// Flag to know if we the platform must continue its work
     keep_alive: Arc<AtomicBool>,
@@ -137,6 +137,7 @@ impl Platform {
         // Create object
         return Self {
             logger: Logger::new_for_platform(),
+
             config: crate::config::Config::default(),
 
             keep_alive: Arc::new(AtomicBool::new(true)),
@@ -228,6 +229,9 @@ impl Platform {
                     // Manage service requests
                     let request_value = request.unwrap();
                     match request_value {
+                        ServiceRequest::ReadConfig => {
+                            self.service_read_config().await;
+                        },
                         ServiceRequest::Boot => {
                             self.service_boot().await;
                         },
@@ -364,6 +368,11 @@ impl Platform {
         //
         //
         self.request_sender
+            .try_send(ServiceRequest::ReadConfig)
+            .unwrap();
+        //
+        //
+        self.request_sender
             .try_send(ServiceRequest::StartBroker)
             .unwrap();
         //
@@ -401,6 +410,7 @@ impl Platform {
         log_info!(self.logger, "----- SERVICE : READ CONFIG -----");
 
         self.config = crate::config::get_platform_config(self.logger.clone());
+
     }
 
     /// -------------------------------------------------------------
@@ -425,6 +435,23 @@ impl Platform {
             .unwrap_or(1883);
 
         let listen_addr = format!("{}:{}", addr, port);
+
+        let addr = self
+            .config
+            .broker
+            .as_ref()
+            .and_then(|b| b.addr.clone())
+            .unwrap_or("127.0.0.1".to_string());
+
+        let port = self
+            .config
+            .broker
+            .as_ref()
+            .and_then(|b| b.port.clone())
+            .unwrap_or(1883);
+
+        let listen_addr = format!("{}:{}", addr, port);
+
 
         let mut router: std::collections::HashMap<String, config::Value> = config::Map::new();
         router.insert("id".to_string(), config::Value::new(None, 0));
