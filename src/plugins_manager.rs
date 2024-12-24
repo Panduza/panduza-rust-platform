@@ -1,7 +1,7 @@
 use panduza_platform_core::env;
 use panduza_platform_core::Error;
+use panduza_platform_core::Logger;
 use panduza_platform_core::Notification;
-use panduza_platform_core::PlatformLogger;
 use panduza_platform_core::Plugin;
 use panduza_platform_core::ProductionOrder;
 use panduza_platform_core::Store;
@@ -172,7 +172,7 @@ impl PluginHandler {
 ///
 pub struct PluginsManager {
     /// logger
-    logger: PlatformLogger,
+    logger: Logger,
 
     ///
     /// Plugin handlers
@@ -190,7 +190,7 @@ impl PluginsManager {
     ///
     pub fn new(enable_stdout: bool, debug: bool, trace: bool) -> Self {
         Self {
-            logger: PlatformLogger::new(),
+            logger: Logger::new_for_platform(),
 
             handlers: Vec::new(),
 

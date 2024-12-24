@@ -1,4 +1,6 @@
 use panduza_platform_core::env::system_default_config_dir;
+use panduza_platform_core::log_warn;
+use panduza_platform_core::Logger;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -42,7 +44,7 @@ impl Default for Config {
 
 /// Get the platform configuration from the default config file
 ///
-pub fn get_platform_config() -> Config {
+pub fn get_platform_config(logger: Logger) -> Config {
     let file_path = system_default_config_dir().unwrap().join("platform.toml");
     let config_content = if file_path.exists() {
         std::fs::read_to_string(&file_path).expect("Failed to read config file")
@@ -50,7 +52,9 @@ pub fn get_platform_config() -> Config {
         let default_config = Config::default();
         let toml_content =
             toml::to_string(&default_config).expect("Failed to serialize default config");
-        std::fs::write(&file_path, &toml_content).expect("Failed to write default config file");
+        if let Err(e) = std::fs::write(&file_path, &toml_content) {
+            log_warn!(logger, "Failed to write default config file: {}", e);
+        }
         toml_content
     };
     toml::from_str(&config_content).expect("Failed to parse config file")
