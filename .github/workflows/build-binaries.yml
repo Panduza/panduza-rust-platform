@@ -63,6 +63,13 @@ jobs:
             - name: Try to Build
               run: cargo build --verbose --release
 
+            # Release version is supposed to have a faster runtime than debug
+            - name: Upload windows binaries release
+              uses: actions/upload-artifact@v4
+              with:
+                  name: panduza-platform-no-plugins.exe
+                  path: target/release/panduza-rust-platform.exe
+
     # ---------------------------------------------------------------------------
     build-on-windows-builtin:
         runs-on: windows-latest
@@ -80,7 +87,7 @@ jobs:
             - name: Upload windows binaries release
               uses: actions/upload-artifact@v4
               with:
-                  name: windows_binaries
+                  name: panduza-platform.exe
                   path: target/release/panduza-rust-platform.exe
 
                   
