@@ -64,6 +64,7 @@ impl InstanceElement {
     ///
     ///
     pub fn add_alert(&mut self, alert: Alert) {
+        self.alerts.clear();
         self.alerts.push(alert);
     }
 
