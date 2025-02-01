@@ -101,7 +101,7 @@ pub async fn mount(mut instance: Instance, pack: InfoPack) -> Result<(), Error> 
                 let structure = pack_bis.device_structure_as_json_value().await.unwrap();
                 log_trace!(logger, "new structure {:?}", structure);
 
-                structure_att.set(structure).await.unwrap();
+                structure_att.set(structure).await?;
             }
             // Ok(())
         })
