@@ -8,6 +8,10 @@ pub fn plugin_producers() -> Vec<Box<dyn Producer>> {
     producers.extend(pza_plugin_vi::plugin_producers());
     producers.extend(pza_plugin_korad::plugin_producers());
     // producers.extend(pza_plugin_hameg::plugin_producers());
+
+    producers.extend(pza_plugin_picoha::plugin_producers());
+    producers.extend(pza_plugin_hantek::plugin_producers());
+
     return producers;
 }
 
@@ -18,5 +22,9 @@ pub fn plugin_scanners() -> Vec<Box<dyn Scanner>> {
     scanners.extend(pza_plugin_vi::plugin_scanners());
     scanners.extend(pza_plugin_korad::plugin_scanners());
     // scanners.extend(pza_plugin_hameg::plugin_scanners());
+
+    scanners.extend(pza_plugin_picoha::plugin_scanners());
+    scanners.extend(pza_plugin_hantek::plugin_scanners());
+
     return scanners;
 }
