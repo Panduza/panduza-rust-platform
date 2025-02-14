@@ -436,7 +436,7 @@ impl Platform {
         router.insert("id".to_string(), config::Value::new(None, 0));
         router.insert(
             "max_connections".to_string(),
-            config::Value::new(None, 10010),
+            config::Value::new(None, 20480),
         );
         router.insert(
             "max_outgoing_packet_count".to_string(),
@@ -459,11 +459,11 @@ impl Platform {
         );
         server_connections.insert(
             "max_payload_size".to_string(),
-            config::Value::new(None, 20480),
+            config::Value::new(None, 2000480),
         );
         server_connections.insert(
             "max_inflight_count".to_string(),
-            config::Value::new(None, 10000),
+            config::Value::new(None, 20480),
         );
         server_connections.insert(
             "dynamic_filters".to_string(),

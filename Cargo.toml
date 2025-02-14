@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 
 # Main base code for Panduza platform and plugins
-panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.2.3" }
+# panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", tag = "0.2.3" }
+panduza-platform-core = { git = "https://github.com/Panduza/panduza-platform-core", branch = "sample" }
 # Main async framework for the platform
 tokio = { version = "1.40.0", features = ["full", "tracing"] }
 # 
